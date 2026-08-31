@@ -1,0 +1,5 @@
+# Chuẩn hoá line-ending: repo luôn LF (build trên Vercel/Linux), checkout tuỳ OS.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
