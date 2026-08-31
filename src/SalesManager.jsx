@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Package, ShoppingCart, Users, BarChart3,
   Plus, Trash2, Pencil, X, Search, Store, Globe,
   TrendingUp, AlertTriangle, Loader2, ChevronDown, ChevronRight, ChevronLeft,
-  ArrowDownToLine, ArrowUpFromLine, Barcode, ImagePlus, ImageOff, Check, Printer, RotateCcw, KeyRound, LogOut, Eye, EyeOff, Filter, Target, History, ShieldCheck, XCircle, Wallet, PackageCheck, Truck, Clock, Bell, FileSpreadsheet, FileText, MapPin
+  ArrowDownToLine, ArrowUpFromLine, Barcode, ImagePlus, ImageOff, Check, Printer, RotateCcw, KeyRound, LogOut, Eye, EyeOff, Filter, Target, History, ShieldCheck, XCircle, Wallet, PackageCheck, Truck, Clock, Bell, FileSpreadsheet, FileText, MapPin, UserCircle, Crown
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -81,10 +81,32 @@ function normalizeAccount(a) {
     _legacyPassword: a.passwordHash ? undefined : (a.password || undefined),
     fullName: a.fullName || "", role: ACCOUNT_ROLES.some((r) => r.id === a.role) ? a.role : "staff",
     active: a.active !== false,
+    // Tài khoản "chủ" — cấp cao nhất. Chỉ chính chủ mới thấy/sửa được; QTV khác không thấy tài khoản này.
+    isOwner: a.isOwner === true,
   };
 }
+// Đảm bảo luôn có ĐÚNG 1 tài khoản chủ (isOwner). Dữ liệu cũ chưa có cờ này thì gán cho
+// tài khoản username "admin", nếu không có thì tài khoản đầu tiên. Chủ luôn ở vai trò admin và đang hoạt động.
+function ensureOwner(accs) {
+  if (!accs || accs.length === 0) return accs || [];
+  const owners = accs.filter((a) => a.isOwner);
+  if (owners.length === 1) {
+    return accs.map((a) => (a.isOwner ? { ...a, role: "admin", active: true } : a));
+  }
+  if (owners.length > 1) {
+    let kept = false;
+    return accs.map((a) => {
+      if (!a.isOwner) return a;
+      if (!kept) { kept = true; return { ...a, role: "admin", active: true }; }
+      return { ...a, isOwner: false };
+    });
+  }
+  let idx = accs.findIndex((a) => a.username === "admin");
+  if (idx < 0) idx = 0;
+  return accs.map((a, i) => (i === idx ? { ...a, isOwner: true, role: "admin", active: true } : a));
+}
 function seedAccounts() {
-  return [normalizeAccount({ username: "admin", password: "admin123", fullName: "Chủ cửa hàng", role: "admin", active: true })];
+  return [normalizeAccount({ username: "admin", password: "admin123", fullName: "Chủ cửa hàng", role: "admin", active: true, isOwner: true })];
 }
 // Mã hoá mật khẩu bằng SHA-256 (Web Crypto API có sẵn trên trình duyệt) kèm salt ngẫu nhiên cho từng tài khoản.
 function randomSalt() {
@@ -10523,18 +10545,23 @@ function LoginScreen({ accounts, onLogin }) {
   );
 }
 
-function Accounts({ accounts, setAccounts, currentUser, onResetTestData }) {
+function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData }) {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({});
   const [confirmReset, setConfirmReset] = useState(false);
   const [confirmResetText, setConfirmResetText] = useState("");
+  const isOwnerViewer = currentUser.isOwner === true;
+  // QTV thường không thấy tài khoản chủ; chỉ chính chủ mới thấy và sửa được nó.
+  const visibleAccounts = isOwnerViewer ? accounts : accounts.filter((a) => !a.isOwner);
+  const canManage = (a) => isOwnerViewer || !a.isOwner;
   const openNew = () => { setForm({ username: "", password: "", fullName: "", role: "staff", active: true }); setEditing({}); };
-  const openEdit = (a) => { setForm({ ...a, password: "" }); setEditing(a); };
+  const openEdit = (a) => { if (!canManage(a)) return; setForm({ ...a, password: "" }); setEditing(a); };
   const submit = async () => {
     const username = form.username.trim().toLowerCase();
     if (!username || !form.fullName) return;
     if (!editing.id && !form.password) { alert("Vui lòng đặt mật khẩu cho tài khoản mới."); return; }
     if (accounts.some((a) => a.username === username && a.id !== editing.id)) { alert("Tên đăng nhập đã tồn tại."); return; }
+    if (editing.id && !canManage(editing)) { alert("Bạn không có quyền sửa tài khoản này."); return; }
     let passFields = {};
     if (form.password) {
       const salt = randomSalt();
@@ -10542,25 +10569,36 @@ function Accounts({ accounts, setAccounts, currentUser, onResetTestData }) {
       passFields = { passwordHash: hash, passwordSalt: salt };
     }
     if (editing.id) {
-      setAccounts((prev) => prev.map((a) => (a.id === editing.id ? { ...a, username, fullName: form.fullName, role: form.role, active: form.active, ...passFields } : a)));
+      // Tài khoản chủ luôn giữ vai trò admin và đang hoạt động, không cho đổi.
+      const role = editing.isOwner ? "admin" : form.role;
+      const active = editing.isOwner ? true : form.active;
+      setAccounts((prev) => prev.map((a) => (a.id === editing.id ? { ...a, username, fullName: form.fullName, role, active, ...passFields } : a)));
+      addLog && addLog("Sửa tài khoản", `${username}${form.password ? " (đổi mật khẩu)" : ""}`);
     } else {
-      setAccounts((prev) => [...prev, { id: uid(), username, fullName: form.fullName, role: form.role, active: true, ...passFields }]);
+      setAccounts((prev) => [...prev, { id: uid(), username, fullName: form.fullName, role: form.role, active: true, isOwner: false, ...passFields }]);
+      addLog && addLog("Tạo tài khoản", `${username} · ${ACCOUNT_ROLES.find((r) => r.id === form.role)?.label || form.role}`);
     }
     setEditing(null);
   };
   const toggleActive = (a) => {
+    if (a.isOwner) { alert("Không thể khoá tài khoản chủ."); return; }
     if (a.id === currentUser.id) { alert("Không thể tự khoá tài khoản đang đăng nhập."); return; }
     setAccounts((prev) => prev.map((x) => (x.id === a.id ? { ...x, active: !x.active } : x)));
   };
   const remove = (a) => {
+    if (a.isOwner) { alert("Không thể xoá tài khoản chủ."); return; }
     if (a.id === currentUser.id) { alert("Không thể xoá tài khoản đang đăng nhập."); return; }
+    if (!canManage(a)) return;
     setAccounts((prev) => prev.filter((x) => x.id !== a.id));
+    addLog && addLog("Xoá tài khoản", a.username);
   };
 
   return (
     <div>
       <div className="flex items-center justify-between mb-5">
-        <p className="text-sm opacity-60">Chỉ Quản trị viên mới thấy và chỉnh sửa được mục này.</p>
+        <p className="text-sm opacity-60">
+          Chỉ Quản trị viên mới thấy mục này. Tài khoản chủ <Crown size={12} className="inline -mt-0.5" style={{ color: BRASS }} /> là cấp cao nhất — chỉ chính chủ xem và sửa được.
+        </p>
         <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-sm text-sm text-white shrink-0" style={{ background: INK }}><Plus size={15} /> Thêm tài khoản</button>
       </div>
 
@@ -10574,24 +10612,34 @@ function Accounts({ accounts, setAccounts, currentUser, onResetTestData }) {
             </tr>
           </thead>
           <tbody>
-            {accounts.map((a) => {
+            {visibleAccounts.map((a) => {
               const role = ACCOUNT_ROLES.find((r) => r.id === a.role);
+              const locked = !canManage(a);
               return (
                 <tr key={a.id} style={{ borderBottom: `1px dashed ${LINE}` }} className="hover:bg-black/[0.02]">
-                  <td className="px-3 py-3 font-medium whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{a.username}{a.id === currentUser.id && <span className="ml-1.5 text-[10px] opacity-40">(bạn)</span>}</td>
+                  <td className="px-3 py-3 font-medium whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>
+                    {a.isOwner && <Crown size={13} className="inline mr-1 -mt-0.5" style={{ color: BRASS }} />}
+                    {a.username}{a.id === currentUser.id && <span className="ml-1.5 text-[10px] opacity-40">(bạn)</span>}
+                  </td>
                   <td className="px-3 py-3 whitespace-nowrap" style={{ color: INK }}>{a.fullName}</td>
                   <td className="px-3 py-3 whitespace-nowrap">
-                    <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: a.role === "admin" ? `${BRASS}1A` : `${BLUE}15`, color: a.role === "admin" ? BRASS : BLUE }}>{role.label}</span>
+                    <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: a.role === "admin" ? `${BRASS}1A` : `${BLUE}15`, color: a.role === "admin" ? BRASS : BLUE }}>{a.isOwner ? "Chủ sở hữu" : role.label}</span>
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap">
-                    <button onClick={() => toggleActive(a)} className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: a.active ? `${FOREST}1A` : `${RUST}1A`, color: a.active ? FOREST : RUST }}>
+                    <button onClick={() => toggleActive(a)} disabled={a.isOwner} className="text-[11px] px-2 py-0.5 rounded-full disabled:opacity-60 disabled:cursor-default" style={{ background: a.active ? `${FOREST}1A` : `${RUST}1A`, color: a.active ? FOREST : RUST }}>
                       {a.active ? "Đang hoạt động" : "Đã khoá"}
                     </button>
                   </td>
                   <td className="px-3 py-3">
                     <div className="flex gap-1.5 justify-end whitespace-nowrap">
-                      <button onClick={() => openEdit(a)} className="p-1.5 rounded-sm hover:bg-black/5 opacity-60"><Pencil size={14} /></button>
-                      <button onClick={() => remove(a)} className="p-1.5 rounded-sm hover:bg-black/5 opacity-60" style={{ color: RUST }}><Trash2 size={14} /></button>
+                      {locked ? (
+                        <span className="text-[10px] opacity-40 pr-1">Chỉ chính chủ</span>
+                      ) : (
+                        <>
+                          <button onClick={() => openEdit(a)} className="p-1.5 rounded-sm hover:bg-black/5 opacity-60"><Pencil size={14} /></button>
+                          <button onClick={() => remove(a)} disabled={a.isOwner} className="p-1.5 rounded-sm hover:bg-black/5 opacity-60 disabled:opacity-20" style={{ color: RUST }}><Trash2 size={14} /></button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -10625,25 +10673,118 @@ function Accounts({ accounts, setAccounts, currentUser, onResetTestData }) {
       )}
 
       {editing !== null && (
-        <Modal title={editing.id ? "Sửa tài khoản" : "Thêm tài khoản"} onClose={() => setEditing(null)}>
+        <Modal title={editing.id ? (editing.isOwner ? "Sửa tài khoản chủ" : "Sửa tài khoản") : "Thêm tài khoản"} onClose={() => setEditing(null)}>
           <Field label="Tên đăng nhập"><input className={inputCls} style={{ borderColor: LINE }} value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} disabled={!!editing.id} /></Field>
           <Field label="Họ tên"><input className={inputCls} style={{ borderColor: LINE }} value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} /></Field>
           <Field label="Mật khẩu" hint={editing.id ? "Để trống nếu không đổi mật khẩu" : ""}>
             <input type="password" className={inputCls} style={{ borderColor: LINE }} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
           </Field>
-          <Field label="Vai trò">
-            <div className="flex gap-2">
-              {ACCOUNT_ROLES.map((r) => (
-                <button key={r.id} type="button" onClick={() => setForm({ ...form, role: r.id })} className="px-3.5 py-1.5 rounded-sm text-sm border"
-                  style={{ borderColor: form.role === r.id ? INK : LINE, background: form.role === r.id ? INK : "transparent", color: form.role === r.id ? "#fff" : INK }}>
-                  {r.label}
-                </button>
-              ))}
-            </div>
-          </Field>
+          {editing.isOwner ? (
+            <Field label="Vai trò">
+              <div className="flex items-center gap-1.5 text-sm px-3 py-2 rounded-sm" style={{ background: `${BRASS}12`, color: BRASS }}>
+                <Crown size={14} /> Chủ sở hữu · toàn quyền (không thể đổi)
+              </div>
+            </Field>
+          ) : (
+            <Field label="Vai trò">
+              <div className="flex gap-2">
+                {ACCOUNT_ROLES.map((r) => (
+                  <button key={r.id} type="button" onClick={() => setForm({ ...form, role: r.id })} className="px-3.5 py-1.5 rounded-sm text-sm border"
+                    style={{ borderColor: form.role === r.id ? INK : LINE, background: form.role === r.id ? INK : "transparent", color: form.role === r.id ? "#fff" : INK }}>
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            </Field>
+          )}
           <button onClick={submit} className="w-full py-2.5 rounded-sm text-white text-sm mt-2" style={{ background: INK }}>{editing.id ? "Lưu thay đổi" : "Thêm tài khoản"}</button>
         </Modal>
       )}
+    </div>
+  );
+}
+
+// Trang tài khoản cá nhân — MỌI vai trò đều vào được, chỉ sửa được chính mình: đổi họ tên + đổi mật khẩu.
+function MyProfile({ currentUser, setAccounts, addLog }) {
+  const [fullName, setFullName] = useState(currentUser.fullName || "");
+  const [curPw, setCurPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [newPw2, setNewPw2] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [nameMsg, setNameMsg] = useState(null);
+  const [pwMsg, setPwMsg] = useState(null);
+
+  const roleLabel = currentUser.isOwner ? "Chủ sở hữu" : (ACCOUNT_ROLES.find((r) => r.id === currentUser.role)?.label || currentUser.role);
+
+  const saveName = () => {
+    const nm = fullName.trim();
+    if (!nm) { setNameMsg({ ok: false, text: "Họ tên không được để trống." }); return; }
+    if (nm === currentUser.fullName) { setNameMsg({ ok: true, text: "Không có thay đổi." }); return; }
+    setAccounts((prev) => prev.map((a) => (a.id === currentUser.id ? { ...a, fullName: nm } : a)));
+    addLog && addLog("Đổi họ tên", `${currentUser.username}: ${currentUser.fullName || "—"} → ${nm}`);
+    setNameMsg({ ok: true, text: "Đã lưu họ tên." });
+  };
+
+  const changePw = async () => {
+    setPwMsg(null);
+    if (!curPw) { setPwMsg({ ok: false, text: "Nhập mật khẩu hiện tại." }); return; }
+    if (!newPw || newPw.length < 6) { setPwMsg({ ok: false, text: "Mật khẩu mới tối thiểu 6 ký tự." }); return; }
+    if (newPw !== newPw2) { setPwMsg({ ok: false, text: "Xác nhận mật khẩu mới không khớp." }); return; }
+    const ok = await verifyPassword(curPw, currentUser.passwordSalt, currentUser.passwordHash);
+    if (!ok) { setPwMsg({ ok: false, text: "Mật khẩu hiện tại không đúng." }); return; }
+    const salt = randomSalt();
+    const hash = await hashPassword(newPw, salt);
+    setAccounts((prev) => prev.map((a) => (a.id === currentUser.id ? { ...a, passwordHash: hash, passwordSalt: salt } : a)));
+    addLog && addLog("Đổi mật khẩu", currentUser.username);
+    setCurPw(""); setNewPw(""); setNewPw2("");
+    setPwMsg({ ok: true, text: "Đã đổi mật khẩu. Lần đăng nhập sau dùng mật khẩu mới." });
+  };
+
+  const card = { border: `1px solid ${LINE}`, background: "#fff" };
+  const msgLine = (m) => m && <p className="text-sm mt-2" style={{ color: m.ok ? FOREST : RUST }}>{m.text}</p>;
+
+  return (
+    <div className="max-w-xl flex flex-col gap-5">
+      <div className="p-5 rounded-sm" style={card}>
+        <div className="flex items-center gap-2 mb-4">
+          <UserCircle size={20} style={{ color: INK }} />
+          <h3 className="text-base" style={{ fontFamily: "'Fraunces', serif", color: INK }}>Thông tin cá nhân</h3>
+        </div>
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <Field label="Tên đăng nhập">
+            <input className={inputCls} style={{ borderColor: LINE, opacity: 0.7 }} value={currentUser.username} disabled />
+          </Field>
+          <Field label="Vai trò">
+            <input className={inputCls} style={{ borderColor: LINE, opacity: 0.7 }} value={roleLabel} disabled />
+          </Field>
+        </div>
+        <Field label="Họ tên">
+          <input className={inputCls} style={{ borderColor: LINE }} value={fullName} onChange={(e) => { setFullName(e.target.value); setNameMsg(null); }} />
+        </Field>
+        <button onClick={saveName} className="mt-1 px-4 py-2 rounded-sm text-white text-sm" style={{ background: INK }}>Lưu họ tên</button>
+        {msgLine(nameMsg)}
+      </div>
+
+      <div className="p-5 rounded-sm" style={card}>
+        <div className="flex items-center gap-2 mb-4">
+          <KeyRound size={18} style={{ color: INK }} />
+          <h3 className="text-base" style={{ fontFamily: "'Fraunces', serif", color: INK }}>Đổi mật khẩu</h3>
+        </div>
+        <Field label="Mật khẩu hiện tại">
+          <input type={showPw ? "text" : "password"} className={inputCls} style={{ borderColor: LINE }} value={curPw} onChange={(e) => setCurPw(e.target.value)} />
+        </Field>
+        <Field label="Mật khẩu mới" hint="tối thiểu 6 ký tự">
+          <input type={showPw ? "text" : "password"} className={inputCls} style={{ borderColor: LINE }} value={newPw} onChange={(e) => setNewPw(e.target.value)} />
+        </Field>
+        <Field label="Nhập lại mật khẩu mới">
+          <input type={showPw ? "text" : "password"} className={inputCls} style={{ borderColor: LINE }} value={newPw2} onChange={(e) => setNewPw2(e.target.value)} />
+        </Field>
+        <label className="flex items-center gap-2 text-xs opacity-70 mb-3 cursor-pointer">
+          <input type="checkbox" checked={showPw} onChange={(e) => setShowPw(e.target.checked)} /> Hiện mật khẩu
+        </label>
+        <button onClick={changePw} className="px-4 py-2 rounded-sm text-white text-sm" style={{ background: INK }}>Đổi mật khẩu</button>
+        {msgLine(pwMsg)}
+      </div>
     </div>
   );
 }
@@ -10790,7 +10931,7 @@ export default function SalesManager() {
           setQuotations((data.quotations || []).map(normalizeQuote));
           setPrintSettings(normalizePrintSettings(data.printSettings));
           const rawAccs = (data.accounts && data.accounts.length > 0) ? data.accounts.map(normalizeAccount) : seedAccounts();
-          const accs = await migrateAccountPasswords(rawAccs);
+          const accs = ensureOwner(await migrateAccountPasswords(rawAccs));
           setAccounts(accs);
           setCurrentUserId((data.session && data.session.userId && accs.some((a) => a.id === data.session.userId)) ? data.session.userId : null);
         } else {
@@ -10974,6 +11115,7 @@ export default function SalesManager() {
   const visibleTabs = [
     ...TABS.filter((t) => roleTabIds.includes(t.id)),
     ...(currentUser.role === "admin" ? [{ id: "activity", label: "Nhật ký", icon: History }, { id: "accounts", label: "Tài khoản", icon: KeyRound }] : []),
+    { id: "profile", label: "Tài khoản cá nhân", icon: UserCircle }, // mọi vai trò
   ];
   const employeeNames = accounts.filter((a) => a.active).map((a) => a.fullName);
 
@@ -11038,7 +11180,8 @@ export default function SalesManager() {
             {tab === "plans" && roleTabIds.includes("plans") && <Plans plans={plans} setPlans={setPlans} orders={orders} purchaseOrders={purchaseOrders} products={products} employeeNames={employeeNames} />}
             {tab === "reports" && roleTabIds.includes("reports") && <Reports orders={orders} products={products} customers={customers} accounts={accounts} purchaseOrders={purchaseOrders} warrantyTickets={warrantyTickets} />}
             {tab === "activity" && currentUser.role === "admin" && <ActivityLog log={activityLog} accounts={accounts} />}
-            {tab === "accounts" && currentUser.role === "admin" && <Accounts accounts={accounts} setAccounts={setAccounts} currentUser={currentUser} onResetTestData={resetTestData} />}
+            {tab === "accounts" && currentUser.role === "admin" && <Accounts accounts={accounts} setAccounts={setAccounts} currentUser={currentUser} addLog={addLog} onResetTestData={currentUser.isOwner ? resetTestData : null} />}
+            {tab === "profile" && <MyProfile currentUser={currentUser} setAccounts={setAccounts} addLog={addLog} />}
           </AppErrorBoundary>
         </div>
       </div>

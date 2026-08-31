@@ -11,8 +11,19 @@ Xem `../README-MIGRATION.md` để hiểu bối cảnh và toàn bộ nghiệp v
 | Framework | React 18 |
 | Styling | Tailwind CSS 3 (build chuẩn qua PostCSS) |
 | Icon / biểu đồ / Excel | `lucide-react`, `recharts`, `xlsx` |
-| Lưu trữ (giai đoạn 1) | `localStorage` qua shim `src/lib/storage.js` |
-| Lưu trữ (giai đoạn 2) | Supabase — **chưa làm** |
+| Lưu trữ | Supabase (1 blob JSON) khi có `.env`, không thì `localStorage` — `src/lib/storage.js` |
+
+## Phân quyền tài khoản
+
+- **Tài khoản chủ** (`isOwner`) — cấp cao nhất, đúng 1 tài khoản. Seed = `admin`; dữ liệu cũ
+  chưa có cờ này thì `ensureOwner()` tự gán cho tài khoản username `admin` (không có thì
+  tài khoản đầu tiên). Chủ luôn ở vai trò admin + đang hoạt động, không đổi được.
+- **QTV** (vai trò `admin` không phải chủ) — quản lý được mọi tài khoản khác **trừ tài
+  khoản chủ**: không thấy, không sửa, không khoá, không xoá. Không thấy "Vùng nguy hiểm"
+  (đặt lại dữ liệu giao dịch) — mục đó chỉ chủ thấy.
+- **staff / ctv** — như cũ.
+- **Trang "Tài khoản cá nhân"** (`MyProfile`) — mọi vai trò đều có, chỉ sửa chính mình:
+  đổi họ tên + đổi mật khẩu (phải nhập đúng mật khẩu hiện tại; mật khẩu mới ≥ 6 ký tự).
 
 ## Chạy
 
