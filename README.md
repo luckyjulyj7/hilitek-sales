@@ -71,6 +71,19 @@ await window.storage.set(key, value, shared)
 `shared` bị bỏ qua ở cả hai. Dữ liệu là 1 blob JSON (ghi sau mỗi thay đổi, debounce 400ms —
 logic ở cuối `SalesManager.jsx`), key `solbh-data-v2` + marker `solbh-data-v2:shared-migrated`.
 
+### Phiên đăng nhập tách theo thiết bị (`withDeviceSession`)
+
+Bản gốc lưu `session.userId` (ai đang đăng nhập) **chung trong blob**. Với Supabase blob
+là 1 hàng dùng chung → ai mở link cũng nhận phiên của người đăng nhập gần nhất, **vào
+thẳng không cần mật khẩu**. Wrapper `withDeviceSession` trong `storage.js` chặn điều này:
+
+- Khi **ghi** blob: rút `session.userId` ra `localStorage["hilitek:session-userId"]` của
+  máy hiện tại, rồi ghi phần còn lại lên backend với `session.userId = null`.
+- Khi **đọc** blob: ghép `session.userId` từ localStorage máy này vào.
+
+Kết quả: mỗi trình duyệt tự nhớ mình đăng nhập ai; mở link ở máy lạ → hiện màn đăng nhập.
+`SalesManager.jsx` vẫn không phải sửa. (Giải pháp đúng bài về sau: Supabase Auth.)
+
 ### Giai đoạn 1 — localStorage (đang mặc định)
 
 Dữ liệu ở `localStorage["hilitek:solbh-data-v2"]`. **Giới hạn:** chỉ 1 trình duyệt / 1 máy;

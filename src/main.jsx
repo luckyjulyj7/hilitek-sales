@@ -6,6 +6,10 @@ import "./index.css";
 
 const rootEl = document.getElementById("root");
 
+// Giữ 1 root duy nhất (tránh cảnh báo "createRoot() ... already been passed" khi
+// HMR chạy lại module trong dev).
+const root = (window.__hilitekRoot ||= ReactDOM.createRoot(rootEl));
+
 function ErrorScreen({ message }) {
   return (
     <div
@@ -52,12 +56,12 @@ function ErrorScreen({ message }) {
 initStorage()
   .then((res) => {
     if (res.error) {
-      ReactDOM.createRoot(rootEl).render(<ErrorScreen message={res.error} />);
+      root.render(<ErrorScreen message={res.error} />);
       return;
     }
     if (res.backend === "supabase") console.info("[storage] Supabase");
-    ReactDOM.createRoot(rootEl).render(<SalesManager />);
+    root.render(<SalesManager />);
   })
   .catch((e) => {
-    ReactDOM.createRoot(rootEl).render(<ErrorScreen message={String(e?.message || e)} />);
+    root.render(<ErrorScreen message={String(e?.message || e)} />);
   });
