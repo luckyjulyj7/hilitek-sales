@@ -18,9 +18,11 @@ Xem `../README-MIGRATION.md` để hiểu bối cảnh và toàn bộ nghiệp v
 - **Tài khoản chủ** (`isOwner`) — cấp cao nhất, đúng 1 tài khoản. Seed = `admin`; dữ liệu cũ
   chưa có cờ này thì `ensureOwner()` tự gán cho tài khoản username `admin` (không có thì
   tài khoản đầu tiên). Chủ luôn ở vai trò admin + đang hoạt động, không đổi được.
-- **QTV** (vai trò `admin` không phải chủ) — quản lý được mọi tài khoản khác **trừ tài
-  khoản chủ**: không thấy, không sửa, không khoá, không xoá. Không thấy "Vùng nguy hiểm"
-  (đặt lại dữ liệu giao dịch) — mục đó chỉ chủ thấy.
+- **QTV** (vai trò `admin` không phải chủ) — **không thấy mục "Tài khoản"** (quản lý tài
+  khoản) và không sửa được tài khoản nào. Muốn đổi mật khẩu/họ tên của mình thì vào
+  "Tài khoản cá nhân". Vẫn thấy "Nhật ký". Tab "Tài khoản" giờ chỉ hiện với `isOwner`
+  (guard cả ở nav lẫn ở chỗ render `<Accounts>`). Phần lọc ẩn-tài-khoản-chủ + `canManage`
+  trong `Accounts` vẫn giữ để phòng khi đổi lại quy tắc.
 - **staff / ctv** — như cũ.
 - **Trang "Tài khoản cá nhân"** (`MyProfile`) — mọi vai trò đều có, chỉ sửa chính mình:
   đổi họ tên + đổi mật khẩu (phải nhập đúng mật khẩu hiện tại; mật khẩu mới ≥ 6 ký tự).

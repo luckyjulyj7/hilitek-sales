@@ -10597,7 +10597,7 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData 
     <div>
       <div className="flex items-center justify-between mb-5">
         <p className="text-sm opacity-60">
-          Chỉ Quản trị viên mới thấy mục này. Tài khoản chủ <Crown size={12} className="inline -mt-0.5" style={{ color: BRASS }} /> là cấp cao nhất — chỉ chính chủ xem và sửa được.
+          Chỉ tài khoản chủ <Crown size={12} className="inline -mt-0.5" style={{ color: BRASS }} /> mới thấy và chỉnh sửa mục này. QTV đổi mật khẩu của mình tại "Tài khoản cá nhân".
         </p>
         <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-sm text-sm text-white shrink-0" style={{ background: INK }}><Plus size={15} /> Thêm tài khoản</button>
       </div>
@@ -11114,7 +11114,8 @@ export default function SalesManager() {
     : ["dashboard", "products", "quotes", "orders", "shipping", "customers"]; // ctv — chỉ xem sản phẩm, không tạo/sửa/xoá
   const visibleTabs = [
     ...TABS.filter((t) => roleTabIds.includes(t.id)),
-    ...(currentUser.role === "admin" ? [{ id: "activity", label: "Nhật ký", icon: History }, { id: "accounts", label: "Tài khoản", icon: KeyRound }] : []),
+    ...(currentUser.role === "admin" ? [{ id: "activity", label: "Nhật ký", icon: History }] : []),
+    ...(currentUser.isOwner ? [{ id: "accounts", label: "Tài khoản", icon: KeyRound }] : []), // chỉ tài khoản chủ
     { id: "profile", label: "Tài khoản cá nhân", icon: UserCircle }, // mọi vai trò
   ];
   const employeeNames = accounts.filter((a) => a.active).map((a) => a.fullName);
@@ -11180,7 +11181,7 @@ export default function SalesManager() {
             {tab === "plans" && roleTabIds.includes("plans") && <Plans plans={plans} setPlans={setPlans} orders={orders} purchaseOrders={purchaseOrders} products={products} employeeNames={employeeNames} />}
             {tab === "reports" && roleTabIds.includes("reports") && <Reports orders={orders} products={products} customers={customers} accounts={accounts} purchaseOrders={purchaseOrders} warrantyTickets={warrantyTickets} />}
             {tab === "activity" && currentUser.role === "admin" && <ActivityLog log={activityLog} accounts={accounts} />}
-            {tab === "accounts" && currentUser.role === "admin" && <Accounts accounts={accounts} setAccounts={setAccounts} currentUser={currentUser} addLog={addLog} onResetTestData={currentUser.isOwner ? resetTestData : null} />}
+            {tab === "accounts" && currentUser.isOwner && <Accounts accounts={accounts} setAccounts={setAccounts} currentUser={currentUser} addLog={addLog} onResetTestData={resetTestData} />}
             {tab === "profile" && <MyProfile currentUser={currentUser} setAccounts={setAccounts} addLog={addLog} />}
           </AppErrorBoundary>
         </div>
