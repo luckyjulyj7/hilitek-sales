@@ -2243,8 +2243,9 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
             {form.web?.published && (
               <div className="mt-3 space-y-3">
                 <div className="grid grid-cols-2 gap-4">
-                  <Field label="Giá web — chữ đỏ to (đ)" hint="Bỏ trống / 0 = dùng giá bán lẻ">
-                    <MoneyInput className={inputCls} style={{ borderColor: LINE }} value={form.web?.priceWeb || ""} onChange={(v) => setForm({ ...form, web: { ...normalizeWeb(form.web), priceWeb: v } })} />
+                  <Field label="Giá bán trên web (đ)" hint="Luôn = Giá bán lẻ ở trên. Sửa giá bán lẻ để đổi giá web.">
+                    <input readOnly disabled className={inputCls} style={{ borderColor: LINE, background: PAPER }}
+                      value={form.retailPrice ? vnd(Number(form.retailPrice)) : "— nhập Giá bán lẻ —"} />
                   </Field>
                   <Field label="Giá so sánh — gạch bỏ (đ)" hint="Bỏ trống = không hiện giá gạch">
                     <MoneyInput className={inputCls} style={{ borderColor: LINE }} value={form.web?.compareAtPrice || ""} onChange={(v) => setForm({ ...form, web: { ...normalizeWeb(form.web), compareAtPrice: v } })} />
@@ -11032,7 +11033,7 @@ function WebProducts({ products, setProducts, categories, addLog, webConfig }) {
               <th className="text-left px-3 py-2.5 font-medium">Đăng web</th>
               <th className="text-left px-3 py-2.5 font-medium">Sản phẩm</th>
               <th className="text-left px-3 py-2.5 font-medium">Nhóm</th>
-              <th className="text-right px-3 py-2.5 font-medium">Giá web (đỏ)</th>
+              <th className="text-right px-3 py-2.5 font-medium">Giá bán (web)</th>
               <th className="text-right px-3 py-2.5 font-medium">Giá so sánh</th>
               <th className="text-right px-3 py-2.5 font-medium">Tồn</th>
               <th className="px-3 py-2.5"></th>
@@ -11062,9 +11063,8 @@ function WebProducts({ products, setProducts, categories, addLog, webConfig }) {
                       </div>
                     </td>
                     <td className="px-3 py-2.5 opacity-70">{p.category || "—"}</td>
-                    <td className="px-3 py-2.5 text-right">
-                      <MoneyInput className="text-right border rounded-sm py-1 px-1.5 w-28 text-sm" style={{ borderColor: LINE }}
-                        value={p.web?.priceWeb || ""} onChange={(v) => setWeb(p, { priceWeb: v })} placeholder={vnd(p.retailPrice)} />
+                    <td className="px-3 py-2.5 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace" }} title="= Giá bán lẻ. Sửa ở tab Sản phẩm & tồn kho.">
+                      {vnd(p.retailPrice)}
                     </td>
                     <td className="px-3 py-2.5 text-right">
                       <MoneyInput className="text-right border rounded-sm py-1 px-1.5 w-28 text-sm" style={{ borderColor: LINE }}
@@ -11165,7 +11165,12 @@ function WebOrders({ orders, onOpenOrder }) {
               const a = o.shippingAddress || {};
               return (
                 <tr key={o.id} style={{ borderTop: `1px solid ${LINE}` }}>
-                  <td className="px-3 py-2.5 font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{o.code}</td>
+                  <td className="px-3 py-2.5 font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
+                    {o.code}
+                    {(o.tags || []).includes("Đặt trước") && (
+                      <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-sm" style={{ background: "#E8730C1A", color: "#E8730C", fontFamily: "inherit" }}>ĐẶT TRƯỚC</span>
+                    )}
+                  </td>
                   <td className="px-3 py-2.5 opacity-70">{(o.createdAt || "").slice(0, 10)}</td>
                   <td className="px-3 py-2.5">{a.recipientName || "—"}<div className="text-[11px] opacity-50">{a.recipientPhone}</div></td>
                   <td className="px-3 py-2.5 opacity-70 max-w-[280px]">{[a.addressDetail, a.ward, a.province].filter(Boolean).join(", ") || "—"}</td>

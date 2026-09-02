@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
-  ChevronRight, ShieldCheck, Hash, Check, ArrowLeft, Minus, Plus, MessageCircle, ShoppingCart, Zap,
+  ChevronRight, ChevronLeft, ShieldCheck, Hash, Check, ArrowLeft, Minus, Plus, MessageCircle,
+  ShoppingCart, Zap, ZoomIn, X, Clock,
 } from "lucide-react";
 import { fetchProduct } from "../lib/api.js";
 import { formatVND, discountPercent, warrantyLabel, placeholderImage } from "../lib/format.js";
@@ -17,6 +18,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
   const { add } = useCart();
   const [product, setProduct] = useState(undefined);
   const [imgIdx, setImgIdx] = useState(0);
+  const [zoom, setZoom] = useState(false);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
 
@@ -24,6 +26,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
     let alive = true;
     setProduct(undefined);
     setImgIdx(0);
+    setZoom(false);
     setQty(1);
     setAdded(false);
     fetchProduct(slug).then((p) => alive && setProduct(p));
@@ -60,8 +63,10 @@ export default function ProductDetail({ slug, navigate, catalog }) {
   const related = (catalog.products || []).filter((x) => x.category === p.category && x.slug !== p.slug).slice(0, 5);
   const descText = (p.description && p.description.trim()) || p.shortDesc || "";
 
-  const doAdd = () => { add(p, qty); setAdded(true); };
-  const doBuyNow = () => { add(p, qty); navigate("/dat-hang"); };
+  const doAdd = () => { add(p, qty, { preorder: out }); setAdded(true); };
+  const doBuyNow = () => { add(p, qty, { preorder: out }); navigate("/dat-hang"); };
+  const prevImg = () => setImgIdx((i) => (i - 1 + imgs.length) % imgs.length);
+  const nextImg = () => setImgIdx((i) => (i + 1) % imgs.length);
 
   return (
     <div className="mx-auto max-w-[1500px] px-3 sm:px-4 py-6 font-sans">
@@ -79,11 +84,33 @@ export default function ProductDetail({ slug, navigate, catalog }) {
       <div className="grid lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)_300px] gap-6 lg:gap-8 items-start">
         {/* Ảnh */}
         <div>
-          <div className="relative aspect-square bg-white border border-line rounded-lg overflow-hidden">
+          <div className="group relative aspect-square bg-white border border-line rounded-lg overflow-hidden">
             {off > 0 && (
               <span className="absolute top-3 left-3 z-10 bg-yellow text-ink text-[13px] font-bold px-2 py-0.5 rounded font-mono">−{off}%</span>
             )}
-            <img src={imgs[imgIdx]} alt={p.name} className="w-full h-full object-cover" />
+            <button
+              type="button"
+              onClick={() => setZoom(true)}
+              className="block w-full h-full cursor-zoom-in"
+              aria-label="Phóng to ảnh"
+            >
+              <img src={imgs[imgIdx]} alt={p.name} className="w-full h-full object-cover" />
+            </button>
+            <span className="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-1 bg-ink/70 text-white text-[11px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition">
+              <ZoomIn size={13} /> Phóng to
+            </span>
+            {imgs.length > 1 && (
+              <>
+                <button type="button" onClick={prevImg} aria-label="Ảnh trước"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white border border-line rounded-full p-1.5 shadow-card">
+                  <ChevronLeft size={18} className="text-ink" />
+                </button>
+                <button type="button" onClick={nextImg} aria-label="Ảnh sau"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white border border-line rounded-full p-1.5 shadow-card">
+                  <ChevronRight size={18} className="text-ink" />
+                </button>
+              </>
+            )}
           </div>
           {imgs.length > 1 && (
             <div className="mt-3 flex gap-2 flex-wrap">
@@ -129,7 +156,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
             <div className="my-3 border-t border-line" />
 
             <div className="text-[13px] text-ink">
-              {out ? <span className="text-navy font-semibold">Tạm hết hàng</span>
+              {out ? <span className="text-[#E8730C] font-semibold">Tạm hết hàng — có thể đặt trước, Hilitek báo khi có hàng</span>
                 : low ? <span>Còn <b>{p.stock}</b> sản phẩm — sắp hết</span>
                 : <span>Còn <b>{p.stock}</b> sản phẩm</span>}
             </div>
@@ -143,24 +170,22 @@ export default function ProductDetail({ slug, navigate, catalog }) {
               </div>
             </div>
 
-            {/* Thứ tự: Đặt hàng -> Thêm vào giỏ -> Chat Zalo */}
+            {/* Thứ tự: Đặt hàng -> Thêm vào giỏ -> Chat Zalo. Hết hàng vẫn cho ĐẶT TRƯỚC. */}
             <button
               onClick={doBuyNow}
-              disabled={out}
-              className={"mt-4 w-full rounded-md font-display font-bold py-3 text-[15px] tracking-wide flex items-center justify-center gap-2 transition " + (out ? "bg-line text-mute cursor-not-allowed" : "bg-navy text-white hover:bg-navy-600")}
+              className={"mt-4 w-full rounded-md font-display font-bold py-3 text-[15px] tracking-wide flex items-center justify-center gap-2 transition text-white " + (out ? "bg-[#E8730C] hover:brightness-110" : "bg-navy hover:bg-navy-600")}
             >
-              <Zap size={17} /> {out ? "HẾT HÀNG" : "ĐẶT HÀNG"}
+              {out ? <><Clock size={17} /> ĐẶT TRƯỚC</> : <><Zap size={17} /> ĐẶT HÀNG</>}
             </button>
 
             <button
               onClick={doAdd}
-              disabled={out}
-              className={"mt-2 w-full rounded-md font-display font-bold py-3 text-[15px] tracking-wide flex items-center justify-center gap-2 transition " + (out ? "bg-line text-mute cursor-not-allowed" : "bg-yellow text-ink hover:bg-yellow-300")}
+              className="mt-2 w-full rounded-md font-display font-bold py-3 text-[15px] tracking-wide flex items-center justify-center gap-2 transition bg-yellow text-ink hover:bg-yellow-300"
             >
-              <ShoppingCart size={17} /> THÊM VÀO GIỎ
+              <ShoppingCart size={17} /> {out ? "ĐẶT TRƯỚC VÀO GIỎ" : "THÊM VÀO GIỎ"}
             </button>
 
-            {added && !out && (
+            {added && (
               <button onClick={() => navigate("/gio-hang")} className="mt-2 w-full rounded-md border border-navy text-navy font-semibold py-2 text-[13.5px] inline-flex items-center justify-center gap-1.5 hover:bg-navy-050">
                 <Check size={14} /> Đã thêm — Xem giỏ hàng
               </button>
@@ -236,6 +261,76 @@ export default function ProductDetail({ slug, navigate, catalog }) {
             ))}
           </div>
         </section>
+      )}
+
+      {zoom && (
+        <Lightbox
+          images={imgs}
+          index={imgIdx}
+          alt={p.name}
+          onIndex={setImgIdx}
+          onClose={() => setZoom(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+/** Ảnh phóng to toàn màn hình + nút ‹ › chuyển ảnh (Esc / bấm nền để đóng). */
+function Lightbox({ images, index, alt, onIndex, onClose }) {
+  const many = images.length > 1;
+  const prev = (e) => { e?.stopPropagation(); onIndex((index - 1 + images.length) % images.length); };
+  const next = (e) => { e?.stopPropagation(); onIndex((index + 1) % images.length); };
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+      else if (e.key === "ArrowLeft" && many) prev();
+      else if (e.key === "ArrowRight" && many) next();
+    };
+    window.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [index, many]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 sm:p-10"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      <button onClick={onClose} aria-label="Đóng" className="absolute top-4 right-4 text-white/80 hover:text-white p-2">
+        <X size={28} />
+      </button>
+
+      {many && (
+        <button onClick={prev} aria-label="Ảnh trước" className="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-2">
+          <ChevronLeft size={28} />
+        </button>
+      )}
+
+      <img
+        src={images[index]}
+        alt={alt}
+        onClick={(e) => e.stopPropagation()}
+        className="max-h-full max-w-full object-contain select-none"
+      />
+
+      {many && (
+        <button onClick={next} aria-label="Ảnh sau" className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-2">
+          <ChevronRight size={28} />
+        </button>
+      )}
+
+      {many && (
+        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 text-white/80 text-[13px] font-mono">
+          {index + 1} / {images.length}
+        </div>
       )}
     </div>
   );

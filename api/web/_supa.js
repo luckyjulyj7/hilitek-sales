@@ -89,10 +89,10 @@ export function stockOf(p) {
 /** Chỉ trả field an toàn cho web. KHÔNG có: giá vốn, giá sỉ, NCC, movements, series. */
 export function publicProduct(p, { detail = false } = {}) {
   const web = p.web || {};
-  const retail = Number(p.retailPrice) || 0;
-  const price = Number(web.priceWeb) > 0 ? Number(web.priceWeb) : retail;
-  // Giá gạch bỏ: ưu tiên "giá so sánh" chủ shop nhập; nếu không thì giá bán lẻ (khi > giá bán web).
-  const compareAt = Number(web.compareAtPrice) > 0 ? Number(web.compareAtPrice) : retail;
+  // Giá bán web = giá bán lẻ ở "Sản phẩm & tồn kho" (đồng bộ 1 giá, không có ô "Giá web" riêng).
+  const price = Number(p.retailPrice) || 0;
+  // Giá gạch bỏ: "Giá so sánh" chủ shop tự nhập; bỏ trống = không hiện.
+  const compareAt = Number(web.compareAtPrice) > 0 ? Number(web.compareAtPrice) : 0;
   const listPrice = Math.max(compareAt, price); // storefront tự bỏ qua khi listPrice <= price
   const specs = (Array.isArray(web.specs) ? web.specs : [])
     .map((r) => (Array.isArray(r) ? [String(r[0] || "").trim(), String(r[1] || "").trim()] : null))

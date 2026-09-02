@@ -1,4 +1,4 @@
-import { handler, json, readState, writeState } from "./_supa.js";
+import { handler, json, readState, writeState, stockOf } from "./_supa.js";
 
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 
@@ -22,16 +22,24 @@ export default handler(async (req, res) => {
   state.orders = Array.isArray(state.orders) ? state.orders : [];
   const products = Array.isArray(state.products) ? state.products : [];
 
+  const preorderNames = [];
   const mapped = items.map((it) => {
     const p = products.find((x) => x.id === it.productId || x.sku === it.productId || x.sku === it.sku);
+    const qty = Math.max(1, Math.floor(Number(it.qty) || 1));
+    // Đặt trước = web báo preorder, HOẶC tồn kho thực tế không đủ.
+    const avail = p ? stockOf(p) : 0;
+    const isPre = !!it.preorder || (p && !p.isService && avail < qty);
+    if (isPre) preorderNames.push((p ? p.name : it.name || it.sku) + (avail > 0 ? ` (còn ${avail}/${qty})` : ""));
     return {
       productId: p ? p.id : it.productId || it.sku,
-      qty: Math.max(1, Math.floor(Number(it.qty) || 1)),
+      qty,
       price: Number(it.price) || (p ? Number(p.retailPrice) || 0 : 0),
       series: [],
       fulfilled: false,
+      preorder: !!isPre,
     };
   });
+  const hasPreorder = preorderNames.length > 0;
 
   const source = body.source || "Đặt hàng website";
   const code = body.code || "WEB" + Date.now().toString(36).toUpperCase().slice(-8);
@@ -49,9 +57,10 @@ export default handler(async (req, res) => {
     customerId: "",
     branch: "",
     seller: "",
-    tags: [source],
+    tags: hasPreorder ? [source, "Đặt trước"] : [source],
     notes: [
       "🌐 " + source,
+      hasPreorder ? "⚠ ĐƠN ĐẶT TRƯỚC (chưa đủ tồn): " + preorderNames.join("; ") : "",
       `Khách: ${cust.name} · ${phone}` + (cust.email ? ` · ${cust.email}` : ""),
       sh.fullAddress ? `Giao tới: ${sh.fullAddress}` : "",
       sh.note ? `Ghi chú KH: ${sh.note}` : "",

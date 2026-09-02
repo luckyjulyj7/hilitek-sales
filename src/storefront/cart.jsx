@@ -31,12 +31,17 @@ export function CartProvider({ children }) {
   useEffect(() => write(items), [items]);
 
   const api = useMemo(() => {
-    const add = (product, qty = 1) => {
+    const add = (product, qty = 1, opts = {}) => {
+      const preorder = !!opts.preorder;
       setItems((cur) => {
         const i = cur.findIndex((x) => x.id === product.id);
         if (i >= 0) {
           const next = [...cur];
-          next[i] = { ...next[i], qty: Math.min(99, next[i].qty + qty) };
+          next[i] = {
+            ...next[i],
+            qty: Math.min(99, next[i].qty + qty),
+            preorder: next[i].preorder || preorder,
+          };
           return next;
         }
         return [
@@ -51,6 +56,7 @@ export function CartProvider({ children }) {
             brand: product.brand,
             specChips: (product.specChips || []).slice(0, 3),
             qty: Math.max(1, qty),
+            preorder,
           },
         ];
       });

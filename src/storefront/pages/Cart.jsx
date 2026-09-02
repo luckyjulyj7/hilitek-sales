@@ -36,6 +36,11 @@ export default function Cart({ navigate }) {
                 >
                   {it.name}
                 </a>
+                {it.preorder && (
+                  <span className="mt-1 inline-block bg-[#E8730C]/10 text-[#E8730C] text-[11px] font-semibold px-2 py-0.5 rounded">
+                    Đặt trước — chờ hàng về
+                  </span>
+                )}
                 {it.specChips?.length > 0 && (
                   <div className="mt-1.5 inline-block border-l-[3px] border-yellow bg-navy-050 rounded-r px-2 py-1 text-[11.5px] font-mono text-ink/70">
                     {it.specChips.join(" · ")}

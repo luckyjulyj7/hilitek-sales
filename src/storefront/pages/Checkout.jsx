@@ -89,8 +89,9 @@ export default function Checkout({ navigate }) {
         note: form.note.trim(),
       },
       payment: form.pay, // 'cod' | 'bank'
-      items: items.map((it) => ({ productId: it.id, sku: it.sku, name: it.name, price: it.price, qty: it.qty })),
+      items: items.map((it) => ({ productId: it.id, sku: it.sku, name: it.name, price: it.price, qty: it.qty, preorder: !!it.preorder })),
       subtotal,
+      hasPreorder: items.some((it) => it.preorder),
     };
 
     setSending(true);
@@ -174,7 +175,10 @@ export default function Checkout({ navigate }) {
             <ul className="mt-3 space-y-2 text-[13px]">
               {items.map((it) => (
                 <li key={it.id} className="flex justify-between gap-3">
-                  <span className="text-ink/80">{it.name} <span className="text-mute">× {it.qty}</span></span>
+                  <span className="text-ink/80">
+                    {it.name} <span className="text-mute">× {it.qty}</span>
+                    {it.preorder && <span className="ml-1 text-[11px] font-semibold text-[#E8730C]">(đặt trước)</span>}
+                  </span>
                   <span className="font-price text-ink shrink-0">{formatVND(it.qty * it.price)}</span>
                 </li>
               ))}
@@ -185,6 +189,11 @@ export default function Checkout({ navigate }) {
               <span className="font-price text-xl font-bold text-sale">{formatVND(subtotal)}</span>
             </div>
             <p className="mt-2 text-[12px] text-mute">Đã bao gồm VAT · Phí vận chuyển báo khi xác nhận đơn.</p>
+            {items.some((it) => it.preorder) && (
+              <p className="mt-2 text-[12px] text-[#E8730C] leading-relaxed">
+                Đơn có sản phẩm <b>đặt trước</b> (tạm hết hàng). Hilitek sẽ liên hệ báo thời gian có hàng trước khi giao.
+              </p>
+            )}
           </div>
 
           {form.pay === "bank" && (
