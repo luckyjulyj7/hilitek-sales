@@ -68,13 +68,23 @@ Danh sách đơn khách đặt trên website (`channel:online` / tag "Đặt hà
 Bấm **"Mở"** để xử lý trong tab **Bán hàng** (xác nhận, phí ship, giao hàng).
 
 ### c) Cấu hình web
-Sửa thông tin hiển thị trên web (không cần đụng file code): liên hệ, hotline, Zalo,
-Messenger, email, địa chỉ, giờ làm việc, Facebook, tài khoản ngân hàng, Flash Sale
-(bật/tắt + ngày kết thúc), URL ảnh poster/banner trang chủ.
-Bỏ trống 1 ô = web dùng giá trị mặc định trong `src/storefront/config.js`.
-Web đọc mục này qua `/api/web/config` mỗi lần tải trang.
+Sửa nội dung hiển thị trên web **không cần đụng file code**:
+- **Liên hệ**: SĐT, hotline, Zalo, Messenger, email, địa chỉ, giờ làm việc, Facebook.
+- **Tài khoản ngân hàng** (dùng cho trang thanh toán + bước đặt hàng).
+- **Flash Sale**: bật/tắt + ngày kết thúc.
+- **Poster / banner trang chủ**: URL ảnh + link (ảnh để trong `public/posters/` hoặc host ngoài).
+- **Trang chính sách**: sửa trực tiếp *Hướng dẫn thanh toán*, *Chính sách giao hàng*,
+  *Chính sách bảo hành* — tiêu đề, mô tả, và nội dung theo định dạng:
+  `## Tiêu đề mục` · `- gạch đầu dòng` · dòng thường = đoạn văn · dòng trống ngăn các mục.
+- **Danh mục sản phẩm web (menu)**: thêm/sửa/xoá nhóm, đổi icon, và danh mục con của
+  mỗi nhóm (mỗi dòng 1 tên). ⚠️ Tên danh mục con phải **khớp "Nhóm hàng"** của sản phẩm.
+  Bấm **"Lưu danh mục"** để áp dụng. **"Khôi phục mặc định"** để quay về cây gốc.
 
-Lưu tự động → vài giây sau web tự cập nhật.
+**Đưa sản phẩm vào danh mục nào** = đặt **"Nhóm hàng"** của sản phẩm (ở *Sản phẩm & Tồn kho*
+hoặc form sửa sản phẩm) trùng với tên danh mục con trong menu.
+
+Bỏ trống 1 ô = web dùng giá trị mặc định trong `src/storefront/config.js`.
+Web đọc mục này qua `/api/web/config` mỗi lần tải trang → lưu xong vài giây web tự cập nhật.
 
 - **Tên nhóm hàng** của sản phẩm nên trùng danh mục con trong `MENU`
   (`src/storefront/config.js`) để nó nằm đúng nhóm trên trang chủ. Không trùng thì

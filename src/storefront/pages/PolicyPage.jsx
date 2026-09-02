@@ -18,7 +18,7 @@ export default function PolicyPage({ pageKey }) {
       <h1 className="font-display text-3xl font-bold text-ink">{page.title}</h1>
       {page.intro && <p className="mt-3 text-ink/75 text-[14.5px] leading-relaxed">{page.intro}</p>}
 
-      {page.bank && <BankCard bank={page.bank} />}
+      {page.bank && <BankCard bank={{ ...(SITE.bank || {}), ...page.bank }} />}
 
       <div className="mt-8 space-y-7">
         {(page.sections || []).map((s, i) => (

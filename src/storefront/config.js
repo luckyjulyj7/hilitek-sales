@@ -234,8 +234,8 @@ export const PAGES = {
     title: "Hướng dẫn thanh toán",
     intro:
       "Hilitek hỗ trợ nhiều hình thức thanh toán linh hoạt: tại cửa hàng, chuyển khoản ngân hàng, thanh toán khi nhận hàng (COD) và trả góp qua thẻ tín dụng.",
+    // Số tài khoản lấy từ SITE.bank (PolicyPage tự ghép) — ở đây chỉ ghi chú thêm.
     bank: {
-      ...SITE.bank,
       note: "Nội dung chuyển khoản ghi: [Họ tên] - [Số điện thoại] - [Mã đơn hàng]. Sau khi chuyển khoản, vui lòng nhắn Zalo/gọi hotline để Hilitek xác nhận và giao hàng.",
     },
     sections: [

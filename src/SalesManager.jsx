@@ -11,6 +11,8 @@ import {
 } from "recharts";
 import * as XLSX from "xlsx";
 import { ghn as ghnApi } from "./lib/ghn.js";
+// Nội dung mặc định cho web (dùng làm điểm khởi đầu khi chưa chỉnh trong "Cấu hình web").
+import { PAGES as WEB_DEFAULT_PAGES, MENU as WEB_DEFAULT_MENU } from "./storefront/config.js";
 
 // Xuất 1 hoặc nhiều bảng dữ liệu ra 1 file Excel (.xlsx), mỗi bảng là 1 sheet riêng.
 function exportExcel(filename, sheets) {
@@ -10967,7 +10969,7 @@ function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig
       </div>
       {sub === "products" && <WebProducts products={products} setProducts={setProducts} categories={categories} addLog={addLog} />}
       {sub === "orders" && <WebOrders orders={orders} onOpenOrder={onOpenOrder} />}
-      {sub === "config" && <WebConfigForm webConfig={webConfig} setWebConfig={setWebConfig} addLog={addLog} />}
+      {sub === "config" && <WebConfigForm webConfig={webConfig} setWebConfig={setWebConfig} addLog={addLog} products={products} categories={categories} />}
     </div>
   );
 }
@@ -11152,7 +11154,134 @@ function WebOrders({ orders, onOpenOrder }) {
   );
 }
 
-function WebConfigForm({ webConfig, setWebConfig, addLog }) {
+const WEB_PAGE_KEYS = [
+  ["huong-dan-thanh-toan", "Hướng dẫn thanh toán"],
+  ["chinh-sach-giao-hang", "Chính sách giao hàng"],
+  ["chinh-sach-bao-hanh", "Chính sách bảo hành"],
+];
+function webPageToText(page) {
+  if (!page || !Array.isArray(page.sections)) return "";
+  return page.sections.map((s) => {
+    const bodyArr = Array.isArray(s.body) ? s.body : s.body ? [s.body] : [];
+    const lines = [`## ${s.heading || ""}`];
+    bodyArr.forEach((p) => lines.push(p));
+    (s.bullets || []).forEach((b) => lines.push(`- ${b}`));
+    return lines.join("\n");
+  }).join("\n\n");
+}
+function webTextToPageSections(text) {
+  return String(text).split(/\n(?=## )/).map((blk) => {
+    const ls = blk.split("\n");
+    let heading = "";
+    if (ls[0] && ls[0].startsWith("## ")) heading = ls.shift().slice(3).trim();
+    const body = [], bullets = [];
+    ls.forEach((l) => {
+      const t = l.trim();
+      if (!t) return;
+      if (t.startsWith("- ")) bullets.push(t.slice(2).trim());
+      else body.push(t);
+    });
+    return { heading, body, bullets };
+  }).filter((s) => s.heading || s.body.length || s.bullets.length);
+}
+function menuToDraft(menu) {
+  return (menu || []).map((g) => ({
+    group: g.group || "",
+    icon: g.icon || "Package",
+    catsText: (g.columns || []).flatMap((c) => c.items || []).join("\n"),
+  }));
+}
+function draftToMenu(draft) {
+  return draft
+    .filter((g) => g.group.trim())
+    .map((g) => ({
+      group: g.group.trim(),
+      slug: webSlugify(g.group),
+      icon: g.icon || "Package",
+      columns: [{ heading: "Danh mục", items: g.catsText.split("\n").map((s) => s.trim()).filter(Boolean) }],
+    }));
+}
+const WEB_ICON_NAMES = ["Cpu", "Gamepad2", "HardDrive", "Monitor", "AppWindow", "Package", "Keyboard", "Mouse", "Headphones", "MemoryStick"];
+
+function WebPageEditor({ pageKey, label, webConfig, setWebConfig }) {
+  const cur = (webConfig.PAGES && webConfig.PAGES[pageKey]) || WEB_DEFAULT_PAGES[pageKey] || { title: label, intro: "", sections: [] };
+  const [open, setOpen] = useState(false);
+  const patch = (obj) => setWebConfig((x) => ({
+    ...x,
+    PAGES: { ...(x.PAGES || {}), [pageKey]: { ...((x.PAGES || {})[pageKey] || cur), ...obj } },
+  }));
+  return (
+    <div className="border rounded-sm" style={{ borderColor: LINE }}>
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium" style={{ color: INK }}>
+        {label}
+        {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+      </button>
+      {open && (
+        <div className="px-3 pb-3 space-y-3" style={{ borderTop: `1px solid ${LINE}` }}>
+          <Field label="Tiêu đề trang">
+            <input className={inputCls} style={{ borderColor: LINE }} value={cur.title || ""} onChange={(e) => patch({ title: e.target.value })} />
+          </Field>
+          <Field label="Mô tả ngắn (đầu trang)">
+            <textarea rows={2} className={inputCls} style={{ borderColor: LINE }} value={cur.intro || ""} onChange={(e) => patch({ intro: e.target.value })} />
+          </Field>
+          <Field label="Nội dung" hint="Dòng bắt đầu '## ' = tiêu đề mục · dòng '- ' = gạch đầu dòng · dòng thường = đoạn văn · để trống 1 dòng giữa các mục">
+            <textarea rows={14} className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace", fontSize: 13 }}
+              value={webPageToText({ sections: cur.sections })}
+              onChange={(e) => patch({ sections: webTextToPageSections(e.target.value) })} />
+          </Field>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WebMenuEditor({ webConfig, setWebConfig, products }) {
+  const usedCats = useMemo(() => [...new Set((products || []).map((p) => p.category).filter(Boolean))].sort(), [products]);
+  const source = webConfig.MENU && webConfig.MENU.length ? webConfig.MENU : WEB_DEFAULT_MENU;
+  const [draft, setDraft] = useState(() => menuToDraft(source));
+  const [dirty, setDirty] = useState(false);
+  const upd = (fn) => { setDraft(fn); setDirty(true); };
+  const setG = (i, k, v) => upd((d) => d.map((g, idx) => (idx === i ? { ...g, [k]: v } : g)));
+  const addG = () => upd((d) => [...d, { group: "Nhóm mới", icon: "Package", catsText: "" }]);
+  const delG = (i) => upd((d) => d.filter((_, idx) => idx !== i));
+  const save = () => { setWebConfig((x) => ({ ...x, MENU: draftToMenu(draft) })); setDirty(false); };
+  const reset = () => { setWebConfig((x) => { const y = { ...x }; delete y.MENU; return y; }); setDraft(menuToDraft(WEB_DEFAULT_MENU)); setDirty(false); };
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs opacity-60">
+        Tên danh mục phải <b>khớp "Nhóm hàng"</b> của sản phẩm thì sản phẩm mới nằm đúng nhóm trên web.
+        {usedCats.length > 0 && <> Nhóm hàng đang dùng: <span style={{ color: BLUE }}>{usedCats.join(", ")}</span></>}
+      </p>
+      {draft.map((g, i) => (
+        <div key={i} className="border rounded-sm p-3" style={{ borderColor: LINE }}>
+          <div className="flex gap-3 items-end mb-2">
+            <Field label="Tên nhóm"><input className={inputCls} style={{ borderColor: LINE }} value={g.group} onChange={(e) => setG(i, "group", e.target.value)} /></Field>
+            <div style={{ width: 150 }}>
+              <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">Icon</p>
+              <select className={inputCls} style={{ borderColor: LINE }} value={g.icon} onChange={(e) => setG(i, "icon", e.target.value)}>
+                {WEB_ICON_NAMES.map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+            <button onClick={() => delG(i)} className="text-xs pb-2" style={{ color: RUST }}>Xoá nhóm</button>
+          </div>
+          <Field label="Danh mục con (mỗi dòng 1 tên)">
+            <textarea rows={4} className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace", fontSize: 13 }}
+              value={g.catsText} onChange={(e) => setG(i, "catsText", e.target.value)} placeholder={"Mainboard\nCPU\nRAM"} />
+          </Field>
+        </div>
+      ))}
+      <div className="flex items-center gap-3">
+        <button onClick={addG} className="text-sm px-3 py-1.5 rounded-sm border" style={{ borderColor: LINE, color: INK }}>+ Thêm nhóm</button>
+        <button onClick={save} disabled={!dirty} className="text-sm px-4 py-1.5 rounded-sm text-white" style={{ background: dirty ? INK : LINE }}>Lưu danh mục</button>
+        <button onClick={reset} className="text-xs underline" style={{ color: RUST }}>Khôi phục mặc định</button>
+        {dirty && <span className="text-xs" style={{ color: RUST }}>Có thay đổi chưa lưu</span>}
+      </div>
+    </div>
+  );
+}
+
+function WebConfigForm({ webConfig, setWebConfig, addLog, products }) {
   const c = webConfig || {};
   const SITE = c.SITE || {};
   const bank = SITE.bank || {};
@@ -11246,6 +11375,20 @@ function WebConfigForm({ webConfig, setWebConfig, addLog }) {
             </div>
           ))}
         </div>
+      </section>
+
+      <section>
+        <h3 className="font-medium mb-3" style={{ color: INK }}>Trang chính sách</h3>
+        <div className="space-y-2">
+          {WEB_PAGE_KEYS.map(([k, l]) => (
+            <WebPageEditor key={k} pageKey={k} label={l} webConfig={webConfig} setWebConfig={setWebConfig} />
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <h3 className="font-medium mb-3" style={{ color: INK }}>Danh mục sản phẩm web (menu)</h3>
+        <WebMenuEditor webConfig={webConfig} setWebConfig={setWebConfig} products={products} />
       </section>
 
       <div className="flex items-center gap-3">
