@@ -5,8 +5,11 @@ import { href } from "../router.js";
 import { groupIcon } from "./groupIcons.js";
 import GroupPanel from "./GroupPanel.jsx";
 
-/** Cột danh mục bên trái trang chủ — kiểu maianhpc.vn, flyout 3 tầng (phụ → chi tiết). */
-export default function CategoryRail({ navigate, className = "" }) {
+/**
+ * Cột danh mục — kiểu maianhpc.vn, flyout 3 tầng (phụ → chi tiết).
+ * Dùng ở: cột trái trang chủ, VÀ menu sổ xuống của nút "DANH MỤC SẢN PHẨM" (hideHeading).
+ */
+export default function CategoryRail({ navigate, className = "", hideHeading = false }) {
   const [open, setOpen] = useState(null);
   const timer = useRef(null);
 
@@ -16,9 +19,11 @@ export default function CategoryRail({ navigate, className = "" }) {
 
   return (
     <nav className={"relative bg-white border border-line rounded-lg " + className}>
-      <div className="flex items-center gap-2 px-4 h-11 bg-navy text-white rounded-t-lg font-semibold text-[13.5px] uppercase tracking-wide">
-        <LayoutGrid size={16} /> Danh mục sản phẩm
-      </div>
+      {!hideHeading && (
+        <div className="flex items-center gap-2 px-4 h-11 bg-navy text-white rounded-t-lg font-semibold text-[13.5px] uppercase tracking-wide">
+          <LayoutGrid size={16} /> Danh mục sản phẩm
+        </div>
+      )}
       <ul className="py-1">
         {MENU.map((g) => {
           const Icon = groupIcon(g.icon);

@@ -52,7 +52,7 @@ export default handler(async (req, res) => {
     date: now.slice(0, 10),
     channel: "online",
     status: "pending",
-    approvalStatus: "pending", // cần nhân viên xác nhận
+    approvalStatus: "approved", // đơn khách tự đặt trên web — không cần nhân viên duyệt
     createdByRole: "web",
     customerId: "",
     branch: "",

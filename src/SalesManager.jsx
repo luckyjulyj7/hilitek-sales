@@ -8086,7 +8086,15 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
       if (!searchQuery.trim()) return true;
       const q = searchQuery.trim().toLowerCase();
       const cust = customers.find((c) => c.id === o.customerId);
-      return o.code.toLowerCase().includes(q) || (cust?.name || "khách lẻ").toLowerCase().includes(q);
+      const sa = o.shippingAddress || {};
+      const qDigits = q.replace(/\D/g, "");
+      const phones = [sa.recipientPhone, cust?.phone].filter(Boolean).map((p) => String(p).replace(/\D/g, ""));
+      return (
+        o.code.toLowerCase().includes(q) ||
+        (cust?.name || "khách lẻ").toLowerCase().includes(q) ||
+        (sa.recipientName || "").toLowerCase().includes(q) ||
+        (qDigits.length >= 3 && phones.some((p) => p.includes(qDigits)))
+      );
     })
     .filter((o) => !filterSeller || o.seller === filterSeller)
     .filter((o) => !filterInvoice || o.invoiceStatus === filterInvoice)
@@ -8209,7 +8217,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
       <div className="flex items-center gap-2 mb-5 flex-wrap">
         <div className="relative flex-1 min-w-[220px] max-w-sm">
           <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 opacity-40" />
-          <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Tìm theo mã đơn hoặc tên khách hàng…"
+          <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Tìm theo mã đơn, tên hoặc số điện thoại khách…"
             className="w-full pl-8 pr-2 py-2 text-sm rounded-sm border outline-none" style={{ borderColor: LINE, background: "#fff" }} />
         </div>
         <button onClick={() => setShowFilters((s) => !s)} className="flex items-center gap-1.5 text-sm px-3.5 py-2 rounded-sm border" style={{ borderColor: activeFilterCount ? INK : LINE, color: INK, background: showFilters ? PAPER : "#fff" }}>
@@ -11139,15 +11147,32 @@ function WebProducts({ products, setProducts, categories, addLog, webConfig }) {
 }
 
 function WebOrders({ orders, onOpenOrder }) {
-  const list = useMemo(
-    () => orders.filter((o) => o.channel === "online" || (o.tags || []).includes("Đặt hàng website"))
-      .slice().sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || "")),
-    [orders]
-  );
+  const [q, setQ] = useState("");
+  const list = useMemo(() => {
+    const base = orders.filter((o) => o.channel === "online" || (o.tags || []).includes("Đặt hàng website"))
+      .slice().sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+    const kw = q.trim().toLowerCase();
+    if (!kw) return base;
+    const kwDigits = kw.replace(/\D/g, "");
+    return base.filter((o) => {
+      const a = o.shippingAddress || {};
+      const phone = String(a.recipientPhone || "").replace(/\D/g, "");
+      return (
+        (o.code || "").toLowerCase().includes(kw) ||
+        (a.recipientName || "").toLowerCase().includes(kw) ||
+        (kwDigits.length >= 3 && phone.includes(kwDigits))
+      );
+    });
+  }, [orders, q]);
   const statusLabel = (s) => (STATUSES.find((x) => x.id === s)?.label || s);
   return (
     <div>
-      <p className="text-sm mb-3 opacity-70">Đơn khách đặt trên website — <b>{list.length}</b> đơn. Xử lý (xác nhận, phí ship, giao hàng) ở tab <b>Bán hàng</b>.</p>
+      <div className="flex items-center gap-3 mb-3 flex-wrap">
+        <p className="text-sm opacity-70">Đơn khách đặt trên website — <b>{list.length}</b> đơn. Xử lý (xác nhận, phí ship, giao hàng) ở tab <b>Bán hàng</b>.</p>
+        <div className="flex-1" />
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm mã đơn, tên hoặc SĐT khách…"
+          className="border rounded-sm py-1.5 px-2.5 text-sm w-64" style={{ borderColor: LINE }} />
+      </div>
       <div className="border rounded-sm overflow-hidden" style={{ borderColor: LINE }}>
         <table className="w-full text-sm">
           <thead><tr style={{ background: PAPER }}>
@@ -11467,7 +11492,12 @@ function WebConfigForm({ webConfig, setWebConfig, addLog, products }) {
   const bank = SITE.bank || {};
   const FS = c.FLASH_SALE || {};
   const HP = c.HOME_POSTERS || {};
+  const PS = c.PRODUCT_SIDEBAR || {};
   const setSite = (k, v) => setWebConfig((x) => ({ ...x, SITE: { ...(x.SITE || {}), [k]: v } }));
+  const setSideBanner = (k, v) => setWebConfig((x) => ({
+    ...x,
+    PRODUCT_SIDEBAR: { ...(x.PRODUCT_SIDEBAR || {}), banner: { ...((x.PRODUCT_SIDEBAR || {}).banner || {}), [k]: v } },
+  }));
   const setBank = (k, v) => setWebConfig((x) => ({ ...x, SITE: { ...(x.SITE || {}), bank: { ...((x.SITE || {}).bank || {}), [k]: v } } }));
   const setFlash = (k, v) => setWebConfig((x) => ({ ...x, FLASH_SALE: { ...(x.FLASH_SALE || {}), [k]: v } }));
   const setPoster = (key, k, v) => setWebConfig((x) => {
@@ -11554,6 +11584,14 @@ function WebConfigForm({ webConfig, setWebConfig, addLog, products }) {
               <Field label={`Banner ${i + 1} — link`}>{ip((HP.strip || [])[i]?.href, (v) => setStripPoster(i, "href", v), "#/danh-muc")}</Field>
             </div>
           ))}
+          <div className="grid sm:grid-cols-2 gap-3 pt-3" style={{ borderTop: `1px solid ${LINE}` }}>
+            <Field label="Banner dọc trang sản phẩm — ảnh" hint="Cột phải trang chi tiết sản phẩm · khoảng 300 × 520 px">
+              {ip(PS.banner?.image, (v) => setSideBanner("image", v), "/posters/banner-doc.jpg")}
+            </Field>
+            <Field label="Banner dọc trang sản phẩm — link">
+              {ip(PS.banner?.href, (v) => setSideBanner("href", v), "#/danh-muc")}
+            </Field>
+          </div>
         </div>
       </section>
 

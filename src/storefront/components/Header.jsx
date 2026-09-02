@@ -3,10 +3,11 @@ import {
   MapPin, Search, Phone, ShoppingCart, ChevronDown, Menu, X, Truck, PackageSearch,
   ShieldCheck, CreditCard, Wallet, Wrench, LayoutGrid,
 } from "lucide-react";
-import { SITE, MENU, FEATURES, SUPPORT_LINKS, childQuery } from "../config.js";
+import { SITE, MENU, FEATURES, SUPPORT_LINKS } from "../config.js";
 import { href } from "../router.js";
 import { useCart } from "../cart.jsx";
 import Logo from "./Logo.jsx";
+import CategoryRail from "./CategoryRail.jsx";
 import { groupIcon } from "./groupIcons.js";
 
 const ICONS = { CreditCard, Wallet, Truck, ShieldCheck, Wrench };
@@ -146,7 +147,7 @@ export default function Header({ route, navigate }) {
           <div className="mx-auto max-w-[1500px] px-4 flex items-stretch">
             <div onMouseEnter={openCat} onMouseLeave={closeCat} className="relative">
               <button
-                onClick={() => go("/danh-muc")}
+                onClick={() => setCatOpen((v) => !v)}
                 className={
                   "flex items-center gap-2 h-11 px-4 font-semibold text-[13.5px] uppercase tracking-wide transition-colors " +
                   (catOpen ? "bg-yellow text-ink" : "bg-white/10 text-white hover:bg-yellow hover:text-ink")
@@ -155,6 +156,13 @@ export default function Header({ route, navigate }) {
                 <LayoutGrid size={17} /> Danh mục sản phẩm
                 <ChevronDown size={15} className={catOpen ? "rotate-180 transition" : "transition"} />
               </button>
+
+              {/* Menu sổ xuống — danh sách dọc, rê vào từng nhóm sẽ xổ ngang ra danh mục con */}
+              {catOpen && (
+                <div className="absolute left-0 top-full z-50 w-[264px] pt-1">
+                  <CategoryRail navigate={go} hideHeading className="shadow-menu" />
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-1 pl-2">
@@ -173,53 +181,6 @@ export default function Header({ route, navigate }) {
             </div>
           </div>
 
-          {catOpen && (
-            <div
-              onMouseEnter={openCat}
-              onMouseLeave={closeCat}
-              className="absolute left-0 right-0 top-full bg-white text-ink shadow-menu border-t-2 border-yellow z-50"
-            >
-              <div className="mx-auto max-w-[1500px] px-4 py-6 grid grid-cols-3 xl:grid-cols-5 gap-x-6 gap-y-7">
-                {MENU.map((g) => {
-                  const GIcon = groupIcon(g.icon);
-                  return (
-                  <div key={g.slug}>
-                    <button
-                      onClick={() => go(href("/danh-muc", { group: g.group }).slice(1))}
-                      className="flex items-center gap-1.5 font-display font-bold text-navy text-[14px] hover:underline text-left mb-2"
-                    >
-                      <GIcon size={16} /> {g.group}
-                    </button>
-                    <div className="space-y-2.5">
-                      {(g.subs || []).map((s) => {
-                        const sh = href("/danh-muc", { group: g.group, ...(s.cat ? { cat: s.cat } : {}) });
-                        return (
-                          <div key={s.slug || s.name}>
-                            <button onClick={() => go(sh.slice(1))} className="text-[13px] font-semibold text-ink hover:text-navy text-left block">
-                              {s.name}
-                            </button>
-                            {(s.children || []).length > 0 && (
-                              <div className="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5">
-                                {s.children.map((c, i) => {
-                                  const h = href("/danh-muc", childQuery(c, s, g.group));
-                                  return (
-                                    <button key={i} onClick={() => go(h.slice(1))} className="text-[12px] text-ink/55 hover:text-navy">
-                                      {c.label}{i < s.children.length - 1 ? " ·" : ""}
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </nav>
       </div>
 
