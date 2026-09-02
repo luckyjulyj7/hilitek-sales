@@ -3,7 +3,7 @@ import {
   MapPin, Search, Phone, ShoppingCart, ChevronDown, Menu, X, Truck, PackageSearch,
   ShieldCheck, CreditCard, Wallet, Wrench, LayoutGrid,
 } from "lucide-react";
-import { SITE, MENU, FEATURES, SUPPORT_LINKS } from "../config.js";
+import { SITE, MENU, FEATURES, SUPPORT_LINKS, childQuery } from "../config.js";
 import { href } from "../router.js";
 import { useCart } from "../cart.jsx";
 import Logo from "./Logo.jsx";
@@ -179,29 +179,41 @@ export default function Header({ route, navigate }) {
               onMouseLeave={closeCat}
               className="absolute left-0 right-0 top-full bg-white text-ink shadow-menu border-t-2 border-yellow z-50"
             >
-              <div className="mx-auto max-w-[1500px] px-4 py-6 grid grid-cols-3 xl:grid-cols-5 gap-6">
+              <div className="mx-auto max-w-[1500px] px-4 py-6 grid grid-cols-3 xl:grid-cols-5 gap-x-6 gap-y-7">
                 {MENU.map((g) => {
                   const GIcon = groupIcon(g.icon);
                   return (
                   <div key={g.slug}>
                     <button
                       onClick={() => go(href("/danh-muc", { group: g.group }).slice(1))}
-                      className="flex items-center gap-1.5 font-display font-bold text-navy text-[14px] hover:underline text-left"
+                      className="flex items-center gap-1.5 font-display font-bold text-navy text-[14px] hover:underline text-left mb-2"
                     >
                       <GIcon size={16} /> {g.group}
                     </button>
-                    <ul className="mt-2 space-y-1.5">
-                      {g.columns.flatMap((c) => c.items).map((c) => (
-                        <li key={c}>
-                          <button
-                            onClick={() => go(href("/danh-muc", { cat: c }).slice(1))}
-                            className="text-[13.5px] text-ink/75 hover:text-navy text-left"
-                          >
-                            {c}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="space-y-2.5">
+                      {(g.subs || []).map((s) => {
+                        const sh = href("/danh-muc", { group: g.group, ...(s.cat ? { cat: s.cat } : {}) });
+                        return (
+                          <div key={s.slug || s.name}>
+                            <button onClick={() => go(sh.slice(1))} className="text-[13px] font-semibold text-ink hover:text-navy text-left block">
+                              {s.name}
+                            </button>
+                            {(s.children || []).length > 0 && (
+                              <div className="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5">
+                                {s.children.map((c, i) => {
+                                  const h = href("/danh-muc", childQuery(c, s, g.group));
+                                  return (
+                                    <button key={i} onClick={() => go(h.slice(1))} className="text-[12px] text-ink/55 hover:text-navy">
+                                      {c.label}{i < s.children.length - 1 ? " ·" : ""}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                   );
                 })}
@@ -240,15 +252,14 @@ export default function Header({ route, navigate }) {
                       >
                         Tất cả {g.group}
                       </button>
-                      {g.columns.flatMap((c) => c.items).map((c) => (
-                        <button
-                          key={c}
-                          onClick={() => go(href("/danh-muc", { cat: c }).slice(1))}
-                          className="block px-6 py-1.5 text-[14px] text-ink/75"
-                        >
-                          {c}
-                        </button>
-                      ))}
+                      {(g.subs || []).map((s) => {
+                        const sh = href("/danh-muc", { group: g.group, ...(s.cat ? { cat: s.cat } : {}) });
+                        return (
+                          <button key={s.slug || s.name} onClick={() => go(sh.slice(1))} className="block px-6 py-1.5 text-[14px] text-ink/75">
+                            {s.name}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </li>

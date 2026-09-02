@@ -49,7 +49,14 @@ export default function ProductDetail({ slug, navigate, catalog }) {
   const imgs = p.images?.length ? p.images.map((im) => im.src || im) : [placeholderImage(p.brand, p.category)];
   const low = p.stock > 0 && p.stock <= LOW_STOCK_THRESHOLD;
   const out = !p.stock;
-  const groupName = productGroups(p)[0] || MENU.find((g) => g.columns.some((c) => c.items.includes(p.category)))?.group || p.group;
+  const groupName =
+    productGroups(p)[0] ||
+    MENU.find((g) =>
+      (g.subs || []).some(
+        (s) => s.cat === p.category || (s.children || []).some((c) => c.type === "cat" && c.value === p.category)
+      )
+    )?.group ||
+    p.group;
   const related = (catalog.products || []).filter((x) => x.category === p.category && x.slug !== p.slug).slice(0, 5);
   const descText = (p.description && p.description.trim()) || p.shortDesc || "";
 

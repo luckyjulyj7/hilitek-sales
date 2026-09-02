@@ -121,11 +121,11 @@ export function publicProduct(p, { detail = false } = {}) {
     hasSerial: !!p.hasSeries,
     shortDesc: (desc.split(/\n{2,}/)[0] || "").slice(0, 180),
     specChips: specs.slice(0, 4).map(([k, v]) => v || k).filter(Boolean),
+    specs, // cần cho bộ lọc "thông số" ở trang danh mục (nhẹ — vài cặp nhãn|giá trị)
     images: [p.image, ...(Array.isArray(p.images) ? p.images : [])].filter(Boolean),
   };
   if (detail) {
     out.description = desc;
-    out.specs = specs;
   }
   return out;
 }

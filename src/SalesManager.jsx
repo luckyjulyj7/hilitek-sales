@@ -12,7 +12,7 @@ import {
 import * as XLSX from "xlsx";
 import { ghn as ghnApi } from "./lib/ghn.js";
 // Nội dung mặc định cho web (dùng làm điểm khởi đầu khi chưa chỉnh trong "Cấu hình web").
-import { PAGES as WEB_DEFAULT_PAGES, MENU as WEB_DEFAULT_MENU } from "./storefront/config.js";
+import { PAGES as WEB_DEFAULT_PAGES, MENU as WEB_DEFAULT_MENU, allWebCategories as webAllCategories } from "./storefront/config.js";
 
 // Xuất 1 hoặc nhiều bảng dữ liệu ra 1 file Excel (.xlsx), mỗi bảng là 1 sheet riêng.
 function exportExcel(filename, sheets) {
@@ -10979,9 +10979,7 @@ function WebProducts({ products, setProducts, categories, addLog, webConfig }) {
   // Danh mục web khả dụng = danh mục con trong menu ở "Cấu hình web" (hoặc menu mặc định).
   const webCats = useMemo(() => {
     const src = webConfig && Array.isArray(webConfig.MENU) && webConfig.MENU.length ? webConfig.MENU : WEB_DEFAULT_MENU;
-    const out = [];
-    src.forEach((g) => (g.columns || []).forEach((col) => (col.items || []).forEach((c) => { if (!out.includes(c)) out.push(c); })));
-    return out;
+    return webAllCategories(src);
   }, [webConfig]);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("all"); // all | on | off
@@ -11214,21 +11212,64 @@ function webTextToPageSections(text) {
     return { heading, body, bullets };
   }).filter((s) => s.heading || s.body.length || s.bullets.length);
 }
+const WEB_CHILD_TYPES = [
+  { id: "cat", label: "Danh mục / tag" },
+  { id: "brand", label: "Nhãn hiệu" },
+  { id: "price", label: "Khoảng giá" },
+  { id: "spec", label: "Thông số web" },
+];
+function emptyChild() {
+  return { label: "", type: "cat", value: "", min: "", max: "", specKey: "", specValue: "" };
+}
 function menuToDraft(menu) {
   return (menu || []).map((g) => ({
     group: g.group || "",
     icon: g.icon || "Package",
-    catsText: (g.columns || []).flatMap((c) => c.items || []).join("\n"),
+    subs: (g.subs || []).map((s) => ({
+      name: s.name || "",
+      cat: s.cat || "",
+      children: (s.children || []).map((c) => ({
+        label: c.label || "",
+        type: c.type || "cat",
+        value: c.value || "",
+        min: c.min != null ? String(c.min) : "",
+        max: c.max != null ? String(c.max) : "",
+        specKey: c.specKey || "",
+        specValue: c.specValue || "",
+      })),
+    })),
   }));
 }
 function draftToMenu(draft) {
-  return draft
-    .filter((g) => g.group.trim())
+  return (draft || [])
+    .filter((g) => (g.group || "").trim())
     .map((g) => ({
       group: g.group.trim(),
       slug: webSlugify(g.group),
       icon: g.icon || "Package",
-      columns: [{ heading: "Danh mục", items: g.catsText.split("\n").map((s) => s.trim()).filter(Boolean) }],
+      subs: (g.subs || [])
+        .filter((s) => (s.name || "").trim())
+        .map((s) => ({
+          name: s.name.trim(),
+          slug: webSlugify(s.name),
+          cat: (s.cat || "").trim(),
+          children: (s.children || [])
+            .filter((c) => (c.label || "").trim())
+            .map((c) => {
+              const out = { label: c.label.trim(), type: c.type || "cat" };
+              if (out.type === "brand") out.value = (c.value || "").trim();
+              else if (out.type === "price") {
+                if (String(c.min).trim() !== "") out.min = Number(String(c.min).replace(/\D/g, "")) || 0;
+                if (String(c.max).trim() !== "") out.max = Number(String(c.max).replace(/\D/g, "")) || 0;
+              } else if (out.type === "spec") {
+                out.specKey = (c.specKey || "").trim();
+                out.specValue = (c.specValue || "").trim();
+              } else {
+                out.value = (c.value || c.label).trim();
+              }
+              return out;
+            }),
+        })),
     }));
 }
 const WEB_ICON_NAMES = ["Cpu", "Gamepad2", "HardDrive", "Monitor", "AppWindow", "Package", "Keyboard", "Mouse", "Headphones", "MemoryStick"];
@@ -11266,43 +11307,147 @@ function WebPageEditor({ pageKey, label, webConfig, setWebConfig }) {
 }
 
 function WebMenuEditor({ webConfig, setWebConfig, products }) {
-  const usedCats = useMemo(() => [...new Set((products || []).map((p) => p.category).filter(Boolean))].sort(), [products]);
+  const usedCats = useMemo(
+    () => [...new Set((products || []).flatMap((p) => [p.category, ...((p.web && p.web.categories) || [])]).filter(Boolean))].sort(),
+    [products]
+  );
+  const brands = useMemo(() => [...new Set((products || []).map((p) => p.brand).filter(Boolean))].sort(), [products]);
+  const specMap = useMemo(() => {
+    const m = {};
+    (products || []).forEach((p) => ((p.web && p.web.specs) || []).forEach((row) => {
+      if (!Array.isArray(row)) return;
+      const k = String(row[0] || "").trim();
+      const v = String(row[1] || "").trim();
+      if (!k) return;
+      (m[k] = m[k] || new Set()).add(v);
+    }));
+    return m;
+  }, [products]);
+  const specKeys = Object.keys(specMap).sort();
+
   const source = webConfig.MENU && webConfig.MENU.length ? webConfig.MENU : WEB_DEFAULT_MENU;
   const [draft, setDraft] = useState(() => menuToDraft(source));
   const [dirty, setDirty] = useState(false);
   const upd = (fn) => { setDraft(fn); setDirty(true); };
-  const setG = (i, k, v) => upd((d) => d.map((g, idx) => (idx === i ? { ...g, [k]: v } : g)));
-  const addG = () => upd((d) => [...d, { group: "Nhóm mới", icon: "Package", catsText: "" }]);
-  const delG = (i) => upd((d) => d.filter((_, idx) => idx !== i));
+
+  const setG = (gi, k, v) => upd((d) => d.map((g, i) => (i === gi ? { ...g, [k]: v } : g)));
+  const addG = () => upd((d) => [...d, { group: "Nhóm mới", icon: "Package", subs: [] }]);
+  const delG = (gi) => upd((d) => d.filter((_, i) => i !== gi));
+  const mapSubs = (gi, fn) => upd((d) => d.map((g, i) => (i === gi ? { ...g, subs: fn(g.subs || []) } : g)));
+  const setSub = (gi, si, k, v) => mapSubs(gi, (subs) => subs.map((s, i) => (i === si ? { ...s, [k]: v } : s)));
+  const addSub = (gi) => mapSubs(gi, (subs) => [...subs, { name: "Danh mục phụ", cat: "", children: [] }]);
+  const delSub = (gi, si) => mapSubs(gi, (subs) => subs.filter((_, i) => i !== si));
+  const mapCh = (gi, si, fn) => mapSubs(gi, (subs) => subs.map((s, i) => (i === si ? { ...s, children: fn(s.children || []) } : s)));
+  const setCh = (gi, si, ci, k, v) => mapCh(gi, si, (ch) => ch.map((c, i) => (i === ci ? { ...c, [k]: v } : c)));
+  const addCh = (gi, si) => mapCh(gi, si, (ch) => [...ch, emptyChild()]);
+  const delCh = (gi, si, ci) => mapCh(gi, si, (ch) => ch.filter((_, i) => i !== ci));
+
   const save = () => { setWebConfig((x) => ({ ...x, MENU: draftToMenu(draft) })); setDirty(false); };
   const reset = () => { setWebConfig((x) => { const y = { ...x }; delete y.MENU; return y; }); setDraft(menuToDraft(WEB_DEFAULT_MENU)); setDirty(false); };
 
+  const inp = (val, on, ph, list) => (
+    <input value={val ?? ""} onChange={(e) => on(e.target.value)} placeholder={ph} list={list}
+      className={inputCls} style={{ borderColor: LINE }} />
+  );
+  const numInp = (val, on, ph) => (
+    <input value={val ?? ""} inputMode="numeric" placeholder={ph}
+      onChange={(e) => on(e.target.value.replace(/\D/g, ""))}
+      className={inputCls} style={{ borderColor: LINE }} />
+  );
+
   return (
-    <div className="space-y-3">
-      <p className="text-xs opacity-60">
-        Tên danh mục phải <b>khớp "Nhóm hàng"</b> của sản phẩm thì sản phẩm mới nằm đúng nhóm trên web.
-        {usedCats.length > 0 && <> Nhóm hàng đang dùng: <span style={{ color: BLUE }}>{usedCats.join(", ")}</span></>}
+    <div className="space-y-4">
+      <p className="text-xs opacity-70 leading-relaxed">
+        Menu 3 tầng: <b>Nhóm chính</b> → <b>Danh mục phụ</b> → <b>Mục chi tiết</b>.
+        Bấm danh mục phụ → lọc sản phẩm theo ô <i>“Danh mục trên web”</i> (khớp tên ở ô <b>Danh mục</b> bên dưới).
+        Mỗi mục chi tiết có thể lọc theo: danh mục/tag, <b>nhãn hiệu</b> sản phẩm, <b>khoảng giá</b>, hoặc <b>thông số web</b> (cặp nhãn|giá trị ở ô “Thông số web” của sản phẩm).
       </p>
-      {draft.map((g, i) => (
-        <div key={i} className="border rounded-sm p-3" style={{ borderColor: LINE }}>
-          <div className="flex gap-3 items-end mb-2">
-            <Field label="Tên nhóm"><input className={inputCls} style={{ borderColor: LINE }} value={g.group} onChange={(e) => setG(i, "group", e.target.value)} /></Field>
+      {(brands.length > 0 || usedCats.length > 0) && (
+        <div className="text-[11px] opacity-60 space-y-0.5">
+          {usedCats.length > 0 && <div>Danh mục đang dùng: <span style={{ color: BLUE }}>{usedCats.join(" · ")}</span></div>}
+          {brands.length > 0 && <div>Nhãn hiệu đang có: <span style={{ color: BLUE }}>{brands.join(" · ")}</span></div>}
+          {specKeys.length > 0 && <div>Nhãn thông số web: <span style={{ color: BLUE }}>{specKeys.join(" · ")}</span></div>}
+        </div>
+      )}
+
+      <datalist id="wm-cats">{usedCats.map((c) => <option key={c} value={c} />)}</datalist>
+      <datalist id="wm-brands">{brands.map((b) => <option key={b} value={b} />)}</datalist>
+      <datalist id="wm-speckeys">{specKeys.map((k) => <option key={k} value={k} />)}</datalist>
+
+      {draft.map((g, gi) => (
+        <div key={gi} className="border rounded-sm p-3" style={{ borderColor: LINE }}>
+          <div className="flex gap-3 items-end mb-3">
+            <Field label="Tên nhóm chính"><input className={inputCls} style={{ borderColor: LINE }} value={g.group} onChange={(e) => setG(gi, "group", e.target.value)} /></Field>
             <div style={{ width: 150 }}>
               <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">Icon</p>
-              <select className={inputCls} style={{ borderColor: LINE }} value={g.icon} onChange={(e) => setG(i, "icon", e.target.value)}>
+              <select className={inputCls} style={{ borderColor: LINE }} value={g.icon} onChange={(e) => setG(gi, "icon", e.target.value)}>
                 {WEB_ICON_NAMES.map((n) => <option key={n} value={n}>{n}</option>)}
               </select>
             </div>
-            <button onClick={() => delG(i)} className="text-xs pb-2" style={{ color: RUST }}>Xoá nhóm</button>
+            <button onClick={() => delG(gi)} className="text-xs pb-2" style={{ color: RUST }}>Xoá nhóm</button>
           </div>
-          <Field label="Danh mục con (mỗi dòng 1 tên)">
-            <textarea rows={4} className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace", fontSize: 13 }}
-              value={g.catsText} onChange={(e) => setG(i, "catsText", e.target.value)} placeholder={"Mainboard\nCPU\nRAM"} />
-          </Field>
+
+          <div className="space-y-3 pl-3" style={{ borderLeft: `2px solid ${LINE}` }}>
+            {(g.subs || []).map((s, si) => (
+              <div key={si} className="rounded-sm p-2.5" style={{ background: PAPER }}>
+                <div className="flex gap-3 items-end">
+                  <Field label="Danh mục phụ"><input className={inputCls} style={{ borderColor: LINE }} value={s.name} onChange={(e) => setSub(gi, si, "name", e.target.value)} /></Field>
+                  <Field label="Danh mục (lọc SP)">{inp(s.cat, (v) => setSub(gi, si, "cat", v), "vd: Card màn hình", "wm-cats")}</Field>
+                  <button onClick={() => delSub(gi, si)} className="text-xs pb-2" style={{ color: RUST }}>Xoá</button>
+                </div>
+
+                {(s.children || []).length > 0 && (
+                  <div className="mt-2 space-y-1.5">
+                    {(s.children || []).map((c, ci) => (
+                      <div key={ci} className="flex gap-2 items-center flex-wrap p-1.5 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+                        <input value={c.label} onChange={(e) => setCh(gi, si, ci, "label", e.target.value)} placeholder="Nhãn hiển thị"
+                          className="border rounded-sm px-2 py-1 text-sm" style={{ borderColor: LINE, width: 150 }} />
+                        <select value={c.type} onChange={(e) => setCh(gi, si, ci, "type", e.target.value)}
+                          className="border rounded-sm px-2 py-1 text-sm" style={{ borderColor: LINE }}>
+                          {WEB_CHILD_TYPES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+                        </select>
+                        {c.type === "cat" && (
+                          <input value={c.value} onChange={(e) => setCh(gi, si, ci, "value", e.target.value)} placeholder="Tên danh mục / tag (mặc định = nhãn)" list="wm-cats"
+                            className="border rounded-sm px-2 py-1 text-sm flex-1" style={{ borderColor: LINE, minWidth: 160 }} />
+                        )}
+                        {c.type === "brand" && (
+                          <input value={c.value} onChange={(e) => setCh(gi, si, ci, "value", e.target.value)} placeholder="Tên nhãn hiệu" list="wm-brands"
+                            className="border rounded-sm px-2 py-1 text-sm flex-1" style={{ borderColor: LINE, minWidth: 160 }} />
+                        )}
+                        {c.type === "price" && (
+                          <div className="flex gap-1.5 items-center flex-1" style={{ minWidth: 220 }}>
+                            {numInp(c.min, (v) => setCh(gi, si, ci, "min", v), "từ (đ)")}
+                            <span className="opacity-40">–</span>
+                            {numInp(c.max, (v) => setCh(gi, si, ci, "max", v), "đến (đ)")}
+                          </div>
+                        )}
+                        {c.type === "spec" && (
+                          <div className="flex gap-1.5 items-center flex-1" style={{ minWidth: 260 }}>
+                            <input value={c.specKey} onChange={(e) => setCh(gi, si, ci, "specKey", e.target.value)} placeholder="Nhãn thông số" list="wm-speckeys"
+                              className="border rounded-sm px-2 py-1 text-sm" style={{ borderColor: LINE, width: 130 }} />
+                            <span className="opacity-40">=</span>
+                            <input value={c.specValue} onChange={(e) => setCh(gi, si, ci, "specValue", e.target.value)} placeholder="Giá trị" list={`wm-specval-${gi}-${si}-${ci}`}
+                              className="border rounded-sm px-2 py-1 text-sm flex-1" style={{ borderColor: LINE, minWidth: 90 }} />
+                            <datalist id={`wm-specval-${gi}-${si}-${ci}`}>
+                              {[...(specMap[c.specKey] || [])].map((v) => <option key={v} value={v} />)}
+                            </datalist>
+                          </div>
+                        )}
+                        <button onClick={() => delCh(gi, si, ci)} className="text-xs px-1" style={{ color: RUST }}>×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <button onClick={() => addCh(gi, si)} className="mt-2 text-xs px-2 py-1 rounded-sm border" style={{ borderColor: LINE, color: INK }}>+ Mục chi tiết</button>
+              </div>
+            ))}
+            <button onClick={() => addSub(gi)} className="text-xs px-2.5 py-1 rounded-sm border" style={{ borderColor: LINE, color: INK }}>+ Danh mục phụ</button>
+          </div>
         </div>
       ))}
+
       <div className="flex items-center gap-3">
-        <button onClick={addG} className="text-sm px-3 py-1.5 rounded-sm border" style={{ borderColor: LINE, color: INK }}>+ Thêm nhóm</button>
+        <button onClick={addG} className="text-sm px-3 py-1.5 rounded-sm border" style={{ borderColor: LINE, color: INK }}>+ Thêm nhóm chính</button>
         <button onClick={save} disabled={!dirty} className="text-sm px-4 py-1.5 rounded-sm text-white" style={{ background: dirty ? INK : LINE }}>Lưu danh mục</button>
         <button onClick={reset} className="text-xs underline" style={{ color: RUST }}>Khôi phục mặc định</button>
         {dirty && <span className="text-xs" style={{ color: RUST }}>Có thay đổi chưa lưu</span>}

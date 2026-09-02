@@ -1,4 +1,4 @@
-import { SITE, FLASH_SALE, HOME_POSTERS, PRODUCT_SIDEBAR, CHECKOUT, PAGES, MENU, CATEGORY_TO_GROUP } from "../config.js";
+import { SITE, FLASH_SALE, HOME_POSTERS, PRODUCT_SIDEBAR, CHECKOUT, PAGES, MENU, rebuildCatToGroup } from "../config.js";
 
 /**
  * Ghi đè cấu hình mặc định (config.js) bằng giá trị chủ shop chỉnh từ app quản lý
@@ -20,11 +20,6 @@ function deepMerge(target, src) {
   }
 }
 
-function rebuildCategoryToGroup() {
-  Object.keys(CATEGORY_TO_GROUP).forEach((k) => delete CATEGORY_TO_GROUP[k]);
-  MENU.forEach((g) => (g.columns || []).forEach((col) => (col.items || []).forEach((c) => { CATEGORY_TO_GROUP[c] = g.group; })));
-}
-
 export function applyWebConfig(cfg) {
   if (!cfg || typeof cfg !== "object") return;
 
@@ -37,6 +32,6 @@ export function applyWebConfig(cfg) {
   if (Array.isArray(cfg.MENU) && cfg.MENU.length) {
     MENU.length = 0;
     cfg.MENU.forEach((g) => MENU.push(g));
-    rebuildCategoryToGroup();
+    rebuildCatToGroup();
   }
 }
