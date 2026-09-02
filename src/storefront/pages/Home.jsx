@@ -1,6 +1,6 @@
 import React from "react";
 import { ArrowRight } from "lucide-react";
-import { MENU, HOME_POSTERS, FLASH_SALE, CATEGORY_TO_GROUP } from "../config.js";
+import { MENU, HOME_POSTERS, FLASH_SALE, productInGroup } from "../config.js";
 import { href } from "../router.js";
 import ProductCard from "../components/ProductCard.jsx";
 import TrustBar from "../components/TrustBar.jsx";
@@ -63,9 +63,7 @@ export default function Home({ catalog, navigate }) {
 
       {/* ===== Khối sản phẩm theo nhóm ===== */}
       {MENU.map((g) => {
-        const rows = products
-          .filter((p) => (p.group || CATEGORY_TO_GROUP[p.category]) === g.group)
-          .slice(0, 5);
+        const rows = products.filter((p) => productInGroup(p, g.group)).slice(0, 5);
         if (rows.length === 0) return null;
         const GIcon = groupIcon(g.icon);
         return (

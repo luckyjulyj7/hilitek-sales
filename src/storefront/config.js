@@ -155,6 +155,18 @@ export const CATEGORY_TO_GROUP = MENU.reduce((acc, g) => {
   return acc;
 }, {});
 
+/* ── Helper: 1 sản phẩm có thể thuộc NHIỀU danh mục web (p.categories) ── */
+export function productCategories(p) {
+  if (Array.isArray(p.categories) && p.categories.length) return p.categories;
+  return p.category ? [p.category] : [];
+}
+export function productGroups(p) {
+  if (p.group) return [p.group];
+  return [...new Set(productCategories(p).map((c) => CATEGORY_TO_GROUP[c]).filter(Boolean))];
+}
+export const productInGroup = (p, group) => productGroups(p).includes(group);
+export const productInCategory = (p, cat) => productCategories(p).includes(cat);
+
 /**
  * Khu vực poster / banner trang chủ (bố cục kiểu maianhpc.vn).
  * Giờ chỉ là KHUNG TRỐNG — khi có ảnh, thêm `image` (đặt file trong `public/`,

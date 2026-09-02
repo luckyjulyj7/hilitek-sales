@@ -9,8 +9,8 @@ export function discountPercent(price, listPrice) {
 }
 
 export function warrantyLabel(months) {
-  const m = Number(months) || 0;
-  if (m >= 1200) return "Bảo hành vĩnh viễn";
+  const m = Number(months);
+  if (m < 0 || m >= 1200) return "Bảo hành vĩnh viễn"; // -1 = vĩnh viễn (theo app quản lý)
   if (m > 0) return `Bảo hành ${m} tháng`;
   return "Không bảo hành";
 }

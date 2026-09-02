@@ -50,6 +50,9 @@ Bảng tất cả sản phẩm với:
 - **Giá web (đỏ)** — giá bán hiển thị. Bỏ trống = dùng giá bán lẻ.
 - **Giá so sánh** — giá gạch bỏ. Bỏ trống = không hiện gạch.
 - Nút **"Nội dung"** mở ô nhập:
+  - **Danh mục trên web** — bấm chọn 1 hoặc nhiều danh mục (lấy từ menu ở *Cấu hình web*).
+    Sản phẩm sẽ hiện khi khách bấm vào các danh mục đó. **Không chọn** → dùng "Nhóm hàng"
+    (phải trùng tên 1 danh mục con trong menu thì mới hiện).
   - **Mô tả sản phẩm (web)** — xuống dòng đôi = đoạn mới; dòng `- ` = gạch đầu dòng.
   - **Thông số kỹ thuật (web)** — mỗi dòng `Nhãn | Giá trị`:
     ```

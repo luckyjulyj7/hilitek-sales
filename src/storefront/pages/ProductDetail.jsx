@@ -4,7 +4,7 @@ import {
 } from "lucide-react";
 import { fetchProduct } from "../lib/api.js";
 import { formatVND, discountPercent, warrantyLabel, placeholderImage } from "../lib/format.js";
-import { LOW_STOCK_THRESHOLD, SITE, MENU, PRODUCT_SIDEBAR } from "../config.js";
+import { LOW_STOCK_THRESHOLD, SITE, MENU, PRODUCT_SIDEBAR, productGroups } from "../config.js";
 import { href } from "../router.js";
 import { useCart } from "../cart.jsx";
 import TrustBar from "../components/TrustBar.jsx";
@@ -49,7 +49,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
   const imgs = p.images?.length ? p.images.map((im) => im.src || im) : [placeholderImage(p.brand, p.category)];
   const low = p.stock > 0 && p.stock <= LOW_STOCK_THRESHOLD;
   const out = !p.stock;
-  const groupName = MENU.find((g) => g.columns.some((c) => c.items.includes(p.category)))?.group || p.group;
+  const groupName = productGroups(p)[0] || MENU.find((g) => g.columns.some((c) => c.items.includes(p.category)))?.group || p.group;
   const related = (catalog.products || []).filter((x) => x.category === p.category && x.slug !== p.slug).slice(0, 5);
   const descText = (p.description && p.description.trim()) || p.shortDesc || "";
 

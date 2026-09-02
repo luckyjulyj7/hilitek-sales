@@ -3,10 +3,8 @@ import { SlidersHorizontal, X, ChevronRight } from "lucide-react";
 import ProductCard from "../components/ProductCard.jsx";
 import { discountPercent } from "../lib/format.js";
 import { href } from "../router.js";
-import { MENU, CATEGORY_TO_GROUP } from "../config.js";
+import { MENU, productInGroup, productInCategory } from "../config.js";
 import { groupIcon } from "../components/groupIcons.js";
-
-const groupOf = (p) => p.group || CATEGORY_TO_GROUP[p.category] || "";
 
 const SORTS = [
   { id: "popular", label: "Phổ biến" },
@@ -35,8 +33,8 @@ export default function Catalog({ catalog, route, navigate }) {
 
   const list = useMemo(() => {
     let r = products.filter((p) => {
-      if (group && groupOf(p) !== group) return false;
-      if (cat && p.category !== cat) return false;
+      if (group && !productInGroup(p, group)) return false;
+      if (cat && !productInCategory(p, cat)) return false;
       if (brand && p.brand !== brand) return false;
       if (inStock && !p.stock) return false;
       if (q) {
@@ -57,7 +55,7 @@ export default function Catalog({ catalog, route, navigate }) {
 
   const brandsHere = useMemo(() => {
     const set = new Set(
-      products.filter((p) => (!group || groupOf(p) === group) && (!cat || p.category === cat)).map((p) => p.brand)
+      products.filter((p) => (!group || productInGroup(p, group)) && (!cat || productInCategory(p, cat))).map((p) => p.brand)
     );
     return [...set].sort((a, b) => a.localeCompare(b, "vi"));
   }, [products, group, cat]);

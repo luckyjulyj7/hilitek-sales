@@ -99,13 +99,19 @@ export function publicProduct(p, { detail = false } = {}) {
     .filter((r) => r && (r[0] || r[1]));
   const desc = typeof web.description === "string" ? web.description : "";
 
+  // Danh mục web: ưu tiên web.categories (chủ shop tự gán), không có thì dùng "Nhóm hàng".
+  const webCats = Array.isArray(web.categories) && web.categories.length
+    ? web.categories.filter((x) => typeof x === "string" && x.trim())
+    : (p.category ? [p.category] : []);
+
   const out = {
     id: p.id,
     sku: p.sku || "",
     slug: web.slug ? slugify(web.slug) : productSlug(p),
     name: p.name || "",
     brand: p.brand || "",
-    category: p.category || "",
+    category: webCats[0] || p.category || "",
+    categories: webCats,
     group: "", // storefront tự map category → nhóm qua CATEGORY_TO_GROUP
     price,
     listPrice,

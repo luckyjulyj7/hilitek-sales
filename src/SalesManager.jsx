@@ -629,6 +629,7 @@ function normalizeWeb(w) {
     specs,
     priceWeb: Number(w.priceWeb) || 0,          // giá bán trên web (chữ đỏ) — 0 = dùng giá bán lẻ
     compareAtPrice: Number(w.compareAtPrice) || 0, // giá so sánh (gạch bỏ) — 0 = không hiện
+    categories: Array.isArray(w.categories) ? [...new Set(w.categories.filter((x) => typeof x === "string" && x.trim()).map((x) => x.trim()))] : [], // danh mục web (khớp menu ở Cấu hình web)
     slug: typeof w.slug === "string" ? w.slug : "",
   };
 }
@@ -10967,14 +10968,21 @@ function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig
           </button>
         ))}
       </div>
-      {sub === "products" && <WebProducts products={products} setProducts={setProducts} categories={categories} addLog={addLog} />}
+      {sub === "products" && <WebProducts products={products} setProducts={setProducts} categories={categories} addLog={addLog} webConfig={webConfig} />}
       {sub === "orders" && <WebOrders orders={orders} onOpenOrder={onOpenOrder} />}
       {sub === "config" && <WebConfigForm webConfig={webConfig} setWebConfig={setWebConfig} addLog={addLog} products={products} categories={categories} />}
     </div>
   );
 }
 
-function WebProducts({ products, setProducts, categories, addLog }) {
+function WebProducts({ products, setProducts, categories, addLog, webConfig }) {
+  // Danh mục web khả dụng = danh mục con trong menu ở "Cấu hình web" (hoặc menu mặc định).
+  const webCats = useMemo(() => {
+    const src = webConfig && Array.isArray(webConfig.MENU) && webConfig.MENU.length ? webConfig.MENU : WEB_DEFAULT_MENU;
+    const out = [];
+    src.forEach((g) => (g.columns || []).forEach((col) => (col.items || []).forEach((c) => { if (!out.includes(c)) out.push(c); })));
+    return out;
+  }, [webConfig]);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("all"); // all | on | off
   const [editId, setEditId] = useState(null);
@@ -10990,7 +10998,7 @@ function WebProducts({ products, setProducts, categories, addLog }) {
 
   const patch = (id, fn) => setProducts((prev) => prev.map((p) => (p.id === id ? fn(p) : p)));
   const setWeb = (p, wpatch) => {
-    const shareKeys = ["description", "specs"];
+    const shareKeys = ["description", "specs", "categories"];
     const shared = shareKeys.some((k) => k in wpatch);
     setProducts((prev) => prev.map((x) => {
       if (x.id === p.id) return { ...x, web: { ...normalizeWeb(x.web), ...wpatch } };
@@ -11076,6 +11084,28 @@ function WebProducts({ products, setProducts, categories, addLog }) {
                       <td colSpan={7} className="px-4 py-4">
                         {p.variantGroupId && <p className="text-xs mb-2" style={{ color: BLUE }}>Mô tả & thông số áp cho tất cả phiên bản cùng nhóm.</p>}
                         <div className="grid gap-3">
+                          <Field label="Danh mục trên web" hint="Sản phẩm sẽ hiển thị khi khách chọn các danh mục này. Sửa danh sách ở tab 'Cấu hình web'.">
+                            {webCats.length === 0 ? (
+                              <span className="text-xs" style={{ color: RUST }}>Chưa có danh mục nào — vào 'Cấu hình web' → 'Danh mục sản phẩm web' để thêm.</span>
+                            ) : (
+                              <div className="flex flex-wrap gap-1.5">
+                                {webCats.map((cat) => {
+                                  const on = (p.web?.categories || []).includes(cat);
+                                  return (
+                                    <button key={cat} type="button"
+                                      onClick={() => {
+                                        const cur = p.web?.categories || [];
+                                        setWeb(p, { categories: on ? cur.filter((x) => x !== cat) : [...cur, cat] });
+                                      }}
+                                      className="px-2.5 py-1 rounded-sm text-xs border"
+                                      style={{ borderColor: on ? INK : LINE, background: on ? INK : "#fff", color: on ? "#fff" : INK }}>
+                                      {cat}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </Field>
                           <Field label="Mô tả sản phẩm (web)" hint="Xuống dòng đôi = đoạn mới; dòng '- ' = gạch đầu dòng">
                             <textarea rows={5} className={inputCls} style={{ borderColor: LINE, background: "#fff" }}
                               value={p.web?.description || ""} onChange={(e) => setWeb(p, { description: e.target.value })} />
