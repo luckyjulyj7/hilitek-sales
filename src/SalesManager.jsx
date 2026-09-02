@@ -10,6 +10,7 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell, ComposedChart, Line, Legend
 } from "recharts";
 import * as XLSX from "xlsx";
+import { ghn as ghnApi } from "./lib/ghn.js";
 
 // Xuất 1 hoặc nhiều bảng dữ liệu ra 1 file Excel (.xlsx), mỗi bảng là 1 sheet riêng.
 function exportExcel(filename, sheets) {
@@ -612,6 +613,35 @@ function cartesianProduct(arrays) {
   return arrays.reduce((acc, curr) => acc.flatMap((a) => curr.map((c) => [...a, c])), [[]]);
 }
 
+// ── Đăng lên website bán hàng ──────────────────────────────────────────────
+// `web` gắn vào từng sản phẩm: có đăng web không, mô tả/thông số riêng cho web,
+// giá web (0 = dùng giá bán lẻ). API api/web/products.js đọc field này.
+function normalizeWeb(w) {
+  w = w && typeof w === "object" ? w : {};
+  const specs = Array.isArray(w.specs)
+    ? w.specs.map((r) => (Array.isArray(r) ? [String(r[0] || "").trim(), String(r[1] || "").trim()] : null)).filter((r) => r && (r[0] || r[1]))
+    : [];
+  return {
+    published: !!w.published,
+    description: typeof w.description === "string" ? w.description : "",
+    specs,
+    priceWeb: Number(w.priceWeb) || 0,          // giá bán trên web (chữ đỏ) — 0 = dùng giá bán lẻ
+    compareAtPrice: Number(w.compareAtPrice) || 0, // giá so sánh (gạch bỏ) — 0 = không hiện
+    slug: typeof w.slug === "string" ? w.slug : "",
+  };
+}
+// Thông số kỹ thuật web: nhập dạng "Nhãn | Giá trị" mỗi dòng ↔ mảng [[k,v],...]
+function webSpecsToText(specs) {
+  return Array.isArray(specs) ? specs.map((r) => `${r[0] || ""} | ${r[1] || ""}`).join("\n") : "";
+}
+function webTextToSpecs(text) {
+  return String(text).split("\n").map((line) => {
+    const i = line.indexOf("|");
+    if (i < 0) return line.trim() ? [line.trim(), ""] : null;
+    return [line.slice(0, i).trim(), line.slice(i + 1).trim()];
+  }).filter(Boolean);
+}
+
 // Đảm bảo mọi sản phẩm tải từ bộ nhớ đều có đủ field cần thiết,
 // tránh lỗi trắng trang khi dữ liệu cũ (trước khi có SKU/VAT/ảnh/giá sỉ...) được nạp lại.
 function normalizeProduct(p) {
@@ -628,6 +658,7 @@ function normalizeProduct(p) {
     costPrice: Number(p.costPrice ?? 0) || 0,
     openingQty: Number(p.openingQty ?? 0) || 0,
     minStockLevel: p.minStockLevel !== undefined ? Number(p.minStockLevel) || 0 : 5,
+    weight: Number(p.weight) || 0, // gram — dùng tính phí ship
     sku: p.sku || "",
     vat: p.vat || "VAT10",
     barcode: p.barcode || "",
@@ -648,6 +679,7 @@ function normalizeProduct(p) {
       qty: Number(m.qty) || 0, price: Number(m.price) || 0,
       series: Array.isArray(m.series) ? m.series : [],
     })) : [],
+    web: normalizeWeb(p.web),
   };
 }
 function normalizeOrder(o) {
@@ -1504,7 +1536,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
     reader.readAsArrayBuffer(file);
   };
 
-  const openNew = () => { setForm({ code: "", name: "", unit: UNITS[0], category: "", brand: "", hasSeries: false, isService: false, retailPrice: "", wholesalePrice: "", costPrice: "", openingQty: 0, minStockLevel: 5, sku: nextSKU(products), vat: "VAT10", barcode: "", supplierId: "", warrantyMonths: 0, image: null, images: [], hasVariants: false, variantAttr1Name: "Màu sắc", variantAttr1Values: [], variantAttr2Enabled: false, variantAttr2Name: "Kích cỡ", variantAttr2Values: [] }); setEditing({}); };
+  const openNew = () => { setForm({ code: "", name: "", unit: UNITS[0], category: "", brand: "", hasSeries: false, isService: false, retailPrice: "", wholesalePrice: "", costPrice: "", openingQty: 0, minStockLevel: 5, weight: "", sku: nextSKU(products), vat: "VAT10", barcode: "", supplierId: "", warrantyMonths: 0, image: null, images: [], web: normalizeWeb(null), hasVariants: false, variantAttr1Name: "Màu sắc", variantAttr1Values: [], variantAttr2Enabled: false, variantAttr2Name: "Kích cỡ", variantAttr2Values: [] }); setEditing({}); };
   const openEdit = (p) => { setForm({ ...p }); setEditing(p); };
   const submitInfo = () => {
     if (!form.code || !form.name) return;
@@ -1521,9 +1553,10 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         return {
           ...p, code: form.code, name: form.name, unit: form.unit, category: form.category || "", brand: form.brand || "", hasSeries: !!form.hasSeries, isService: !!form.isService,
           retailPrice: newRetail, wholesalePrice: newWholesale, costPrice: newCost, openingQty: Number(form.openingQty) || 0,
-          minStockLevel: Number(form.minStockLevel) || 0,
+          minStockLevel: Number(form.minStockLevel) || 0, weight: Number(form.weight) || 0,
           sku: form.sku || p.sku, vat: form.vat, barcode: form.barcode || "", supplierId: form.supplierId || "", warrantyMonths: Number(form.warrantyMonths) || 0, image: form.image || null, images: Array.isArray(form.images) ? form.images.filter(Boolean).slice(0, 3) : [],
           priceHistory: newHistoryEntries.length > 0 ? [...newHistoryEntries, ...(p.priceHistory || [])] : (p.priceHistory || []),
+          web: normalizeWeb(form.web),
         };
       }));
       addLog("Sửa sản phẩm", `${form.code} · ${form.name}`);
@@ -1545,10 +1578,10 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         return {
           id: uid(), code: `${form.code}_${suffix}`, name: `${form.name} - ${label}`, unit: form.unit, category: form.category || "", brand: form.brand || "",
           hasSeries: !!form.hasSeries, retailPrice: Number(form.retailPrice) || 0, wholesalePrice: Number(form.wholesalePrice) || 0, costPrice: Number(form.costPrice) || 0,
-          openingQty: Number(form.openingQty) || 0, minStockLevel: Number(form.minStockLevel) || 0,
+          openingQty: Number(form.openingQty) || 0, minStockLevel: Number(form.minStockLevel) || 0, weight: Number(form.weight) || 0,
           sku: `${form.sku || nextSKU(products)}_${suffix}`, vat: form.vat || "VAT10", barcode: "", supplierId: form.supplierId || "", warrantyMonths: Number(form.warrantyMonths) || 0,
           image: form.image || null, images: Array.isArray(form.images) ? form.images.filter(Boolean).slice(0, 3) : [],
-          variantGroupId: groupId, variantAttrs, movements: [],
+          variantGroupId: groupId, variantAttrs, movements: [], web: normalizeWeb({ ...form.web, slug: "" }),
         };
       });
       // Tránh trùng mã VT nếu vô tình bấm tạo 2 lần hoặc trùng với sản phẩm có sẵn.
@@ -1560,9 +1593,9 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
       setProducts((prev) => [...prev, {
         id: uid(), code: form.code, name: form.name, unit: form.unit, category: form.category || "", brand: form.brand || "",
         hasSeries: !!form.hasSeries, isService: !!form.isService, retailPrice: Number(form.retailPrice) || 0, wholesalePrice: Number(form.wholesalePrice) || 0, costPrice: Number(form.costPrice) || 0,
-        openingQty: Number(form.openingQty) || 0, minStockLevel: Number(form.minStockLevel) || 0,
+        openingQty: Number(form.openingQty) || 0, minStockLevel: Number(form.minStockLevel) || 0, weight: Number(form.weight) || 0,
         sku: form.sku || nextSKU(products), vat: form.vat || "VAT10", barcode: form.barcode || "", supplierId: form.supplierId || "", warrantyMonths: Number(form.warrantyMonths) || 0, image: form.image || null, images: Array.isArray(form.images) ? form.images.filter(Boolean).slice(0, 3) : [],
-        movements: [],
+        movements: [], web: normalizeWeb(form.web),
       }]);
       addLog("Thêm sản phẩm", `${form.code} · ${form.name}`);
     }
@@ -2085,6 +2118,10 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
             </div>
           )}
 
+          <Field label="Khối lượng (gram)" hint="Dùng để tính phí ship (GHN) và hiển thị trên web">
+            <input type="number" min={0} className={inputCls} style={{ borderColor: LINE }} value={form.weight ?? ""} onChange={(e) => setForm({ ...form, weight: e.target.value })} placeholder="VD: 450" />
+          </Field>
+
           {isAdmin && (
             <Field label="Nhà cung cấp" hint="Không bắt buộc — nơi thường nhập sản phẩm này">
               <select className={inputCls} style={{ borderColor: LINE }} value={form.supplierId || ""} onChange={(e) => setForm({ ...form, supplierId: e.target.value })}>
@@ -2191,6 +2228,37 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
               </div>
               <span className="text-xs opacity-50 block mt-1.5">Bấm vào ảnh để phóng to, bấm ✕ để xoá / đổi ảnh khác.</span>
             </Field>
+          </div>
+
+          {/* ── Đăng lên website bán hàng ── */}
+          <div className="mt-3 rounded-sm p-3" style={{ border: `1px solid ${form.web?.published ? BLUE : LINE}`, background: form.web?.published ? `${BLUE}0D` : "transparent" }}>
+            <label className="flex items-center gap-2 text-sm font-medium" style={{ color: INK }}>
+              <input type="checkbox" checked={!!form.web?.published}
+                onChange={(e) => setForm({ ...form, web: { ...normalizeWeb(form.web), published: e.target.checked } })} />
+              Đăng sản phẩm này lên website bán hàng
+            </label>
+            {form.web?.published && (
+              <div className="mt-3 space-y-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Giá web — chữ đỏ to (đ)" hint="Bỏ trống / 0 = dùng giá bán lẻ">
+                    <MoneyInput className={inputCls} style={{ borderColor: LINE }} value={form.web?.priceWeb || ""} onChange={(v) => setForm({ ...form, web: { ...normalizeWeb(form.web), priceWeb: v } })} />
+                  </Field>
+                  <Field label="Giá so sánh — gạch bỏ (đ)" hint="Bỏ trống = không hiện giá gạch">
+                    <MoneyInput className={inputCls} style={{ borderColor: LINE }} value={form.web?.compareAtPrice || ""} onChange={(v) => setForm({ ...form, web: { ...normalizeWeb(form.web), compareAtPrice: v } })} />
+                  </Field>
+                </div>
+                <Field label="Mô tả sản phẩm (web)" hint="Xuống dòng đôi = đoạn mới; dòng bắt đầu bằng '- ' = gạch đầu dòng">
+                  <textarea rows={5} className={inputCls} style={{ borderColor: LINE }} value={form.web?.description || ""}
+                    onChange={(e) => setForm({ ...form, web: { ...normalizeWeb(form.web), description: e.target.value } })} />
+                </Field>
+                <Field label="Thông số kỹ thuật (web)" hint="Mỗi dòng: Nhãn | Giá trị">
+                  <textarea rows={5} className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }}
+                    value={webSpecsToText(form.web?.specs)}
+                    onChange={(e) => setForm({ ...form, web: { ...normalizeWeb(form.web), specs: webTextToSpecs(e.target.value) } })}
+                    placeholder={"Chuẩn | M.2 2280 NVMe\nDung lượng | 1 TB"} />
+                </Field>
+              </div>
+            )}
           </div>
 
           {!editing.id && (
@@ -4315,6 +4383,16 @@ function Shipping({ shippingTickets, setShippingTickets, orders, customers, curr
   const [printPaperSize, setPrintPaperSize] = useState("A5");
   const [printBlockedUrl, setPrintBlockedUrl] = useState(null);
   const [editingId, setEditingId] = useState(null);
+  const [ghnPing, setGhnPing] = useState(null); // null | {loading} | {ok, message, ...}
+  const testGhn = async () => {
+    setGhnPing({ loading: true });
+    try {
+      const r = await ghnApi.ping();
+      setGhnPing(r);
+    } catch (e) {
+      setGhnPing({ ok: false, message: String(e.message || e) });
+    }
+  };
 
   const emptyForm = () => ({
     orderId: "", orderCode: "", carrier: SHIPPING_CARRIERS[0], trackingCode: "",
@@ -4437,6 +4515,20 @@ function Shipping({ shippingTickets, setShippingTickets, orders, customers, curr
 
   return (
     <div>
+      <div className="mb-4 p-3 rounded-sm flex items-center gap-3 flex-wrap" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+        <span className="text-xs uppercase tracking-wider opacity-60">Kết nối GHN</span>
+        <button onClick={testGhn} disabled={ghnPing?.loading} className="text-xs px-3 py-1.5 rounded-sm border disabled:opacity-50" style={{ borderColor: BLUE, color: BLUE }}>
+          {ghnPing?.loading ? "Đang kiểm tra…" : "Kiểm tra kết nối GHN"}
+        </button>
+        {ghnPing && !ghnPing.loading && (
+          <span className="text-xs" style={{ color: ghnPing.ok ? FOREST : RUST }}>
+            {ghnPing.ok
+              ? `OK — GHN trả về ${ghnPing.provinceCount || 0} tỉnh/thành${ghnPing.hasShopId ? "" : " · ⚠ chưa đặt GHN_SHOP_ID"}`
+              : `Lỗi: ${ghnPing.message || ghnPing.ghnMessage || "không kết nối được"}`}
+          </span>
+        )}
+        <span className="text-[11px] opacity-40 ml-auto">Token GHN đặt ở Environment Variables của Vercel, không nằm trong web.</span>
+      </div>
       <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
         <div className="flex gap-2 flex-wrap items-center">
           <div className="flex gap-1.5 flex-wrap">
@@ -10845,6 +10937,325 @@ function NotificationBell({ notifications, markRead, markAllRead, onGoto }) {
   );
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   WEBSITE — quản lý website bán hàng cho khách (sản phẩm web · đơn web · cấu hình)
+   ══════════════════════════════════════════════════════════════════════════ */
+function webSlugify(s) {
+  return stripDiacriticsVN(String(s || "")).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+function webOrderTotal(o) {
+  return (o.items || []).reduce((s, it) => s + (Number(it.qty) || 0) * (Number(it.price) || 0), 0);
+}
+
+function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig, categories, addLog, onOpenOrder }) {
+  const [sub, setSub] = useState("products");
+  const subs = [
+    { id: "products", label: "Sản phẩm web" },
+    { id: "orders", label: "Đơn hàng web" },
+    { id: "config", label: "Cấu hình web" },
+  ];
+  return (
+    <div>
+      <div className="flex gap-1 mb-5 flex-wrap">
+        {subs.map((s) => (
+          <button key={s.id} onClick={() => setSub(s.id)}
+            className="px-4 py-2 rounded-sm text-sm font-medium border"
+            style={{ borderColor: sub === s.id ? INK : LINE, background: sub === s.id ? INK : "transparent", color: sub === s.id ? "#fff" : INK }}>
+            {s.label}
+          </button>
+        ))}
+      </div>
+      {sub === "products" && <WebProducts products={products} setProducts={setProducts} categories={categories} addLog={addLog} />}
+      {sub === "orders" && <WebOrders orders={orders} onOpenOrder={onOpenOrder} />}
+      {sub === "config" && <WebConfigForm webConfig={webConfig} setWebConfig={setWebConfig} addLog={addLog} />}
+    </div>
+  );
+}
+
+function WebProducts({ products, setProducts, categories, addLog }) {
+  const [q, setQ] = useState("");
+  const [filter, setFilter] = useState("all"); // all | on | off
+  const [editId, setEditId] = useState(null);
+
+  const rows = useMemo(() => {
+    const kw = webSlugify(q);
+    return products
+      .filter((p) => !p.isService)
+      .filter((p) => (filter === "on" ? p.web?.published : filter === "off" ? !p.web?.published : true))
+      .filter((p) => !kw || webSlugify(`${p.name} ${p.sku} ${p.code}`).includes(kw))
+      .sort((a, b) => (a.variantGroupId || a.id).localeCompare(b.variantGroupId || b.id) || a.name.localeCompare(b.name));
+  }, [products, q, filter]);
+
+  const patch = (id, fn) => setProducts((prev) => prev.map((p) => (p.id === id ? fn(p) : p)));
+  const setWeb = (p, wpatch) => {
+    const shareKeys = ["description", "specs"];
+    const shared = shareKeys.some((k) => k in wpatch);
+    setProducts((prev) => prev.map((x) => {
+      if (x.id === p.id) return { ...x, web: { ...normalizeWeb(x.web), ...wpatch } };
+      if (shared && p.variantGroupId && x.variantGroupId === p.variantGroupId) {
+        const sh = {}; shareKeys.forEach((k) => { if (k in wpatch) sh[k] = wpatch[k]; });
+        return { ...x, web: { ...normalizeWeb(x.web), ...sh } };
+      }
+      return x;
+    }));
+  };
+  const togglePublish = (p) => { setWeb(p, { published: !p.web?.published }); addLog(p.web?.published ? "Gỡ sản phẩm khỏi web" : "Đăng sản phẩm lên web", `${p.sku} · ${p.name}`); };
+
+  const publishedCount = products.filter((p) => p.web?.published).length;
+
+  return (
+    <div>
+      <div className="flex items-center gap-3 mb-4 flex-wrap text-sm">
+        <span className="opacity-60">Đang đăng: <b>{publishedCount}</b> sản phẩm</span>
+        <div className="flex-1" />
+        <div className="flex gap-1">
+          {[["all", "Tất cả"], ["on", "Đã đăng"], ["off", "Chưa đăng"]].map(([id, l]) => (
+            <button key={id} onClick={() => setFilter(id)} className="px-3 py-1.5 rounded-sm border text-xs"
+              style={{ borderColor: filter === id ? INK : LINE, background: filter === id ? INK : "transparent", color: filter === id ? "#fff" : INK }}>{l}</button>
+          ))}
+        </div>
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm tên / SKU…" className="border rounded-sm py-1.5 px-2.5 text-sm w-48" style={{ borderColor: LINE }} />
+      </div>
+
+      <div className="border rounded-sm overflow-hidden" style={{ borderColor: LINE }}>
+        <table className="w-full text-sm">
+          <thead>
+            <tr style={{ background: PAPER }}>
+              <th className="text-left px-3 py-2.5 font-medium">Đăng web</th>
+              <th className="text-left px-3 py-2.5 font-medium">Sản phẩm</th>
+              <th className="text-left px-3 py-2.5 font-medium">Nhóm</th>
+              <th className="text-right px-3 py-2.5 font-medium">Giá web (đỏ)</th>
+              <th className="text-right px-3 py-2.5 font-medium">Giá so sánh</th>
+              <th className="text-right px-3 py-2.5 font-medium">Tồn</th>
+              <th className="px-3 py-2.5"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 && <tr><td colSpan={7} className="text-center py-8 opacity-50">Không có sản phẩm.</td></tr>}
+            {rows.map((p) => {
+              const st = productStats(p);
+              const vLabel = p.variantAttrs ? Object.values(p.variantAttrs).join(" / ") : "";
+              const on = !!p.web?.published;
+              return (
+                <React.Fragment key={p.id}>
+                  <tr style={{ borderTop: `1px solid ${LINE}`, background: on ? `${BLUE}08` : "#fff" }}>
+                    <td className="px-3 py-2.5">
+                      <label className="inline-flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={on} onChange={() => togglePublish(p)} />
+                      </label>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center gap-2">
+                        {p.image && <img src={p.image} alt="" className="w-9 h-9 object-cover rounded-sm" style={{ border: `1px solid ${LINE}` }} />}
+                        <div>
+                          <div className="font-medium leading-tight">{p.name}{vLabel && <span className="opacity-50"> — {vLabel}</span>}</div>
+                          <div className="text-[11px] opacity-50" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.sku}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2.5 opacity-70">{p.category || "—"}</td>
+                    <td className="px-3 py-2.5 text-right">
+                      <MoneyInput className="text-right border rounded-sm py-1 px-1.5 w-28 text-sm" style={{ borderColor: LINE }}
+                        value={p.web?.priceWeb || ""} onChange={(v) => setWeb(p, { priceWeb: v })} placeholder={vnd(p.retailPrice)} />
+                    </td>
+                    <td className="px-3 py-2.5 text-right">
+                      <MoneyInput className="text-right border rounded-sm py-1 px-1.5 w-28 text-sm" style={{ borderColor: LINE }}
+                        value={p.web?.compareAtPrice || ""} onChange={(v) => setWeb(p, { compareAtPrice: v })} placeholder="—" />
+                    </td>
+                    <td className="px-3 py-2.5 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace", color: st.closingQty <= 0 ? RUST : INK }}>{st.closingQty}</td>
+                    <td className="px-3 py-2.5 text-right">
+                      <button onClick={() => setEditId(editId === p.id ? null : p.id)} className="text-xs underline" style={{ color: BLUE }}>
+                        {editId === p.id ? "Đóng" : "Nội dung"}
+                      </button>
+                    </td>
+                  </tr>
+                  {editId === p.id && (
+                    <tr style={{ background: PAPER }}>
+                      <td colSpan={7} className="px-4 py-4">
+                        {p.variantGroupId && <p className="text-xs mb-2" style={{ color: BLUE }}>Mô tả & thông số áp cho tất cả phiên bản cùng nhóm.</p>}
+                        <div className="grid gap-3">
+                          <Field label="Mô tả sản phẩm (web)" hint="Xuống dòng đôi = đoạn mới; dòng '- ' = gạch đầu dòng">
+                            <textarea rows={5} className={inputCls} style={{ borderColor: LINE, background: "#fff" }}
+                              value={p.web?.description || ""} onChange={(e) => setWeb(p, { description: e.target.value })} />
+                          </Field>
+                          <Field label="Thông số kỹ thuật (web)" hint="Mỗi dòng: Nhãn | Giá trị">
+                            <textarea rows={5} className={inputCls} style={{ borderColor: LINE, background: "#fff", fontFamily: "'IBM Plex Mono', monospace" }}
+                              value={webSpecsToText(p.web?.specs)} onChange={(e) => setWeb(p, { specs: webTextToSpecs(e.target.value) })}
+                              placeholder={"Chuẩn | M.2 2280 NVMe\nDung lượng | 1 TB"} />
+                          </Field>
+                          <div className="grid grid-cols-2 gap-3">
+                            <Field label="Khối lượng (gram)" hint="Tính phí ship">
+                              <input type="number" min={0} className={inputCls} style={{ borderColor: LINE, background: "#fff" }}
+                                value={p.weight ?? ""} onChange={(e) => patch(p.id, (x) => ({ ...x, weight: Number(e.target.value) || 0 }))} />
+                            </Field>
+                            <Field label="Đường dẫn web (slug)" hint="Bỏ trống = tự tạo từ tên + SKU">
+                              <input className={inputCls} style={{ borderColor: LINE, background: "#fff", fontFamily: "'IBM Plex Mono', monospace" }}
+                                value={p.web?.slug || ""} onChange={(e) => setWeb(p, { slug: webSlugify(e.target.value) })} />
+                            </Field>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-xs opacity-50 mt-3">Thay đổi tự lưu. Web khách cập nhật khi tải lại trang (đọc <code>/api/web/products</code>).</p>
+    </div>
+  );
+}
+
+function WebOrders({ orders, onOpenOrder }) {
+  const list = useMemo(
+    () => orders.filter((o) => o.channel === "online" || (o.tags || []).includes("Đặt hàng website"))
+      .slice().sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || "")),
+    [orders]
+  );
+  const statusLabel = (s) => (STATUSES.find((x) => x.id === s)?.label || s);
+  return (
+    <div>
+      <p className="text-sm mb-3 opacity-70">Đơn khách đặt trên website — <b>{list.length}</b> đơn. Xử lý (xác nhận, phí ship, giao hàng) ở tab <b>Bán hàng</b>.</p>
+      <div className="border rounded-sm overflow-hidden" style={{ borderColor: LINE }}>
+        <table className="w-full text-sm">
+          <thead><tr style={{ background: PAPER }}>
+            <th className="text-left px-3 py-2.5 font-medium">Mã đơn</th>
+            <th className="text-left px-3 py-2.5 font-medium">Ngày</th>
+            <th className="text-left px-3 py-2.5 font-medium">Khách</th>
+            <th className="text-left px-3 py-2.5 font-medium">Giao tới</th>
+            <th className="text-right px-3 py-2.5 font-medium">Tổng tiền</th>
+            <th className="text-left px-3 py-2.5 font-medium">Trạng thái</th>
+            <th className="px-3 py-2.5"></th>
+          </tr></thead>
+          <tbody>
+            {list.length === 0 && <tr><td colSpan={7} className="text-center py-8 opacity-50">Chưa có đơn từ website.</td></tr>}
+            {list.map((o) => {
+              const a = o.shippingAddress || {};
+              return (
+                <tr key={o.id} style={{ borderTop: `1px solid ${LINE}` }}>
+                  <td className="px-3 py-2.5 font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{o.code}</td>
+                  <td className="px-3 py-2.5 opacity-70">{(o.createdAt || "").slice(0, 10)}</td>
+                  <td className="px-3 py-2.5">{a.recipientName || "—"}<div className="text-[11px] opacity-50">{a.recipientPhone}</div></td>
+                  <td className="px-3 py-2.5 opacity-70 max-w-[280px]">{[a.addressDetail, a.ward, a.province].filter(Boolean).join(", ") || "—"}</td>
+                  <td className="px-3 py-2.5 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{vnd(webOrderTotal(o))}</td>
+                  <td className="px-3 py-2.5"><span className="text-xs px-2 py-0.5 rounded-sm" style={{ background: PAPER }}>{statusLabel(o.status)}{o.approvalStatus === "pending" ? " · chờ duyệt" : ""}</span></td>
+                  <td className="px-3 py-2.5 text-right"><button onClick={() => onOpenOrder(o.id)} className="text-xs underline" style={{ color: BLUE }}>Mở</button></td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function WebConfigForm({ webConfig, setWebConfig, addLog }) {
+  const c = webConfig || {};
+  const SITE = c.SITE || {};
+  const bank = SITE.bank || {};
+  const FS = c.FLASH_SALE || {};
+  const HP = c.HOME_POSTERS || {};
+  const setSite = (k, v) => setWebConfig((x) => ({ ...x, SITE: { ...(x.SITE || {}), [k]: v } }));
+  const setBank = (k, v) => setWebConfig((x) => ({ ...x, SITE: { ...(x.SITE || {}), bank: { ...((x.SITE || {}).bank || {}), [k]: v } } }));
+  const setFlash = (k, v) => setWebConfig((x) => ({ ...x, FLASH_SALE: { ...(x.FLASH_SALE || {}), [k]: v } }));
+  const setPoster = (key, k, v) => setWebConfig((x) => {
+    const hp = { ...(x.HOME_POSTERS || {}) };
+    hp[key] = { ...(hp[key] || {}), [k]: v };
+    return { ...x, HOME_POSTERS: hp };
+  });
+  const setSidePoster = (i, k, v) => setWebConfig((x) => {
+    const hp = { ...(x.HOME_POSTERS || {}) };
+    const arr = Array.isArray(hp.side) ? [...hp.side] : [{}, {}];
+    arr[i] = { ...(arr[i] || {}), [k]: v };
+    hp.side = arr;
+    return { ...x, HOME_POSTERS: hp };
+  });
+  const setStripPoster = (i, k, v) => setWebConfig((x) => {
+    const hp = { ...(x.HOME_POSTERS || {}) };
+    const arr = Array.isArray(hp.strip) ? [...hp.strip] : [{}, {}, {}];
+    arr[i] = { ...(arr[i] || {}), [k]: v };
+    hp.strip = arr;
+    return { ...x, HOME_POSTERS: hp };
+  });
+  const ip = (val, on, ph) => (
+    <input value={val ?? ""} onChange={(e) => on(e.target.value)} placeholder={ph} className={inputCls} style={{ borderColor: LINE }} />
+  );
+
+  return (
+    <div className="max-w-3xl space-y-7">
+      <div className="p-3 rounded-sm text-xs" style={{ background: `${BLUE}0D`, border: `1px solid ${BLUE}` }}>
+        Bỏ trống 1 ô = web dùng giá trị mặc định. Web khách đọc cấu hình này mỗi lần tải trang.
+      </div>
+
+      <section>
+        <h3 className="font-medium mb-3" style={{ color: INK }}>Liên hệ</h3>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Field label="Số điện thoại (hiển thị)">{ip(SITE.phone, (v) => setSite("phone", v), "0939 206 868")}</Field>
+          <Field label="SĐT (chỉ số, cho nút gọi)">{ip(SITE.phoneRaw, (v) => setSite("phoneRaw", v), "0939206868")}</Field>
+          <Field label="Zalo (số)">{ip(SITE.zalo, (v) => setSite("zalo", v), "0939 206 865")}</Field>
+          <Field label="Link Zalo">{ip(SITE.zaloHref, (v) => setSite("zaloHref", v), "https://zalo.me/…")}</Field>
+          <Field label="Link Messenger">{ip(SITE.messengerHref, (v) => setSite("messengerHref", v), "https://m.me/…")}</Field>
+          <Field label="Email">{ip(SITE.email, (v) => setSite("email", v), "hilitek@gmail.com")}</Field>
+          <Field label="Giờ làm việc">{ip(SITE.workingHours, (v) => setSite("workingHours", v), "8:00 – 21:00")}</Field>
+          <Field label="Facebook">{ip(SITE.facebookHref, (v) => setSite("facebookHref", v), "https://facebook.com/…")}</Field>
+        </div>
+        <Field label="Địa chỉ" >{ip(SITE.address, (v) => setSite("address", v), "6/27A Đường Số 3, …")}</Field>
+      </section>
+
+      <section>
+        <h3 className="font-medium mb-3" style={{ color: INK }}>Tài khoản ngân hàng</h3>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Field label="Ngân hàng">{ip(bank.name, (v) => setBank("name", v), "ACB (Á Châu)")}</Field>
+          <Field label="Số tài khoản">{ip(bank.accountNumber, (v) => setBank("accountNumber", v), "19551097")}</Field>
+          <Field label="Chủ tài khoản">{ip(bank.holder, (v) => setBank("holder", v), "CÔNG TY TNHH …")}</Field>
+          <Field label="Chi nhánh">{ip(bank.branch, (v) => setBank("branch", v), "PGD Lý Thường Kiệt")}</Field>
+        </div>
+      </section>
+
+      <section>
+        <h3 className="font-medium mb-3" style={{ color: INK }}>Flash Sale</h3>
+        <label className="flex items-center gap-2 text-sm mb-2">
+          <input type="checkbox" checked={FS.enabled !== false} onChange={(e) => setFlash("enabled", e.target.checked)} /> Bật dải Flash Sale trên trang chủ
+        </label>
+        <Field label="Kết thúc lúc" hint="Bỏ trống = tự đặt +2 ngày">
+          <input type="datetime-local" value={FS.endsAt || ""} onChange={(e) => setFlash("endsAt", e.target.value)} className={inputCls} style={{ borderColor: LINE }} />
+        </Field>
+      </section>
+
+      <section>
+        <h3 className="font-medium mb-3" style={{ color: INK }}>Poster / banner trang chủ (URL ảnh + link)</h3>
+        <p className="text-xs opacity-50 mb-3">Ảnh: tải lên host bất kỳ hoặc để trong thư mục <code>public/posters/</code> rồi điền đường dẫn (vd <code>/posters/hero.jpg</code>).</p>
+        <div className="space-y-3">
+          <div className="grid sm:grid-cols-2 gap-3">
+            <Field label="Poster chính — ảnh">{ip(HP.hero?.image, (v) => setPoster("hero", "image", v), "/posters/hero.jpg")}</Field>
+            <Field label="Poster chính — link">{ip(HP.hero?.href, (v) => setPoster("hero", "href", v), "#/danh-muc?sort=discount")}</Field>
+          </div>
+          {[0, 1].map((i) => (
+            <div key={i} className="grid sm:grid-cols-2 gap-3">
+              <Field label={`Poster phụ ${i + 1} — ảnh`}>{ip((HP.side || [])[i]?.image, (v) => setSidePoster(i, "image", v), `/posters/phu-${i + 1}.jpg`)}</Field>
+              <Field label={`Poster phụ ${i + 1} — link`}>{ip((HP.side || [])[i]?.href, (v) => setSidePoster(i, "href", v), "#/danh-muc")}</Field>
+            </div>
+          ))}
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="grid sm:grid-cols-2 gap-3">
+              <Field label={`Banner ${i + 1} — ảnh`}>{ip((HP.strip || [])[i]?.image, (v) => setStripPoster(i, "image", v), `/posters/banner-${i + 1}.jpg`)}</Field>
+              <Field label={`Banner ${i + 1} — link`}>{ip((HP.strip || [])[i]?.href, (v) => setStripPoster(i, "href", v), "#/danh-muc")}</Field>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <div className="flex items-center gap-3">
+        <button onClick={() => { addLog("Cập nhật cấu hình web", ""); }} className="px-4 py-2 rounded-sm text-sm text-white" style={{ background: INK }}>Đã lưu (tự động)</button>
+        <button onClick={() => { if (confirm("Xoá toàn bộ cấu hình web (web quay về mặc định)?")) setWebConfig({}); }} className="text-xs underline" style={{ color: RUST }}>Đặt lại về mặc định</button>
+      </div>
+    </div>
+  );
+}
+
 const TABS = [
   { id: "dashboard", label: "Tổng quan", icon: LayoutDashboard },
   { id: "products", label: "Sản phẩm & Tồn kho", icon: Package },
@@ -10876,6 +11287,7 @@ export default function SalesManager() {
   const [activityLog, setActivityLog] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [quotations, setQuotations] = useState([]);
+  const [webConfig, setWebConfig] = useState({}); // { SITE, FLASH_SALE, HOME_POSTERS, ... } — ghi đè cấu hình web khách
   const [navTarget, setNavTarget] = useState(null); // { type: 'order'|'po'|'product', id }
   // Điều hướng nhanh tới đúng đơn bán/đơn nhập từ mã số phiếu (dùng ở mọi nơi hiển thị mã đơn: lịch sử tồn kho, lịch sử khách hàng...).
   const goToDoc = (docNo) => {
@@ -10929,6 +11341,7 @@ export default function SalesManager() {
           setActivityLog((data.activityLog || []).map(normalizeLog));
           setNotifications((data.notifications || []).map(normalizeNotif));
           setQuotations((data.quotations || []).map(normalizeQuote));
+          setWebConfig(data.webConfig && typeof data.webConfig === "object" ? data.webConfig : {});
           setPrintSettings(normalizePrintSettings(data.printSettings));
           const rawAccs = (data.accounts && data.accounts.length > 0) ? data.accounts.map(normalizeAccount) : seedAccounts();
           const accs = ensureOwner(await migrateAccountPasswords(rawAccs));
@@ -10974,9 +11387,9 @@ export default function SalesManager() {
 
   useEffect(() => {
     if (!loaded) return;
-    const t = setTimeout(() => { saveData({ products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, plans, accounts, activityLog, notifications, printSettings, quotations, session: { userId: currentUserId } }); }, 400);
+    const t = setTimeout(() => { saveData({ products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, plans, accounts, activityLog, notifications, printSettings, quotations, webConfig, session: { userId: currentUserId } }); }, 400);
     return () => clearTimeout(t);
-  }, [products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, plans, accounts, activityLog, notifications, printSettings, quotations, currentUserId, loaded]);
+  }, [products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, plans, accounts, activityLog, notifications, printSettings, quotations, webConfig, currentUserId, loaded]);
 
   // Đồng bộ danh sách thông báo cho Admin từ dữ liệu thật: sản phẩm dưới định mức/âm tồn, công nợ NCC,
   // công nợ khách B2B quá hạn, đơn hàng cần duyệt (kể cả yêu cầu huỷ/đổi trả). Thông báo đã đọc tự xoá sau 3 ngày.
@@ -11114,6 +11527,7 @@ export default function SalesManager() {
     : ["dashboard", "products", "quotes", "orders", "shipping", "customers"]; // ctv — chỉ xem sản phẩm, không tạo/sửa/xoá
   const visibleTabs = [
     ...TABS.filter((t) => roleTabIds.includes(t.id)),
+    ...(currentUser.role === "admin" ? [{ id: "website", label: "Website", icon: Globe }] : []),
     ...(currentUser.role === "admin" ? [{ id: "activity", label: "Nhật ký", icon: History }] : []),
     ...(currentUser.isOwner ? [{ id: "accounts", label: "Tài khoản", icon: KeyRound }] : []), // chỉ tài khoản chủ
     { id: "profile", label: "Tài khoản cá nhân", icon: UserCircle }, // mọi vai trò
@@ -11180,6 +11594,7 @@ export default function SalesManager() {
             {tab === "suppliers" && <Suppliers suppliers={suppliers} setSuppliers={setSuppliers} purchaseOrders={purchaseOrders} addLog={addLog} goToDoc={goToDoc} navTarget={tab === "suppliers" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} />}
             {tab === "plans" && roleTabIds.includes("plans") && <Plans plans={plans} setPlans={setPlans} orders={orders} purchaseOrders={purchaseOrders} products={products} employeeNames={employeeNames} />}
             {tab === "reports" && roleTabIds.includes("reports") && <Reports orders={orders} products={products} customers={customers} accounts={accounts} purchaseOrders={purchaseOrders} warrantyTickets={warrantyTickets} />}
+            {tab === "website" && currentUser.role === "admin" && <WebsiteSection products={products} setProducts={setProducts} orders={orders} webConfig={webConfig} setWebConfig={setWebConfig} categories={categories} currentUser={currentUser} addLog={addLog} onOpenOrder={(id) => { setTab("orders"); setNavTarget({ type: "order", id }); }} />}
             {tab === "activity" && currentUser.role === "admin" && <ActivityLog log={activityLog} accounts={accounts} />}
             {tab === "accounts" && currentUser.isOwner && <Accounts accounts={accounts} setAccounts={setAccounts} currentUser={currentUser} addLog={addLog} onResetTestData={resetTestData} />}
             {tab === "profile" && <MyProfile currentUser={currentUser} setAccounts={setAccounts} addLog={addLog} />}

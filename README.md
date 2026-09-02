@@ -138,6 +138,58 @@ rồi viết lại `loadData()`/`saveData()` bằng `supabase.from(...).select()
 Vercel, nối GitHub repo để auto-deploy. Đặt `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`
 trong Project Settings → Environment Variables.
 
+## Tích hợp GHN (Giao Hàng Nhanh)
+
+App là web tĩnh → **không gọi thẳng API GHN được** (CORS chặn; không được để lộ Token GHN
+trong bundle). Giải pháp: **Vercel Serverless Functions** làm proxy — thư mục `api/ghn/`,
+chạy phía server, đọc Token/ShopId từ Environment Variables, chuyển tiếp sang GHN.
+
+```
+Trình duyệt  ──fetch('/api/ghn/…', header x-proxy-key)──▶  Vercel Function  ──Token+ShopId──▶  GHN
+```
+
+### Các endpoint proxy (đã tạo, dạng passthrough)
+
+| File | Việc | Endpoint GHN |
+|---|---|---|
+| `api/ghn/ping.js` | test kết nối (lấy danh sách tỉnh) | `master-data/province` |
+| `api/ghn/master-data.js` | tỉnh / quận-huyện / phường-xã theo **ID của GHN** | `master-data/{province,district,ward}` |
+| `api/ghn/available-services.js` | lấy `service_type_id` cho 1 tuyến | `v2/shipping-order/available-services` |
+| `api/ghn/fee.js` | tính phí ship | `v2/shipping-order/fee` |
+| `api/ghn/create.js` | tạo đơn, trả `order_code` | `v2/shipping-order/create` |
+| `api/ghn/detail.js` | tra trạng thái 1 vận đơn | `v2/shipping-order/detail` |
+| `api/ghn/print-token.js` | token in nhãn (A5 / 80x80 / 52x70) | `v2/a5/gen-token` |
+| `api/ghn/cancel.js` | huỷ đơn | `v2/switch-status/cancel` |
+
+Client gọi qua `src/lib/ghn.js` (`ghn.ping()`, `ghn.fee(...)`, …). File này **không chứa token**.
+
+### Bật lên
+
+1. Lấy trong dashboard GHN: **Token API** và **ShopId**.
+2. Vercel → Project Settings → Environment Variables, thêm:
+   - `GHN_TOKEN` = token
+   - `GHN_SHOP_ID` = shop id
+   - `GHN_PROXY_SECRET` = chuỗi bí mật tự đặt
+   - `VITE_GHN_PROXY_SECRET` = **cùng giá trị** với `GHN_PROXY_SECRET`
+   - (tuỳ chọn) `GHN_BASE_URL` = `https://dev-online-gateway.ghn.vn` nếu dùng môi trường thử
+   - (tuỳ chọn) `GHN_FROM_DISTRICT_ID` = district_id GHN của kho lấy hàng (cho tính phí)
+3. Redeploy. Vào tab **Vận chuyển** → nút **"Kiểm tra kết nối GHN"** → phải hiện
+   "OK — GHN trả về N tỉnh/thành".
+
+*(Để trống `GHN_PROXY_SECRET` + `VITE_GHN_PROXY_SECRET` thì proxy không yêu cầu secret —
+chỉ nên vậy lúc mới test. Local `npm run dev` KHÔNG chạy `api/` — cần `npx vercel dev`.)*
+
+### Còn phải làm (giai đoạn tiếp)
+
+- **Địa chỉ GHN**: GHN dùng `province_id`/`district_id`/`ward_code` riêng, **không khớp**
+  danh sách 34 tỉnh mới trong app. Form tạo phiếu vận chuyển cần thêm 3 dropdown chọn
+  theo master-data GHN (feed từ `api/ghn/master-data`).
+- Nút **"Tính phí GHN"** trong form (gọi `available-services` → `fee`).
+- Nút **"Đẩy sang GHN"** (gọi `create` → lưu `order_code` vào `trackingCode`, `carrier` = GHN).
+- **Đồng bộ trạng thái**: nút "Cập nhật từ GHN" trên phiếu (gọi `detail`, map qua
+  `ghnStatusToTicket`), hoặc webhook GHN → 1 function `api/ghn/webhook.js`.
+- **In nhãn GHN**: gọi `print-token` → mở `printUrls.A5`.
+
 ## Nghiệp vụ cần giữ nguyên khi refactor
 
 Xem `../README-MIGRATION.md` mục 5 — phân quyền 3 vai trò, giá bán tối thiểu theo vai trò,
