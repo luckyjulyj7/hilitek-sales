@@ -1,6 +1,19 @@
 # 🔌 Nối website bán hàng với app quản lý
 
-Website khách và app quản lý (`/admin`) giờ **dùng chung 1 database Supabase**.
+## Đường dẫn sau khi deploy
+
+| Đường dẫn | Trang |
+|---|---|
+| `/`  và  `/admin` | **App quản lý bán hàng** (đăng nhập) |
+| `/shop` | **Website bán hàng cho khách** — đang để riêng, CHƯA công khai ở `/` |
+| `/api/web/*` | API |
+
+> Khi muốn web khách lên trang chủ `/`: đổi nội dung 2 file `index.html` ↔ `shop.html`
+> (đang: `index.html` = quản lý, `shop.html` = web khách), rồi push lại.
+
+---
+
+Website khách và app quản lý **dùng chung 1 database Supabase**.
 Website đọc dữ liệu qua các Serverless Function trong `api/web/` (chạy phía server
 Vercel — web khách không giữ khoá Supabase nào).
 

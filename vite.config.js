@@ -4,8 +4,10 @@ import { resolve } from "node:path";
 
 // https://vitejs.dev/config/
 // App đa trang:
-//   index.html  -> website bán hàng cho khách (src/storefront/main.jsx)
-//   admin.html  -> app quản lý bán hàng nội bộ (src/main.jsx) — phục vụ tại /admin
+//   index.html  -> APP QUẢN LÝ BÁN HÀNG (src/main.jsx)         → phục vụ tại "/"
+//   admin.html  -> app quản lý (bản sao)                        → phục vụ tại "/admin"
+//   shop.html   -> WEBSITE BÁN HÀNG CHO KHÁCH (src/storefront)  → phục vụ tại "/shop"
+//                  (đổi index.html <-> shop.html khi muốn web khách lên "/")
 export default defineConfig({
   plugins: [react()],
   server: {
@@ -17,6 +19,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, "index.html"),
         admin: resolve(__dirname, "admin.html"),
+        shop: resolve(__dirname, "shop.html"),
       },
     },
   },

@@ -6,6 +6,8 @@
   "rewrites": [
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/admin/(.*)", "destination": "/admin.html" },
+    { "source": "/shop", "destination": "/shop.html" },
+    { "source": "/shop/(.*)", "destination": "/shop.html" },
     { "source": "/((?!api/).*)", "destination": "/" }
   ]
 }
