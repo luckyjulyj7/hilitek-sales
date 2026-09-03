@@ -64,8 +64,8 @@ export default function PosterSlot({ slot, fill = false, className = "", navigat
       style={style}
     >
       <ImagePlus size={20} />
-      <div className="text-[12.5px] font-medium">{label || "Khu vực đặt poster"}</div>
-      {w && h && <div className="text-[11px] font-mono">{w} × {h} px</div>}
+      <div className="text-[13px] font-medium">{label || "Khu vực đặt poster"}</div>
+      {w && h && <div className="text-[12px] font-mono">{w} × {h} px</div>}
     </div>
   );
 }

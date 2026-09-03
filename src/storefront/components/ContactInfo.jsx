@@ -35,7 +35,7 @@ function Row({ icon: Icon, label, children }) {
     <li className="flex gap-3">
       <Icon size={18} className="text-navy shrink-0 mt-0.5" />
       <div>
-        <div className="text-[12px] uppercase tracking-wide text-mute">{label}</div>
+        <div className="text-[13px] uppercase tracking-wide text-mute">{label}</div>
         <div className="mt-0.5">{children}</div>
       </div>
     </li>

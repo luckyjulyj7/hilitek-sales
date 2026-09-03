@@ -21,7 +21,7 @@ export default function CategoryRail({ navigate, className = "", hideHeading = f
   return (
     <nav className={"relative bg-white border border-line rounded-lg " + className}>
       {!hideHeading && (
-        <div className="flex items-center gap-2 px-4 h-11 bg-navy text-white rounded-t-lg font-semibold text-[13.5px] uppercase tracking-wide">
+        <div className="flex items-center gap-2 px-4 h-11 bg-navy text-white rounded-t-lg font-semibold text-[14px] uppercase tracking-wide">
           <LayoutGrid size={16} /> Danh mục sản phẩm
         </div>
       )}
@@ -35,7 +35,7 @@ export default function CategoryRail({ navigate, className = "", hideHeading = f
               <button
                 onClick={() => go(href("/danh-muc", { group: g.group }).slice(1))}
                 className={
-                  "w-full flex items-center gap-2.5 px-4 py-2.5 text-[13.5px] text-left transition-colors " +
+                  "w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-left transition-colors " +
                   (active ? "bg-navy-050 text-navy font-medium" : "text-ink/85 hover:bg-navy-050 hover:text-navy")
                 }
               >

@@ -17,7 +17,7 @@ export default function SocialLinks({ title = "Kênh chính thức", titleClass 
 
   return (
     <div className={className}>
-      {title && <div className={"text-[12px] uppercase tracking-wide mb-2 " + titleClass}>{title}</div>}
+      {title && <div className={"text-[13px] uppercase tracking-wide mb-2 " + titleClass}>{title}</div>}
       <div className="flex flex-wrap gap-2">
         {items.map((s) => {
           const style = STYLE[s.kind] || { icon: Link2, bg: "bg-mute" };
@@ -31,7 +31,7 @@ export default function SocialLinks({ title = "Kênh chính thức", titleClass 
               rel="noreferrer"
               title={missing ? `${s.label} — chưa gắn link` : s.label}
               className={
-                "inline-flex items-center gap-1.5 rounded-full pl-2 pr-3 py-1.5 text-[12.5px] font-medium text-white " +
+                "inline-flex items-center gap-1.5 rounded-full pl-2 pr-3 py-1.5 text-[13px] font-medium text-white " +
                 style.bg +
                 (missing ? " opacity-40 cursor-not-allowed" : " hover:brightness-110")
               }

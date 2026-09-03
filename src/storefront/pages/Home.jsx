@@ -76,7 +76,7 @@ export default function Home({ catalog, navigate }) {
               <a
                 href={href("/danh-muc", { group: g.group })}
                 onClick={go(href("/danh-muc", { group: g.group }).slice(1))}
-                className="text-[13px] font-semibold text-navy hover:underline inline-flex items-center gap-1"
+                className="text-[14px] font-semibold text-navy hover:underline inline-flex items-center gap-1"
               >
                 Xem tất cả <ArrowRight size={14} />
               </a>

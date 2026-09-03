@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ChevronRight, ChevronLeft, ShieldCheck, Hash, Check, ArrowLeft, Minus, Plus, MessageCircle,
   ShoppingCart, Zap, ZoomIn, X, Clock,
@@ -22,6 +22,16 @@ export default function ProductDetail({ slug, navigate, catalog }) {
   const [specOpen, setSpecOpen] = useState(false);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
+  const [descExpanded, setDescExpanded] = useState(false);
+  const [descOverflows, setDescOverflows] = useState(false);
+  const descRef = useRef(null);
+
+  // Đo xem phần mô tả có dài quá DESC_MAX không -> mới hiện nút "Xem thêm".
+  useEffect(() => {
+    const el = descRef.current;
+    if (!el) return;
+    setDescOverflows(el.scrollHeight > DESC_MAX + 24);
+  }, [product]);
 
   useEffect(() => {
     let alive = true;
@@ -31,6 +41,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
     setSpecOpen(false);
     setQty(1);
     setAdded(false);
+    setDescExpanded(false);
     fetchProduct(slug).then((p) => alive && setProduct(p));
     window.scrollTo(0, 0);
     return () => { alive = false; };
@@ -68,7 +79,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
 
   return (
     <div className="mx-auto max-w-[1500px] px-3 sm:px-4 py-6 font-sans">
-      <nav className="flex items-center gap-1 text-[12.5px] text-mute mb-5 flex-wrap">
+      <nav className="flex items-center gap-1 text-[13px] text-mute mb-5 flex-wrap">
         <a href="#/" onClick={(e) => { e.preventDefault(); navigate("/"); }} className="hover:text-navy">Trang chủ</a>
         <ChevronRight size={12} />
         <a href={href("/danh-muc", { group: groupName })} onClick={(e) => { e.preventDefault(); navigate(href("/danh-muc", { group: groupName }).slice(1)); }} className="hover:text-navy">{groupName}</a>
@@ -84,7 +95,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
         <div>
           <div className="group relative aspect-square bg-white border border-line rounded-lg overflow-hidden">
             {off > 0 && (
-              <span className="absolute top-3 left-3 z-10 bg-yellow text-ink text-[13px] font-bold px-2 py-0.5 rounded font-mono">−{off}%</span>
+              <span className="absolute top-3 left-3 z-10 bg-yellow text-ink text-[14px] font-bold px-2 py-0.5 rounded font-mono">−{off}%</span>
             )}
             <button
               type="button"
@@ -94,7 +105,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
             >
               <img src={imgs[imgIdx]} alt={p.name} className="w-full h-full object-cover" />
             </button>
-            <span className="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-1 bg-ink/70 text-white text-[11px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition">
+            <span className="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-1 bg-ink/70 text-white text-[12px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition">
               <ZoomIn size={13} /> Phóng to
             </span>
             {imgs.length > 1 && (
@@ -123,17 +134,17 @@ export default function ProductDetail({ slug, navigate, catalog }) {
 
         {/* Thông tin + mua */}
         <div className="min-w-0">
-          <div className="font-mono text-[12px] uppercase tracking-wide text-navy font-semibold">{p.brand}</div>
+          <div className="font-mono text-[13px] uppercase tracking-wide text-navy font-semibold">{p.brand}</div>
           <h1 className="mt-1 font-display text-2xl sm:text-[28px] font-bold text-ink leading-tight">{p.name}</h1>
 
-          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-mute">
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[14px] text-mute">
             <span className="font-mono">{p.sku}</span>
             <span className="inline-flex items-center gap-1"><ShieldCheck size={14} className="text-navy" /> {warrantyLabel(p.warrantyMonths)}</span>
             {p.hasSerial && <span className="inline-flex items-center gap-1"><Hash size={14} className="text-navy" /> Có số serial riêng</span>}
           </div>
 
           {p.specChips?.length > 0 && (
-            <div className="mt-4 border-l-[3px] border-yellow bg-navy-050 rounded-r-md px-4 py-2.5 text-[13px] font-mono text-ink/80">
+            <div className="mt-4 border-l-[3px] border-yellow bg-navy-050 rounded-r-md px-4 py-2.5 text-[14px] font-mono text-ink/80">
               {p.specChips.join("  ·  ")}
             </div>
           )}
@@ -142,28 +153,28 @@ export default function ProductDetail({ slug, navigate, catalog }) {
             {/* Giá: font "Bai Jamjuree" theo mẫu Mai Anh PC — giá gạch nhỏ trên, giá bán to dưới */}
             <div className="font-price">
               {off > 0 && (
-                <div className="flex items-center gap-2 text-[13px]">
+                <div className="flex items-center gap-2 text-[14px]">
                   <span className="text-mute line-through">{formatVND(p.listPrice)}</span>
                   <span className="font-semibold text-[#D0021B]">Tiết kiệm {formatVND(p.listPrice - p.price)}</span>
                 </div>
               )}
               <div className="text-[32px] sm:text-[38px] font-bold text-sale leading-none mt-0.5">{formatVND(p.price)}</div>
             </div>
-            <div className="mt-1 text-[12px] text-mute">Đã bao gồm VAT</div>
+            <div className="mt-1 text-[13px] text-mute">Đã bao gồm VAT</div>
 
             <div className="my-3 border-t border-line" />
 
-            <div className="text-[13px] text-ink">
+            <div className="text-[14px] text-ink">
               {out ? <span className="text-[#E8730C] font-semibold">Tạm hết hàng — có thể đặt trước, Hilitek báo khi có hàng</span>
                 : low ? <span>Còn <b>{p.stock}</b> sản phẩm — sắp hết</span>
                 : <span>Còn <b>{p.stock}</b> sản phẩm</span>}
             </div>
 
             <div className="mt-3 flex items-center gap-3">
-              <span className="text-[13px] text-mute">Số lượng</span>
+              <span className="text-[14px] text-mute">Số lượng</span>
               <div className="inline-flex items-center border border-line rounded-md">
                 <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="px-2 py-1.5 text-mute hover:text-navy" aria-label="Giảm"><Minus size={14} /></button>
-                <input value={qty} onChange={(e) => setQty(Math.max(1, Math.min(99, parseInt(e.target.value.replace(/\D/g, "")) || 1)))} className="w-10 text-center text-[14px] font-mono outline-none" inputMode="numeric" />
+                <input value={qty} onChange={(e) => setQty(Math.max(1, Math.min(99, parseInt(e.target.value.replace(/\D/g, "")) || 1)))} className="w-10 text-center text-[15px] font-mono outline-none" inputMode="numeric" />
                 <button onClick={() => setQty((q) => Math.min(99, q + 1))} className="px-2 py-1.5 text-mute hover:text-navy" aria-label="Tăng"><Plus size={14} /></button>
               </div>
             </div>
@@ -184,7 +195,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
             </button>
 
             {added && (
-              <button onClick={() => navigate("/gio-hang")} className="mt-2 w-full rounded-md border border-navy text-navy font-semibold py-2 text-[13.5px] inline-flex items-center justify-center gap-1.5 hover:bg-navy-050">
+              <button onClick={() => navigate("/gio-hang")} className="mt-2 w-full rounded-md border border-navy text-navy font-semibold py-2 text-[14px] inline-flex items-center justify-center gap-1.5 hover:bg-navy-050">
                 <Check size={14} /> Đã thêm — Xem giỏ hàng
               </button>
             )}
@@ -221,9 +232,30 @@ export default function ProductDetail({ slug, navigate, catalog }) {
         <section>
           <h2 className="font-display text-xl font-bold text-ink mb-3 border-l-4 border-yellow pl-3">Mô tả sản phẩm</h2>
           <div className="border border-line rounded-lg bg-white p-5 sm:p-6">
-            {descText
-              ? <RichText text={descText} />
-              : <p className="text-mute text-[14px]">Chưa có mô tả cho sản phẩm này.</p>}
+            {descText ? (
+              <>
+                <div
+                  ref={descRef}
+                  className="relative overflow-hidden transition-[max-height] duration-300"
+                  style={{ maxHeight: descExpanded ? 6000 : descOverflows ? DESC_MAX : "none" }}
+                >
+                  <RichText text={descText} />
+                  {!descExpanded && descOverflows && (
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white to-transparent" />
+                  )}
+                </div>
+                {descOverflows && (
+                  <button
+                    onClick={() => setDescExpanded((v) => !v)}
+                    className="mt-3 w-full inline-flex items-center justify-center gap-1.5 rounded-md border border-line bg-paper text-navy font-semibold text-[14px] py-2.5 hover:bg-navy-050"
+                  >
+                    {descExpanded ? <><Minus size={15} /> Thu gọn</> : <><Plus size={15} /> Xem thêm</>}
+                  </button>
+                )}
+              </>
+            ) : (
+              <p className="text-mute text-[15px]">Chưa có mô tả cho sản phẩm này.</p>
+            )}
           </div>
         </section>
 
@@ -235,14 +267,14 @@ export default function ProductDetail({ slug, navigate, catalog }) {
               {p.specs.length > SPEC_PREVIEW && (
                 <button
                   onClick={() => setSpecOpen(true)}
-                  className="mt-2 w-full inline-flex items-center justify-center gap-1.5 rounded-md border border-line bg-paper text-navy font-semibold text-[13px] py-2.5 hover:bg-navy-050"
+                  className="mt-2 w-full inline-flex items-center justify-center gap-1.5 rounded-md border border-line bg-paper text-navy font-semibold text-[14px] py-2.5 hover:bg-navy-050"
                 >
                   <Plus size={15} /> Xem thêm {p.specs.length - SPEC_PREVIEW} thông số
                 </button>
               )}
             </>
           ) : (
-            <div className="border border-line rounded-lg bg-white p-5 text-mute text-[14px]">Đang cập nhật.</div>
+            <div className="border border-line rounded-lg bg-white p-5 text-mute text-[15px]">Đang cập nhật.</div>
           )}
         </section>
       </div>
@@ -280,12 +312,13 @@ export default function ProductDetail({ slug, navigate, catalog }) {
 }
 
 const SPEC_PREVIEW = 8;
+const DESC_MAX = 460; // px — chiều cao tối đa của mô tả khi chưa bấm "Xem thêm"
 
 /** Bảng thông số 2 cột: cột nhãn (nền xám) | cột giá trị. Dùng ở trang SP và trong popup. */
 function SpecTable({ rows }) {
   return (
     <div className="border border-line rounded-lg overflow-hidden bg-white">
-      <table className="w-full text-[13px]">
+      <table className="w-full text-[14px]">
         <tbody>
           {rows.map(([k, v], i) => (
             <tr key={i} className="border-b border-line last:border-0 align-top">
@@ -314,7 +347,7 @@ function SpecModal({ title, subtitle, rows, onClose }) {
         <div className="flex items-start justify-between gap-3 px-5 py-3.5 border-b border-line">
           <div>
             <h3 className="font-display text-lg font-bold text-ink leading-tight">{title}</h3>
-            {subtitle && <p className="text-[12.5px] text-mute mt-0.5 line-clamp-1">{subtitle}</p>}
+            {subtitle && <p className="text-[13px] text-mute mt-0.5 line-clamp-1">{subtitle}</p>}
           </div>
           <button onClick={onClose} aria-label="Đóng" className="text-mute hover:text-ink p-1 -mr-1 shrink-0"><X size={22} /></button>
         </div>
@@ -378,7 +411,7 @@ function Lightbox({ images, index, alt, onIndex, onClose }) {
       )}
 
       {many && (
-        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 text-white/80 text-[13px] font-mono">
+        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 text-white/80 text-[14px] font-mono">
           {index + 1} / {images.length}
         </div>
       )}
@@ -403,7 +436,7 @@ function RichText({ text }) {
   flushPara(); flushList();
 
   return (
-    <div className="space-y-3 text-[14.5px] text-ink/80 leading-relaxed">
+    <div className="space-y-3 text-[15px] text-ink/80 leading-relaxed">
       {blocks.map((b, i) =>
         b.type === "ul" ? (
           <ul key={i} className="list-disc pl-5 space-y-1">
@@ -421,8 +454,8 @@ function RelatedCard({ p, onOpen }) {
   return (
     <a href={`#/san-pham/${p.slug}`} onClick={(e) => { e.preventDefault(); onOpen(); }} className="border border-line rounded-lg bg-white p-3 hover:shadow-card hover:border-navy/30">
       <img src={p.images?.[0]?.src || p.images?.[0] || placeholderImage(p.brand, p.category)} alt={p.name} className="w-full aspect-square object-cover rounded-md bg-navy-050" />
-      <div className="mt-2 text-[12.5px] text-ink line-clamp-2 min-h-[34px]">{p.name}</div>
-      <div className="mt-1 font-mono text-[14px] font-bold text-sale">{formatVND(p.price)}</div>
+      <div className="mt-2 text-[13px] text-ink line-clamp-2 min-h-[34px]">{p.name}</div>
+      <div className="mt-1 font-mono text-[15px] font-bold text-sale">{formatVND(p.price)}</div>
     </a>
   );
 }

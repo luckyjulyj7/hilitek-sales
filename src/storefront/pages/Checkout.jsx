@@ -30,12 +30,12 @@ export default function Checkout({ navigate }) {
         <p className="mt-2 text-mute text-sm">
           Mã đơn: <span className="font-mono font-semibold text-ink">{placed.code}</span>
         </p>
-        <p className="mt-3 text-[14px] text-ink/75 leading-relaxed">
+        <p className="mt-3 text-[15px] text-ink/75 leading-relaxed">
           Hilitek sẽ gọi lại số <span className="font-mono">{placed.phone}</span> trong giờ làm việc để xác nhận
           hàng, phí vận chuyển và chốt đơn. Cảm ơn Quý khách!
         </p>
         {placed.pay === "bank" && (
-          <div className="mt-5 text-left border border-line rounded-lg bg-white p-4 text-[13.5px]">
+          <div className="mt-5 text-left border border-line rounded-lg bg-white p-4 text-[14px]">
             <div className="font-semibold text-navy mb-1.5">Thông tin chuyển khoản</div>
             <div>{SITE.bank.name} — <b className="font-mono">{SITE.bank.accountNumber}</b></div>
             <div>{SITE.bank.holder} · {SITE.bank.branch}</div>
@@ -45,7 +45,7 @@ export default function Checkout({ navigate }) {
         <button onClick={() => navigate("/")} className="mt-6 inline-flex items-center gap-2 rounded-md bg-navy text-white px-5 py-3 font-display font-semibold hover:bg-navy-600">
           <ArrowLeft size={18} /> Về trang chủ
         </button>
-        <p className="mt-6 text-[12px] text-mute">
+        <p className="mt-6 text-[13px] text-mute">
           (Bản thử — đơn chưa được lưu. Khi nối API, đơn sẽ đổ về app quản lý bán hàng với nguồn “{ORDER_SOURCE}”.)
         </p>
       </div>
@@ -114,7 +114,7 @@ export default function Checkout({ navigate }) {
   return (
     <div className="mx-auto max-w-[1500px] px-4 py-8 font-sans">
       <h1 className="font-display text-3xl font-bold text-ink">Đặt hàng</h1>
-      <button onClick={() => navigate("/gio-hang")} className="mt-1 inline-flex items-center gap-1.5 text-[13px] text-navy font-semibold">
+      <button onClick={() => navigate("/gio-hang")} className="mt-1 inline-flex items-center gap-1.5 text-[14px] text-navy font-semibold">
         <ArrowLeft size={15} /> Quay lại giỏ hàng
       </button>
 
@@ -163,12 +163,12 @@ export default function Checkout({ navigate }) {
           </Field>
 
           <div>
-            <div className="text-[13px] font-medium text-ink mb-2">Hình thức thanh toán</div>
-            <label className="flex items-center gap-2 text-[14px] text-ink/80 py-1">
+            <div className="text-[14px] font-medium text-ink mb-2">Hình thức thanh toán</div>
+            <label className="flex items-center gap-2 text-[15px] text-ink/80 py-1">
               <input type="radio" name="pay" checked={form.pay === "bank"} onChange={() => setForm((f) => ({ ...f, pay: "bank" }))} />
               Chuyển khoản ngân hàng (khuyên dùng)
             </label>
-            <label className="flex items-center gap-2 text-[14px] text-ink/80 py-1">
+            <label className="flex items-center gap-2 text-[15px] text-ink/80 py-1">
               <input type="radio" name="pay" checked={form.pay === "cod"} onChange={() => setForm((f) => ({ ...f, pay: "cod" }))} />
               Thanh toán khi nhận hàng (COD)
             </label>
@@ -179,12 +179,12 @@ export default function Checkout({ navigate }) {
         <div className="lg:sticky lg:top-[150px] space-y-4">
           <div className="border border-line rounded-lg bg-white p-5">
             <h2 className="font-display font-bold text-ink">Đơn hàng của bạn</h2>
-            <ul className="mt-3 space-y-2 text-[13px]">
+            <ul className="mt-3 space-y-2 text-[14px]">
               {items.map((it) => (
                 <li key={it.id} className="flex justify-between gap-3">
                   <span className="text-ink/80">
                     {it.name} <span className="text-mute">× {it.qty}</span>
-                    {it.preorder && <span className="ml-1 text-[11px] font-semibold text-[#E8730C]">(đặt trước)</span>}
+                    {it.preorder && <span className="ml-1 text-[12px] font-semibold text-[#E8730C]">(đặt trước)</span>}
                   </span>
                   <span className="font-price text-ink shrink-0">{formatVND(it.qty * it.price)}</span>
                 </li>
@@ -192,12 +192,12 @@ export default function Checkout({ navigate }) {
             </ul>
             <div className="my-3 border-t border-line" />
             <div className="flex items-center justify-between">
-              <span className="text-[14px] text-mute">Tạm tính</span>
+              <span className="text-[15px] text-mute">Tạm tính</span>
               <span className="font-price text-xl font-bold text-sale">{formatVND(subtotal)}</span>
             </div>
-            <p className="mt-2 text-[12px] text-mute">Đã bao gồm VAT · Phí vận chuyển báo khi xác nhận đơn.</p>
+            <p className="mt-2 text-[13px] text-mute">Đã bao gồm VAT · Phí vận chuyển báo khi xác nhận đơn.</p>
             {items.some((it) => it.preorder) && (
-              <p className="mt-2 text-[12px] text-[#E8730C] leading-relaxed">
+              <p className="mt-2 text-[13px] text-[#E8730C] leading-relaxed">
                 Đơn có sản phẩm <b>đặt trước</b> (tạm hết hàng). Hilitek sẽ liên hệ báo thời gian có hàng trước khi giao.
               </p>
             )}
@@ -205,21 +205,21 @@ export default function Checkout({ navigate }) {
 
           {form.pay === "bank" && (
             <div className="border border-line rounded-lg bg-white p-5">
-              <div className="flex items-center gap-2 font-display font-bold text-[14px] text-navy">
+              <div className="flex items-center gap-2 font-display font-bold text-[15px] text-navy">
                 <Landmark size={17} /> {CHECKOUT.bankTitle}
               </div>
-              <dl className="mt-3 grid grid-cols-[92px_1fr] gap-y-1.5 text-[13.5px]">
+              <dl className="mt-3 grid grid-cols-[92px_1fr] gap-y-1.5 text-[14px]">
                 <dt className="text-mute">Ngân hàng</dt><dd className="text-ink font-medium">{SITE.bank.name}</dd>
                 <dt className="text-mute">Số TK</dt><dd className="text-ink font-bold font-mono">{SITE.bank.accountNumber}</dd>
                 <dt className="text-mute">Chủ TK</dt><dd className="text-ink">{SITE.bank.holder}</dd>
                 <dt className="text-mute">Chi nhánh</dt><dd className="text-ink">{SITE.bank.branch}</dd>
               </dl>
-              <p className="mt-3 pt-3 border-t border-line text-[12.5px] text-ink/70 leading-relaxed">{CHECKOUT.bankNote}</p>
+              <p className="mt-3 pt-3 border-t border-line text-[13px] text-ink/70 leading-relaxed">{CHECKOUT.bankNote}</p>
             </div>
           )}
 
           <div className="border border-line rounded-lg bg-white p-5">
-            <label className="flex items-start gap-2.5 text-[13px] text-ink/80 leading-relaxed">
+            <label className="flex items-start gap-2.5 text-[14px] text-ink/80 leading-relaxed">
               <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-0.5 shrink-0" />
               <span>
                 {CHECKOUT.termsLabel}{" "}
@@ -229,8 +229,8 @@ export default function Checkout({ navigate }) {
                 <span className="text-sale">*</span>
               </span>
             </label>
-            {errors.agree && <p className="mt-1 text-[12px] text-sale">{errors.agree}</p>}
-            {sendErr && <p className="mt-2 text-[12.5px] text-sale leading-relaxed">{sendErr}</p>}
+            {errors.agree && <p className="mt-1 text-[13px] text-sale">{errors.agree}</p>}
+            {sendErr && <p className="mt-2 text-[13px] text-sale leading-relaxed">{sendErr}</p>}
 
             <button
               type="submit"
@@ -240,10 +240,10 @@ export default function Checkout({ navigate }) {
               {sending ? "ĐANG GỬI ĐƠN…" : "ĐẶT HÀNG"}
             </button>
 
-            <ul className="mt-4 space-y-1.5 text-[12px] text-mute leading-relaxed">
+            <ul className="mt-4 space-y-1.5 text-[13px] text-mute leading-relaxed">
               {CHECKOUT.notes.map((n, i) => <li key={i}>* {n}</li>)}
             </ul>
-            <p className="mt-2 text-[12.5px] font-semibold text-sale flex items-center gap-1.5">
+            <p className="mt-2 text-[13px] font-semibold text-sale flex items-center gap-1.5">
               <Phone size={13} /> {CHECKOUT.urgentSupport}
             </p>
           </div>
@@ -255,18 +255,18 @@ export default function Checkout({ navigate }) {
 
 function inp(err) {
   return (
-    "w-full border rounded-md px-3 py-2 text-[14px] outline-none focus:border-navy " +
+    "w-full border rounded-md px-3 py-2 text-[15px] outline-none focus:border-navy " +
     (err ? "border-sale bg-red-50/40" : "border-line")
   );
 }
 function Field({ label, required, error, children }) {
   return (
     <label className="block">
-      <span className="block text-[13px] font-medium text-ink mb-1">
+      <span className="block text-[14px] font-medium text-ink mb-1">
         {label} {required && <span className="text-sale">*</span>}
       </span>
       {children}
-      {error && <span className="block mt-1 text-[12px] text-sale">{error}</span>}
+      {error && <span className="block mt-1 text-[13px] text-sale">{error}</span>}
     </label>
   );
 }

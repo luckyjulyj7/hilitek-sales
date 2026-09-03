@@ -15,8 +15,8 @@ export default function TrustBar({ className = "" }) {
         <div key={it.title} className="flex items-start gap-3 bg-white p-4">
           <it.icon size={22} className="text-navy shrink-0 mt-0.5" />
           <div>
-            <div className="font-display font-semibold text-ink text-[14px]">{it.title}</div>
-            <div className="text-[12.5px] text-mute leading-snug">{it.desc}</div>
+            <div className="font-display font-semibold text-ink text-[15px]">{it.title}</div>
+            <div className="text-[13px] text-mute leading-snug">{it.desc}</div>
           </div>
         </div>
       ))}

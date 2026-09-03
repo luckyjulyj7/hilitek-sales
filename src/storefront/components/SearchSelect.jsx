@@ -62,7 +62,7 @@ export default function SearchSelect({
         type="button" id={id} disabled={disabled}
         onClick={() => !disabled && setOpen((v) => !v)}
         className={
-          "w-full flex items-center justify-between gap-2 border rounded-md px-3 py-2 text-[14px] text-left " +
+          "w-full flex items-center justify-between gap-2 border rounded-md px-3 py-2 text-[15px] text-left " +
           (disabled ? "bg-paper text-mute cursor-not-allowed " : "bg-white ") +
           (error ? "border-sale" : "border-line")
         }
@@ -78,12 +78,12 @@ export default function SearchSelect({
             <input
               autoFocus value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onKey}
               placeholder="Gõ để tìm…"
-              className="flex-1 text-[13.5px] outline-none bg-transparent text-ink"
+              className="flex-1 text-[14px] outline-none bg-transparent text-ink"
             />
           </div>
           <ul ref={listRef} className="max-h-56 overflow-y-auto py-1">
             {filtered.length === 0 && (
-              <li className="px-3 py-2 text-[13px] text-mute">Không tìm thấy “{q}”</li>
+              <li className="px-3 py-2 text-[14px] text-mute">Không tìm thấy “{q}”</li>
             )}
             {filtered.map((o, i) => (
               <li key={o}>
@@ -92,7 +92,7 @@ export default function SearchSelect({
                   onClick={() => pick(o)}
                   onMouseEnter={() => setHi(i)}
                   className={
-                    "w-full text-left px-3 py-2 text-[13.5px] flex items-center gap-2 " +
+                    "w-full text-left px-3 py-2 text-[14px] flex items-center gap-2 " +
                     (i === hi ? "bg-navy-050 text-navy" : "text-ink hover:bg-navy-050")
                   }
                 >

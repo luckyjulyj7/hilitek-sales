@@ -7,13 +7,13 @@ export default function BuildPC() {
     <div className="mx-auto max-w-4xl px-4 py-12 font-sans">
       <div className="flex items-center gap-2 text-navy">
         <Wrench size={20} />
-        <span className="font-mono text-[12px] uppercase tracking-[0.2em]">Xây dựng cấu hình PC</span>
+        <span className="font-mono text-[13px] uppercase tracking-[0.2em]">Xây dựng cấu hình PC</span>
       </div>
       <h1 className="mt-2 font-display text-3xl font-bold text-ink">Tự ráp cấu hình PC theo nhu cầu</h1>
 
       <div className="mt-6 flex items-start gap-3 border border-dashed border-line bg-navy-050/40 rounded-lg p-5">
         <Hammer size={22} className="text-navy shrink-0 mt-0.5" />
-        <div className="text-[14px] text-ink/80 leading-relaxed">
+        <div className="text-[15px] text-ink/80 leading-relaxed">
           <b className="font-display text-ink">Công cụ chọn cấu hình đang được hoàn thiện.</b>
           <p className="mt-1">
             Trong lúc chờ, bạn cho Hilitek biết nhu cầu (chơi game / làm đồ hoạ / văn phòng) và

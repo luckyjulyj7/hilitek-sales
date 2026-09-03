@@ -19,12 +19,12 @@ export default function GroupPanel({ group, go, className = "" }) {
         <a
           href={titleHref}
           onClick={(e) => { e.preventDefault(); go(titleHref.slice(1)); }}
-          className="font-display font-bold text-[13.5px] text-navy hover:underline block mb-1.5"
+          className="font-display font-bold text-[14px] text-navy hover:underline block mb-1.5"
         >
           {title}
         </a>
       ) : (
-        <div className="font-display font-bold text-[13.5px] text-navy mb-1.5">{title}</div>
+        <div className="font-display font-bold text-[14px] text-navy mb-1.5">{title}</div>
       )}
       <ul className="space-y-1">
         {items.map((it, i) => (
@@ -32,7 +32,7 @@ export default function GroupPanel({ group, go, className = "" }) {
             <a
               href={it.href}
               onClick={(e) => { e.preventDefault(); go(it.href.slice(1)); }}
-              className="text-[13px] text-ink/70 hover:text-navy"
+              className="text-[14px] text-ink/70 hover:text-navy"
             >
               {it.label}
             </a>

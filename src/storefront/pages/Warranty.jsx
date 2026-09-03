@@ -30,7 +30,7 @@ export default function Warranty() {
         {FEATURES.warrantyLookup ? (
           <div className="border-t border-line pt-8">
             <h2 className="font-display text-xl font-bold text-ink">Tra cứu bảo hành theo số serial</h2>
-            <p className="mt-2 text-[14px] text-ink/70 leading-relaxed">
+            <p className="mt-2 text-[15px] text-ink/70 leading-relaxed">
               Nhập số serial in trên tem hoặc thân sản phẩm để xem tên sản phẩm, ngày xuất bán và
               thời hạn bảo hành còn lại.
             </p>
@@ -67,7 +67,7 @@ export default function Warranty() {
             </div>
           </div>
         ) : (
-          <div className="border border-dashed border-line rounded-lg p-5 bg-white text-[13.5px] text-mute leading-relaxed">
+          <div className="border border-dashed border-line rounded-lg p-5 bg-white text-[14px] text-mute leading-relaxed">
             <b className="text-ink font-display">Tra cứu bảo hành trực tuyến</b> đang được hoàn thiện và sẽ sớm
             mở tại đây. Trong lúc chờ, vui lòng gọi{" "}
             <a href={"tel:" + SITE.phoneRaw} className="font-mono text-navy">{SITE.phone}</a>{" "}

@@ -58,7 +58,7 @@ export default function Header({ route, navigate }) {
   return (
     <header className="sticky top-0 z-50 font-sans">
       {/* Thanh trên cùng */}
-      <div className="bg-ink text-white/75 text-[12.5px]">
+      <div className="bg-ink text-white/75 text-[13px]">
         <div className="mx-auto max-w-[1500px] px-4 h-9 flex items-center justify-between gap-4">
           <span className="inline-flex items-center gap-1.5 truncate">
             <MapPin size={13} className="shrink-0 text-yellow" /> {SITE.address}
@@ -94,7 +94,7 @@ export default function Header({ route, navigate }) {
                 placeholder="Tìm sản phẩm: ssd 1tb, main b760, ram ddr5…"
                 className="flex-1 px-3 py-1 text-sm text-ink bg-transparent outline-none"
               />
-              <button className="rounded-md bg-navy text-white text-[13px] font-semibold px-4 py-2 hover:bg-navy-600 shrink-0">
+              <button className="rounded-md bg-navy text-white text-[14px] font-semibold px-4 py-2 hover:bg-navy-600 shrink-0">
                 TÌM KIẾM
               </button>
             </div>
@@ -105,14 +105,14 @@ export default function Header({ route, navigate }) {
             <a href={"tel:" + hotlines[0].raw} className="hidden lg:flex items-center gap-2 ml-auto shrink-0 hover:text-yellow">
               <Phone size={22} className="text-yellow" />
               <span className="leading-tight">
-                <span className="block text-[11px] text-white/60 tracking-wide">{hotlines[0].label} · {SITE.workingHours}</span>
+                <span className="block text-[12px] text-white/60 tracking-wide">{hotlines[0].label} · {SITE.workingHours}</span>
                 <span className="block font-mono text-lg font-bold text-yellow tracking-wide">{hotlines[0].number}</span>
               </span>
             </a>
           ) : (
             <div className="hidden lg:flex flex-col justify-center leading-tight ml-auto shrink-0">
               {hotlines.slice(0, 4).map((h, i) => (
-                <a key={i} href={"tel:" + h.raw} className="flex items-center gap-1.5 text-[12.5px] hover:text-yellow">
+                <a key={i} href={"tel:" + h.raw} className="flex items-center gap-1.5 text-[13px] hover:text-yellow">
                   {i === 0 && <Phone size={13} className="text-yellow shrink-0" />}
                   <span className={i === 0 ? "font-semibold tracking-wide" : "text-white/70"}>
                     {h.label}: <span className="font-mono font-semibold text-yellow">{h.number}</span>
@@ -133,14 +133,14 @@ export default function Header({ route, navigate }) {
               <ShoppingCart size={20} />
               {count > 0 && (
                 <span className={
-                  "absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full text-[11px] font-bold font-mono grid place-items-center " +
+                  "absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full text-[12px] font-bold font-mono grid place-items-center " +
                   (cartBump ? "bg-navy text-white" : "bg-yellow text-ink")
                 }>
                   {count}
                 </span>
               )}
             </span>
-            <span className="hidden sm:inline text-[13px]">Giỏ hàng</span>
+            <span className="hidden sm:inline text-[14px]">Giỏ hàng</span>
           </button>
         </div>
 
@@ -164,7 +164,7 @@ export default function Header({ route, navigate }) {
               <button
                 onClick={() => setCatOpen((v) => !v)}
                 className={
-                  "flex items-center gap-2 h-11 px-4 font-semibold text-[13.5px] uppercase tracking-wide transition-colors " +
+                  "flex items-center gap-2 h-11 px-4 font-semibold text-[14px] uppercase tracking-wide transition-colors " +
                   (catOpen ? "bg-yellow text-ink" : "bg-white/10 text-white hover:bg-yellow hover:text-ink")
                 }
               >
@@ -187,7 +187,7 @@ export default function Header({ route, navigate }) {
                   <button
                     key={l.label}
                     onClick={() => go(l.to)}
-                    className="flex items-center gap-1.5 h-11 px-3 text-[13px] text-white/90 hover:text-yellow"
+                    className="flex items-center gap-1.5 h-11 px-3 text-[14px] text-white/90 hover:text-yellow"
                   >
                     <Icon size={15} className="text-yellow" /> {l.label}
                   </button>
@@ -224,14 +224,14 @@ export default function Header({ route, navigate }) {
                     <div className="pb-2">
                       <button
                         onClick={() => go(href("/danh-muc", { group: g.group }).slice(1))}
-                        className="block px-6 py-1.5 text-[14px] text-navy font-medium"
+                        className="block px-6 py-1.5 text-[15px] text-navy font-medium"
                       >
                         Tất cả {g.group}
                       </button>
                       {(g.subs || []).map((s) => {
                         const sh = href("/danh-muc", { group: g.group, cat: s.name });
                         return (
-                          <button key={s.slug || s.name} onClick={() => go(sh.slice(1))} className="block px-6 py-1.5 text-[14px] text-ink/75">
+                          <button key={s.slug || s.name} onClick={() => go(sh.slice(1))} className="block px-6 py-1.5 text-[15px] text-ink/75">
                             {s.name}
                           </button>
                         );
@@ -243,19 +243,19 @@ export default function Header({ route, navigate }) {
               })}
               {SUPPORT_LINKS.map((l) => (
                 <li key={l.label} className="border-b border-line">
-                  <button onClick={() => go(l.to)} className="w-full text-left px-4 py-3 text-[14px]">{l.label}</button>
+                  <button onClick={() => go(l.to)} className="w-full text-left px-4 py-3 text-[15px]">{l.label}</button>
                 </li>
               ))}
               <li className="border-b border-line">
-                <button onClick={() => go("/tra-cuu-don-hang")} className="w-full text-left px-4 py-3 text-[14px]">Tra cứu đơn hàng</button>
+                <button onClick={() => go("/tra-cuu-don-hang")} className="w-full text-left px-4 py-3 text-[15px]">Tra cứu đơn hàng</button>
               </li>
               <li>
-                <button onClick={() => go("/lien-he")} className="w-full text-left px-4 py-3 text-[14px]">Liên hệ</button>
+                <button onClick={() => go("/lien-he")} className="w-full text-left px-4 py-3 text-[15px]">Liên hệ</button>
               </li>
             </ul>
             <div className="px-4 py-3 space-y-1.5">
               {hotlines.slice(0, 4).map((h, i) => (
-                <a key={i} href={"tel:" + h.raw} className="flex items-center gap-2 text-navy text-[14px]">
+                <a key={i} href={"tel:" + h.raw} className="flex items-center gap-2 text-navy text-[15px]">
                   <Phone size={15} className="text-yellow" /> {h.label}: <span className="font-mono font-semibold">{h.number}</span>
                 </a>
               ))}

@@ -621,13 +621,17 @@ function cartesianProduct(arrays) {
 // giá web (0 = dùng giá bán lẻ). API api/web/products.js đọc field này.
 function normalizeWeb(w) {
   w = w && typeof w === "object" ? w : {};
-  const specs = Array.isArray(w.specs)
+  const arrSpecs = Array.isArray(w.specs)
     ? w.specs.map((r) => (Array.isArray(r) ? [String(r[0] || "").trim(), String(r[1] || "").trim()] : null)).filter((r) => r && (r[0] || r[1]))
     : [];
+  // specsText = văn bản thô người dùng gõ (giữ nguyên khoảng trắng / dòng trống, sửa xoá thoải mái).
+  // specs (mảng) LUÔN suy ra từ specsText — dùng cho web khách.
+  const specsText = typeof w.specsText === "string" ? w.specsText : webSpecsToText(arrSpecs);
   return {
     published: !!w.published,
     description: typeof w.description === "string" ? w.description : "",
-    specs,
+    specsText,
+    specs: webTextToSpecs(specsText),
     priceWeb: Number(w.priceWeb) || 0,          // giá bán trên web (chữ đỏ) — 0 = dùng giá bán lẻ
     compareAtPrice: Number(w.compareAtPrice) || 0, // giá so sánh (gạch bỏ) — 0 = không hiện
     categories: Array.isArray(w.categories) ? [...new Set(w.categories.filter((x) => typeof x === "string" && x.trim()).map((x) => x.trim()))] : [], // danh mục web (khớp menu ở Cấu hình web)
@@ -639,7 +643,7 @@ function webSpecsToText(specs) {
   return Array.isArray(specs) ? specs.map((r) => `${r[0] || ""} | ${r[1] || ""}`).join("\n") : "";
 }
 function webTextToSpecs(text) {
-  return String(text).split("\n").map((line) => {
+  return String(text || "").split("\n").map((line) => {
     const i = line.indexOf("|");
     if (i < 0) return line.trim() ? [line.trim(), ""] : null;
     return [line.slice(0, i).trim(), line.slice(i + 1).trim()];
@@ -2290,13 +2294,13 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                   </Field>
                 </div>
                 <Field label="Mô tả sản phẩm (web)" hint="Xuống dòng đôi = đoạn mới; dòng bắt đầu bằng '- ' = gạch đầu dòng">
-                  <textarea rows={5} className={inputCls} style={{ borderColor: LINE }} value={form.web?.description || ""}
-                    onChange={(e) => setForm({ ...form, web: { ...normalizeWeb(form.web), description: e.target.value } })} />
+                  <textarea rows={6} className={inputCls} style={{ borderColor: LINE }} value={form.web?.description || ""}
+                    onChange={(e) => setForm({ ...form, web: { ...form.web, description: e.target.value } })} />
                 </Field>
-                <Field label="Thông số kỹ thuật (web)" hint="Mỗi dòng: Nhãn | Giá trị">
-                  <textarea rows={5} className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }}
-                    value={webSpecsToText(form.web?.specs)}
-                    onChange={(e) => setForm({ ...form, web: { ...normalizeWeb(form.web), specs: webTextToSpecs(e.target.value) } })}
+                <Field label="Thông số kỹ thuật (web)" hint="Mỗi dòng 1 thông số, dạng: Nhãn | Giá trị. Gõ / xoá / xuống dòng thoải mái — hệ thống chỉ chuẩn hoá khi lưu.">
+                  <textarea rows={8} className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }}
+                    value={form.web?.specsText ?? webSpecsToText(form.web?.specs)}
+                    onChange={(e) => setForm({ ...form, web: { ...form.web, specsText: e.target.value } })}
                     placeholder={"Chuẩn | M.2 2280 NVMe\nDung lượng | 1 TB"} />
                 </Field>
               </div>
@@ -11043,13 +11047,13 @@ function WebProducts({ products, setProducts, categories, addLog, webConfig }) {
 
   const patch = (id, fn) => setProducts((prev) => prev.map((p) => (p.id === id ? fn(p) : p)));
   const setWeb = (p, wpatch) => {
-    const shareKeys = ["description", "specs", "categories"];
+    const shareKeys = ["description", "specsText", "categories"];
     const shared = shareKeys.some((k) => k in wpatch);
     setProducts((prev) => prev.map((x) => {
-      if (x.id === p.id) return { ...x, web: { ...normalizeWeb(x.web), ...wpatch } };
+      if (x.id === p.id) return { ...x, web: normalizeWeb({ ...normalizeWeb(x.web), ...wpatch }) };
       if (shared && p.variantGroupId && x.variantGroupId === p.variantGroupId) {
         const sh = {}; shareKeys.forEach((k) => { if (k in wpatch) sh[k] = wpatch[k]; });
-        return { ...x, web: { ...normalizeWeb(x.web), ...sh } };
+        return { ...x, web: normalizeWeb({ ...normalizeWeb(x.web), ...sh }) };
       }
       return x;
     }));
@@ -11154,9 +11158,9 @@ function WebProducts({ products, setProducts, categories, addLog, webConfig }) {
                             <textarea rows={5} className={inputCls} style={{ borderColor: LINE, background: "#fff" }}
                               value={p.web?.description || ""} onChange={(e) => setWeb(p, { description: e.target.value })} />
                           </Field>
-                          <Field label="Thông số kỹ thuật (web)" hint="Mỗi dòng: Nhãn | Giá trị">
-                            <textarea rows={5} className={inputCls} style={{ borderColor: LINE, background: "#fff", fontFamily: "'IBM Plex Mono', monospace" }}
-                              value={webSpecsToText(p.web?.specs)} onChange={(e) => setWeb(p, { specs: webTextToSpecs(e.target.value) })}
+                          <Field label="Thông số kỹ thuật (web)" hint="Mỗi dòng 1 thông số, dạng: Nhãn | Giá trị. Gõ / xoá / xuống dòng thoải mái — chuẩn hoá khi lưu.">
+                            <textarea rows={8} className={inputCls} style={{ borderColor: LINE, background: "#fff", fontFamily: "'IBM Plex Mono', monospace" }}
+                              value={p.web?.specsText ?? webSpecsToText(p.web?.specs)} onChange={(e) => setWeb(p, { specsText: e.target.value })}
                               placeholder={"Chuẩn | M.2 2280 NVMe\nDung lượng | 1 TB"} />
                           </Field>
                           <div className="grid grid-cols-2 gap-3">

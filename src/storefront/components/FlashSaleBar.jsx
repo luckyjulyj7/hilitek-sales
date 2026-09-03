@@ -30,7 +30,7 @@ export default function FlashSaleBar({ navigate }) {
   const cell = (v, label) => (
     <div className="flex flex-col items-center bg-white/15 rounded-md px-3 py-1.5 min-w-[58px]">
       <span className="font-mono font-bold text-lg leading-none tabular-nums">{String(v).padStart(2, "0")}</span>
-      <span className="text-[10px] uppercase tracking-wide text-white/80">{label}</span>
+      <span className="text-[11px] uppercase tracking-wide text-white/80">{label}</span>
     </div>
   );
 
@@ -47,7 +47,7 @@ export default function FlashSaleBar({ navigate }) {
       </div>
       <button
         onClick={() => navigate(href("/danh-muc", { sort: "discount" }).slice(1))}
-        className="ml-auto inline-flex items-center gap-1.5 bg-white text-red-600 font-semibold text-[13px] rounded-md px-4 py-2 hover:bg-yellow-300"
+        className="ml-auto inline-flex items-center gap-1.5 bg-white text-red-600 font-semibold text-[14px] rounded-md px-4 py-2 hover:bg-yellow-300"
       >
         Xem tất cả <ArrowRight size={15} />
       </button>
