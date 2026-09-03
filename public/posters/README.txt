@@ -23,4 +23,14 @@
 ║  hoặc link ngoài "https://...". Bỏ trống href = ảnh không bấm.    ║
 ║                                                                  ║
 ║  Ảnh nên đúng tỉ lệ khung (không thì bị cắt cho vừa).             ║
+╠══════════════════════════════════════════════════════════════════╣
+║  BANNER DỌC TRANG SẢN PHẨM (cột phải trang chi tiết)   300x520    ║
+║                                                                  ║
+║     banner-doc.svg      -> bản vector (nét ở mọi kích thước)      ║
+║     banner-doc.png      -> 300x520                                ║
+║     banner-doc@2x.png   -> 600x1040 (in ấn / mạng xã hội)         ║
+║                                                                  ║
+║  Set trong app quản lý: Website -> Cấu hình web ->               ║
+║  "Banner dọc trang sản phẩm - ảnh" = /posters/banner-doc.svg     ║
+║  (hoặc .png). Muốn sửa chữ/màu: sửa file .svg rồi tạo lại .png.  ║
 ╚══════════════════════════════════════════════════════════════════╝
