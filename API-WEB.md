@@ -14,8 +14,9 @@
 ---
 
 Website khách và app quản lý **dùng chung 1 database Supabase**.
-Website đọc dữ liệu qua các Serverless Function trong `api/web/` (chạy phía server
-Vercel — web khách không giữ khoá Supabase nào).
+Website đọc dữ liệu qua Serverless Function trên Vercel (web khách không giữ khoá
+Supabase nào). Tất cả endpoint `/api/web/*` gộp trong **1 file** `api/web/[...path].js`
+(gói Vercel Hobby giới hạn 12 function/deploy — GHN đã chiếm 8).
 
 ## 1. API đã có
 
@@ -125,7 +126,7 @@ Khách đặt trên web → đơn xuất hiện trong **Đơn hàng** của app 
   1. Supabase → **Storage** → New bucket: tên `product-media`, tick **Public**.
   2. SQL Editor → chạy `supabase/storage.sql` (tạo policy cho phép upload).
   3. Vercel Env: đã có `SUPABASE_SERVICE_ROLE_KEY` (cho `/api/web/*`) là đủ cho
-     `/api/admin/fetch-image` (tải ảnh từ bài dán). `VITE_SUPABASE_ANON_KEY` dùng
+     `/api/web/fetch-image` (tải ảnh từ bài dán). `VITE_SUPABASE_ANON_KEY` dùng
      làm khoá chặn lạm dụng endpoint đó.
   4. `vercel.json` đã có rewrite `/media/*` → storage công khai của project
      `wddfjbcrkwkzshibghdi`. Đổi nếu dùng project Supabase khác.

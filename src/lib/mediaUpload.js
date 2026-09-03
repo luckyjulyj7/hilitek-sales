@@ -43,7 +43,7 @@ export async function uploadProductImage(fileOrBlob) {
 /**
  * Đưa 1 ảnh từ URL ngoài về kho Hilitek. Trả link "/media/..." mới.
  * Thử tải trực tiếp ở trình duyệt trước (CDN cho phép CORS), không được thì
- * nhờ serverless /api/admin/fetch-image tải hộ.
+ * nhờ serverless /api/web/fetch-image tải hộ.
  */
 export async function rehostExternalImage(src) {
   try {
@@ -55,7 +55,7 @@ export async function rehostExternalImage(src) {
   } catch {
     /* CORS chặn -> thử proxy */
   }
-  const r = await fetch(`/api/admin/fetch-image?url=${encodeURIComponent(src)}`, {
+  const r = await fetch(`/api/web/fetch-image?url=${encodeURIComponent(src)}`, {
     headers: { "x-media-key": SUPABASE_ANON_KEY },
   });
   const j = await r.json().catch(() => ({}));
