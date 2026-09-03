@@ -15,8 +15,10 @@
 
 Website khách và app quản lý **dùng chung 1 database Supabase**.
 Website đọc dữ liệu qua Serverless Function trên Vercel (web khách không giữ khoá
-Supabase nào). Tất cả endpoint `/api/web/*` gộp trong **1 file** `api/web/[...path].js`
-(gói Vercel Hobby giới hạn 12 function/deploy — GHN đã chiếm 8).
+Supabase nào). Mỗi endpoint là 1 file riêng trong `api/web/`
+(`products.js`, `product.js`, `config.js`, `orders.js`, `fetch-image.js`).
+GHN tạm chuyển ra `ghn-api/` (chưa dùng) để không tính vào giới hạn 12
+function/deploy của gói Vercel Hobby — khi cần thì chuyển lại vào `api/ghn/`.
 
 ## 1. API đã có
 
