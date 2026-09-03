@@ -8472,7 +8472,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
   return (
     <div>
       <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 gap-2 flex-1 max-w-3xl">
+        <div className="flex flex-wrap gap-2 flex-1">
           <FilterChip active={filterStatus === "all"} onClick={() => setFilterStatus("all")}>Tất cả</FilterChip>
           <FilterChip active={filterStatus === "approval_pending"} onClick={() => setFilterStatus("approval_pending")} color={RUST}>Chờ duyệt</FilterChip>
           {STATUSES.map((s) => <FilterChip key={s.id} active={filterStatus === s.id} onClick={() => setFilterStatus(s.id)} color={s.color}>{s.label}</FilterChip>)}
@@ -9344,7 +9344,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
 }
 function FilterChip({ active, onClick, children, color }) {
   return (
-    <button onClick={onClick} className="flex-1 text-center text-sm px-4 py-2 rounded-full border whitespace-nowrap"
+    <button onClick={onClick} className="shrink-0 text-center text-sm px-4 py-2 rounded-full border whitespace-nowrap leading-none"
       style={{ borderColor: active ? (color || INK) : LINE, background: active ? (color || INK) : "transparent", color: active ? "#fff" : INK }}>
       {children}
     </button>
