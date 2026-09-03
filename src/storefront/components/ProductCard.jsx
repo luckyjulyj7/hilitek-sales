@@ -1,5 +1,5 @@
 import React from "react";
-import { Plus, Check, Clock } from "lucide-react";
+import { Plus, Check } from "lucide-react";
 import { formatVND, discountPercent, placeholderImage } from "../lib/format.js";
 import { LOW_STOCK_THRESHOLD } from "../config.js";
 import { useCart } from "../cart.jsx";
@@ -55,14 +55,10 @@ export default function ProductCard({ product, onOpen }) {
             onClick={() => add(p, 1, { preorder: out })}
             className={
               "mt-3 w-full inline-flex items-center justify-center gap-1.5 rounded-md text-[13px] font-semibold py-2 transition " +
-              (out
-                ? "bg-[#E8730C] text-white hover:brightness-110"
-                : inCart
-                ? "bg-navy-050 text-navy"
-                : "bg-navy text-white hover:bg-navy-600")
+              (inCart ? "bg-navy-050 text-navy" : "bg-navy text-white hover:bg-navy-600")
             }
           >
-            {out ? (<><Clock size={15} /> Đặt trước</>) : inCart ? (<><Check size={15} /> Đã thêm</>) : (<><Plus size={15} /> Thêm vào giỏ</>)}
+            {inCart ? (<><Check size={15} /> Đã thêm</>) : (<><Plus size={15} /> Thêm vào giỏ</>)}
           </button>
         </div>
       </div>

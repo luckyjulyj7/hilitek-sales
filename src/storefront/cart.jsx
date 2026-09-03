@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { playAddToCart } from "./lib/sound.js";
 
 /**
  * Giỏ hàng — lưu ở localStorage của trình duyệt khách (mỗi máy một giỏ, không
@@ -27,12 +28,18 @@ function write(items) {
 
 export function CartProvider({ children }) {
   const [items, setItems] = useState(read);
+  // Tăng mỗi lần thêm hàng — Header lắng nghe để rung nút giỏ + kêu "ting".
+  const [bump, setBump] = useState(0);
 
   useEffect(() => write(items), [items]);
 
   const api = useMemo(() => {
     const add = (product, qty = 1, opts = {}) => {
       const preorder = !!opts.preorder;
+      if (!opts.silent) {
+        setBump((n) => n + 1);
+        playAddToCart();
+      }
       setItems((cur) => {
         const i = cur.findIndex((x) => x.id === product.id);
         if (i >= 0) {
@@ -76,7 +83,7 @@ export function CartProvider({ children }) {
   const subtotal = items.reduce((s, x) => s + x.qty * x.price, 0);
 
   return (
-    <CartCtx.Provider value={{ items, count, subtotal, ...api }}>{children}</CartCtx.Provider>
+    <CartCtx.Provider value={{ items, count, subtotal, bump, ...api }}>{children}</CartCtx.Provider>
   );
 }
 

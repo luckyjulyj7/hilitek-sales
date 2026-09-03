@@ -182,7 +182,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
               onClick={doAdd}
               className="mt-2 w-full rounded-md font-display font-bold py-3 text-[15px] tracking-wide flex items-center justify-center gap-2 transition bg-yellow text-ink hover:bg-yellow-300"
             >
-              <ShoppingCart size={17} /> {out ? "ĐẶT TRƯỚC VÀO GIỎ" : "THÊM VÀO GIỎ"}
+              <ShoppingCart size={17} /> THÊM VÀO GIỎ
             </button>
 
             {added && (

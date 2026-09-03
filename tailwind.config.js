@@ -34,9 +34,20 @@ export default {
           "0%, 100%": { boxShadow: "0 0 0 0 rgba(0,104,255,0.55)", transform: "scale(1)" },
           "50%": { boxShadow: "0 0 0 10px rgba(0,104,255,0)", transform: "scale(1.02)" },
         },
+        // Nút giỏ hàng rung + phát sáng vàng khi vừa thêm sản phẩm.
+        cartbump: {
+          "0%":   { transform: "scale(1) rotate(0)",        boxShadow: "0 0 0 0 rgba(247,198,0,.9)" },
+          "15%":  { transform: "scale(1.18) rotate(-10deg)" },
+          "30%":  { transform: "scale(1.18) rotate(9deg)" },
+          "45%":  { transform: "scale(1.12) rotate(-7deg)" },
+          "60%":  { transform: "scale(1.1) rotate(5deg)" },
+          "75%":  { transform: "scale(1.05) rotate(-2deg)" },
+          "100%": { transform: "scale(1) rotate(0)",        boxShadow: "0 0 0 14px rgba(247,198,0,0)" },
+        },
       },
       animation: {
         zalo: "zalo 1.3s ease-in-out infinite",
+        cartbump: "cartbump 0.7s ease-in-out",
       },
     },
   },

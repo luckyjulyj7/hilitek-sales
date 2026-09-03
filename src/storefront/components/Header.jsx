@@ -13,17 +13,26 @@ import { groupIcon } from "./groupIcons.js";
 const ICONS = { CreditCard, Wallet, Truck, ShieldCheck, Wrench };
 
 export default function Header({ route, navigate }) {
-  const { count } = useCart();
+  const { count, bump } = useCart();
   const [term, setTerm] = useState(route.query.q || "");
   const [drawer, setDrawer] = useState(false);
   const [catOpen, setCatOpen] = useState(false);
   const [mobileGroup, setMobileGroup] = useState(null);
+  const [cartBump, setCartBump] = useState(false);
   const closeTimer = useRef(null);
 
   useEffect(() => {
     setCatOpen(false);
     setDrawer(false);
   }, [route.path]);
+
+  // Rung nút giỏ hàng mỗi khi khách thêm sản phẩm.
+  useEffect(() => {
+    if (!bump) return;
+    setCartBump(true);
+    const t = setTimeout(() => setCartBump(false), 750);
+    return () => clearTimeout(t);
+  }, [bump]);
 
   const go = (to) => {
     navigate(to);
@@ -115,12 +124,18 @@ export default function Header({ route, navigate }) {
 
           <button
             onClick={() => go("/gio-hang")}
-            className="shrink-0 relative inline-flex items-center gap-2 bg-white text-navy rounded-md px-3 py-2 font-semibold hover:bg-yellow-300"
+            className={
+              "shrink-0 relative inline-flex items-center gap-2 rounded-md px-3 py-2 font-semibold transition-colors " +
+              (cartBump ? "bg-yellow text-ink animate-cartbump " : "bg-white text-navy hover:bg-yellow-300")
+            }
           >
             <span className="relative">
               <ShoppingCart size={20} />
               {count > 0 && (
-                <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-yellow text-ink text-[11px] font-bold font-mono grid place-items-center">
+                <span className={
+                  "absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full text-[11px] font-bold font-mono grid place-items-center " +
+                  (cartBump ? "bg-navy text-white" : "bg-yellow text-ink")
+                }>
                   {count}
                 </span>
               )}
