@@ -13,6 +13,7 @@ import * as XLSX from "xlsx";
 import { ghn as ghnApi } from "./lib/ghn.js";
 // Nội dung mặc định cho web (dùng làm điểm khởi đầu khi chưa chỉnh trong "Cấu hình web").
 import { PAGES as WEB_DEFAULT_PAGES, MENU as WEB_DEFAULT_MENU, allWebCategories as webAllCategories } from "./storefront/config.js";
+import { GROUP_ICON_NAMES, groupIcon as webGroupIcon } from "./storefront/components/groupIcons.js";
 
 // Xuất 1 hoặc nhiều bảng dữ liệu ra 1 file Excel (.xlsx), mỗi bảng là 1 sheet riêng.
 function exportExcel(filename, sheets) {
@@ -11302,7 +11303,7 @@ function draftToMenu(draft) {
         })),
     }));
 }
-const WEB_ICON_NAMES = ["Cpu", "Gamepad2", "HardDrive", "Monitor", "AppWindow", "Package", "Keyboard", "Mouse", "Headphones", "MemoryStick"];
+const WEB_ICON_NAMES = GROUP_ICON_NAMES; // đồng bộ với bảng icon web (storefront/components/groupIcons.js)
 
 function WebPageEditor({ pageKey, label, webConfig, setWebConfig }) {
   const cur = (webConfig.PAGES && webConfig.PAGES[pageKey]) || WEB_DEFAULT_PAGES[pageKey] || { title: label, intro: "", sections: [] };
@@ -11408,11 +11409,16 @@ function WebMenuEditor({ webConfig, setWebConfig, products }) {
         <div key={gi} className="border rounded-sm p-3" style={{ borderColor: LINE }}>
           <div className="flex gap-3 items-end mb-3">
             <Field label="Tên nhóm chính"><input className={inputCls} style={{ borderColor: LINE }} value={g.group} onChange={(e) => setG(gi, "group", e.target.value)} /></Field>
-            <div style={{ width: 150 }}>
+            <div style={{ width: 170 }}>
               <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">Icon</p>
-              <select className={inputCls} style={{ borderColor: LINE }} value={g.icon} onChange={(e) => setG(gi, "icon", e.target.value)}>
-                {WEB_ICON_NAMES.map((n) => <option key={n} value={n}>{n}</option>)}
-              </select>
+              <div className="flex items-center gap-2">
+                <span className="shrink-0 grid place-items-center rounded-sm" style={{ width: 30, height: 30, border: `1px solid ${LINE}`, background: "#fff" }}>
+                  {React.createElement(webGroupIcon(g.icon), { size: 17, color: INK })}
+                </span>
+                <select className={inputCls} style={{ borderColor: LINE }} value={g.icon} onChange={(e) => setG(gi, "icon", e.target.value)}>
+                  {WEB_ICON_NAMES.map((n) => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </div>
             </div>
             <button onClick={() => delG(gi)} className="text-xs pb-2" style={{ color: RUST }}>Xoá nhóm</button>
           </div>
