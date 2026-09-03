@@ -19,6 +19,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
   const [product, setProduct] = useState(undefined);
   const [imgIdx, setImgIdx] = useState(0);
   const [zoom, setZoom] = useState(false);
+  const [specOpen, setSpecOpen] = useState(false);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
 
@@ -27,6 +28,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
     setProduct(undefined);
     setImgIdx(0);
     setZoom(false);
+    setSpecOpen(false);
     setQty(1);
     setAdded(false);
     fetchProduct(slug).then((p) => alive && setProduct(p));
@@ -228,16 +230,17 @@ export default function ProductDetail({ slug, navigate, catalog }) {
         <section>
           <h2 className="font-display text-xl font-bold text-ink mb-3 border-l-4 border-yellow pl-3">Thông số kỹ thuật</h2>
           {p.specs?.length > 0 ? (
-            <table className="w-full text-[13.5px] border border-line rounded-lg overflow-hidden">
-              <tbody>
-                {p.specs.map(([k, v], i) => (
-                  <tr key={i} className={i % 2 ? "bg-white" : "bg-paper"}>
-                    <td className="px-4 py-2.5 text-mute align-top">{k}</td>
-                    <td className="px-4 py-2.5 text-ink font-medium">{v}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <>
+              <SpecTable rows={p.specs.slice(0, SPEC_PREVIEW)} />
+              {p.specs.length > SPEC_PREVIEW && (
+                <button
+                  onClick={() => setSpecOpen(true)}
+                  className="mt-2 w-full inline-flex items-center justify-center gap-1.5 rounded-md border border-line bg-paper text-navy font-semibold text-[13px] py-2.5 hover:bg-navy-050"
+                >
+                  <Plus size={15} /> Xem thêm {p.specs.length - SPEC_PREVIEW} thông số
+                </button>
+              )}
+            </>
           ) : (
             <div className="border border-line rounded-lg bg-white p-5 text-mute text-[14px]">Đang cập nhật.</div>
           )}
@@ -268,6 +271,57 @@ export default function ProductDetail({ slug, navigate, catalog }) {
           onClose={() => setZoom(false)}
         />
       )}
+
+      {specOpen && p.specs?.length > 0 && (
+        <SpecModal title="Thông số kỹ thuật" subtitle={p.name} rows={p.specs} onClose={() => setSpecOpen(false)} />
+      )}
+    </div>
+  );
+}
+
+const SPEC_PREVIEW = 8;
+
+/** Bảng thông số 2 cột: cột nhãn (nền xám) | cột giá trị. Dùng ở trang SP và trong popup. */
+function SpecTable({ rows }) {
+  return (
+    <div className="border border-line rounded-lg overflow-hidden bg-white">
+      <table className="w-full text-[13px]">
+        <tbody>
+          {rows.map(([k, v], i) => (
+            <tr key={i} className="border-b border-line last:border-0 align-top">
+              <td className="w-[40%] px-3.5 py-2.5 text-mute bg-paper font-medium">{k}</td>
+              <td className="px-3.5 py-2.5 text-ink whitespace-pre-line">{v}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/** Popup phóng to toàn bộ bảng thông số (Esc / bấm nền để đóng). */
+function SpecModal({ title, subtitle, rows, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
+  }, []);
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/60 flex items-start sm:items-center justify-center p-3 sm:p-6 overflow-y-auto" onClick={onClose} role="dialog" aria-modal="true">
+      <div className="bg-white rounded-xl w-full max-w-[680px] my-6 shadow-menu" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-3 px-5 py-3.5 border-b border-line">
+          <div>
+            <h3 className="font-display text-lg font-bold text-ink leading-tight">{title}</h3>
+            {subtitle && <p className="text-[12.5px] text-mute mt-0.5 line-clamp-1">{subtitle}</p>}
+          </div>
+          <button onClick={onClose} aria-label="Đóng" className="text-mute hover:text-ink p-1 -mr-1 shrink-0"><X size={22} /></button>
+        </div>
+        <div className="p-4 sm:p-5 max-h-[76vh] overflow-y-auto">
+          <SpecTable rows={rows} />
+        </div>
+      </div>
     </div>
   );
 }
