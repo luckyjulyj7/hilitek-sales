@@ -163,8 +163,20 @@ async function fetchImage(req, res) {
 }
 
 /* ─────────────────────────── router ─────────────────────────── */
+function segmentsOf(req) {
+  // Ưu tiên phân tích từ req.url (chắc chắn) — không phụ thuộc cách Vercel đặt tên param.
+  let raw = "";
+  try {
+    const u = String(req.url || "").split("?")[0];
+    raw = u.replace(/^\/+/, "").replace(/^api\/web\/?/i, "").replace(/\/+$/, "");
+  } catch { raw = ""; }
+  let seg = raw ? raw.split("/").filter(Boolean) : [];
+  if (!seg.length && req.query && req.query.path) seg = [].concat(req.query.path).filter(Boolean);
+  return seg.map((s) => { try { return decodeURIComponent(s); } catch { return s; } });
+}
+
 export default handler(async (req, res) => {
-  const seg = [].concat(req.query.path || []); // ["products"] | ["product","<slug>"] | ...
+  const seg = segmentsOf(req);
   const head = (seg[0] || "").toLowerCase();
   const m = req.method;
 
