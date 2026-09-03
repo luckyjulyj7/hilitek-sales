@@ -256,9 +256,15 @@ export function childQuery(child, sub, group) {
  * Giờ chỉ là KHUNG TRỐNG — khi có ảnh, thêm `image` (đặt file trong `public/`,
  * ví dụ "/posters/hero.jpg") và `href` ("#/danh-muc?..." hoặc link ngoài).
  * `w`/`h` chỉ để hiển thị gợi ý kích thước trên khung trống, không ép ảnh.
+ *
+ * Poster CHÍNH chạy được slide nhiều ảnh: điền `slides: [{ image, href }, ...]`.
+ *   - 2 ảnh trở lên  -> tự chạy slide (đổi mỗi 5 giây) + nút ‹ › + chấm chỉ số.
+ *   - 1 ảnh          -> ảnh tĩnh.
+ *   - không có slide  -> quay lại dùng `image`/`href` đơn (nếu có), không thì khung gợi ý.
+ * Chỉnh trong app quản lý: Website -> Cấu hình web -> "Poster chính (slider)".
  */
 export const HOME_POSTERS = {
-  hero: { w: 892, h: 460, label: "Poster chính (slider)", image: "", href: "" },
+  hero: { w: 892, h: 460, label: "Poster chính (slider)", image: "", href: "", slides: [] },
   side: [
     { w: 300, h: 226, label: "Poster phụ 1", image: "", href: "" },
     { w: 300, h: 226, label: "Poster phụ 2", image: "", href: "" },

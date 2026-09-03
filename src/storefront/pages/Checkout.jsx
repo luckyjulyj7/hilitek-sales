@@ -5,6 +5,7 @@ import { formatVND } from "../lib/format.js";
 import { SITE, CHECKOUT } from "../config.js";
 import { VN_PROVINCES, WARDS_BY_PROVINCE } from "../data/vnAddress.js";
 import { placeOrder } from "../lib/api.js";
+import SearchSelect from "../components/SearchSelect.jsx";
 
 const ORDER_SOURCE = "Đặt hàng website";
 
@@ -60,7 +61,6 @@ export default function Checkout({ navigate }) {
     );
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
-  const setProvince = (e) => setForm((f) => ({ ...f, province: e.target.value, ward: "" }));
 
   const submit = async (e) => {
     e.preventDefault();
@@ -136,16 +136,23 @@ export default function Checkout({ navigate }) {
           </div>
           <div className="grid sm:grid-cols-2 gap-4">
             <Field label="Tỉnh / Thành phố" required error={errors.province}>
-              <select value={form.province} onChange={setProvince} className={inp(errors.province) + " bg-white"}>
-                <option value="">Chọn tỉnh / thành phố</option>
-                {VN_PROVINCES.map((p) => <option key={p} value={p}>{p}</option>)}
-              </select>
+              <SearchSelect
+                value={form.province}
+                onChange={(v) => setForm((f) => ({ ...f, province: v, ward: "" }))}
+                options={VN_PROVINCES}
+                placeholder="Chọn tỉnh / thành phố"
+                error={!!errors.province}
+              />
             </Field>
             <Field label="Phường / Xã" required error={errors.ward}>
-              <select value={form.ward} onChange={set("ward")} disabled={!form.province} className={inp(errors.ward) + " bg-white disabled:bg-paper disabled:text-mute"}>
-                <option value="">{form.province ? "Chọn phường / xã" : "Chọn tỉnh/thành trước"}</option>
-                {wards.map((w) => <option key={w} value={w}>{w}</option>)}
-              </select>
+              <SearchSelect
+                value={form.ward}
+                onChange={(v) => setForm((f) => ({ ...f, ward: v }))}
+                options={wards}
+                placeholder={form.province ? "Chọn phường / xã" : "Chọn tỉnh/thành trước"}
+                disabled={!form.province}
+                error={!!errors.ward}
+              />
             </Field>
           </div>
           <Field label="Số nhà, tên đường" required error={errors.address}>

@@ -1,6 +1,6 @@
 import React from "react";
-import { ShieldCheck, Plus, Check, Clock } from "lucide-react";
-import { formatVND, discountPercent, warrantyLabel, placeholderImage } from "../lib/format.js";
+import { Plus, Check, Clock } from "lucide-react";
+import { formatVND, discountPercent, placeholderImage } from "../lib/format.js";
 import { LOW_STOCK_THRESHOLD } from "../config.js";
 import { useCart } from "../cart.jsx";
 
@@ -43,21 +43,12 @@ export default function ProductCard({ product, onOpen }) {
           {p.name}
         </a>
 
-        {p.specChips?.length > 0 && (
-          <div className="mt-2 text-[11.5px] text-mute font-mono line-clamp-1">
-            {p.specChips.slice(0, 3).join(" · ")}
-          </div>
-        )}
-
         <div className="mt-auto pt-3">
-          <div className="flex items-baseline gap-2">
+          <div className="flex items-baseline gap-2 flex-wrap">
             <span className="font-mono font-bold text-[15px] text-sale">{formatVND(p.price)}</span>
             {off > 0 && (
               <span className="font-mono text-[11px] text-mute line-through">{formatVND(p.listPrice)}</span>
             )}
-          </div>
-          <div className="mt-1 inline-flex items-center gap-1 text-[11px] text-mute">
-            <ShieldCheck size={12} className="text-navy" /> {warrantyLabel(p.warrantyMonths)}
           </div>
 
           <button

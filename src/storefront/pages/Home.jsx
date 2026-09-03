@@ -6,6 +6,7 @@ import ProductCard from "../components/ProductCard.jsx";
 import TrustBar from "../components/TrustBar.jsx";
 import CategoryRail from "../components/CategoryRail.jsx";
 import PosterSlot from "../components/PosterSlot.jsx";
+import PosterSlider from "../components/PosterSlider.jsx";
 import FlashSaleBar from "../components/FlashSaleBar.jsx";
 import { groupIcon } from "../components/groupIcons.js";
 import { discountPercent } from "../lib/format.js";
@@ -28,7 +29,7 @@ export default function Home({ catalog, navigate }) {
 
           <div className="space-y-2 min-w-0">
             <div className="grid md:grid-cols-[minmax(0,1fr)_300px] gap-2">
-              <PosterSlot slot={HOME_POSTERS.hero} navigate={navigate} />
+              <PosterSlider slot={HOME_POSTERS.hero} navigate={navigate} />
               <div className="grid grid-cols-2 md:grid-cols-1 gap-2">
                 {HOME_POSTERS.side.map((s, i) => (
                   <PosterSlot key={i} slot={s} navigate={navigate} />

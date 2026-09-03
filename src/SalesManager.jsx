@@ -11519,6 +11519,23 @@ function WebConfigForm({ webConfig, setWebConfig, addLog, products }) {
     hp.strip = arr;
     return { ...x, HOME_POSTERS: hp };
   });
+  const heroSlides = Array.isArray(HP.hero?.slides) ? HP.hero.slides : [];
+  const mutHeroSlides = (fn) => setWebConfig((x) => {
+    const hp = { ...(x.HOME_POSTERS || {}) };
+    const hero = { ...(hp.hero || {}) };
+    hero.slides = fn(Array.isArray(hero.slides) ? [...hero.slides] : []);
+    hp.hero = hero;
+    return { ...x, HOME_POSTERS: hp };
+  });
+  const setHeroSlide = (i, k, v) => mutHeroSlides((arr) => { arr[i] = { ...(arr[i] || {}), [k]: v }; return arr; });
+  const addHeroSlide = () => mutHeroSlides((arr) => [...arr, { image: "", href: "" }]);
+  const delHeroSlide = (i) => mutHeroSlides((arr) => arr.filter((_, j) => j !== i));
+  const moveHeroSlide = (i, d) => mutHeroSlides((arr) => {
+    const j = i + d;
+    if (j < 0 || j >= arr.length) return arr;
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+    return arr;
+  });
   const ip = (val, on, ph) => (
     <input value={val ?? ""} onChange={(e) => on(e.target.value)} placeholder={ph} className={inputCls} style={{ borderColor: LINE }} />
   );
@@ -11568,9 +11585,24 @@ function WebConfigForm({ webConfig, setWebConfig, addLog, products }) {
         <h3 className="font-medium mb-3" style={{ color: INK }}>Poster / banner trang chủ (URL ảnh + link)</h3>
         <p className="text-xs opacity-50 mb-3">Ảnh: tải lên host bất kỳ hoặc để trong thư mục <code>public/posters/</code> rồi điền đường dẫn (vd <code>/posters/hero.jpg</code>).</p>
         <div className="space-y-3">
-          <div className="grid sm:grid-cols-2 gap-3">
-            <Field label="Poster chính — ảnh">{ip(HP.hero?.image, (v) => setPoster("hero", "image", v), "/posters/hero.jpg")}</Field>
-            <Field label="Poster chính — link">{ip(HP.hero?.href, (v) => setPoster("hero", "href", v), "#/danh-muc?sort=discount")}</Field>
+          <div className="rounded-sm p-2.5" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-sm font-medium" style={{ color: INK }}>Poster chính (slider) — nhiều ảnh</span>
+              <button onClick={addHeroSlide} className="text-xs px-2 py-1 rounded-sm border" style={{ borderColor: LINE, color: INK }}>+ Thêm ảnh</button>
+            </div>
+            <p className="text-[11px] opacity-55 mb-2">Từ 2 ảnh trở lên sẽ tự chạy slide (đổi mỗi 5 giây, có nút ‹ › + chấm). 1 ảnh = ảnh tĩnh. Chưa có ảnh nào = khung gợi ý kích thước.</p>
+            {heroSlides.length === 0 && <p className="text-xs opacity-45">Chưa có ảnh — bấm “+ Thêm ảnh”.</p>}
+            {heroSlides.map((s, i) => (
+              <div key={i} className="grid gap-2 mb-2" style={{ gridTemplateColumns: "1fr 1fr auto" }}>
+                {ip(s.image, (v) => setHeroSlide(i, "image", v), `/posters/hero-${i + 1}.jpg`)}
+                {ip(s.href, (v) => setHeroSlide(i, "href", v), "#/danh-muc?sort=discount")}
+                <div className="flex items-center gap-1">
+                  <button onClick={() => moveHeroSlide(i, -1)} disabled={i === 0} className="text-xs px-1.5 py-1 rounded-sm border disabled:opacity-30" style={{ borderColor: LINE }} title="Lên">↑</button>
+                  <button onClick={() => moveHeroSlide(i, 1)} disabled={i === heroSlides.length - 1} className="text-xs px-1.5 py-1 rounded-sm border disabled:opacity-30" style={{ borderColor: LINE }} title="Xuống">↓</button>
+                  <button onClick={() => delHeroSlide(i)} className="text-xs px-1.5 py-1" style={{ color: RUST }}>Xoá</button>
+                </div>
+              </div>
+            ))}
           </div>
           {[0, 1].map((i) => (
             <div key={i} className="grid sm:grid-cols-2 gap-3">
