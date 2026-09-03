@@ -54,11 +54,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
   const out = !p.stock;
   const groupName =
     productGroups(p)[0] ||
-    MENU.find((g) =>
-      (g.subs || []).some(
-        (s) => s.cat === p.category || (s.children || []).some((c) => c.type === "cat" && c.value === p.category)
-      )
-    )?.group ||
+    MENU.find((g) => (g.subs || []).some((s) => s.name === p.category))?.group ||
     p.group;
   const related = (catalog.products || []).filter((x) => x.category === p.category && x.slug !== p.slug).slice(0, 5);
   const descText = (p.description && p.description.trim()) || p.shortDesc || "";

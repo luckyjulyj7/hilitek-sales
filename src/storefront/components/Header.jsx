@@ -229,7 +229,7 @@ export default function Header({ route, navigate }) {
                         Tất cả {g.group}
                       </button>
                       {(g.subs || []).map((s) => {
-                        const sh = href("/danh-muc", { group: g.group, ...(s.cat ? { cat: s.cat } : {}) });
+                        const sh = href("/danh-muc", { group: g.group, cat: s.name });
                         return (
                           <button key={s.slug || s.name} onClick={() => go(sh.slice(1))} className="block px-6 py-1.5 text-[14px] text-ink/75">
                             {s.name}

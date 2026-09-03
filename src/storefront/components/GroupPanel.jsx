@@ -1,47 +1,66 @@
 import React from "react";
 import { href } from "../router.js";
-import { childQuery } from "../config.js";
+import { PRICE_BUCKETS, priceBucketQuery, brandsInGroup } from "../config.js";
+import { useCatalog } from "../catalogContext.js";
 
 /**
- * Bảng danh mục của 1 nhóm (group): các "danh mục phụ" (sub) là cột,
- * mỗi cột liệt kê "danh mục chi tiết" (children).
+ * Bảng của 1 nhóm (group) khi xổ menu: các cột
+ *   [Danh mục phụ tự đặt]  ·  [Thương hiệu — tự sinh]  ·  [Khoảng giá]
  * `go(path)` — điều hướng (path không có dấu #).
  */
 export default function GroupPanel({ group, go, className = "" }) {
+  const { products } = useCatalog();
   const subs = group.subs || [];
-  return (
-    <div className={"grid gap-x-8 gap-y-5 " + className} style={{ gridTemplateColumns: `repeat(${Math.min(subs.length || 1, 4)}, minmax(0,1fr))` }}>
-      {subs.map((s) => {
-        const subHref = href("/danh-muc", { group: group.group, ...(s.cat ? { cat: s.cat } : {}) });
-        return (
-          <div key={s.slug || s.name}>
+  const brands = brandsInGroup(products, group.group).slice(0, 12);
+
+  const Col = ({ title, titleHref, items }) => (
+    <div>
+      {titleHref ? (
+        <a
+          href={titleHref}
+          onClick={(e) => { e.preventDefault(); go(titleHref.slice(1)); }}
+          className="font-display font-bold text-[13.5px] text-navy hover:underline block mb-1.5"
+        >
+          {title}
+        </a>
+      ) : (
+        <div className="font-display font-bold text-[13.5px] text-navy mb-1.5">{title}</div>
+      )}
+      <ul className="space-y-1">
+        {items.map((it, i) => (
+          <li key={i}>
             <a
-              href={subHref}
-              onClick={(e) => { e.preventDefault(); go(subHref.slice(1)); }}
-              className="font-display font-bold text-[13.5px] text-navy hover:underline block mb-1.5"
+              href={it.href}
+              onClick={(e) => { e.preventDefault(); go(it.href.slice(1)); }}
+              className="text-[13px] text-ink/70 hover:text-navy"
             >
-              {s.name}
+              {it.label}
             </a>
-            <ul className="space-y-1">
-              {(s.children || []).map((c, i) => {
-                const q = childQuery(c, s, group.group);
-                const h = href("/danh-muc", q);
-                return (
-                  <li key={i}>
-                    <a
-                      href={h}
-                      onClick={(e) => { e.preventDefault(); go(h.slice(1)); }}
-                      className="text-[13px] text-ink/70 hover:text-navy"
-                    >
-                      {c.label}
-                    </a>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        );
-      })}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+
+  const nCols = 1 + (brands.length ? 1 : 0) + 1;
+
+  return (
+    <div className={"grid gap-x-8 gap-y-5 " + className} style={{ gridTemplateColumns: `repeat(${nCols}, minmax(0,1fr))` }}>
+      <Col
+        title="Danh mục"
+        titleHref={href("/danh-muc", { group: group.group })}
+        items={subs.map((s) => ({ label: s.name, href: href("/danh-muc", { group: group.group, cat: s.name }) }))}
+      />
+      {brands.length > 0 && (
+        <Col
+          title="Thương hiệu"
+          items={brands.map((b) => ({ label: b, href: href("/danh-muc", { group: group.group, brand: b }) }))}
+        />
+      )}
+      <Col
+        title="Khoảng giá"
+        items={PRICE_BUCKETS.map((b) => ({ label: b.label, href: href("/danh-muc", priceBucketQuery(b, group.group)) }))}
+      />
     </div>
   );
 }

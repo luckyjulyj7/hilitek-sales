@@ -12,7 +12,7 @@ import {
 import * as XLSX from "xlsx";
 import { ghn as ghnApi } from "./lib/ghn.js";
 // Nội dung mặc định cho web (dùng làm điểm khởi đầu khi chưa chỉnh trong "Cấu hình web").
-import { PAGES as WEB_DEFAULT_PAGES, MENU as WEB_DEFAULT_MENU, allWebCategories as webAllCategories } from "./storefront/config.js";
+import { PAGES as WEB_DEFAULT_PAGES, MENU as WEB_DEFAULT_MENU, allWebCategories as webAllCategories, webCategoryGroups } from "./storefront/config.js";
 import { GROUP_ICON_NAMES, groupIcon as webGroupIcon } from "./storefront/components/groupIcons.js";
 
 // Xuất 1 hoặc nhiều bảng dữ liệu ra 1 file Excel (.xlsx), mỗi bảng là 1 sheet riêng.
@@ -1406,7 +1406,11 @@ function StatCard({ label, value, icon: Icon, accent }) {
 
 /* ---------------- Products & Inventory (Sản phẩm & Tồn kho) ---------------- */
 
-function ProductsInventory({ products, setProducts, addLog, currentUser, focusProductId, onFocusHandled, goToDoc, suppliers, goToSupplier, categories, setCategories, brands, setBrands }) {
+function ProductsInventory({ products, setProducts, addLog, currentUser, focusProductId, onFocusHandled, goToDoc, suppliers, goToSupplier, categories, setCategories, brands, setBrands, webConfig }) {
+  const webSubGroups = useMemo(
+    () => webCategoryGroups(webConfig && Array.isArray(webConfig.MENU) && webConfig.MENU.length ? webConfig.MENU : WEB_DEFAULT_MENU),
+    [webConfig]
+  );
   const isAdmin = currentUser.role === "admin";
   const isCtv = currentUser.role === "ctv";
   const [query, setQuery] = useState("");
@@ -2243,6 +2247,39 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
             </label>
             {form.web?.published && (
               <div className="mt-3 space-y-3">
+                <Field label="Danh mục phụ trên web (chọn nhiều)" hint="Sản phẩm sẽ hiện khi khách bấm các danh mục phụ này. Sửa danh sách ở Website → Cấu hình web.">
+                  {(() => {
+                    const sel = (form.web?.categories) || [];
+                    const toggle = (name) => {
+                      const cur = (form.web?.categories) || [];
+                      const next = cur.includes(name) ? cur.filter((x) => x !== name) : [...cur, name];
+                      setForm({ ...form, web: { ...normalizeWeb(form.web), categories: next } });
+                    };
+                    const hasAny = webSubGroups.some((g) => g.subs.length);
+                    if (!hasAny) return <span className="text-xs" style={{ color: RUST }}>Chưa có danh mục phụ nào — vào Website → Cấu hình web để thêm.</span>;
+                    return (
+                      <div className="space-y-2">
+                        {webSubGroups.filter((g) => g.subs.length).map((g) => (
+                          <div key={g.group}>
+                            <div className="text-[11px] uppercase tracking-wider opacity-45 mb-1">{g.group}</div>
+                            <div className="flex flex-wrap gap-1.5">
+                              {g.subs.map((name) => {
+                                const on = sel.includes(name);
+                                return (
+                                  <button key={name} type="button" onClick={() => toggle(name)}
+                                    className="px-2.5 py-1 rounded-sm text-xs border"
+                                    style={{ borderColor: on ? INK : LINE, background: on ? INK : "#fff", color: on ? "#fff" : INK }}>
+                                    {name}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </Field>
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Giá bán trên web (đ)" hint="Luôn = Giá bán lẻ ở trên. Sửa giá bán lẻ để đổi giá web.">
                     <input readOnly disabled className={inputCls} style={{ borderColor: LINE, background: PAPER }}
@@ -5292,7 +5329,7 @@ function ServiceTickets({ repairTickets, setRepairTickets, helpdeskTickets, setH
   );
 }
 
-function ProductsSection({ products, setProducts, purchaseOrders, setPurchaseOrders, suppliers, setSuppliers, categories, setCategories, brands, setBrands, stocktakes, setStocktakes, warrantyTickets, setWarrantyTickets, repairTickets, setRepairTickets, helpdeskTickets, setHelpdeskTickets, orders, customers, employeeNames, currentUser, addLog, navTarget, onFocusHandled, goToDoc, goToSupplier }) {
+function ProductsSection({ products, setProducts, purchaseOrders, setPurchaseOrders, suppliers, setSuppliers, categories, setCategories, brands, setBrands, stocktakes, setStocktakes, warrantyTickets, setWarrantyTickets, repairTickets, setRepairTickets, helpdeskTickets, setHelpdeskTickets, orders, customers, employeeNames, currentUser, addLog, navTarget, onFocusHandled, goToDoc, goToSupplier, webConfig }) {
   const [sub, setSub] = useState("list");
   const isAdmin = currentUser.role === "admin";
   const isCtv = currentUser.role === "ctv";
@@ -5337,7 +5374,7 @@ function ProductsSection({ products, setProducts, purchaseOrders, setPurchaseOrd
           </button>
         )}
       </div>
-      {sub === "list" && <ProductsInventory products={products} setProducts={setProducts} addLog={addLog} currentUser={currentUser} focusProductId={navTarget?.type === "product" ? navTarget.id : null} onFocusHandled={onFocusHandled} goToDoc={goToDoc} suppliers={suppliers} goToSupplier={goToSupplier} categories={categories} setCategories={setCategories} brands={brands} setBrands={setBrands} />}
+      {sub === "list" && <ProductsInventory products={products} setProducts={setProducts} addLog={addLog} currentUser={currentUser} focusProductId={navTarget?.type === "product" ? navTarget.id : null} onFocusHandled={onFocusHandled} goToDoc={goToDoc} suppliers={suppliers} goToSupplier={goToSupplier} categories={categories} setCategories={setCategories} brands={brands} setBrands={setBrands} webConfig={webConfig} />}
       {isAdmin && sub === "purchase" && <PurchaseOrders purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} products={products} setProducts={setProducts} suppliers={suppliers} setSuppliers={setSuppliers} employeeNames={employeeNames} addLog={addLog} focusPOId={navTarget?.type === "po" ? navTarget.id : null} onFocusHandled={onFocusHandled} />}
       {isAdmin && sub === "stocktake" && <Stocktake products={products} setProducts={setProducts} stocktakes={stocktakes} setStocktakes={setStocktakes} currentUser={currentUser} addLog={addLog} />}
       {!isCtv && sub === "warranty" && <WarrantyTickets products={products} setProducts={setProducts} orders={orders} customers={customers} warrantyTickets={warrantyTickets} setWarrantyTickets={setWarrantyTickets} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} />}
@@ -11091,7 +11128,7 @@ function WebProducts({ products, setProducts, categories, addLog, webConfig }) {
                       <td colSpan={7} className="px-4 py-4">
                         {p.variantGroupId && <p className="text-xs mb-2" style={{ color: BLUE }}>Mô tả & thông số áp cho tất cả phiên bản cùng nhóm.</p>}
                         <div className="grid gap-3">
-                          <Field label="Danh mục trên web" hint="Sản phẩm sẽ hiển thị khi khách chọn các danh mục này. Sửa danh sách ở tab 'Cấu hình web'.">
+                          <Field label="Danh mục phụ trên web" hint="Sản phẩm hiện khi khách bấm các danh mục phụ này (cũng chỉnh được ngay trong form sản phẩm chính). Danh sách sửa ở 'Cấu hình web'.">
                             {webCats.length === 0 ? (
                               <span className="text-xs" style={{ color: RUST }}>Chưa có danh mục nào — vào 'Cấu hình web' → 'Danh mục sản phẩm web' để thêm.</span>
                             ) : (
@@ -11243,64 +11280,28 @@ function webTextToPageSections(text) {
     return { heading, body, bullets };
   }).filter((s) => s.heading || s.body.length || s.bullets.length);
 }
-const WEB_CHILD_TYPES = [
-  { id: "cat", label: "Danh mục / tag" },
-  { id: "brand", label: "Nhãn hiệu" },
-  { id: "price", label: "Khoảng giá" },
-  { id: "spec", label: "Thông số web" },
-];
-function emptyChild() {
-  return { label: "", type: "cat", value: "", min: "", max: "", specKey: "", specValue: "" };
-}
+// Menu 2 tầng: nhóm chính -> danh mục phụ (chỉ tên). Nhập mỗi dòng 1 danh mục phụ.
 function menuToDraft(menu) {
   return (menu || []).map((g) => ({
     group: g.group || "",
     icon: g.icon || "Package",
-    subs: (g.subs || []).map((s) => ({
-      name: s.name || "",
-      cat: s.cat || "",
-      children: (s.children || []).map((c) => ({
-        label: c.label || "",
-        type: c.type || "cat",
-        value: c.value || "",
-        min: c.min != null ? String(c.min) : "",
-        max: c.max != null ? String(c.max) : "",
-        specKey: c.specKey || "",
-        specValue: c.specValue || "",
-      })),
-    })),
+    subsText: (g.subs || []).map((s) => s.name).filter(Boolean).join("\n"),
   }));
 }
 function draftToMenu(draft) {
+  const seen = new Set();
   return (draft || [])
     .filter((g) => (g.group || "").trim())
     .map((g) => ({
       group: g.group.trim(),
       slug: webSlugify(g.group),
       icon: g.icon || "Package",
-      subs: (g.subs || [])
-        .filter((s) => (s.name || "").trim())
-        .map((s) => ({
-          name: s.name.trim(),
-          slug: webSlugify(s.name),
-          cat: (s.cat || "").trim(),
-          children: (s.children || [])
-            .filter((c) => (c.label || "").trim())
-            .map((c) => {
-              const out = { label: c.label.trim(), type: c.type || "cat" };
-              if (out.type === "brand") out.value = (c.value || "").trim();
-              else if (out.type === "price") {
-                if (String(c.min).trim() !== "") out.min = Number(String(c.min).replace(/\D/g, "")) || 0;
-                if (String(c.max).trim() !== "") out.max = Number(String(c.max).replace(/\D/g, "")) || 0;
-              } else if (out.type === "spec") {
-                out.specKey = (c.specKey || "").trim();
-                out.specValue = (c.specValue || "").trim();
-              } else {
-                out.value = (c.value || c.label).trim();
-              }
-              return out;
-            }),
-        })),
+      subs: String(g.subsText || "")
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .filter((name) => { const k = name.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; })
+        .map((name) => ({ name, slug: webSlugify(name) })),
     }));
 }
 const WEB_ICON_NAMES = GROUP_ICON_NAMES; // đồng bộ với bảng icon web (storefront/components/groupIcons.js)
@@ -11342,19 +11343,6 @@ function WebMenuEditor({ webConfig, setWebConfig, products }) {
     () => [...new Set((products || []).flatMap((p) => [p.category, ...((p.web && p.web.categories) || [])]).filter(Boolean))].sort(),
     [products]
   );
-  const brands = useMemo(() => [...new Set((products || []).map((p) => p.brand).filter(Boolean))].sort(), [products]);
-  const specMap = useMemo(() => {
-    const m = {};
-    (products || []).forEach((p) => ((p.web && p.web.specs) || []).forEach((row) => {
-      if (!Array.isArray(row)) return;
-      const k = String(row[0] || "").trim();
-      const v = String(row[1] || "").trim();
-      if (!k) return;
-      (m[k] = m[k] || new Set()).add(v);
-    }));
-    return m;
-  }, [products]);
-  const specKeys = Object.keys(specMap).sort();
 
   const source = webConfig.MENU && webConfig.MENU.length ? webConfig.MENU : WEB_DEFAULT_MENU;
   const [draft, setDraft] = useState(() => menuToDraft(source));
@@ -11362,48 +11350,30 @@ function WebMenuEditor({ webConfig, setWebConfig, products }) {
   const upd = (fn) => { setDraft(fn); setDirty(true); };
 
   const setG = (gi, k, v) => upd((d) => d.map((g, i) => (i === gi ? { ...g, [k]: v } : g)));
-  const addG = () => upd((d) => [...d, { group: "Nhóm mới", icon: "Package", subs: [] }]);
+  const addG = () => upd((d) => [...d, { group: "Nhóm mới", icon: "Package", subsText: "" }]);
   const delG = (gi) => upd((d) => d.filter((_, i) => i !== gi));
-  const mapSubs = (gi, fn) => upd((d) => d.map((g, i) => (i === gi ? { ...g, subs: fn(g.subs || []) } : g)));
-  const setSub = (gi, si, k, v) => mapSubs(gi, (subs) => subs.map((s, i) => (i === si ? { ...s, [k]: v } : s)));
-  const addSub = (gi) => mapSubs(gi, (subs) => [...subs, { name: "Danh mục phụ", cat: "", children: [] }]);
-  const delSub = (gi, si) => mapSubs(gi, (subs) => subs.filter((_, i) => i !== si));
-  const mapCh = (gi, si, fn) => mapSubs(gi, (subs) => subs.map((s, i) => (i === si ? { ...s, children: fn(s.children || []) } : s)));
-  const setCh = (gi, si, ci, k, v) => mapCh(gi, si, (ch) => ch.map((c, i) => (i === ci ? { ...c, [k]: v } : c)));
-  const addCh = (gi, si) => mapCh(gi, si, (ch) => [...ch, emptyChild()]);
-  const delCh = (gi, si, ci) => mapCh(gi, si, (ch) => ch.filter((_, i) => i !== ci));
+  const moveG = (gi, dir) => upd((d) => {
+    const j = gi + dir;
+    if (j < 0 || j >= d.length) return d;
+    const n = [...d]; [n[gi], n[j]] = [n[j], n[gi]]; return n;
+  });
 
   const save = () => { setWebConfig((x) => ({ ...x, MENU: draftToMenu(draft) })); setDirty(false); };
   const reset = () => { setWebConfig((x) => { const y = { ...x }; delete y.MENU; return y; }); setDraft(menuToDraft(WEB_DEFAULT_MENU)); setDirty(false); };
 
-  const inp = (val, on, ph, list) => (
-    <input value={val ?? ""} onChange={(e) => on(e.target.value)} placeholder={ph} list={list}
-      className={inputCls} style={{ borderColor: LINE }} />
-  );
-  const numInp = (val, on, ph) => (
-    <input value={val ?? ""} inputMode="numeric" placeholder={ph}
-      onChange={(e) => on(e.target.value.replace(/\D/g, ""))}
-      className={inputCls} style={{ borderColor: LINE }} />
-  );
-
   return (
     <div className="space-y-4">
       <p className="text-xs opacity-70 leading-relaxed">
-        Menu 3 tầng: <b>Nhóm chính</b> → <b>Danh mục phụ</b> → <b>Mục chi tiết</b>.
-        Bấm danh mục phụ → lọc sản phẩm theo ô <i>“Danh mục trên web”</i> (khớp tên ở ô <b>Danh mục</b> bên dưới).
-        Mỗi mục chi tiết có thể lọc theo: danh mục/tag, <b>nhãn hiệu</b> sản phẩm, <b>khoảng giá</b>, hoặc <b>thông số web</b> (cặp nhãn|giá trị ở ô “Thông số web” của sản phẩm).
+        Menu 2 tầng: <b>Nhóm chính</b> → <b>Danh mục phụ</b>. Danh mục phụ là "group sản phẩm" do bạn tự đặt tên
+        (VD: <i>Bàn phím cơ, Màn hình 144Hz, PC Gaming tầm trung…</i>). Mỗi dòng 1 danh mục phụ, <b>tên phải khác nhau</b> trên toàn menu.
+        Khi thêm/sửa sản phẩm, tick chọn sản phẩm thuộc danh mục phụ nào (ô "Danh mục phụ trên web", chọn nhiều được).
+        Cột <b>Thương hiệu</b> và <b>Khoảng giá</b> web <b>tự sinh</b> — không cần khai ở đây.
       </p>
-      {(brands.length > 0 || usedCats.length > 0) && (
-        <div className="text-[11px] opacity-60 space-y-0.5">
-          {usedCats.length > 0 && <div>Danh mục đang dùng: <span style={{ color: BLUE }}>{usedCats.join(" · ")}</span></div>}
-          {brands.length > 0 && <div>Nhãn hiệu đang có: <span style={{ color: BLUE }}>{brands.join(" · ")}</span></div>}
-          {specKeys.length > 0 && <div>Nhãn thông số web: <span style={{ color: BLUE }}>{specKeys.join(" · ")}</span></div>}
+      {usedCats.length > 0 && (
+        <div className="text-[11px] opacity-60">
+          Đang được gán cho sản phẩm: <span style={{ color: BLUE }}>{usedCats.join(" · ")}</span>
         </div>
       )}
-
-      <datalist id="wm-cats">{usedCats.map((c) => <option key={c} value={c} />)}</datalist>
-      <datalist id="wm-brands">{brands.map((b) => <option key={b} value={b} />)}</datalist>
-      <datalist id="wm-speckeys">{specKeys.map((k) => <option key={k} value={k} />)}</datalist>
 
       {draft.map((g, gi) => (
         <div key={gi} className="border rounded-sm p-3" style={{ borderColor: LINE }}>
@@ -11420,65 +11390,18 @@ function WebMenuEditor({ webConfig, setWebConfig, products }) {
                 </select>
               </div>
             </div>
-            <button onClick={() => delG(gi)} className="text-xs pb-2" style={{ color: RUST }}>Xoá nhóm</button>
+            <div className="flex items-center gap-1 pb-1.5">
+              <button onClick={() => moveG(gi, -1)} disabled={gi === 0} className="text-xs px-1.5 py-1 rounded-sm border disabled:opacity-30" style={{ borderColor: LINE }} title="Lên">↑</button>
+              <button onClick={() => moveG(gi, 1)} disabled={gi === draft.length - 1} className="text-xs px-1.5 py-1 rounded-sm border disabled:opacity-30" style={{ borderColor: LINE }} title="Xuống">↓</button>
+              <button onClick={() => delG(gi)} className="text-xs px-1.5" style={{ color: RUST }}>Xoá nhóm</button>
+            </div>
           </div>
-
-          <div className="space-y-3 pl-3" style={{ borderLeft: `2px solid ${LINE}` }}>
-            {(g.subs || []).map((s, si) => (
-              <div key={si} className="rounded-sm p-2.5" style={{ background: PAPER }}>
-                <div className="flex gap-3 items-end">
-                  <Field label="Danh mục phụ"><input className={inputCls} style={{ borderColor: LINE }} value={s.name} onChange={(e) => setSub(gi, si, "name", e.target.value)} /></Field>
-                  <Field label="Danh mục (lọc SP)">{inp(s.cat, (v) => setSub(gi, si, "cat", v), "vd: Card màn hình", "wm-cats")}</Field>
-                  <button onClick={() => delSub(gi, si)} className="text-xs pb-2" style={{ color: RUST }}>Xoá</button>
-                </div>
-
-                {(s.children || []).length > 0 && (
-                  <div className="mt-2 space-y-1.5">
-                    {(s.children || []).map((c, ci) => (
-                      <div key={ci} className="flex gap-2 items-center flex-wrap p-1.5 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-                        <input value={c.label} onChange={(e) => setCh(gi, si, ci, "label", e.target.value)} placeholder="Nhãn hiển thị"
-                          className="border rounded-sm px-2 py-1 text-sm" style={{ borderColor: LINE, width: 150 }} />
-                        <select value={c.type} onChange={(e) => setCh(gi, si, ci, "type", e.target.value)}
-                          className="border rounded-sm px-2 py-1 text-sm" style={{ borderColor: LINE }}>
-                          {WEB_CHILD_TYPES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
-                        </select>
-                        {c.type === "cat" && (
-                          <input value={c.value} onChange={(e) => setCh(gi, si, ci, "value", e.target.value)} placeholder="Tên danh mục / tag (mặc định = nhãn)" list="wm-cats"
-                            className="border rounded-sm px-2 py-1 text-sm flex-1" style={{ borderColor: LINE, minWidth: 160 }} />
-                        )}
-                        {c.type === "brand" && (
-                          <input value={c.value} onChange={(e) => setCh(gi, si, ci, "value", e.target.value)} placeholder="Tên nhãn hiệu" list="wm-brands"
-                            className="border rounded-sm px-2 py-1 text-sm flex-1" style={{ borderColor: LINE, minWidth: 160 }} />
-                        )}
-                        {c.type === "price" && (
-                          <div className="flex gap-1.5 items-center flex-1" style={{ minWidth: 220 }}>
-                            {numInp(c.min, (v) => setCh(gi, si, ci, "min", v), "từ (đ)")}
-                            <span className="opacity-40">–</span>
-                            {numInp(c.max, (v) => setCh(gi, si, ci, "max", v), "đến (đ)")}
-                          </div>
-                        )}
-                        {c.type === "spec" && (
-                          <div className="flex gap-1.5 items-center flex-1" style={{ minWidth: 260 }}>
-                            <input value={c.specKey} onChange={(e) => setCh(gi, si, ci, "specKey", e.target.value)} placeholder="Nhãn thông số" list="wm-speckeys"
-                              className="border rounded-sm px-2 py-1 text-sm" style={{ borderColor: LINE, width: 130 }} />
-                            <span className="opacity-40">=</span>
-                            <input value={c.specValue} onChange={(e) => setCh(gi, si, ci, "specValue", e.target.value)} placeholder="Giá trị" list={`wm-specval-${gi}-${si}-${ci}`}
-                              className="border rounded-sm px-2 py-1 text-sm flex-1" style={{ borderColor: LINE, minWidth: 90 }} />
-                            <datalist id={`wm-specval-${gi}-${si}-${ci}`}>
-                              {[...(specMap[c.specKey] || [])].map((v) => <option key={v} value={v} />)}
-                            </datalist>
-                          </div>
-                        )}
-                        <button onClick={() => delCh(gi, si, ci)} className="text-xs px-1" style={{ color: RUST }}>×</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <button onClick={() => addCh(gi, si)} className="mt-2 text-xs px-2 py-1 rounded-sm border" style={{ borderColor: LINE, color: INK }}>+ Mục chi tiết</button>
-              </div>
-            ))}
-            <button onClick={() => addSub(gi)} className="text-xs px-2.5 py-1 rounded-sm border" style={{ borderColor: LINE, color: INK }}>+ Danh mục phụ</button>
-          </div>
+          <Field label="Danh mục phụ (mỗi dòng 1 mục)">
+            <textarea rows={Math.max(3, (g.subsText || "").split("\n").length + 1)} className={inputCls}
+              style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace", fontSize: 13 }}
+              value={g.subsText} onChange={(e) => setG(gi, "subsText", e.target.value)}
+              placeholder={"Bàn phím cơ\nBàn phím không dây\nBàn phím low-profile"} />
+          </Field>
         </div>
       ))}
 
@@ -11985,7 +11908,7 @@ export default function SalesManager() {
           </div>
           <AppErrorBoundary key={tab}>
             {tab === "dashboard" && <Dashboard products={products} orders={orders} goToOrdersFilter={goToOrdersFilter} />}
-            {tab === "products" && roleTabIds.includes("products") && <ProductsSection products={products} setProducts={setProducts} purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} suppliers={suppliers} setSuppliers={setSuppliers} categories={categories} setCategories={setCategories} brands={brands} setBrands={setBrands} stocktakes={stocktakes} setStocktakes={setStocktakes} warrantyTickets={warrantyTickets} setWarrantyTickets={setWarrantyTickets} repairTickets={repairTickets} setRepairTickets={setRepairTickets} helpdeskTickets={helpdeskTickets} setHelpdeskTickets={setHelpdeskTickets} orders={orders} customers={customers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} navTarget={tab === "products" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} goToDoc={goToDoc} goToSupplier={goToSupplier} />}
+            {tab === "products" && roleTabIds.includes("products") && <ProductsSection products={products} setProducts={setProducts} purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} suppliers={suppliers} setSuppliers={setSuppliers} categories={categories} setCategories={setCategories} brands={brands} setBrands={setBrands} stocktakes={stocktakes} setStocktakes={setStocktakes} warrantyTickets={warrantyTickets} setWarrantyTickets={setWarrantyTickets} repairTickets={repairTickets} setRepairTickets={setRepairTickets} helpdeskTickets={helpdeskTickets} setHelpdeskTickets={setHelpdeskTickets} orders={orders} customers={customers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} navTarget={tab === "products" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} goToDoc={goToDoc} goToSupplier={goToSupplier} webConfig={webConfig} />}
             {tab === "quotes" && <Quotations quotations={quotations} setQuotations={setQuotations} orders={orders} setOrders={setOrders} products={products} setProducts={setProducts} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} brands={brands} />}
             {tab === "orders" && <Orders orders={orders} setOrders={setOrders} products={products} setProducts={setProducts} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} focusOrderId={tab === "orders" ? navTarget?.type === "order" ? navTarget.id : null : null} initialFilterStatus={tab === "orders" && navTarget?.type === "orders-filter" ? navTarget.status : null} onFocusHandled={() => setNavTarget(null)} printSettings={printSettings} setPrintSettings={setPrintSettings} />}
             {tab === "shipping" && roleTabIds.includes("shipping") && <Shipping shippingTickets={shippingTickets} setShippingTickets={setShippingTickets} orders={orders} customers={customers} currentUser={currentUser} addLog={addLog} />}

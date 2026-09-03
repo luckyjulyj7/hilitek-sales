@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useRoute, match } from "./router.js";
 import { fetchCatalog } from "./lib/api.js";
+import { CatalogCtx } from "./catalogContext.js";
 import Header from "./components/Header.jsx";
 import Footer from "./components/Footer.jsx";
 import FloatingContact from "./components/FloatingContact.jsx";
@@ -74,6 +75,7 @@ export default function App() {
   }
 
   return (
+    <CatalogCtx.Provider value={catalog}>
     <div className="min-h-full flex flex-col bg-paper text-ink">
       <Header route={route} navigate={route.navigate} />
       <main className="flex-1">
@@ -90,5 +92,6 @@ export default function App() {
       <Footer navigate={route.navigate} />
       <FloatingContact />
     </div>
+    </CatalogCtx.Provider>
   );
 }

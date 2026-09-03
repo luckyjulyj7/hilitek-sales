@@ -6,8 +6,9 @@ import { groupIcon } from "./groupIcons.js";
 import GroupPanel from "./GroupPanel.jsx";
 
 /**
- * Cột danh mục — kiểu maianhpc.vn, flyout 3 tầng (phụ → chi tiết).
- * Dùng ở: cột trái trang chủ, VÀ menu sổ xuống của nút "DANH MỤC SẢN PHẨM" (hideHeading).
+ * Cột danh mục — kiểu maianhpc.vn. Rê vào 1 nhóm → xổ ngang bảng: danh mục phụ +
+ * cột "Thương hiệu" (tự sinh) + "Khoảng giá".
+ * Dùng ở: cột trái trang chủ, VÀ menu sổ xuống nút "DANH MỤC SẢN PHẨM" (hideHeading).
  */
 export default function CategoryRail({ navigate, className = "", hideHeading = false }) {
   const [open, setOpen] = useState(null);
@@ -47,8 +48,7 @@ export default function CategoryRail({ navigate, className = "", hideHeading = f
                 <div
                   onMouseEnter={() => enter(g.slug)}
                   onMouseLeave={leave}
-                  className="absolute left-full top-0 z-30 ml-1 min-h-full bg-white border border-line rounded-lg shadow-menu p-5"
-                  style={{ width: Math.min(nSubs, 4) * 190 + 40 }}
+                  className="absolute left-full top-0 z-30 ml-1 min-h-full w-[560px] max-w-[70vw] bg-white border border-line rounded-lg shadow-menu p-5"
                 >
                   <button
                     onClick={() => go(href("/danh-muc", { group: g.group }).slice(1))}
