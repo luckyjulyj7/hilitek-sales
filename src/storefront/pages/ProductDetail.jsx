@@ -211,7 +211,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
         <div className="space-y-4">
           {PRODUCT_SIDEBAR.banner && (
             <div className="hidden lg:block">
-              <PosterSlot slot={PRODUCT_SIDEBAR.banner} navigate={navigate} className="lg:sticky lg:top-[150px]" />
+              <PosterSlot slot={PRODUCT_SIDEBAR.banner} navigate={navigate} zoom className="lg:sticky lg:top-[150px]" />
             </div>
           )}
           <ProductCommitments />
