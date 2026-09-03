@@ -109,3 +109,23 @@ Khách đặt trên web → đơn xuất hiện trong **Đơn hàng** của app 
   (hạ tầng `/api/web/config` + override phía web đã sẵn — chỉ thiếu UI nhập trong
   SalesManager; tạm thời vẫn sửa trong `src/storefront/config.js`).
 - Xử lý xung đột ghi (2 người sửa cùng lúc) — hiện là "ghi sau đè ghi trước".
+
+## 6. Chèn ẢNH / VIDEO vào mô tả sản phẩm
+
+Ô "Mô tả sản phẩm (web)" trong app quản lý:
+
+- **Ảnh**: dán (Ctrl+V) · kéo–thả file · nút "Chèn ảnh". Ảnh được tải lên
+  Supabase Storage (bucket `product-media`), chèn dưới dạng `![](/media/...)`.
+  Link `/media/...` được `vercel.json` rewrite về storage — KHÔNG lộ trang nguồn.
+- **Dán cả bài từ web khác**: giữ chữ, tự tải từng ảnh trong bài về kho Hilitek.
+  Ảnh nào bị CORS chặn cả ở trình duyệt lẫn server thì giữ tạm link gốc (báo lại).
+- **Video YouTube**: dán link (`youtube.com/watch?v=...` hoặc `youtu.be/...`) trên
+  một dòng riêng → web nhúng khung phát 16:9.
+- **Thiết lập 1 lần** (bắt buộc để tính năng ảnh chạy):
+  1. Supabase → **Storage** → New bucket: tên `product-media`, tick **Public**.
+  2. SQL Editor → chạy `supabase/storage.sql` (tạo policy cho phép upload).
+  3. Vercel Env: đã có `SUPABASE_SERVICE_ROLE_KEY` (cho `/api/web/*`) là đủ cho
+     `/api/admin/fetch-image` (tải ảnh từ bài dán). `VITE_SUPABASE_ANON_KEY` dùng
+     làm khoá chặn lạm dụng endpoint đó.
+  4. `vercel.json` đã có rewrite `/media/*` → storage công khai của project
+     `wddfjbcrkwkzshibghdi`. Đổi nếu dùng project Supabase khác.

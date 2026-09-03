@@ -14,6 +14,7 @@ import { ghn as ghnApi } from "./lib/ghn.js";
 // Nội dung mặc định cho web (dùng làm điểm khởi đầu khi chưa chỉnh trong "Cấu hình web").
 import { PAGES as WEB_DEFAULT_PAGES, MENU as WEB_DEFAULT_MENU, allWebCategories as webAllCategories, webCategoryGroups } from "./storefront/config.js";
 import { GROUP_ICON_NAMES, groupIcon as webGroupIcon } from "./storefront/components/groupIcons.js";
+import { uploadProductImage, rehostExternalImage } from "./lib/mediaUpload.js";
 
 // Xuất 1 hoặc nhiều bảng dữ liệu ra 1 file Excel (.xlsx), mỗi bảng là 1 sheet riêng.
 function exportExcel(filename, sheets) {
@@ -665,6 +666,132 @@ function webTextToSpecs(text) {
     }
   });
   return rows.filter((r) => r[0] || r[1]);
+}
+
+/**
+ * Ô nhập "Mô tả sản phẩm (web)" — textarea + chèn ảnh:
+ *   • Dán ảnh (Ctrl+V) · Kéo–thả file ảnh · Nút "Chèn ảnh"
+ *   • Dán cả bài từ web khác: giữ chữ, tải từng ảnh về kho Hilitek (link /media/...)
+ * Ảnh chèn dưới dạng markdown  ![](url)  — web khách tự render.
+ */
+function WebDescEditor({ value, onChange, rows = 6, bg }) {
+  const taRef = useRef(null);
+  const fileRef = useRef(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [drag, setDrag] = useState(false);
+
+  const insert = (snippet) => {
+    const ta = taRef.current;
+    const v = value || "";
+    const s = ta && ta.selectionStart != null ? ta.selectionStart : v.length;
+    const e = ta && ta.selectionEnd != null ? ta.selectionEnd : s;
+    const before = v.slice(0, s), after = v.slice(e);
+    const pre = before && !before.endsWith("\n") ? "\n\n" : "";
+    const post = after && !after.startsWith("\n") ? "\n\n" : "";
+    const next = before + pre + snippet + post + after;
+    onChange(next);
+    requestAnimationFrame(() => {
+      if (!ta) return;
+      const pos = (before + pre + snippet).length;
+      ta.focus(); ta.selectionStart = ta.selectionEnd = pos;
+    });
+  };
+
+  const addFiles = async (files) => {
+    const imgs = [...files].filter((f) => f && f.type && f.type.startsWith("image/"));
+    if (!imgs.length) return;
+    setBusy(true); setMsg(`Đang tải ${imgs.length} ảnh…`);
+    try {
+      const out = [];
+      for (const f of imgs) { const { url } = await uploadProductImage(f); out.push(`![](${url})`); }
+      insert(out.join("\n\n"));
+      setMsg(`Đã chèn ${imgs.length} ảnh.`);
+    } catch (err) { setMsg("Lỗi: " + (err.message || err)); }
+    finally { setBusy(false); }
+  };
+
+  const pasteArticle = async (html, plain) => {
+    let srcs = [];
+    try {
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      srcs = [...doc.querySelectorAll("img")]
+        .map((i) => i.getAttribute("src") || i.src)
+        .filter((s) => /^https?:\/\//i.test(s || ""));
+      if (!plain) plain = (doc.body && doc.body.textContent) || "";
+    } catch { /* noop */ }
+    setBusy(true);
+    const parts = [];
+    if ((plain || "").trim()) parts.push(plain.trim());
+    let fail = 0;
+    for (let k = 0; k < srcs.length; k++) {
+      setMsg(`Đang tải ảnh ${k + 1}/${srcs.length} về kho…`);
+      try { parts.push(`![](${await rehostExternalImage(srcs[k])})`); }
+      catch { fail++; parts.push(`![](${srcs[k]})`); }
+    }
+    setBusy(false);
+    setMsg(
+      srcs.length
+        ? `Xong — ${srcs.length - fail}/${srcs.length} ảnh đã lưu về Hilitek` +
+          (fail ? `, ${fail} ảnh không tải được (giữ tạm link gốc, nên thay sau).` : ".")
+        : ""
+    );
+    insert(parts.join("\n\n"));
+  };
+
+  const onPaste = async (ev) => {
+    const dt = ev.clipboardData;
+    if (!dt) return;
+    const fileImgs = [...(dt.items || [])].filter((it) => it.kind === "file" && it.type.startsWith("image/"));
+    if (fileImgs.length) {
+      ev.preventDefault();
+      await addFiles(fileImgs.map((it) => it.getAsFile()).filter(Boolean));
+      return;
+    }
+    const html = dt.getData("text/html");
+    if (html && /<img\s/i.test(html)) {
+      ev.preventDefault();
+      await pasteArticle(html, dt.getData("text/plain"));
+    }
+  };
+
+  const onDrop = async (ev) => {
+    if (!ev.dataTransfer || !ev.dataTransfer.files || !ev.dataTransfer.files.length) return;
+    ev.preventDefault(); setDrag(false);
+    await addFiles(ev.dataTransfer.files);
+  };
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-1 flex-wrap">
+        <button type="button" onClick={() => fileRef.current && fileRef.current.click()} disabled={busy}
+          className="text-xs px-2 py-1 rounded-sm border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy ? 0.5 : 1 }}>
+          <ImagePlus size={13} /> Chèn ảnh
+        </button>
+        <span className="text-[11px] opacity-55">Dán ảnh (Ctrl+V) · kéo–thả file · dán cả bài từ web khác</span>
+        {busy && <span className="text-[11px] inline-flex items-center gap-1" style={{ color: BLUE }}><Loader2 size={12} className="animate-spin" /> {msg}</span>}
+        {!busy && msg && <span className="text-[11px]" style={{ color: /Lỗi|không/i.test(msg) ? RUST : BLUE }}>{msg}</span>}
+        <input ref={fileRef} type="file" accept="image/*" multiple className="hidden"
+          onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
+      </div>
+      <div className="relative" onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={onDrop}>
+        <textarea
+          ref={taRef} rows={rows} className={inputCls}
+          style={{ borderColor: drag ? BLUE : LINE, background: bg || undefined }}
+          value={value || ""}
+          onChange={(e) => onChange(e.target.value)}
+          onPaste={onPaste}
+          placeholder={"Nội dung mô tả…\n\nChèn ảnh: dán / kéo–thả / nút 'Chèn ảnh'.\nChèn video: dán link YouTube trên 1 dòng riêng."}
+        />
+        {drag && (
+          <div className="absolute inset-0 rounded-sm grid place-items-center text-sm font-medium pointer-events-none"
+            style={{ background: `${BLUE}12`, border: `2px dashed ${BLUE}`, color: BLUE }}>
+            Thả ảnh vào đây
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 // Đảm bảo mọi sản phẩm tải từ bộ nhớ đều có đủ field cần thiết,
@@ -2310,9 +2437,10 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                     <MoneyInput className={inputCls} style={{ borderColor: LINE }} value={form.web?.compareAtPrice || ""} onChange={(v) => setForm({ ...form, web: { ...normalizeWeb(form.web), compareAtPrice: v } })} />
                   </Field>
                 </div>
-                <Field label="Mô tả sản phẩm (web)" hint="Xuống dòng đôi = đoạn mới; dòng bắt đầu bằng '- ' = gạch đầu dòng">
-                  <textarea rows={6} className={inputCls} style={{ borderColor: LINE }} value={form.web?.description || ""}
-                    onChange={(e) => setForm({ ...form, web: { ...form.web, description: e.target.value } })} />
+                <Field label="Mô tả sản phẩm (web)" hint="Xuống dòng đôi = đoạn mới · dòng '- ' = gạch đầu dòng · dán link YouTube (dòng riêng) = nhúng video">
+                  <WebDescEditor rows={7}
+                    value={form.web?.description || ""}
+                    onChange={(v) => setForm({ ...form, web: { ...form.web, description: v } })} />
                 </Field>
                 <Field label="Thông số kỹ thuật (web)" hint="Mỗi dòng: Nhãn | Giá trị. Dòng KHÔNG có ký tự | sẽ nối tiếp (xuống dòng) vào giá trị phía trên — dùng cho thông số dài nhiều dòng.">
                   <textarea rows={8} className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }}
@@ -11171,9 +11299,9 @@ function WebProducts({ products, setProducts, categories, addLog, webConfig }) {
                               </div>
                             )}
                           </Field>
-                          <Field label="Mô tả sản phẩm (web)" hint="Xuống dòng đôi = đoạn mới; dòng '- ' = gạch đầu dòng">
-                            <textarea rows={5} className={inputCls} style={{ borderColor: LINE, background: "#fff" }}
-                              value={p.web?.description || ""} onChange={(e) => setWeb(p, { description: e.target.value })} />
+                          <Field label="Mô tả sản phẩm (web)" hint="Dán / kéo–thả ảnh · dán link YouTube (dòng riêng) = nhúng video">
+                            <WebDescEditor rows={6} bg="#fff"
+                              value={p.web?.description || ""} onChange={(v) => setWeb(p, { description: v })} />
                           </Field>
                           <Field label="Thông số kỹ thuật (web)" hint="Mỗi dòng: Nhãn | Giá trị. Dòng không có | sẽ nối tiếp (xuống dòng) vào giá trị phía trên.">
                             <textarea rows={8} className={inputCls} style={{ borderColor: LINE, background: "#fff", fontFamily: "'IBM Plex Mono', monospace" }}
