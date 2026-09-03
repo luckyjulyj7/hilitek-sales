@@ -181,7 +181,7 @@ export default handler(async (req, res) => {
   const m = req.method;
 
   if (head === "products" && m === "GET") return listProducts(req, res);
-  if (head === "product" && m === "GET") return oneProduct(req, res, seg[1]);
+  if (head === "product" && m === "GET") return oneProduct(req, res, (req.query && req.query.slug) || seg[1]);
   if (head === "config" && m === "GET") return getConfig(req, res);
   if (head === "orders" && m === "POST") return createOrder(req, res);
   if (head === "fetch-image" && m === "GET") return fetchImage(req, res);

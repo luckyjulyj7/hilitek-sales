@@ -52,6 +52,25 @@ export default function ProductDetail({ slug, navigate, catalog }) {
     return () => { alive = false; };
   }, [slug]);
 
+  // SEO: đặt tiêu đề trang + thẻ mô tả theo cấu hình SEO của sản phẩm.
+  useEffect(() => {
+    if (!product) return;
+    const baseTitle = "Hilitek";
+    const title = (product.seoTitle && product.seoTitle.trim())
+      || (product.name ? `${product.name} | ${baseTitle}` : baseTitle);
+    const descText = (product.seoDesc && product.seoDesc.trim()) || product.shortDesc || "";
+    const prevTitle = document.title;
+    document.title = title;
+    let tag = document.querySelector('meta[name="description"]');
+    if (!tag) { tag = document.createElement("meta"); tag.setAttribute("name", "description"); document.head.appendChild(tag); }
+    const prevDesc = tag.getAttribute("content");
+    if (descText) tag.setAttribute("content", descText.slice(0, 300));
+    return () => {
+      document.title = prevTitle;
+      if (prevDesc != null) tag.setAttribute("content", prevDesc);
+    };
+  }, [product]);
+
   if (product === undefined)
     return <div className="mx-auto max-w-[1500px] px-4 py-20 text-center text-mute">Đang tải…</div>;
 

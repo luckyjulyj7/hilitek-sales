@@ -62,7 +62,7 @@ export async function fetchCatalog() {
 export async function fetchProduct(slug) {
   if (USE_MOCK) return delay(MOCK_PRODUCTS.find((x) => x.slug === slug) || null);
   try {
-    const res = await fetch(`/api/web/product/${encodeURIComponent(slug)}`, { headers: { Accept: "application/json" } });
+    const res = await fetch(`/api/web/product?slug=${encodeURIComponent(slug)}`, { headers: { Accept: "application/json" } });
     if (!isJson(res)) throw new Error("API chưa sẵn sàng");
     if (res.status === 404) return null;
     const data = await res.json().catch(() => ({}));

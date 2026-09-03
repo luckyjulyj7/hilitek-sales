@@ -104,6 +104,16 @@ export function publicProduct(p, { detail = false } = {}) {
     ? web.categories.filter((x) => typeof x === "string" && x.trim())
     : (p.category ? [p.category] : []);
 
+  // Ảnh: ưu tiên ảnh chất lượng cao chủ shop thêm riêng cho web (web.images), không có thì lấy ảnh sản phẩm.
+  const webImgs = (Array.isArray(web.images) ? web.images : []).filter((s) => typeof s === "string" && s.trim());
+  const images = webImgs.length
+    ? webImgs.slice(0, 10)
+    : [p.image, ...(Array.isArray(p.images) ? p.images : [])].filter(Boolean);
+
+  const shortDesc = (typeof web.shortDesc === "string" && web.shortDesc.trim())
+    ? web.shortDesc.trim().slice(0, 300)
+    : (desc.split(/\n{2,}/)[0] || "").replace(/!\[[^\]]*\]\([^)]*\)/g, "").replace(/https?:\/\/\S+/g, "").trim().slice(0, 180);
+
   const out = {
     id: p.id,
     sku: p.sku || "",
@@ -119,13 +129,15 @@ export function publicProduct(p, { detail = false } = {}) {
     weight: Number(p.weight) || 0,
     stock: Math.max(0, stockOf(p)),
     hasSerial: !!p.hasSeries,
-    shortDesc: (desc.split(/\n{2,}/)[0] || "").slice(0, 180),
+    shortDesc,
     specChips: specs.slice(0, 4).map(([k, v]) => String(v || k).split("\n")[0].trim()).filter(Boolean),
     specs, // cần cho bộ lọc "thông số" ở trang danh mục (nhẹ — vài cặp nhãn|giá trị)
-    images: [p.image, ...(Array.isArray(p.images) ? p.images : [])].filter(Boolean),
+    images,
   };
   if (detail) {
     out.description = desc;
+    out.seoTitle = typeof web.seoTitle === "string" ? web.seoTitle.trim() : "";
+    out.seoDesc = typeof web.seoDesc === "string" ? web.seoDesc.trim() : "";
   }
   return out;
 }

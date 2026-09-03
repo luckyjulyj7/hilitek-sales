@@ -637,6 +637,12 @@ function normalizeWeb(w) {
     compareAtPrice: Number(w.compareAtPrice) || 0, // giá so sánh (gạch bỏ) — 0 = không hiện
     categories: Array.isArray(w.categories) ? [...new Set(w.categories.filter((x) => typeof x === "string" && x.trim()).map((x) => x.trim()))] : [], // danh mục web (khớp menu ở Cấu hình web)
     slug: typeof w.slug === "string" ? w.slug : "",
+    shortDesc: typeof w.shortDesc === "string" ? w.shortDesc : "",
+    images: Array.isArray(w.images)
+      ? [...new Set(w.images.filter((x) => typeof x === "string" && x.trim()).map((x) => x.trim()))].slice(0, 10)
+      : [],
+    seoTitle: typeof w.seoTitle === "string" ? w.seoTitle : "",
+    seoDesc: typeof w.seoDesc === "string" ? w.seoDesc : "",
   };
 }
 // Thông số kỹ thuật web ↔ mảng [[nhãn, giá trị], ...].
@@ -789,6 +795,95 @@ function WebDescEditor({ value, onChange, rows = 6, bg }) {
             Thả ảnh vào đây
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Lưới ảnh chất lượng cao riêng cho web (tối đa `max` ảnh).
+ * Thêm bằng: dán/kéo–thả file · nút chọn file · nút "Từ URL" (tự tải về kho Hilitek).
+ * Ảnh đầu tiên = ảnh đại diện.
+ */
+function WebImageGrid({ images, onChange, max = 10 }) {
+  const list = (Array.isArray(images) ? images : []).filter(Boolean);
+  const fileRef = useRef(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [drag, setDrag] = useState(false);
+  const [urlOpen, setUrlOpen] = useState(false);
+  const [urlVal, setUrlVal] = useState("");
+
+  const room = () => Math.max(0, max - list.length);
+  const addFiles = async (files) => {
+    const imgs = [...files].filter((f) => f && f.type && f.type.startsWith("image/")).slice(0, room());
+    if (!imgs.length) return;
+    setBusy(true); setMsg(`Đang tải ${imgs.length} ảnh…`);
+    try {
+      const got = [];
+      for (const f of imgs) got.push((await uploadProductImage(f)).url);
+      onChange([...list, ...got].slice(0, max));
+      setMsg("");
+    } catch (e) { setMsg("Lỗi: " + (e.message || e)); }
+    finally { setBusy(false); }
+  };
+  const addUrl = async () => {
+    const u = urlVal.trim();
+    if (!/^https?:\/\//i.test(u)) { setMsg("Link phải bắt đầu https://"); return; }
+    setBusy(true); setMsg("Đang tải ảnh về kho…"); setUrlOpen(false); setUrlVal("");
+    try {
+      let final = u;
+      try { final = await rehostExternalImage(u); } catch { setMsg("Không tải về được — dùng tạm link gốc."); }
+      onChange([...list, final].slice(0, max));
+      if (final !== u) setMsg("");
+    } catch (e) { setMsg("Lỗi: " + (e.message || e)); }
+    finally { setBusy(false); }
+  };
+  const move = (i, d) => { const j = i + d; if (j < 0 || j >= list.length) return; const n = [...list]; [n[i], n[j]] = [n[j], n[i]]; onChange(n); };
+  const del = (i) => onChange(list.filter((_, k) => k !== i));
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-2 flex-wrap text-xs">
+        <span className="opacity-55">{list.length}/{max} ảnh</span>
+        <button type="button" disabled={busy || !room()} onClick={() => fileRef.current && fileRef.current.click()}
+          className="px-2 py-1 rounded-sm border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy || !room() ? 0.5 : 1 }}>
+          <ImagePlus size={13} /> Thêm ảnh
+        </button>
+        <button type="button" disabled={busy || !room()} onClick={() => setUrlOpen((v) => !v)}
+          className="px-2 py-1 rounded-sm border" style={{ borderColor: LINE, color: INK, opacity: busy || !room() ? 0.5 : 1 }}>Từ URL</button>
+        {busy && <span className="inline-flex items-center gap-1" style={{ color: BLUE }}><Loader2 size={12} className="animate-spin" /> {msg}</span>}
+        {!busy && msg && <span style={{ color: /Lỗi|không/i.test(msg) ? RUST : BLUE }}>{msg}</span>}
+        <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
+      </div>
+      {urlOpen && (
+        <div className="flex gap-2 mb-2">
+          <input value={urlVal} onChange={(e) => setUrlVal(e.target.value)} placeholder="https://.../anh.jpg"
+            className="flex-1 border rounded-sm px-2 py-1 text-sm" style={{ borderColor: LINE }} onKeyDown={(e) => e.key === "Enter" && addUrl()} />
+          <button type="button" onClick={addUrl} className="px-3 py-1 rounded-sm text-white text-sm" style={{ background: INK }}>Thêm</button>
+        </div>
+      )}
+      <div
+        className="grid grid-cols-4 sm:grid-cols-5 gap-2 rounded-sm p-2"
+        style={{ border: `2px dashed ${drag ? BLUE : LINE}`, background: drag ? `${BLUE}0D` : PAPER }}
+        onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
+        onDragLeave={() => setDrag(false)}
+        onDrop={(e) => { e.preventDefault(); setDrag(false); if (e.dataTransfer?.files?.length) addFiles(e.dataTransfer.files); }}
+      >
+        {list.length === 0 && (
+          <div className="col-span-full text-center text-xs opacity-45 py-6">Kéo–thả ảnh vào đây, hoặc bấm "Thêm ảnh"</div>
+        )}
+        {list.map((src, i) => (
+          <div key={i} className="relative group aspect-square rounded-sm overflow-hidden" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+            <img src={src} alt="" className="w-full h-full object-cover" />
+            {i === 0 && <span className="absolute top-0.5 left-0.5 text-[9px] px-1 rounded-sm text-white" style={{ background: INK }}>Đại diện</span>}
+            <div className="absolute inset-x-0 bottom-0 flex justify-between px-0.5 py-0.5 opacity-0 group-hover:opacity-100 transition" style={{ background: "rgba(0,0,0,0.45)" }}>
+              <button type="button" onClick={() => move(i, -1)} disabled={i === 0} className="text-white text-xs px-1 disabled:opacity-30">←</button>
+              <button type="button" onClick={() => del(i)} className="text-white text-xs px-1" title="Xoá">✕</button>
+              <button type="button" onClick={() => move(i, 1)} disabled={i === list.length - 1} className="text-white text-xs px-1 disabled:opacity-30">→</button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -11207,6 +11302,11 @@ function WebProducts({ products, setProducts, categories, addLog, webConfig }) {
 
   const publishedCount = products.filter((p) => p.web?.published).length;
 
+  const editing = editId ? products.find((x) => x.id === editId) : null;
+  if (editing) {
+    return <WebProductPage product={editing} setProducts={setProducts} webCats={webCats} onBack={() => setEditId(null)} />;
+  }
+
   return (
     <div>
       <div className="flex items-center gap-3 mb-4 flex-wrap text-sm">
@@ -11267,68 +11367,154 @@ function WebProducts({ products, setProducts, categories, addLog, webConfig }) {
                     </td>
                     <td className="px-3 py-2.5 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace", color: st.closingQty <= 0 ? RUST : INK }}>{st.closingQty}</td>
                     <td className="px-3 py-2.5 text-right">
-                      <button onClick={() => setEditId(editId === p.id ? null : p.id)} className="text-xs underline" style={{ color: BLUE }}>
-                        {editId === p.id ? "Đóng" : "Nội dung"}
+                      <button onClick={() => setEditId(p.id)} className="text-xs px-2.5 py-1 rounded-sm border" style={{ borderColor: LINE, color: INK }}>
+                        Sửa
                       </button>
                     </td>
                   </tr>
-                  {editId === p.id && (
-                    <tr style={{ background: PAPER }}>
-                      <td colSpan={7} className="px-4 py-4">
-                        {p.variantGroupId && <p className="text-xs mb-2" style={{ color: BLUE }}>Mô tả & thông số áp cho tất cả phiên bản cùng nhóm.</p>}
-                        <div className="grid gap-3">
-                          <Field label="Danh mục phụ trên web" hint="Sản phẩm hiện khi khách bấm các danh mục phụ này (cũng chỉnh được ngay trong form sản phẩm chính). Danh sách sửa ở 'Cấu hình web'.">
-                            {webCats.length === 0 ? (
-                              <span className="text-xs" style={{ color: RUST }}>Chưa có danh mục nào — vào 'Cấu hình web' → 'Danh mục sản phẩm web' để thêm.</span>
-                            ) : (
-                              <div className="flex flex-wrap gap-1.5">
-                                {webCats.map((cat) => {
-                                  const on = (p.web?.categories || []).includes(cat);
-                                  return (
-                                    <button key={cat} type="button"
-                                      onClick={() => {
-                                        const cur = p.web?.categories || [];
-                                        setWeb(p, { categories: on ? cur.filter((x) => x !== cat) : [...cur, cat] });
-                                      }}
-                                      className="px-2.5 py-1 rounded-sm text-xs border"
-                                      style={{ borderColor: on ? INK : LINE, background: on ? INK : "#fff", color: on ? "#fff" : INK }}>
-                                      {cat}
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </Field>
-                          <Field label="Mô tả sản phẩm (web)" hint="Dán / kéo–thả ảnh · dán link YouTube (dòng riêng) = nhúng video">
-                            <WebDescEditor rows={6} bg="#fff"
-                              value={p.web?.description || ""} onChange={(v) => setWeb(p, { description: v })} />
-                          </Field>
-                          <Field label="Thông số kỹ thuật (web)" hint="Mỗi dòng: Nhãn | Giá trị. Dòng không có | sẽ nối tiếp (xuống dòng) vào giá trị phía trên.">
-                            <textarea rows={8} className={inputCls} style={{ borderColor: LINE, background: "#fff", fontFamily: "'IBM Plex Mono', monospace" }}
-                              value={p.web?.specsText ?? webSpecsToText(p.web?.specs)} onChange={(e) => setWeb(p, { specsText: e.target.value })}
-                              placeholder={"Chuẩn | M.2 2280 NVMe\nBộ nhớ | 2 khe DDR4, tối đa 64GB\n- Hỗ trợ XMP"} />
-                          </Field>
-                          <div className="grid grid-cols-2 gap-3">
-                            <Field label="Khối lượng (gram)" hint="Tính phí ship">
-                              <input type="number" min={0} className={inputCls} style={{ borderColor: LINE, background: "#fff" }}
-                                value={p.weight ?? ""} onChange={(e) => patch(p.id, (x) => ({ ...x, weight: Number(e.target.value) || 0 }))} />
-                            </Field>
-                            <Field label="Đường dẫn web (slug)" hint="Bỏ trống = tự tạo từ tên + SKU">
-                              <input className={inputCls} style={{ borderColor: LINE, background: "#fff", fontFamily: "'IBM Plex Mono', monospace" }}
-                                value={p.web?.slug || ""} onChange={(e) => setWeb(p, { slug: webSlugify(e.target.value) })} />
-                            </Field>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
                 </React.Fragment>
               );
             })}
           </tbody>
         </table>
       </div>
-      <p className="text-xs opacity-50 mt-3">Thay đổi tự lưu. Web khách cập nhật khi tải lại trang (đọc <code>/api/web/products</code>).</p>
+      <p className="text-xs opacity-50 mt-3">Thay đổi tự lưu. Web khách cập nhật khi tải lại trang.</p>
+    </div>
+  );
+}
+
+/** Trang sửa 1 sản phẩm trên web — bố cục 2 cột kiểu Sapo. */
+function WebProductPage({ product, setProducts, webCats, onBack }) {
+  const p = product;
+  const w = normalizeWeb(p.web);
+  const shareKeys = ["description", "specsText", "categories", "images", "shortDesc"];
+
+  const setWeb = (wpatch) => {
+    const shared = shareKeys.some((k) => k in wpatch);
+    setProducts((prev) => prev.map((x) => {
+      if (x.id === p.id) return { ...x, web: normalizeWeb({ ...normalizeWeb(x.web), ...wpatch }) };
+      if (shared && p.variantGroupId && x.variantGroupId === p.variantGroupId) {
+        const sh = {}; shareKeys.forEach((k) => { if (k in wpatch) sh[k] = wpatch[k]; });
+        return { ...x, web: normalizeWeb({ ...normalizeWeb(x.web), ...sh }) };
+      }
+      return x;
+    }));
+  };
+  const setProdField = (k, v) => setProducts((prev) => prev.map((x) => (x.id === p.id ? { ...x, [k]: v } : x)));
+
+  const effSlug = w.slug || webSlugify(`${p.name}-${p.sku || ""}`);
+  const seoTitle = w.seoTitle || p.name;
+  const seoDesc = w.seoDesc || w.shortDesc || (w.description.split(/\n{2,}/)[0] || "").replace(/!\[[^\]]*\]\([^)]*\)/g, "").slice(0, 160);
+
+  return (
+    <div>
+      <div className="flex items-center gap-3 mb-4">
+        <button onClick={onBack} className="text-sm inline-flex items-center gap-1" style={{ color: BLUE }}>
+          <ChevronLeft size={16} /> Danh sách sản phẩm web
+        </button>
+        <div className="flex-1" />
+        <span className="text-xs opacity-50">Tự lưu</span>
+      </div>
+
+      <h3 className="text-lg font-semibold mb-1" style={{ color: INK }}>{p.name}</h3>
+      <div className="text-[11px] opacity-50 mb-4" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.sku} · {p.category || "—"}</div>
+
+      <div className="grid lg:grid-cols-[1fr_320px] gap-5 items-start">
+        {/* Cột trái */}
+        <div className="space-y-4">
+          {p.variantGroupId && <p className="text-xs p-2 rounded-sm" style={{ background: `${BLUE}0D`, color: BLUE }}>Nội dung · thông số · ảnh · danh mục áp cho tất cả phiên bản cùng nhóm. Giá / SEO / slug riêng từng phiên bản.</p>}
+
+          <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+            <Field label="Nội dung mô tả" hint="Dán / kéo–thả ảnh · dán cả bài từ web khác · dán link YouTube (dòng riêng) = nhúng video">
+              <WebDescEditor rows={12} bg="#fff" value={w.description} onChange={(v) => setWeb({ description: v })} />
+            </Field>
+            <div className="mt-3">
+              <Field label="Mô tả ngắn (web)" hint="1–2 câu tóm tắt — hiện ở danh sách + dùng làm mô tả SEO nếu bỏ trống ô SEO.">
+                <textarea rows={2} className={inputCls} style={{ borderColor: LINE, background: "#fff" }}
+                  value={w.shortDesc} onChange={(e) => setWeb({ shortDesc: e.target.value })} placeholder="VD: Kính cường lực USAMS trong suốt, độ cứng 9H, cảm ứng nhạy, viền phủ keo full màn." />
+              </Field>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+            <p className="text-sm font-medium mb-2" style={{ color: INK }}>Ảnh sản phẩm trên web <span className="text-xs opacity-50">(tối đa 10, chất lượng cao — bỏ trống = dùng ảnh ở form sản phẩm chính)</span></p>
+            <WebImageGrid images={w.images} onChange={(imgs) => setWeb({ images: imgs })} max={10} />
+          </div>
+
+          <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+            <Field label="Thông số kỹ thuật (web)" hint="Mỗi dòng: Nhãn | Giá trị. Dòng không có ký tự | sẽ nối tiếp (xuống dòng) vào giá trị phía trên.">
+              <textarea rows={8} className={inputCls} style={{ borderColor: LINE, background: "#fff", fontFamily: "'IBM Plex Mono', monospace" }}
+                value={w.specsText} onChange={(e) => setWeb({ specsText: e.target.value })}
+                placeholder={"Chất liệu | Kính cường lực\nĐộ cứng | 9H\nĐặc điểm | Cảm ứng nhạy\n- Viền phủ keo\n- Chống dầu vân tay"} />
+            </Field>
+          </div>
+        </div>
+
+        {/* Cột phải */}
+        <div className="space-y-4">
+          <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+            <p className="text-sm font-medium mb-2" style={{ color: INK }}>Trạng thái</p>
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" checked={!!w.published} onChange={(e) => setWeb({ published: e.target.checked })} />
+              <span>{w.published ? "Đang bán trên web" : "Ẩn khỏi web"}</span>
+            </label>
+            <p className="text-[11px] opacity-50 mt-1">Bỏ tick = sản phẩm không hiện trên website khách.</p>
+          </div>
+
+          <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+            <p className="text-sm font-medium mb-2" style={{ color: INK }}>Danh mục phụ trên web</p>
+            {webCats.length === 0 ? (
+              <span className="text-xs" style={{ color: RUST }}>Chưa có danh mục — vào Cấu hình web → "Danh mục sản phẩm web".</span>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {webCats.map((cat) => {
+                  const on = (w.categories || []).includes(cat);
+                  return (
+                    <button key={cat} type="button"
+                      onClick={() => setWeb({ categories: on ? w.categories.filter((x) => x !== cat) : [...w.categories, cat] })}
+                      className="px-2.5 py-1 rounded-sm text-xs border"
+                      style={{ borderColor: on ? INK : LINE, background: on ? INK : "#fff", color: on ? "#fff" : INK }}>
+                      {cat}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="p-4 rounded-sm space-y-3" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+            <p className="text-sm font-medium" style={{ color: INK }}>Giá & vận chuyển</p>
+            <Field label="Giá bán web (đ)" hint="= Giá bán lẻ. Sửa ở tab Sản phẩm & tồn kho.">
+              <input readOnly disabled className={inputCls} style={{ borderColor: LINE, background: PAPER }} value={p.retailPrice ? vnd(Number(p.retailPrice)) : "—"} />
+            </Field>
+            <Field label="Giá so sánh — gạch bỏ (đ)" hint="Bỏ trống = không hiện giá gạch">
+              <MoneyInput className={inputCls} style={{ borderColor: LINE }} value={w.compareAtPrice || ""} onChange={(v) => setWeb({ compareAtPrice: v })} />
+            </Field>
+            <Field label="Khối lượng (gram)" hint="Tính phí ship">
+              <input type="number" min={0} className={inputCls} style={{ borderColor: LINE }} value={p.weight ?? ""} onChange={(e) => setProdField("weight", Number(e.target.value) || 0)} />
+            </Field>
+          </div>
+
+          <div className="p-4 rounded-sm space-y-3" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+            <p className="text-sm font-medium" style={{ color: INK }}>SEO Google</p>
+            <Field label="Đường dẫn (slug)" hint="Bỏ trống = tự tạo từ tên + SKU">
+              <input className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} value={w.slug} onChange={(e) => setWeb({ slug: webSlugify(e.target.value) })} placeholder={effSlug} />
+            </Field>
+            <Field label="Tiêu đề SEO" hint={`Bỏ trống = dùng tên sản phẩm. ~60 ký tự (${seoTitle.length})`}>
+              <input className={inputCls} style={{ borderColor: LINE }} value={w.seoTitle} onChange={(e) => setWeb({ seoTitle: e.target.value })} placeholder={p.name} />
+            </Field>
+            <Field label="Mô tả SEO" hint={`Bỏ trống = dùng mô tả ngắn. ~155 ký tự (${seoDesc.length})`}>
+              <textarea rows={3} className={inputCls} style={{ borderColor: LINE }} value={w.seoDesc} onChange={(e) => setWeb({ seoDesc: e.target.value })} placeholder={seoDesc} />
+            </Field>
+            <div className="rounded-sm p-2.5" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
+              <p className="text-[10px] uppercase tracking-wider opacity-45 mb-1">Xem trước trên Google</p>
+              <div className="text-[13px] leading-snug" style={{ color: "#1a0dab" }}>{seoTitle}</div>
+              <div className="text-[11px]" style={{ color: "#006621" }}>hilitek.vn › san-pham › {effSlug}</div>
+              <div className="text-[11px] mt-0.5" style={{ color: "#4d5156" }}>{seoDesc || "…"}</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
