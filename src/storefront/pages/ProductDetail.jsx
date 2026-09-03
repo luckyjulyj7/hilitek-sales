@@ -27,10 +27,15 @@ export default function ProductDetail({ slug, navigate, catalog }) {
   const descRef = useRef(null);
 
   // Đo xem phần mô tả có dài quá DESC_MAX không -> mới hiện nút "Xem thêm".
+  // Đo lại sau 500ms để bắt ảnh/video tải chậm làm nội dung cao thêm.
   useEffect(() => {
-    const el = descRef.current;
-    if (!el) return;
-    setDescOverflows(el.scrollHeight > DESC_MAX + 24);
+    const measure = () => {
+      const el = descRef.current;
+      if (el) setDescOverflows(el.scrollHeight > DESC_MAX + 24);
+    };
+    measure();
+    const t = setTimeout(measure, 500);
+    return () => clearTimeout(t);
   }, [product]);
 
   useEffect(() => {
@@ -419,7 +424,16 @@ function Lightbox({ images, index, alt, onIndex, onClose }) {
   );
 }
 
-/** Render mô tả: dòng trống = đoạn mới; nhóm dòng "- " = danh sách gạch đầu dòng. */
+const YT_RE = /(?:youtube\.com\/(?:watch\?(?:[^ ]*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{11})/;
+const IMG_MD_RE = /^!\[([^\]]*)\]\(\s*((?:https?:\/\/|\/)[^\s)]+)\s*\)$/;
+const IMG_URL_RE = /^((?:https?:\/\/|\/)\S+?\.(?:png|jpe?g|webp|gif|avif|svg))(?:\?\S*)?$/i;
+
+/**
+ * Render mô tả sản phẩm:
+ *  - dòng trống = đoạn mới · dòng "- " = gạch đầu dòng
+ *  - dòng là ảnh:  ![mô tả](https://.../anh.jpg)  hoặc chỉ dán link ảnh
+ *  - dòng là video YouTube: dán link youtube.com/watch?v=... hoặc youtu.be/... -> nhúng khung phát
+ */
 function RichText({ text }) {
   const lines = String(text).replace(/\r/g, "").split("\n");
   const blocks = [];
@@ -430,22 +444,53 @@ function RichText({ text }) {
   for (const raw of lines) {
     const line = raw.trim();
     if (!line) { flushPara(); flushList(); continue; }
-    if (line.startsWith("- ")) { flushPara(); list.push(line.slice(2)); }
-    else { flushList(); para.push(line); }
+
+    const yt = line.match(YT_RE);
+    const imgMd = line.match(IMG_MD_RE);
+    const imgUrl = !imgMd && line.match(IMG_URL_RE);
+    if (yt && /^(https?:\/\/|www\.)/i.test(line)) {
+      flushPara(); flushList();
+      blocks.push({ type: "yt", id: yt[1] });
+    } else if (imgMd) {
+      flushPara(); flushList();
+      blocks.push({ type: "img", src: imgMd[2], alt: imgMd[1] });
+    } else if (imgUrl) {
+      flushPara(); flushList();
+      blocks.push({ type: "img", src: imgUrl[1] + (line.slice(imgUrl[1].length) || ""), alt: "" });
+    } else if (line.startsWith("- ")) {
+      flushPara(); list.push(line.slice(2));
+    } else {
+      flushList(); para.push(line);
+    }
   }
   flushPara(); flushList();
 
   return (
     <div className="space-y-3 text-[15px] text-ink/80 leading-relaxed">
-      {blocks.map((b, i) =>
-        b.type === "ul" ? (
-          <ul key={i} className="list-disc pl-5 space-y-1">
-            {b.items.map((it, j) => <li key={j}>{it}</li>)}
-          </ul>
-        ) : (
-          <p key={i}>{b.text}</p>
-        )
-      )}
+      {blocks.map((b, i) => {
+        if (b.type === "ul")
+          return (
+            <ul key={i} className="list-disc pl-5 space-y-1">
+              {b.items.map((it, j) => <li key={j}>{it}</li>)}
+            </ul>
+          );
+        if (b.type === "img")
+          return <img key={i} src={b.src} alt={b.alt} loading="lazy" className="rounded-lg border border-line max-w-full mx-auto my-2" />;
+        if (b.type === "yt")
+          return (
+            <div key={i} className="relative w-full my-3 rounded-lg overflow-hidden border border-line" style={{ aspectRatio: "16 / 9" }}>
+              <iframe
+                src={`https://www.youtube.com/embed/${b.id}`}
+                title="Video"
+                loading="lazy"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                className="absolute inset-0 w-full h-full"
+              />
+            </div>
+          );
+        return <p key={i}>{b.text}</p>;
+      })}
     </div>
   );
 }

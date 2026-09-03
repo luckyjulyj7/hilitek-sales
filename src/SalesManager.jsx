@@ -638,16 +638,33 @@ function normalizeWeb(w) {
     slug: typeof w.slug === "string" ? w.slug : "",
   };
 }
-// Thông số kỹ thuật web: nhập dạng "Nhãn | Giá trị" mỗi dòng ↔ mảng [[k,v],...]
+// Thông số kỹ thuật web ↔ mảng [[nhãn, giá trị], ...].
+//  - Dòng có "|"  -> thông số mới:  Nhãn | Giá trị
+//  - Dòng KHÔNG có "|" (và có nội dung) -> nối tiếp giá trị của thông số phía trên (xuống dòng)
 function webSpecsToText(specs) {
-  return Array.isArray(specs) ? specs.map((r) => `${r[0] || ""} | ${r[1] || ""}`).join("\n") : "";
+  if (!Array.isArray(specs)) return "";
+  return specs
+    .map((r) => {
+      const k = r[0] || "";
+      const v = String(r[1] || "");
+      const lines = v.split("\n");
+      return `${k} | ${lines[0]}` + (lines.length > 1 ? "\n" + lines.slice(1).join("\n") : "");
+    })
+    .join("\n");
 }
 function webTextToSpecs(text) {
-  return String(text || "").split("\n").map((line) => {
+  const rows = [];
+  String(text || "").split("\n").forEach((line) => {
     const i = line.indexOf("|");
-    if (i < 0) return line.trim() ? [line.trim(), ""] : null;
-    return [line.slice(0, i).trim(), line.slice(i + 1).trim()];
-  }).filter(Boolean);
+    if (i >= 0) {
+      rows.push([line.slice(0, i).trim(), line.slice(i + 1).trim()]);
+    } else if (line.trim() && rows.length) {
+      rows[rows.length - 1][1] = (rows[rows.length - 1][1] + "\n" + line.trim()).replace(/^\n+/, "");
+    } else if (line.trim()) {
+      rows.push([line.trim(), ""]);
+    }
+  });
+  return rows.filter((r) => r[0] || r[1]);
 }
 
 // Đảm bảo mọi sản phẩm tải từ bộ nhớ đều có đủ field cần thiết,
@@ -2297,11 +2314,11 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                   <textarea rows={6} className={inputCls} style={{ borderColor: LINE }} value={form.web?.description || ""}
                     onChange={(e) => setForm({ ...form, web: { ...form.web, description: e.target.value } })} />
                 </Field>
-                <Field label="Thông số kỹ thuật (web)" hint="Mỗi dòng 1 thông số, dạng: Nhãn | Giá trị. Gõ / xoá / xuống dòng thoải mái — hệ thống chỉ chuẩn hoá khi lưu.">
+                <Field label="Thông số kỹ thuật (web)" hint="Mỗi dòng: Nhãn | Giá trị. Dòng KHÔNG có ký tự | sẽ nối tiếp (xuống dòng) vào giá trị phía trên — dùng cho thông số dài nhiều dòng.">
                   <textarea rows={8} className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }}
                     value={form.web?.specsText ?? webSpecsToText(form.web?.specs)}
                     onChange={(e) => setForm({ ...form, web: { ...form.web, specsText: e.target.value } })}
-                    placeholder={"Chuẩn | M.2 2280 NVMe\nDung lượng | 1 TB"} />
+                    placeholder={"Chuẩn | M.2 2280 NVMe\nBộ nhớ | 2 khe DDR4, tối đa 64GB\n- Hỗ trợ XMP\n- Kênh đôi"} />
                 </Field>
               </div>
             )}
@@ -11158,10 +11175,10 @@ function WebProducts({ products, setProducts, categories, addLog, webConfig }) {
                             <textarea rows={5} className={inputCls} style={{ borderColor: LINE, background: "#fff" }}
                               value={p.web?.description || ""} onChange={(e) => setWeb(p, { description: e.target.value })} />
                           </Field>
-                          <Field label="Thông số kỹ thuật (web)" hint="Mỗi dòng 1 thông số, dạng: Nhãn | Giá trị. Gõ / xoá / xuống dòng thoải mái — chuẩn hoá khi lưu.">
+                          <Field label="Thông số kỹ thuật (web)" hint="Mỗi dòng: Nhãn | Giá trị. Dòng không có | sẽ nối tiếp (xuống dòng) vào giá trị phía trên.">
                             <textarea rows={8} className={inputCls} style={{ borderColor: LINE, background: "#fff", fontFamily: "'IBM Plex Mono', monospace" }}
                               value={p.web?.specsText ?? webSpecsToText(p.web?.specs)} onChange={(e) => setWeb(p, { specsText: e.target.value })}
-                              placeholder={"Chuẩn | M.2 2280 NVMe\nDung lượng | 1 TB"} />
+                              placeholder={"Chuẩn | M.2 2280 NVMe\nBộ nhớ | 2 khe DDR4, tối đa 64GB\n- Hỗ trợ XMP"} />
                           </Field>
                           <div className="grid grid-cols-2 gap-3">
                             <Field label="Khối lượng (gram)" hint="Tính phí ship">

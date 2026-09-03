@@ -120,7 +120,7 @@ export function publicProduct(p, { detail = false } = {}) {
     stock: Math.max(0, stockOf(p)),
     hasSerial: !!p.hasSeries,
     shortDesc: (desc.split(/\n{2,}/)[0] || "").slice(0, 180),
-    specChips: specs.slice(0, 4).map(([k, v]) => v || k).filter(Boolean),
+    specChips: specs.slice(0, 4).map(([k, v]) => String(v || k).split("\n")[0].trim()).filter(Boolean),
     specs, // cần cho bộ lọc "thông số" ở trang danh mục (nhẹ — vài cặp nhãn|giá trị)
     images: [p.image, ...(Array.isArray(p.images) ? p.images : [])].filter(Boolean),
   };
