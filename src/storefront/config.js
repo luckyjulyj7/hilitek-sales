@@ -257,11 +257,26 @@ export const HOME_POSTERS = {
   ],
 };
 
-/** Flash Sale — dải đếm ngược trang chủ. */
+/**
+ * Flash Sale — khối nổi bật ngay dưới dải đếm ngược ở trang chủ.
+ * Dùng cùng bộ lọc như HOME_SECTIONS + thêm `minDiscount` (chỉ lấy hàng giảm sâu).
+ * Chỉnh ở app quản lý → Website → Cấu hình web → "Flash Sale".
+ */
 export const FLASH_SALE = {
   enabled: true,
-  // Thời điểm kết thúc đợt sale. Để trống -> tự đặt 2 ngày kể từ khi mở web (demo).
-  endsAt: "",
+  endsAt: "",          // thời điểm kết thúc; để trống = tự +2 ngày (demo)
+  title: "Flash Sale",
+  minDiscount: 10,     // % — chỉ lấy sản phẩm giảm từ mức này trở lên
+  group: "",
+  cat: "",
+  brand: "",
+  onSale: true,        // luôn ưu tiên hàng đang giảm giá
+  pmin: null,
+  pmax: null,
+  skus: [],
+  sort: "discount",
+  limit: 12,
+  layout: "carousel",  // carousel | marquee | grid
 };
 
 /**
@@ -337,6 +352,10 @@ export function homeSectionProducts(products, s) {
     if (s.cat && !productInCategory(p, s.cat)) return false;
     if (s.brand && (p.brand || "") !== s.brand) return false;
     if (s.onSale && !_onSale(p)) return false;
+    if (s.minDiscount) {
+      const d = Number(p.listPrice) > 0 ? (1 - Number(p.price) / Number(p.listPrice)) * 100 : 0;
+      if (d < Number(s.minDiscount)) return false;
+    }
     if ((s.pmin != null || s.pmax != null) && !priceInRange(p.price, s.pmin, s.pmax)) return false;
     return true;
   });

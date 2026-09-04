@@ -4,7 +4,7 @@ import { formatVND, discountPercent, placeholderImage } from "../lib/format.js";
 import { LOW_STOCK_THRESHOLD } from "../config.js";
 import { useCart } from "../cart.jsx";
 
-export default function ProductCard({ product, onOpen }) {
+export default function ProductCard({ product, onOpen, flash }) {
   const p = product;
   const { items, add } = useCart();
   const inCart = items.some((x) => x.id === p.id);
@@ -14,7 +14,7 @@ export default function ProductCard({ product, onOpen }) {
   const out = !p.stock;
 
   return (
-    <div className="group flex flex-col bg-white border border-line rounded-lg overflow-hidden hover:shadow-card hover:border-navy/30 transition">
+    <div className="group flex h-full flex-col bg-white border border-line rounded-lg overflow-hidden hover:shadow-card hover:border-navy/30 transition">
       <a
         href={`#/san-pham/${p.slug}`}
         onClick={(e) => { e.preventDefault(); onOpen(p.slug); }}
@@ -22,8 +22,11 @@ export default function ProductCard({ product, onOpen }) {
       >
         <img src={img} alt={p.name} loading="lazy" className="w-full h-full object-cover" />
         {off > 0 && (
-          <span className="absolute top-2 left-2 bg-yellow text-ink text-[13px] font-bold px-1.5 py-0.5 rounded font-mono">
-            −{off}%
+          <span className={
+            "absolute top-2 left-2 text-[13px] font-bold px-1.5 py-0.5 rounded font-mono " +
+            (flash ? "bg-sale text-white shadow-[0_0_10px_rgba(237,28,36,0.6)]" : "bg-yellow text-ink")
+          }>
+            {flash ? "⚡" : ""}−{off}%
           </span>
         )}
         {out ? (

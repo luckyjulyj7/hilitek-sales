@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Zap, ArrowRight } from "lucide-react";
-import { FLASH_SALE } from "../config.js";
+import { FLASH_SALE, homeSectionSeeAll } from "../config.js";
 import { href } from "../router.js";
 
 function useCountdown(target) {
@@ -26,6 +26,11 @@ export default function FlashSaleBar({ navigate }) {
     return Number.isFinite(t) ? t : Date.now() + 2 * 86400 * 1000; // demo: 2 ngày
   }, []);
   const { days, hours, mins, secs } = useCountdown(target);
+  const goSeeAll = () => {
+    const q = homeSectionSeeAll(FLASH_SALE);
+    if (q._href) { navigate(q._href.replace(/^#/, "") || "/"); return; }
+    navigate(href("/danh-muc", Object.keys(q).length ? q : { sort: "discount" }).slice(1));
+  };
 
   const cell = (v, label) => (
     <div className="flex flex-col items-center bg-white/15 rounded-md px-3 py-1.5 min-w-[58px]">
@@ -36,8 +41,8 @@ export default function FlashSaleBar({ navigate }) {
 
   return (
     <div className="rounded-lg bg-gradient-to-r from-rose-600 to-red-500 text-white px-4 py-3 flex flex-wrap items-center gap-3 sm:gap-5">
-      <div className="flex items-center gap-2 font-display font-extrabold text-lg tracking-wide">
-        <Zap size={20} className="fill-yellow text-yellow" /> FLASH SALE
+      <div className="flex items-center gap-2 font-display font-extrabold text-lg tracking-wide uppercase">
+        <Zap size={20} className="fill-yellow text-yellow animate-pulse" /> {FLASH_SALE.title || "Flash Sale"}
       </div>
       <div className="flex items-center gap-2">
         {cell(days, "Ngày")}
@@ -46,7 +51,7 @@ export default function FlashSaleBar({ navigate }) {
         {cell(secs, "Giây")}
       </div>
       <button
-        onClick={() => navigate(href("/danh-muc", { sort: "discount" }).slice(1))}
+        onClick={goSeeAll}
         className="ml-auto inline-flex items-center gap-1.5 bg-white text-red-600 font-semibold text-[14px] rounded-md px-4 py-2 hover:bg-yellow-300"
       >
         Xem tất cả <ArrowRight size={15} />

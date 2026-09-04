@@ -1,21 +1,18 @@
 import React from "react";
-import { HOME_POSTERS, HOME_SECTIONS, FLASH_SALE } from "../config.js";
-import ProductCard from "../components/ProductCard.jsx";
+import { HOME_POSTERS, HOME_SECTIONS, FLASH_SALE, homeSectionProducts } from "../config.js";
 import TrustBar from "../components/TrustBar.jsx";
 import CategoryRail from "../components/CategoryRail.jsx";
 import PosterSlot from "../components/PosterSlot.jsx";
 import PosterSlider from "../components/PosterSlider.jsx";
 import FlashSaleBar from "../components/FlashSaleBar.jsx";
 import HomeSectionRow from "../components/HomeSectionRow.jsx";
-import { discountPercent } from "../lib/format.js";
 
 export default function Home({ catalog, navigate }) {
   const { products } = catalog;
 
-  const deals = [...products]
-    .filter((p) => discountPercent(p.price, p.listPrice) > 0)
-    .sort((a, b) => discountPercent(b.price, b.listPrice) - discountPercent(a.price, a.listPrice))
-    .slice(0, 10);
+  const flashItems = FLASH_SALE.enabled
+    ? homeSectionProducts(products, { ...FLASH_SALE, onSale: FLASH_SALE.onSale !== false })
+    : [];
 
   return (
     <div className="font-sans">
@@ -43,13 +40,11 @@ export default function Home({ catalog, navigate }) {
       </section>
 
       {/* ===== Flash sale ===== */}
-      {FLASH_SALE.enabled && deals.length > 0 && (
+      {FLASH_SALE.enabled && flashItems.length > 0 && (
         <section className="mx-auto max-w-[1500px] px-3 sm:px-4 pt-5">
           <FlashSaleBar navigate={navigate} />
-          <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
-            {deals.map((p) => (
-              <ProductCard key={p.id} product={p} onOpen={(slug) => navigate(`/san-pham/${slug}`)} />
-            ))}
+          <div className="mt-3">
+            <HomeSectionRow section={{ ...FLASH_SALE, title: "", seeAllText: "", seeAllHref: "" }} products={products} navigate={navigate} flash bare />
           </div>
         </section>
       )}

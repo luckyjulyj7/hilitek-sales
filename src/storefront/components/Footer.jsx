@@ -74,18 +74,41 @@ export default function Footer({ navigate }) {
           </ul>
         </div>
 
-        {SITE.mapEmbedUrl && (
+        {(SITE.mapEmbedUrl || SITE.facebookHref) && (
           <div className="sm:col-span-2 lg:col-span-1">
-            <h4 className="font-display text-[14px] font-semibold uppercase tracking-wide text-white mb-3">Bản đồ</h4>
-            <div className="rounded-md overflow-hidden border border-white/15 h-[180px]">
-              <iframe
-                title="Bản đồ Hilitek"
-                src={SITE.mapEmbedUrl}
-                className="w-full h-full border-0"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
-            </div>
+            {SITE.mapEmbedUrl && (
+              <>
+                <h4 className="font-display text-[14px] font-semibold uppercase tracking-wide text-white mb-3">Bản đồ</h4>
+                <div className="rounded-md overflow-hidden border border-white/15 h-[180px]">
+                  <iframe
+                    title="Bản đồ Hilitek"
+                    src={SITE.mapEmbedUrl}
+                    className="w-full h-full border-0"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  />
+                </div>
+              </>
+            )}
+            {SITE.facebookHref && (
+              <>
+                <h4 className="font-display text-[14px] font-semibold uppercase tracking-wide text-white mb-3 mt-6">Fanpage</h4>
+                <div className="rounded-md overflow-hidden border border-white/15 bg-white">
+                  <iframe
+                    title="Fanpage Facebook Hilitek"
+                    src={
+                      "https://www.facebook.com/plugins/page.php?href=" +
+                      encodeURIComponent(SITE.facebookHref) +
+                      "&tabs=timeline&width=400&height=214&small_header=true&adapt_container_width=true&hide_cover=false&show_facepile=true"
+                    }
+                    className="w-full h-[214px] border-0"
+                    loading="lazy"
+                    scrolling="no"
+                    allow="clipboard-write; encrypted-media; picture-in-picture; web-share"
+                  />
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>

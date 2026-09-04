@@ -12000,6 +12000,8 @@ function WebConfigForm({ webConfig, setWebConfig, addLog, products }) {
   }));
   const setBank = (k, v) => setWebConfig((x) => ({ ...x, SITE: { ...(x.SITE || {}), bank: { ...((x.SITE || {}).bank || {}), [k]: v } } }));
   const setFlash = (k, v) => setWebConfig((x) => ({ ...x, FLASH_SALE: { ...(x.FLASH_SALE || {}), [k]: v } }));
+  const fsMenu = webConfig && Array.isArray(webConfig.MENU) && webConfig.MENU.length ? webConfig.MENU : WEB_DEFAULT_MENU;
+  const fsBrands = [...new Set((products || []).map((p) => p.brand).filter(Boolean))].sort((a, b) => a.localeCompare(b, "vi"));
   const setPoster = (key, k, v) => setWebConfig((x) => {
     const hp = { ...(x.HOME_POSTERS || {}) };
     hp[key] = { ...(hp[key] || {}), [k]: v };
@@ -12074,13 +12076,52 @@ function WebConfigForm({ webConfig, setWebConfig, addLog, products }) {
       </section>
 
       <section>
-        <h3 className="font-medium mb-3" style={{ color: INK }}>Flash Sale</h3>
-        <label className="flex items-center gap-2 text-sm mb-2">
-          <input type="checkbox" checked={FS.enabled !== false} onChange={(e) => setFlash("enabled", e.target.checked)} /> Bật dải Flash Sale trên trang chủ
+        <h3 className="font-medium mb-3" style={{ color: INK }}>Flash Sale <span className="text-xs opacity-50">(khối nổi bật dưới dải đếm ngược — viền đỏ, nhãn ⚡)</span></h3>
+        <label className="flex items-center gap-2 text-sm mb-3">
+          <input type="checkbox" checked={FS.enabled !== false} onChange={(e) => setFlash("enabled", e.target.checked)} /> Bật khối Flash Sale trên trang chủ
         </label>
-        <Field label="Kết thúc lúc" hint="Bỏ trống = tự đặt +2 ngày">
-          <input type="datetime-local" value={FS.endsAt || ""} onChange={(e) => setFlash("endsAt", e.target.value)} className={inputCls} style={{ borderColor: LINE }} />
-        </Field>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <Field label="Tiêu đề">{ip(FS.title, (v) => setFlash("title", v), "Flash Sale")}</Field>
+          <Field label="Kết thúc lúc" hint="Bỏ trống = tự đặt +2 ngày">
+            <input type="datetime-local" value={FS.endsAt || ""} onChange={(e) => setFlash("endsAt", e.target.value)} className={inputCls} style={{ borderColor: LINE }} />
+          </Field>
+          <Field label="Giảm giá tối thiểu (%)" hint="Chỉ lấy sản phẩm giảm từ mức này trở lên">
+            <input type="number" min={0} max={90} value={FS.minDiscount ?? 10}
+              onChange={(e) => setFlash("minDiscount", Math.max(0, Math.min(90, Number(e.target.value) || 0)))} className={inputCls} style={{ borderColor: LINE }} />
+          </Field>
+          <Field label="Số sản phẩm">
+            <input type="number" min={2} max={40} value={FS.limit ?? 12}
+              onChange={(e) => setFlash("limit", Math.max(2, Math.min(40, Number(e.target.value) || 12)))} className={inputCls} style={{ borderColor: LINE }} />
+          </Field>
+          <Field label="Nhóm chính">
+            <select value={FS.group || ""} onChange={(e) => setFlash("group", e.target.value)} className={inputCls} style={{ borderColor: LINE }}>
+              <option value="">— Mọi nhóm —</option>
+              {fsMenu.map((g) => <option key={g.group} value={g.group}>{g.group}</option>)}
+            </select>
+          </Field>
+          <Field label="Danh mục phụ">
+            <select value={FS.cat || ""} onChange={(e) => setFlash("cat", e.target.value)} className={inputCls} style={{ borderColor: LINE }}>
+              <option value="">— Mọi danh mục —</option>
+              {(FS.group ? (fsMenu.find((g) => g.group === FS.group)?.subs || []).map((s) => s.name) : fsMenu.flatMap((g) => (g.subs || []).map((s) => s.name))).map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </Field>
+          <Field label="Thương hiệu">
+            <select value={FS.brand || ""} onChange={(e) => setFlash("brand", e.target.value)} className={inputCls} style={{ borderColor: LINE }}>
+              <option value="">— Mọi thương hiệu —</option>
+              {fsBrands.map((b) => <option key={b} value={b}>{b}</option>)}
+            </select>
+          </Field>
+          <Field label="Kiểu hiển thị">
+            <select value={FS.layout || "carousel"} onChange={(e) => setFlash("layout", e.target.value)} className={inputCls} style={{ borderColor: LINE }}>
+              {HOME_SECTION_LAYOUTS.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+            </select>
+          </Field>
+          <Field label="Sắp xếp">
+            <select value={FS.sort || "discount"} onChange={(e) => setFlash("sort", e.target.value)} className={inputCls} style={{ borderColor: LINE }}>
+              {HOME_SECTION_SORTS.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+            </select>
+          </Field>
+        </div>
       </section>
 
       <section>
