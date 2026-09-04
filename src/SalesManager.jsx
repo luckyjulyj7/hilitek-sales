@@ -2872,6 +2872,27 @@ function SeriesTagInput({ series, setSeries, placeholder }) {
   );
 }
 
+// Đóng bảng gợi ý (sổ xuống) khi người dùng bấm / focus ra ngoài vùng của nó —
+// kể cả khi bấm sang một ô nhập liệu khác. `active` = bảng đang mở.
+function useClickAway(active, onAway) {
+  const ref = useRef(null);
+  const cb = useRef(onAway);
+  cb.current = onAway;
+  useEffect(() => {
+    if (!active) return;
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) cb.current();
+    };
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("focusin", handler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("focusin", handler);
+    };
+  }, [active]);
+  return ref;
+}
+
 function ProductPicker({ products, onPick, onQuickCreate, brands }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -2888,9 +2909,10 @@ function ProductPicker({ products, onPick, onQuickCreate, brands }) {
     const newProduct = onQuickCreate(newForm);
     if (newProduct) { onPick(newProduct.id, newProduct); setQuery(""); setOpen(false); setCreatingNew(false); }
   };
+  const boxRef = useClickAway(open && !creatingNew, () => setOpen(false));
 
   return (
-    <div className="relative">
+    <div className="relative" ref={boxRef}>
       <div className="relative">
         <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 opacity-40" />
         <input
@@ -5649,9 +5671,10 @@ function ProvinceSelect({ value, onChange }) {
   const [open, setOpen] = useState(false);
   const q = query.trim().toLowerCase();
   const matches = q ? VN_PROVINCES.filter((p) => p.toLowerCase().includes(q)) : VN_PROVINCES;
+  const boxRef = useClickAway(open, () => { setOpen(false); setQuery(""); });
 
   return (
-    <div className="relative">
+    <div className="relative" ref={boxRef}>
       <button type="button" onClick={() => setOpen((o) => !o)} className="w-full text-left border-b-2 outline-none py-1.5 px-1 text-[15px]" style={{ borderColor: LINE, color: value ? INK : "#999" }}>
         {value || "Chọn Tỉnh/Thành phố"}
       </button>
@@ -5681,13 +5704,14 @@ function WardSelect({ province, value, onChange }) {
   const wards = WARDS_BY_PROVINCE[province] || [];
   const q = query.trim().toLowerCase();
   const matches = q ? wards.filter((w) => w.toLowerCase().includes(q)) : wards;
+  const boxRef = useClickAway(open, () => { setOpen(false); setQuery(""); });
 
   if (!province) {
     return <p className="text-sm py-1.5 px-1 opacity-40 border-b-2" style={{ borderColor: LINE }}>Chọn Tỉnh/Thành phố trước</p>;
   }
 
   return (
-    <div className="relative">
+    <div className="relative" ref={boxRef}>
       <button type="button" onClick={() => setOpen((o) => !o)} className="w-full text-left border-b-2 outline-none py-1.5 px-1 text-[15px]" style={{ borderColor: LINE, color: value ? INK : "#999" }}>
         {value || "Chọn Phường/Xã"}
       </button>
@@ -6326,9 +6350,10 @@ function CustomerPicker({ customers, setCustomers, onPick, placeholder, currentU
     onPick(nc.id);
     setCreatingNew(false); setQuery(""); setOpen(false);
   };
+  const boxRef = useClickAway(open && !creatingNew, () => setOpen(false));
 
   return (
-    <div className="relative">
+    <div className="relative" ref={boxRef}>
       <div className="relative">
         <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 opacity-40" />
         <input
@@ -6390,6 +6415,7 @@ function SeriesPicker({ available, selected, setSelected, need }) {
   const matches = (q ? remaining.filter((s) => s.serial.toLowerCase().includes(q)) : remaining).slice(0, 30);
   const pick = (serial) => { if (selected.length >= need) return; setSelected([...selected, serial]); setQuery(""); };
   const removeAt = (serial) => setSelected(selected.filter((s) => s !== serial));
+  const boxRef = useClickAway(open, () => setOpen(false));
 
   return (
     <div>
@@ -6403,7 +6429,7 @@ function SeriesPicker({ available, selected, setSelected, need }) {
           ))}
         </div>
       )}
-      <div className="relative">
+      <div className="relative" ref={boxRef}>
         <div className="relative">
           <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 opacity-40" />
           <input
@@ -7798,8 +7824,15 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
       {creating && (
         <Modal title={editingQuoteId ? "Sửa báo giá" : "Tạo phiếu báo giá"} onClose={() => { setCreating(false); setEditingQuoteId(null); }} size="2xl">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Khách hàng có sẵn (không bắt buộc)">
-              <FilterSearchSelect options={customers.map((c) => ({ id: c.id, label: c.name }))} value={form.customerId} onChange={(v) => setForm({ ...form, customerId: v })} placeholder="Gõ tên khách hàng…" />
+            <Field label="Khách hàng (gõ tên rồi Enter nếu là khách mới)">
+              <FilterSearchSelect
+                options={customers.map((c) => ({ id: c.id, label: c.name }))}
+                value={form.customerId}
+                freeText={form.customerName}
+                onChange={(v) => setForm({ ...form, customerId: v, customerName: v ? "" : form.customerName })}
+                onFreeText={(name) => setForm({ ...form, customerId: "", customerName: name })}
+                placeholder="Gõ tên khách hàng…"
+              />
             </Field>
             <Field label="Bán bởi">
               <select className={inputCls} style={{ borderColor: LINE }} value={form.seller} onChange={(e) => setForm({ ...form, seller: e.target.value })}>
@@ -7809,7 +7842,7 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
           </div>
           {!form.customerId && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Tên khách hàng (nếu chưa có trong danh sách)"><input className={inputCls} style={{ borderColor: LINE }} value={form.customerName} onChange={(e) => setForm({ ...form, customerName: e.target.value })} /></Field>
+              <Field label="Tên khách (khách mới)"><input className={inputCls} style={{ borderColor: LINE }} value={form.customerName} onChange={(e) => setForm({ ...form, customerName: e.target.value })} placeholder="Có thể gõ ở ô trên rồi Enter" /></Field>
               <Field label="SĐT"><input className={inputCls} style={{ borderColor: LINE }} inputMode="numeric" value={form.customerPhone} onChange={(e) => setForm({ ...form, customerPhone: e.target.value.replace(/\D/g, "") })} /></Field>
             </div>
           )}
@@ -9390,36 +9423,59 @@ function FilterChip({ active, onClick, children, color }) {
 }
 
 // Ô lọc dạng tìm kiếm gõ-để-gợi-ý — dùng cho các bộ lọc có thể có rất nhiều lựa chọn (khách hàng, sản phẩm...)
-function FilterSearchSelect({ options, value, onChange, placeholder }) {
+// Nếu truyền `onFreeText`, ô cho phép nhập tên tự do (chưa có trong danh sách): gõ xong ấn Enter
+// (hoặc bấm dòng "Dùng ...") sẽ lưu tên đó; `freeText` là giá trị tên tự do hiện tại để hiển thị lại.
+function FilterSearchSelect({ options, value, onChange, placeholder, onFreeText, freeText }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const selected = options.find((o) => o.id === value);
   const q = query.trim().toLowerCase();
   const filtered = (q ? options.filter((o) => o.label.toLowerCase().includes(q)) : options).slice(0, 8);
+  const exactMatch = q ? options.find((o) => o.label.trim().toLowerCase() === q) : null;
+  const boxRef = useClickAway(open, () => setOpen(false));
+
+  const commit = () => {
+    const raw = query.trim();
+    if (!raw) { setOpen(false); return; }
+    if (exactMatch) { onChange(exactMatch.id); setQuery(""); setOpen(false); return; }
+    if (filtered.length === 1) { onChange(filtered[0].id); setQuery(""); setOpen(false); return; }
+    if (onFreeText) { onChange(""); onFreeText(raw); setQuery(""); setOpen(false); return; }
+  };
+  const clearAll = () => { onChange(""); onFreeText && onFreeText(""); setQuery(""); };
 
   return (
-    <div className="relative">
+    <div className="relative" ref={boxRef}>
       <input
-        value={open ? query : (selected ? selected.label : "")}
-        onChange={(e) => { setQuery(e.target.value); if (!e.target.value) onChange(""); }}
+        value={open ? query : (selected ? selected.label : (freeText || ""))}
+        onChange={(e) => { setQuery(e.target.value); if (!e.target.value) { onChange(""); onFreeText && onFreeText(""); } }}
         onFocus={() => { setQuery(""); setOpen(true); }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") { e.preventDefault(); commit(); }
+          else if (e.key === "Escape" && open) { e.preventDefault(); e.stopPropagation(); setOpen(false); }
+        }}
         placeholder={placeholder}
         className="w-full border rounded-sm py-1.5 pl-2 pr-6 text-sm" style={{ borderColor: LINE }}
       />
-      {selected && !open && (
-        <button type="button" onClick={() => { onChange(""); setQuery(""); }} title="Bỏ chọn" className="absolute right-1.5 top-1/2 -translate-y-1/2 opacity-40 hover:opacity-100"><X size={12} /></button>
+      {(selected || freeText) && !open && (
+        <button type="button" onClick={clearAll} title="Bỏ chọn" className="absolute right-1.5 top-1/2 -translate-y-1/2 opacity-40 hover:opacity-100"><X size={12} /></button>
       )}
       {open && (
         <button type="button" onClick={() => setOpen(false)} title="Đóng" className="absolute right-1.5 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100" style={{ color: INK }}><X size={13} /></button>
       )}
       {open && (
         <div className="absolute z-50 mt-1 w-full max-h-52 overflow-y-auto rounded-sm shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-          {value && (
-            <button type="button" onClick={() => { onChange(""); setQuery(""); setOpen(false); }} className="w-full text-left px-2.5 py-1.5 text-xs opacity-50 hover:bg-black/5" style={{ borderBottom: `1px dashed ${LINE}` }}>✕ Bỏ lọc</button>
+          {(value || freeText) && (
+            <button type="button" onClick={() => { clearAll(); setOpen(false); }} className="w-full text-left px-2.5 py-1.5 text-xs opacity-50 hover:bg-black/5" style={{ borderBottom: `1px dashed ${LINE}` }}>✕ Bỏ chọn</button>
           )}
-          {filtered.length === 0 && <div className="px-2.5 py-2 text-xs opacity-50">Không tìm thấy</div>}
+          {onFreeText && query.trim() && !exactMatch && (
+            <button type="button" onMouseDown={(e) => { e.preventDefault(); onChange(""); onFreeText(query.trim()); setQuery(""); setOpen(false); }}
+              className="w-full text-left px-2.5 py-1.5 text-sm hover:bg-black/5 font-medium" style={{ borderBottom: `1px dashed ${LINE}`, color: BLUE }}>
+              + Dùng “{query.trim()}” làm tên khách
+            </button>
+          )}
+          {filtered.length === 0 && !onFreeText && <div className="px-2.5 py-2 text-xs opacity-50">Không tìm thấy</div>}
           {filtered.map((o) => (
-            <button key={o.id} type="button" onClick={() => { onChange(o.id); setQuery(""); setOpen(false); }}
+            <button key={o.id} type="button" onClick={() => { onChange(o.id); onFreeText && onFreeText(""); setQuery(""); setOpen(false); }}
               className="w-full text-left px-2.5 py-1.5 text-sm hover:bg-black/5 truncate" style={{ color: o.id === value ? BLUE : INK }}>
               {o.label}
             </button>
