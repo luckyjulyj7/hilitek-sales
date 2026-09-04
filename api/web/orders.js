@@ -24,6 +24,7 @@ export default handler(async (req, res) => {
   state.orders = Array.isArray(state.orders) ? state.orders : [];
   const products = Array.isArray(state.products) ? state.products : [];
 
+  const VALID_VAT = ["KCT", "VAT0", "VAT8", "VAT10"];
   const preorderNames = [];
   const mapped = items.map((it) => {
     const p = products.find((x) => x.id === it.productId || x.sku === it.productId || x.sku === it.sku);
@@ -35,12 +36,17 @@ export default handler(async (req, res) => {
       productId: p ? p.id : it.productId || it.sku,
       qty,
       price: Number(it.price) || (p ? Number(p.retailPrice) || 0 : 0),
+      vat: p && VALID_VAT.includes(p.vat) ? p.vat : "VAT10", // VAT lấy theo sản phẩm
       series: [],
-      fulfilled: false,
+      // Dịch vụ: không cần xuất kho. Hàng hoá: để "chờ hàng" cho nhân viên xác nhận
+      // (xuất kho khi bấm "đã có hàng") — đơn web không tự trừ kho.
+      fulfilled: !!(p && p.isService),
       preorder: !!isPre,
     };
   });
   const hasPreorder = preorderNames.length > 0;
+  // VAT cấp đơn (app tính công nợ theo o.vat): dùng VAT của mặt hàng đầu tiên.
+  const orderVat = mapped[0] && mapped[0].vat ? mapped[0].vat : "VAT10";
 
   const source = body.source || "Đặt hàng website";
   const code = body.code || "WEB" + Date.now().toString(36).toUpperCase().slice(-8);
@@ -75,7 +81,7 @@ export default handler(async (req, res) => {
       addressDetail: sh.address || sh.fullAddress || "",
     },
     items: mapped,
-    vat: "VAT10",
+    vat: orderVat,
     orderDiscount: 0,
     discountType: "amount",
     shippingFee: 0,

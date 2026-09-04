@@ -36,14 +36,15 @@ export const SITE = {
   },
 
   // --- Liên hệ ---
-  phone: "0939 206 868",
-  phoneRaw: "0939206868", // dùng cho href tel: — chỉ chữ số
-  // Số hotline hiện ở góc phải header. Thêm dòng nếu có nhiều số (KINH DOANH, KỸ THUẬT...).
-  hotlines: [
-    { label: "HOTLINE", number: "0939 206 868", raw: "0939206868" },
-  ],
-  zalo: "0939 206 865",
-  zaloHref: "https://zalo.me/0939206865",
+  phone: "0869 196 079", // HOTLINE chính — dùng khắp website (nút gọi, footer, Zalo...)
+  phoneRaw: "0869196079", // dùng cho href tel: — chỉ chữ số
+  // Số hỗ trợ kỹ thuật — hiện thành dòng thứ 2 ở góc phải header. Để trống nếu không dùng.
+  techPhone: "0939 206 868",
+  techPhoneRaw: "0939206868",
+  // (Tuỳ chọn) Ghi đè hẳn danh sách hotline ở header. Bỏ trống để tự dựng từ phone + techPhone.
+  hotlines: [],
+  zalo: "0869 196 079",
+  zaloHref: "https://zalo.me/0869196079",
   messengerHref: "https://m.me/HiLiPC627A",
   email: "Hilitek@gmail.com",
   address: "6/27A Đường Số 3, C/x Lữ Gia, Phường Phú Thọ, TP Hồ Chí Minh, Việt Nam",

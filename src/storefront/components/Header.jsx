@@ -53,7 +53,14 @@ export default function Header({ route, navigate }) {
     closeTimer.current = setTimeout(() => setCatOpen(false), 130);
   };
 
-  const hotlines = SITE.hotlines?.length ? SITE.hotlines : [{ label: "HOTLINE", number: SITE.phone, raw: SITE.phoneRaw }];
+  const hotlines = SITE.hotlines?.length
+    ? SITE.hotlines
+    : [
+        { label: "HOTLINE", number: SITE.phone, raw: SITE.phoneRaw },
+        ...(SITE.techPhone
+          ? [{ label: "HỖ TRỢ KỸ THUẬT", number: SITE.techPhone, raw: SITE.techPhoneRaw || String(SITE.techPhone).replace(/\D/g, "") }]
+          : []),
+      ];
 
   return (
     <header className="sticky top-0 z-50 font-sans">

@@ -190,8 +190,8 @@ export default function ProductDetail({ slug, navigate, catalog }) {
 
             <div className="text-[14px] text-ink">
               {out ? <span className="text-[#E8730C] font-semibold">Tạm hết hàng — có thể đặt trước, Hilitek báo khi có hàng</span>
-                : low ? <span>Còn <b>{p.stock}</b> sản phẩm — sắp hết</span>
-                : <span>Còn <b>{p.stock}</b> sản phẩm</span>}
+                : low ? <span className="text-[#E8730C] font-medium">Còn ít hàng</span>
+                : <span className="text-green-700 font-medium">Còn hàng</span>}
             </div>
 
             <div className="mt-3 flex items-center gap-3">

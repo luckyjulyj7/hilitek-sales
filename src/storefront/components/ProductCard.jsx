@@ -29,7 +29,7 @@ export default function ProductCard({ product, onOpen }) {
         {out ? (
           <span className="absolute top-2 right-2 bg-ink/85 text-white text-[12px] px-1.5 py-0.5 rounded">Hết hàng</span>
         ) : low ? (
-          <span className="absolute top-2 right-2 bg-navy text-white text-[12px] px-1.5 py-0.5 rounded">Sắp hết</span>
+          <span className="absolute top-2 right-2 bg-[#E8730C] text-white text-[12px] px-1.5 py-0.5 rounded">Còn ít</span>
         ) : null}
       </a>
 

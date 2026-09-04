@@ -1415,8 +1415,23 @@ function ImageLightbox({ images, startIndex, onClose }) {
   );
 }
 
+const __modalStack = [];
 function Modal({ title, onClose, children, wide, size }) {
   const sizeClass = { md: "max-w-md", lg: "max-w-lg", xl: "max-w-3xl", "2xl": "max-w-6xl", "3xl": "max-w-[92rem]" }[size] || (wide ? "max-w-lg" : "max-w-md");
+  // Bấm ESC để đóng — chỉ popup trên cùng phản hồi (tránh đóng luôn popup nền).
+  useEffect(() => {
+    const token = {};
+    __modalStack.push(token);
+    const onKey = (e) => {
+      if (e.key === "Escape" && __modalStack[__modalStack.length - 1] === token) onClose && onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      const i = __modalStack.indexOf(token);
+      if (i >= 0) __modalStack.splice(i, 1);
+    };
+  }, [onClose]);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4" style={{ background: "rgba(31,42,68,0.45)" }}>
       <div onClick={(e) => e.stopPropagation()}
@@ -8068,7 +8083,14 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
     const now = new Date().toISOString();
     const itemsWithFulfilled = form.items.map((it) => {
       const p = products.find((x) => x.id === it.productId);
-      const fulfilled = !p?.hasSeries || it.series.length === it.qty;
+      // "Chờ hàng" (chưa trừ kho) khi: có series mà chưa đủ series, HOẶC không series mà bán vượt tồn kho.
+      // -> không tạo tồn âm, không cảnh báo âm kho; xác nhận "đã có hàng" sau mới xuất kho.
+      const closing = p && !p.isService ? productStats(p).closingQty : Infinity;
+      const fulfilled = p?.isService
+        ? true
+        : p?.hasSeries
+        ? it.series.length === it.qty
+        : Number(it.qty) <= closing;
       return { ...it, fulfilled };
     });
 
@@ -8596,8 +8618,9 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                   <td className="px-3 py-3 text-right whitespace-nowrap font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{vnd(c.payable)}</td>
                   <td className="px-3 py-3 text-right whitespace-nowrap font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: c.remaining > 0 ? RUST : FOREST }}>{vnd(c.remaining)}</td>
                   <td className="px-3 py-3">
-                    {isAdmin && (
-                      <button onClick={() => setDeletingOrder(o)} className="opacity-50 hover:opacity-100" style={{ color: RUST }}><Trash2 size={14} /></button>
+                    {/* Chỉ tài khoản CHỦ (isOwner) mới xoá được đơn — QTV thường không thấy nút này */}
+                    {currentUser.isOwner && (
+                      <button onClick={() => setDeletingOrder(o)} title="Xoá đơn hàng" className="opacity-50 hover:opacity-100" style={{ color: RUST }}><Trash2 size={14} /></button>
                     )}
                   </td>
                 </tr>
@@ -8998,26 +9021,41 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
 
             {viewingOrder.items.some((it) => !it.fulfilled) && (
               <div className="mb-4 p-4 rounded-sm" style={{ background: `${BRASS}0D`, border: `1px solid ${BRASS}44` }}>
-                <p className="text-sm font-medium mb-1" style={{ color: BRASS }}>Sản phẩm chờ hàng — bổ sung series khi đã nhập hàng về</p>
-                <p className="text-xs opacity-60 mb-3">Đơn chưa trừ kho cho các sản phẩm này. Chọn đủ số series rồi xác nhận để xuất kho — sau đó mới chuyển được sang "Đang giao".</p>
+                <p className="text-sm font-medium mb-1" style={{ color: BRASS }}>Sản phẩm chờ hàng — xuất kho khi đã có hàng về</p>
+                <p className="text-xs opacity-60 mb-3">Đơn <b>chưa trừ kho</b> cho các sản phẩm này (không tính tồn âm). Với hàng có series: chọn đủ series. Với hàng không series: bấm xác nhận khi đã nhập hàng về — sau đó mới chuyển được sang "Đang giao".</p>
                 <div className="space-y-3">
                   {viewingOrder.items.filter((it) => !it.fulfilled).map((it) => {
                     const p = products.find((x) => x.id === it.productId);
-                    const available = p ? seriesList(p).filter((s) => s.status === "Còn tồn") : [];
+                    const hasSeries = !!p?.hasSeries;
+                    const available = hasSeries && p ? seriesList(p).filter((s) => s.status === "Còn tồn") : [];
+                    const closing = p ? productStats(p).closingQty : 0;
                     const draft = pendingFulfillDraft[it.productId] || it.series || [];
                     return (
                       <div key={it.productId} className="p-3 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
                         <div className="flex items-center justify-between text-sm mb-2">
                           <span style={{ color: INK }} className="font-medium">{p?.name}</span>
-                          <span className="text-xs opacity-50">cần {it.qty} · còn tồn hiện tại {available.length}</span>
+                          <span className="text-xs opacity-50">cần {it.qty} · còn tồn hiện tại {hasSeries ? available.length : closing}</span>
                         </div>
-                        <SeriesPicker available={available} selected={draft} setSelected={(arr) => setPendingFulfillDraft((d) => ({ ...d, [it.productId]: arr }))} need={it.qty} />
-                        <button
-                          onClick={() => { fulfillPendingItem(viewingOrder, it.productId, draft); setPendingFulfillDraft((d) => { const n = { ...d }; delete n[it.productId]; return n; }); }}
-                          disabled={draft.length !== it.qty}
-                          className="mt-2 text-xs px-3 py-1.5 rounded-sm text-white disabled:opacity-40" style={{ background: FOREST }}>
-                          Xác nhận đã có hàng — xuất kho
-                        </button>
+                        {hasSeries ? (
+                          <>
+                            <SeriesPicker available={available} selected={draft} setSelected={(arr) => setPendingFulfillDraft((d) => ({ ...d, [it.productId]: arr }))} need={it.qty} />
+                            <button
+                              onClick={() => { fulfillPendingItem(viewingOrder, it.productId, draft); setPendingFulfillDraft((d) => { const n = { ...d }; delete n[it.productId]; return n; }); }}
+                              disabled={draft.length !== it.qty}
+                              className="mt-2 text-xs px-3 py-1.5 rounded-sm text-white disabled:opacity-40" style={{ background: FOREST }}>
+                              Xác nhận đã có hàng — xuất kho
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            {it.qty > closing && <p className="text-[11px] mb-1.5" style={{ color: RUST }}>Tồn hiện tại ({closing}) chưa đủ {it.qty} — xuất kho ngay sẽ tạo tồn âm.</p>}
+                            <button
+                              onClick={() => fulfillPendingItem(viewingOrder, it.productId, [])}
+                              className="text-xs px-3 py-1.5 rounded-sm text-white" style={{ background: FOREST }}>
+                              Xác nhận đã có hàng — xuất kho
+                            </button>
+                          </>
+                        )}
                       </div>
                     );
                   })}
@@ -11813,10 +11851,12 @@ function WebConfigForm({ webConfig, setWebConfig, addLog, products }) {
       <section>
         <h3 className="font-medium mb-3" style={{ color: INK }}>Liên hệ</h3>
         <div className="grid sm:grid-cols-2 gap-4">
-          <Field label="Số điện thoại (hiển thị)">{ip(SITE.phone, (v) => setSite("phone", v), "0939 206 868")}</Field>
-          <Field label="SĐT (chỉ số, cho nút gọi)">{ip(SITE.phoneRaw, (v) => setSite("phoneRaw", v), "0939206868")}</Field>
-          <Field label="Zalo (số)">{ip(SITE.zalo, (v) => setSite("zalo", v), "0939 206 865")}</Field>
-          <Field label="Link Zalo">{ip(SITE.zaloHref, (v) => setSite("zaloHref", v), "https://zalo.me/…")}</Field>
+          <Field label="Hotline (hiển thị)">{ip(SITE.phone, (v) => setSite("phone", v), "0869 196 079")}</Field>
+          <Field label="Hotline (chỉ số, cho nút gọi)">{ip(SITE.phoneRaw, (v) => setSite("phoneRaw", v), "0869196079")}</Field>
+          <Field label="SĐT hỗ trợ kỹ thuật (hiển thị)">{ip(SITE.techPhone, (v) => setSite("techPhone", v), "0939 206 868")}</Field>
+          <Field label="SĐT kỹ thuật (chỉ số)">{ip(SITE.techPhoneRaw, (v) => setSite("techPhoneRaw", v), "0939206868")}</Field>
+          <Field label="Zalo (số)">{ip(SITE.zalo, (v) => setSite("zalo", v), "0869 196 079")}</Field>
+          <Field label="Link Zalo">{ip(SITE.zaloHref, (v) => setSite("zaloHref", v), "https://zalo.me/0869196079")}</Field>
           <Field label="Link Messenger">{ip(SITE.messengerHref, (v) => setSite("messengerHref", v), "https://m.me/…")}</Field>
           <Field label="Email">{ip(SITE.email, (v) => setSite("email", v), "hilitek@gmail.com")}</Field>
           <Field label="Giờ làm việc">{ip(SITE.workingHours, (v) => setSite("workingHours", v), "8:00 – 21:00")}</Field>
