@@ -214,7 +214,7 @@ const COMPANY_INFO = {
   taxCode: "0316296138",
   bankAccount: "19551097 - Ngân Hàng Á Châu ACB – phòng giao dịch Lý Thường Kiệt",
   phone: "0939206865",
-  email: "Hilitek@gmail.com",
+  email: "hilitekcom3005@gmail.com",
   city: "TP. Hồ Chí Minh",
   representativeName: "Nguyễn Anh Liêm",
   representativeTitle: "Giám đốc",
@@ -12058,7 +12058,7 @@ function WebConfigForm({ webConfig, setWebConfig, addLog, products }) {
           <Field label="Zalo (số)">{ip(SITE.zalo, (v) => setSite("zalo", v), "0869 196 079")}</Field>
           <Field label="Link Zalo">{ip(SITE.zaloHref, (v) => setSite("zaloHref", v), "https://zalo.me/0869196079")}</Field>
           <Field label="Link Messenger">{ip(SITE.messengerHref, (v) => setSite("messengerHref", v), "https://m.me/…")}</Field>
-          <Field label="Email">{ip(SITE.email, (v) => setSite("email", v), "hilitek@gmail.com")}</Field>
+          <Field label="Email">{ip(SITE.email, (v) => setSite("email", v), "hilitekcom3005@gmail.com")}</Field>
           <Field label="Giờ làm việc">{ip(SITE.workingHours, (v) => setSite("workingHours", v), "8:00 – 21:00")}</Field>
           <Field label="Facebook">{ip(SITE.facebookHref, (v) => setSite("facebookHref", v), "https://facebook.com/…")}</Field>
         </div>

@@ -46,7 +46,7 @@ export const SITE = {
   zalo: "0869 196 079",
   zaloHref: "https://zalo.me/0869196079",
   messengerHref: "https://m.me/HiLiPC627A",
-  email: "Hilitek@gmail.com",
+  email: "hilitekcom3005@gmail.com",
   address: "6/27A Đường Số 3, C/x Lữ Gia, Phường Phú Thọ, TP Hồ Chí Minh, Việt Nam",
   workingHours: "8:00 – 21:00, cả T7 & CN", // sửa lại nếu khác
   // Google Maps: nhúng trực tiếp theo địa chỉ (không cần API key). Muốn ghim đúng

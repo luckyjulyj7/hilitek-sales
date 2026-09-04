@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Zap, ArrowRight } from "lucide-react";
+import { Zap } from "lucide-react";
 import { FLASH_SALE, homeSectionSeeAll } from "../config.js";
 import { href } from "../router.js";
 
@@ -33,28 +33,39 @@ export default function FlashSaleBar({ navigate }) {
   };
 
   const cell = (v, label) => (
-    <div className="flex flex-col items-center bg-white/15 rounded-md px-3 py-1.5 min-w-[58px]">
-      <span className="font-mono font-bold text-lg leading-none tabular-nums">{String(v).padStart(2, "0")}</span>
-      <span className="text-[11px] uppercase tracking-wide text-white/80">{label}</span>
+    <div className="flex flex-col items-center justify-center bg-sale text-white rounded-lg w-[56px] h-[52px] sm:w-[62px] sm:h-[56px] shadow-[0_2px_8px_rgba(237,28,36,0.35)]">
+      <span className="font-mono font-extrabold text-lg leading-none tabular-nums">{String(v).padStart(2, "0")}</span>
+      <span className="text-[10px] uppercase tracking-wide mt-1 text-white/85">{label}</span>
     </div>
   );
 
   return (
-    <div className="rounded-lg bg-gradient-to-r from-rose-600 to-red-500 text-white px-4 py-3 flex flex-wrap items-center gap-3 sm:gap-5">
-      <div className="flex items-center gap-2 font-display font-extrabold text-lg tracking-wide uppercase">
-        <Zap size={20} className="fill-yellow text-yellow animate-pulse" /> {FLASH_SALE.title || "Flash Sale"}
+    <div className="flex flex-wrap items-center gap-3 sm:gap-6">
+      {/* Logo FLASH SALE — khối 2 màu nghiêng + tia sét vàng, nhấp nháy & rung theo nhịp */}
+      <div className="relative shrink-0 select-none pr-5 origin-center animate-flashpulse">
+        <div className="font-display font-extrabold italic leading-none -skew-x-6">
+          <div className="bg-ink text-white text-lg sm:text-xl px-3 py-1 rounded-t-md">FLASH</div>
+          <div className="bg-sale text-white text-lg sm:text-xl px-3 py-1 rounded-b-md shadow-[0_0_14px_rgba(237,28,36,0.55)]">SALE</div>
+        </div>
+        <Zap
+          size={40}
+          className="absolute -right-1 top-1/2 -translate-y-1/2 text-yellow fill-yellow drop-shadow-[0_2px_4px_rgba(0,0,0,0.25)] animate-flashbolt"
+        />
       </div>
+
+      {/* Đồng hồ đếm ngược */}
       <div className="flex items-center gap-2">
         {cell(days, "Ngày")}
         {cell(hours, "Giờ")}
         {cell(mins, "Phút")}
         {cell(secs, "Giây")}
       </div>
+
       <button
         onClick={goSeeAll}
-        className="ml-auto inline-flex items-center gap-1.5 bg-white text-red-600 font-semibold text-[14px] rounded-md px-4 py-2 hover:bg-yellow-300"
+        className="ml-auto text-sale font-semibold text-[14px] underline underline-offset-2 hover:text-red-700 shrink-0"
       >
-        Xem tất cả <ArrowRight size={15} />
+        Xem tất cả
       </button>
     </div>
   );

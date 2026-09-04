@@ -42,9 +42,11 @@ export default function Home({ catalog, navigate }) {
       {/* ===== Flash sale ===== */}
       {FLASH_SALE.enabled && flashItems.length > 0 && (
         <section className="mx-auto max-w-[1500px] px-3 sm:px-4 pt-5">
-          <FlashSaleBar navigate={navigate} />
-          <div className="mt-3">
-            <HomeSectionRow section={{ ...FLASH_SALE, title: "", seeAllText: "", seeAllHref: "" }} products={products} navigate={navigate} flash bare />
+          <div className="rounded-2xl bg-white border border-line shadow-card p-4 sm:p-6">
+            <FlashSaleBar navigate={navigate} />
+            <div className="mt-5">
+              <HomeSectionRow section={{ ...FLASH_SALE, title: "", seeAllText: "", seeAllHref: "" }} products={products} navigate={navigate} flash bare />
+            </div>
           </div>
         </section>
       )}

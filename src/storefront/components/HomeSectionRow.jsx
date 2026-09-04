@@ -3,16 +3,21 @@ import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { href } from "../router.js";
 import { homeSectionProducts, homeSectionSeeAll } from "../config.js";
 import ProductCard from "./ProductCard.jsx";
+import FlashSaleCard from "./FlashSaleCard.jsx";
 
 /**
  * 1 hàng sản phẩm ở trang chủ (kiểu hotgear.vn / nguyencongpc.vn).
- * Cấu hình từng khối: app quản lý → Website → Cấu hình web → "Khối sản phẩm trang chủ".
- * `flash` = khối Flash Sale nổi bật (viền đỏ phát sáng, nhãn ⚡ trên thẻ).
+ * - layout "carousel": tự chạy phải→trái mỗi 3.5s + 2 mũi tên tròn 2 bên (rê chuột = dừng).
+ * - layout "marquee":  băng chuyền chạy liên tục bằng CSS.
+ * - layout "grid":     lưới tĩnh.
+ * Cấu hình từng khối: app quản lý → Website → Cấu hình web.
  */
 export default function HomeSectionRow({ section, products, navigate, flash = false, bare = false }) {
   const items = homeSectionProducts(products, section);
   const scroller = useRef(null);
-  const [edge, setEdge] = useState({ left: true, right: false });
+  const hoverRef = useRef(false);
+  const pauseUntil = useRef(0);
+  const [edge, setEdge] = useState({ left: true, right: true });
 
   const rows = Number(section.rows) === 2 ? 2 : 1;
   const layout = section.layout || "carousel";
@@ -26,6 +31,21 @@ export default function HomeSectionRow({ section, products, navigate, flash = fa
     });
   };
   useEffect(() => { updateEdges(); }, [items.length, layout, rows]);
+
+  // Tự chạy ngang cho layout carousel.
+  useEffect(() => {
+    if (layout !== "carousel") return;
+    const el = scroller.current;
+    if (!el) return;
+    const id = setInterval(() => {
+      if (hoverRef.current || Date.now() < pauseUntil.current) return;
+      if (el.scrollWidth <= el.clientWidth + 8) return;
+      const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 8;
+      if (atEnd) el.scrollTo({ left: 0, behavior: "smooth" });
+      else el.scrollBy({ left: Math.round(el.clientWidth * 0.8), behavior: "smooth" });
+    }, 3500);
+    return () => clearInterval(id);
+  }, [layout, items.length, rows]);
 
   if (items.length === 0) return null;
 
@@ -42,53 +62,39 @@ export default function HomeSectionRow({ section, products, navigate, flash = fa
   };
 
   const openProduct = (slug) => navigate(`/san-pham/${slug}`);
-  const nudge = (dir) => {
+  const nudge = (e, dir) => {
+    e.preventDefault();
+    e.stopPropagation();
     const el = scroller.current;
     if (!el) return;
-    el.scrollBy({ left: dir * Math.max(240, el.clientWidth * 0.85), behavior: "smooth" });
+    pauseUntil.current = Date.now() + 7000; // tạm dừng tự chạy sau khi bấm tay
+    const step = Math.max(240, el.clientWidth * 0.8);
+    const max = el.scrollWidth - el.clientWidth;
+    // Tới mép: vòng lại đầu/cuối. Ở giữa: tiến/lùi 1 bước. Nút LUÔN nuốt click, không rơi xuống thẻ.
+    let target;
+    if (dir > 0) target = el.scrollLeft >= max - 8 ? 0 : Math.min(max, el.scrollLeft + step);
+    else target = el.scrollLeft <= 8 ? max : Math.max(0, el.scrollLeft - step);
+    el.scrollTo({ left: target, behavior: "smooth" });
   };
 
-  // bề rộng 1 thẻ khi cuộn ngang: ~2 / 3 / 5 thẻ nhìn thấy theo bề ngang màn hình
   const cardW = "min-w-[44%] sm:min-w-[31%] lg:min-w-[19.2%] max-w-[44%] sm:max-w-[31%] lg:max-w-[19.2%]";
-  const card = (p, key) => <ProductCard key={key} product={p} onOpen={openProduct} flash={flash} />;
+  const card = (p, key) =>
+    flash
+      ? <FlashSaleCard key={key} product={p} onOpen={openProduct} navigate={navigate} />
+      : <ProductCard key={key} product={p} onOpen={openProduct} />;
 
-  const arrows = layout === "carousel" && (
-    <div className="hidden sm:flex items-center gap-1">
-      <button
-        type="button" onClick={() => nudge(-1)} disabled={edge.left}
-        className="w-8 h-8 rounded-full border border-line bg-white flex items-center justify-center text-ink disabled:opacity-30 hover:border-navy"
-        aria-label="Trước"
-      >
-        <ChevronLeft size={16} />
-      </button>
-      <button
-        type="button" onClick={() => nudge(1)} disabled={edge.right}
-        className="w-8 h-8 rounded-full border border-line bg-white flex items-center justify-center text-ink disabled:opacity-30 hover:border-navy"
-        aria-label="Sau"
-      >
-        <ChevronRight size={16} />
-      </button>
-    </div>
-  );
-
-  // Với Flash Sale, tiêu đề + "Xem tất cả" đã nằm ở dải đếm ngược phía trên → chỉ hiện nút ‹ ›.
-  const Header = flash ? (
-    arrows && <div className="flex justify-end mb-2">{arrows}</div>
-  ) : (
+  const Header = flash ? null : (
     <div className="flex items-end justify-between mb-3 gap-3">
       <h2 className="font-display text-xl sm:text-2xl font-bold text-ink border-l-4 border-yellow pl-3">
         {section.title}
       </h2>
-      <div className="flex items-center gap-2 shrink-0">
-        {arrows}
-        <a
-          href={seeAllTo}
-          onClick={goSeeAll}
-          className="text-[14px] font-semibold text-navy hover:underline inline-flex items-center gap-1"
-        >
-          {section.seeAllText || "Xem tất cả"} <ArrowRight size={14} />
-        </a>
-      </div>
+      <a
+        href={seeAllTo}
+        onClick={goSeeAll}
+        className="shrink-0 text-[14px] font-semibold text-navy hover:underline inline-flex items-center gap-1"
+      >
+        {section.seeAllText || "Xem tất cả"} <ArrowRight size={14} />
+      </a>
     </div>
   );
 
@@ -100,7 +106,6 @@ export default function HomeSectionRow({ section, products, navigate, flash = fa
       </div>
     );
   } else if (layout === "marquee") {
-    // Tự chạy phải → trái, lặp vô hạn (nhân đôi danh sách). Rê chuột = tạm dừng.
     const dur = Math.max(18, items.length * 4.5);
     const loop = [...items, ...items];
     Body = (
@@ -110,28 +115,25 @@ export default function HomeSectionRow({ section, products, navigate, flash = fa
           style={{ "--marquee-duration": `${dur}s` }}
         >
           {loop.map((p, i) => (
-            <div key={i} className="w-[44%] sm:w-[31%] lg:w-[19.2%] shrink-0">
-              {card(p, i)}
-            </div>
+            <div key={i} className="w-[44%] sm:w-[31%] lg:w-[19.2%] shrink-0">{card(p, i)}</div>
           ))}
         </div>
       </div>
     );
   } else {
-    // carousel — cuộn ngang + nút ‹ ›, hỗ trợ 1 hoặc 2 dòng
     Body = (
       <div
         ref={scroller}
         onScroll={updateEdges}
         className={
-          "overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:thin] snap-x snap-mandatory " +
+          "overflow-x-auto pb-1 [scrollbar-width:thin] scroll-smooth " +
           (rows === 2
             ? "grid grid-rows-2 grid-flow-col auto-cols-[44%] sm:auto-cols-[31%] lg:auto-cols-[19.2%] gap-2 sm:gap-3"
             : "flex items-stretch gap-2 sm:gap-3")
         }
       >
         {items.map((p) => (
-          <div key={p.id} className={"snap-start " + (rows === 2 ? "" : cardW + " shrink-0")}>
+          <div key={p.id} className={rows === 2 ? "" : cardW + " shrink-0"}>
             {card(p, p.id)}
           </div>
         ))}
@@ -139,16 +141,45 @@ export default function HomeSectionRow({ section, products, navigate, flash = fa
     );
   }
 
+  // Nút luôn nhận click (không disabled / không pointer-events-none) để không "xuyên" xuống thẻ sản phẩm phía sau.
+  const sideBtn =
+    "hidden md:flex absolute top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white shadow-lg border border-line " +
+    "items-center justify-center text-ink hover:bg-navy hover:text-white transition";
+
+  const bodyWrap = (
+    <div
+      className="relative"
+      onMouseEnter={() => { hoverRef.current = true; }}
+      onMouseLeave={() => { hoverRef.current = false; }}
+    >
+      {layout === "carousel" && (
+        <>
+          <button
+            type="button" aria-label="Trước"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={(e) => nudge(e, -1)}
+            className={sideBtn + " -left-1 sm:-left-3 " + (edge.left ? "opacity-40" : "")}
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <button
+            type="button" aria-label="Sau"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={(e) => nudge(e, 1)}
+            className={sideBtn + " -right-1 sm:-right-3 " + (edge.right ? "opacity-40" : "")}
+          >
+            <ChevronRight size={20} />
+          </button>
+        </>
+      )}
+      {Body}
+    </div>
+  );
+
   const inner = (
     <>
       {Header}
-      {flash ? (
-        <div className="rounded-xl border-2 border-sale/30 bg-gradient-to-b from-sale/[0.06] to-transparent p-3 shadow-[0_0_28px_rgba(237,28,36,0.16)]">
-          {Body}
-        </div>
-      ) : (
-        Body
-      )}
+      {bodyWrap}
     </>
   );
 
