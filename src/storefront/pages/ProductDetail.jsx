@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
-  ChevronRight, ChevronLeft, ShieldCheck, Hash, Check, ArrowLeft, Minus, Plus, MessageCircle,
-  ShoppingCart, Zap, ZoomIn, X, Clock,
+  ChevronRight, ChevronLeft, ShieldCheck, Check, ArrowLeft, Minus, Plus, MessageCircle,
+  ShoppingCart, Zap, ZoomIn, X, Clock, Gift,
 } from "lucide-react";
 import { fetchProduct } from "../lib/api.js";
 import { formatVND, discountPercent, warrantyLabel, placeholderImage } from "../lib/format.js";
@@ -95,6 +95,10 @@ export default function ProductDetail({ slug, navigate, catalog }) {
     p.group;
   const related = (catalog.products || []).filter((x) => x.category === p.category && x.slug !== p.slug).slice(0, 5);
   const descText = (p.description && p.description.trim()) || p.shortDesc || "";
+  const promoLines = String(p.promo || "")
+    .split("\n")
+    .map((l) => l.trim().replace(/^[-+•*]\s*/, ""))
+    .filter(Boolean);
 
   const doAdd = () => { add(p, qty, { preorder: out }); setAdded(true); };
   const doBuyNow = () => { add(p, qty, { preorder: out }); navigate("/dat-hang"); };
@@ -164,7 +168,6 @@ export default function ProductDetail({ slug, navigate, catalog }) {
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[14px] text-mute">
             <span className="font-mono">{p.sku}</span>
             <span className="inline-flex items-center gap-1"><ShieldCheck size={14} className="text-navy" /> {warrantyLabel(p.warrantyMonths)}</span>
-            {p.hasSerial && <span className="inline-flex items-center gap-1"><Hash size={14} className="text-navy" /> Có số serial riêng</span>}
           </div>
 
           {p.specChips?.length > 0 && (
@@ -202,6 +205,22 @@ export default function ProductDetail({ slug, navigate, catalog }) {
                 <button onClick={() => setQty((q) => Math.min(99, q + 1))} className="px-2 py-1.5 text-mute hover:text-navy" aria-label="Tăng"><Plus size={14} /></button>
               </div>
             </div>
+
+            {promoLines.length > 0 && (
+              <div className="mt-4 rounded-lg border border-[#E8730C]/45 overflow-hidden">
+                <div className="bg-[#E8730C] text-white text-[14px] font-display font-bold px-3 py-2 flex items-center gap-1.5">
+                  <Gift size={15} /> Khuyến mại &amp; Quà tặng
+                </div>
+                <ul className="p-3 space-y-1.5 text-[14px] text-ink bg-[#E8730C]/[0.04]">
+                  {promoLines.map((line, i) => (
+                    <li key={i} className="flex gap-2">
+                      <span className="text-[#E8730C] font-bold shrink-0">+</span>
+                      <span>{line}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* Thứ tự: Đặt hàng -> Thêm vào giỏ -> Chat Zalo. Hết hàng vẫn cho ĐẶT TRƯỚC. */}
             <button

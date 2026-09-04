@@ -72,9 +72,8 @@ export function slugify(s) {
 }
 
 export function productSlug(p) {
-  const base = slugify(p.name);
-  const tail = slugify(p.sku) || String(p.id || "").slice(0, 6);
-  return tail ? `${base}-${tail}` : base || String(p.id || "");
+  // Đường dẫn sản phẩm = slug từ tên, KHÔNG gắn mã/SKU ở đuôi.
+  return slugify(p.name) || slugify(p.sku) || String(p.id || "");
 }
 
 /** Tồn kho hiện tại = tồn đầu + nhập − xuất (khớp productStats trong SalesManager). */
@@ -130,6 +129,7 @@ export function publicProduct(p, { detail = false } = {}) {
     stock: Math.max(0, stockOf(p)),
     hasSerial: !!p.hasSeries,
     shortDesc,
+    promo: typeof web.promo === "string" ? web.promo.trim().slice(0, 600) : "", // khuyến mãi / quà tặng ngắn (mỗi dòng 1 ý)
     specChips: specs.slice(0, 4).map(([k, v]) => String(v || k).split("\n")[0].trim()).filter(Boolean),
     specs, // cần cho bộ lọc "thông số" ở trang danh mục (nhẹ — vài cặp nhãn|giá trị)
     images,

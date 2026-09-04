@@ -26,6 +26,7 @@ export default function Catalog({ catalog, route, navigate }) {
   const pmax = route.query.pmax ? Number(route.query.pmax) : null;
   const sort = route.query.sort || "popular";
   const inStock = route.query.stock === "1";
+  const onSale = route.query.sale === "1";
 
   const setParam = (patch) => {
     const next = { ...route.query, ...patch };
@@ -43,6 +44,7 @@ export default function Catalog({ catalog, route, navigate }) {
       if (brand && (p.brand || "") !== brand) return false;
       if (hasPrice && !priceInRange(p.price, pmin, pmax)) return false;
       if (inStock && !p.stock) return false;
+      if (onSale && !(Number(p.listPrice) > Number(p.price))) return false;
       if (q) {
         const hay = `${p.name} ${p.sku} ${p.brand} ${(p.categories || [p.category]).join(" ")}`.toLowerCase();
         if (!hay.includes(q)) return false;
@@ -57,7 +59,7 @@ export default function Catalog({ catalog, route, navigate }) {
       popular: () => 0,
     };
     return [...r].sort(by[sort] || by.popular);
-  }, [products, group, cat, brand, pmin, pmax, q, sort, inStock]);
+  }, [products, group, cat, brand, pmin, pmax, q, sort, inStock, onSale]);
 
   const catGroup = cat ? CATEGORY_TO_GROUP[cat] : "";
   const activeGroup = group || catGroup;
@@ -73,11 +75,12 @@ export default function Catalog({ catalog, route, navigate }) {
     return [...set].sort((a, b) => a.localeCompare(b, "vi"));
   }, [products, activeGroup, cat]);
 
-  const title = q ? `Kết quả: “${route.query.q}”` : cat || group || "Tất cả sản phẩm";
-  const hasFilter = group || cat || brand || hasPrice || q || inStock || sort !== "popular";
+  const title = q ? `Kết quả: “${route.query.q}”` : cat || group || (onSale ? "Đang khuyến mãi" : "Tất cả sản phẩm");
+  const hasFilter = group || cat || brand || hasPrice || q || inStock || onSale || sort !== "popular";
 
   const filterChips = [];
   if (brand) filterChips.push({ k: "Nhãn hiệu", v: brand, clear: { brand: "" } });
+  if (onSale) filterChips.push({ k: "Ưu đãi", v: "Đang khuyến mãi", clear: { sale: "" } });
   if (hasPrice) {
     const label =
       pmin != null && pmax != null ? `${formatVND(pmin)} – ${formatVND(pmax)}`
@@ -221,6 +224,10 @@ export default function Catalog({ catalog, route, navigate }) {
           <label className="flex items-center gap-2 text-[14px] text-ink/80">
             <input type="checkbox" checked={inStock} onChange={(e) => setParam({ stock: e.target.checked ? "1" : "" })} />
             Chỉ hàng còn sẵn
+          </label>
+          <label className="flex items-center gap-2 text-[14px] text-ink/80">
+            <input type="checkbox" checked={onSale} onChange={(e) => setParam({ sale: e.target.checked ? "1" : "" })} />
+            Đang khuyến mãi
           </label>
         </aside>
 

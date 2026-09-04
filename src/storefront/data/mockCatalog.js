@@ -403,7 +403,7 @@ Bảo hành / hỗ trợ 12 tháng.`,
 export const MOCK_PRODUCTS = raw.map((p) => ({
   ...p,
   id: p.sku,
-  slug: slugify(`${p.name}-${p.sku}`),
+  slug: slugify(p.name),
   images: [],
   specChips: p.specChips || [],
   specs: p.specs || [],

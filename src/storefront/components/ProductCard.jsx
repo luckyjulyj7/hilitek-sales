@@ -1,5 +1,5 @@
 import React from "react";
-import { Plus, Check } from "lucide-react";
+import { Plus, Check, Gift } from "lucide-react";
 import { formatVND, discountPercent, placeholderImage } from "../lib/format.js";
 import { LOW_STOCK_THRESHOLD } from "../config.js";
 import { useCart } from "../cart.jsx";
@@ -50,6 +50,13 @@ export default function ProductCard({ product, onOpen }) {
               <span className="font-mono text-[12px] text-mute line-through">{formatVND(p.listPrice)}</span>
             )}
           </div>
+
+          {p.promo && (
+            <div className="mt-1.5 flex items-start gap-1 text-[12px] leading-snug text-[#E8730C]">
+              <Gift size={13} className="mt-[1px] shrink-0" />
+              <span className="line-clamp-1">{String(p.promo).split("\n")[0].replace(/^[-+•*]\s*/, "")}</span>
+            </div>
+          )}
 
           <button
             onClick={() => add(p, 1, { preorder: out })}

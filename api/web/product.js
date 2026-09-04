@@ -13,7 +13,10 @@ export default handler(async (req, res) => {
   const list = publishedProducts(await readState());
   const found = list.find((p) => {
     const s = p.web && p.web.slug ? slugify(p.web.slug) : productSlug(p);
-    return s === slug || String(p.sku || "").toLowerCase() === slug || String(p.id || "").toLowerCase() === slug;
+    const sku = String(p.sku || "").toLowerCase();
+    // Tương thích link cũ có gắn "-<sku>" ở đuôi: bỏ đuôi đó rồi so lại.
+    const slugNoSku = sku && slug.endsWith("-" + sku) ? slug.slice(0, -(sku.length + 1)) : slug;
+    return s === slug || s === slugNoSku || sku === slug || String(p.id || "").toLowerCase() === slug;
   });
 
   if (!found) return json(res, 404, { error: "Không tìm thấy sản phẩm." });

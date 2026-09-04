@@ -265,6 +265,111 @@ export const FLASH_SALE = {
 };
 
 /**
+ * KHỐI SẢN PHẨM TRANG CHỦ — các hàng sản phẩm chạy ngang ở trang chủ
+ * (kiểu hotgear.vn / nguyencongpc.vn). Chủ shop tự thêm/sửa ở
+ *   app quản lý → Website → Cấu hình web → "Khối sản phẩm trang chủ".
+ *
+ * Mỗi khối:
+ *   title     : tên khối hiện trên trang chủ (VD "Laptop khuyến mãi Hot")
+ *   group     : lọc theo NHÓM CHÍNH (tên trong MENU) — "" = mọi nhóm
+ *   cat       : lọc theo DANH MỤC PHỤ (tên sub) — "" = mọi danh mục
+ *   brand     : lọc theo thương hiệu — "" = mọi thương hiệu
+ *   onSale    : true = chỉ lấy sản phẩm đang giảm giá
+ *   pmin/pmax : lọc khoảng giá (đ) — null = không giới hạn
+ *   skus      : mảng SKU chọn tay — nếu có, DÙNG ĐÚNG danh sách này (bỏ qua các lọc trên)
+ *   sort      : "discount" | "priceAsc" | "priceDesc" | "name" | "newest"
+ *   limit     : số sản phẩm tối đa
+ *   rows      : 1 hoặc 2 (số dòng khi cuộn ngang)
+ *   layout    : "carousel" (nút ‹ ›) | "marquee" (tự chạy phải→trái) | "grid" (lưới, không cuộn)
+ *   seeAllText: chữ nút xem tất cả (mặc định "Xem tất cả")
+ *   seeAllHref: link xem tất cả tự đặt (VD "#/danh-muc?..."); bỏ trống = tự suy từ bộ lọc
+ *   enabled   : bật/tắt khối
+ */
+export const HOME_SECTIONS = MENU.map((g) => ({
+  title: g.group,
+  group: g.group,
+  cat: "",
+  brand: "",
+  onSale: false,
+  pmin: null,
+  pmax: null,
+  skus: [],
+  sort: "discount",
+  limit: 12,
+  rows: 1,
+  layout: "carousel",
+  seeAllText: "Xem tất cả",
+  seeAllHref: "",
+  enabled: true,
+}));
+
+export const HOME_SECTION_SORTS = [
+  { id: "discount", label: "Giảm giá nhiều nhất" },
+  { id: "newest", label: "Mới nhất" },
+  { id: "priceAsc", label: "Giá thấp → cao" },
+  { id: "priceDesc", label: "Giá cao → thấp" },
+  { id: "name", label: "Tên A → Z" },
+];
+export const HOME_SECTION_LAYOUTS = [
+  { id: "carousel", label: "Cuộn ngang — có nút ‹ ›" },
+  { id: "marquee", label: "Tự chạy phải → trái" },
+  { id: "grid", label: "Lưới (không cuộn)" },
+];
+
+const _onSale = (p) => Number(p.listPrice) > Number(p.price);
+
+/** Lọc + sắp xếp + cắt số lượng sản phẩm cho 1 khối trang chủ. */
+export function homeSectionProducts(products, s) {
+  const list = Array.isArray(products) ? products : [];
+  const lim = Number(s.limit) > 0 ? Number(s.limit) : 12;
+
+  // Chọn tay theo SKU: dùng đúng danh sách, đúng thứ tự.
+  if (Array.isArray(s.skus) && s.skus.length) {
+    const bySku = new Map(list.map((p) => [String(p.sku || "").toLowerCase(), p]));
+    return s.skus
+      .map((k) => bySku.get(String(k).trim().toLowerCase()))
+      .filter(Boolean)
+      .slice(0, lim);
+  }
+
+  let r = list.filter((p) => {
+    if (s.group && !productInGroup(p, s.group)) return false;
+    if (s.cat && !productInCategory(p, s.cat)) return false;
+    if (s.brand && (p.brand || "") !== s.brand) return false;
+    if (s.onSale && !_onSale(p)) return false;
+    if ((s.pmin != null || s.pmax != null) && !priceInRange(p.price, s.pmin, s.pmax)) return false;
+    return true;
+  });
+
+  const cmp = {
+    discount: (a, b) =>
+      (Number(b.listPrice) - Number(b.price)) / (Number(b.listPrice) || 1) -
+      (Number(a.listPrice) - Number(a.price)) / (Number(a.listPrice) || 1),
+    priceAsc: (a, b) => Number(a.price) - Number(b.price),
+    priceDesc: (a, b) => Number(b.price) - Number(a.price),
+    name: (a, b) => String(a.name).localeCompare(String(b.name), "vi"),
+    newest: () => 0, // danh sách API đã theo thứ tự sản phẩm mới nhất trước
+  }[s.sort] || (() => 0);
+
+  return [...r].sort(cmp).slice(0, lim);
+}
+
+/** Query cho nút "Xem tất cả" của 1 khối → mở trang /danh-muc đã lọc sẵn. */
+export function homeSectionSeeAll(s) {
+  if (s.seeAllHref) return { _href: s.seeAllHref };
+  const q = {};
+  if (s.group) q.group = s.group;
+  if (s.cat) q.cat = s.cat;
+  if (s.brand) q.brand = s.brand;
+  if (s.pmin != null) q.pmin = s.pmin;
+  if (s.pmax != null) q.pmax = s.pmax;
+  if (s.onSale) q.sale = "1";
+  const sortMap = { discount: "discount", priceAsc: "price-asc", priceDesc: "price-desc", name: "name" };
+  if (sortMap[s.sort]) q.sort = sortMap[s.sort];
+  return q;
+}
+
+/**
  * Cột bên phải trang chi tiết sản phẩm — cam kết + banner dọc + giao hàng/thanh
  * toán. Tất cả tuỳ chỉnh được ở đây, không cần sửa component.
  * Icon dùng tên trong lucide-react (xem danh sách trong ProductSidebar.jsx).

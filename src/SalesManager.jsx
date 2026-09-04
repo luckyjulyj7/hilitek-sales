@@ -12,7 +12,7 @@ import {
 import * as XLSX from "xlsx";
 import { ghn as ghnApi } from "./lib/ghn.js";
 // Nội dung mặc định cho web (dùng làm điểm khởi đầu khi chưa chỉnh trong "Cấu hình web").
-import { PAGES as WEB_DEFAULT_PAGES, MENU as WEB_DEFAULT_MENU, allWebCategories as webAllCategories, webCategoryGroups } from "./storefront/config.js";
+import { PAGES as WEB_DEFAULT_PAGES, MENU as WEB_DEFAULT_MENU, allWebCategories as webAllCategories, webCategoryGroups, HOME_SECTIONS as WEB_DEFAULT_HOME_SECTIONS, HOME_SECTION_SORTS, HOME_SECTION_LAYOUTS } from "./storefront/config.js";
 import { GROUP_ICON_NAMES, groupIcon as webGroupIcon } from "./storefront/components/groupIcons.js";
 import { uploadProductImage, rehostExternalImage } from "./lib/mediaUpload.js";
 
@@ -638,6 +638,7 @@ function normalizeWeb(w) {
     categories: Array.isArray(w.categories) ? [...new Set(w.categories.filter((x) => typeof x === "string" && x.trim()).map((x) => x.trim()))] : [], // danh mục web (khớp menu ở Cấu hình web)
     slug: typeof w.slug === "string" ? w.slug : "",
     shortDesc: typeof w.shortDesc === "string" ? w.shortDesc : "",
+    promo: typeof w.promo === "string" ? w.promo : "", // khuyến mãi / quà tặng ngắn (mỗi dòng 1 ý)
     images: Array.isArray(w.images)
       ? [...new Set(w.images.filter((x) => typeof x === "string" && x.trim()).map((x) => x.trim()))].slice(0, 10)
       : [],
@@ -2547,6 +2548,12 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                     <MoneyInput className={inputCls} style={{ borderColor: LINE }} value={form.web?.compareAtPrice || ""} onChange={(v) => setForm({ ...form, web: { ...normalizeWeb(form.web), compareAtPrice: v } })} />
                   </Field>
                 </div>
+                <Field label="Khuyến mãi / quà tặng (mỗi dòng 1 ý)" hint="Hiện ở khối cam kết trang sản phẩm + 1 dòng đầu hiện dưới giá ở trang chủ / danh sách.">
+                  <textarea rows={3} className={inputCls} style={{ borderColor: LINE }}
+                    value={form.web?.promo ?? ""}
+                    onChange={(e) => setForm({ ...form, web: { ...form.web, promo: e.target.value } })}
+                    placeholder={"Tặng balo laptop chính hãng\nTặng chuột không dây trị giá 150.000đ\nGiảm thêm 500.000đ khi mua kèm màn hình"} />
+                </Field>
                 <Field label="Mô tả sản phẩm (web)" hint="Xuống dòng đôi = đoạn mới · dòng '- ' = gạch đầu dòng · dán link YouTube (dòng riêng) = nhúng video">
                   <WebDescEditor rows={7}
                     value={form.web?.description || ""}
@@ -11481,7 +11488,7 @@ function WebProducts({ products, setProducts, categories, addLog, webConfig }) {
 function WebProductPage({ product, setProducts, webCats, onBack }) {
   const p = product;
   const w = normalizeWeb(p.web);
-  const shareKeys = ["description", "specsText", "categories", "images", "shortDesc"];
+  const shareKeys = ["description", "specsText", "categories", "images", "shortDesc", "promo"];
 
   const setWeb = (wpatch) => {
     const shared = shareKeys.some((k) => k in wpatch);
@@ -11496,7 +11503,7 @@ function WebProductPage({ product, setProducts, webCats, onBack }) {
   };
   const setProdField = (k, v) => setProducts((prev) => prev.map((x) => (x.id === p.id ? { ...x, [k]: v } : x)));
 
-  const effSlug = w.slug || webSlugify(`${p.name}-${p.sku || ""}`);
+  const effSlug = w.slug || webSlugify(p.name) || webSlugify(p.sku || "");
   const seoTitle = w.seoTitle || p.name;
   const seoDesc = w.seoDesc || w.shortDesc || (w.description.split(/\n{2,}/)[0] || "").replace(/!\[[^\]]*\]\([^)]*\)/g, "").slice(0, 160);
 
@@ -11526,6 +11533,13 @@ function WebProductPage({ product, setProducts, webCats, onBack }) {
               <Field label="Mô tả ngắn (web)" hint="1–2 câu tóm tắt — hiện ở danh sách + dùng làm mô tả SEO nếu bỏ trống ô SEO.">
                 <textarea rows={2} className={inputCls} style={{ borderColor: LINE, background: "#fff" }}
                   value={w.shortDesc} onChange={(e) => setWeb({ shortDesc: e.target.value })} placeholder="VD: Kính cường lực USAMS trong suốt, độ cứng 9H, cảm ứng nhạy, viền phủ keo full màn." />
+              </Field>
+            </div>
+            <div className="mt-3">
+              <Field label="Khuyến mãi / quà tặng (mỗi dòng 1 ý)" hint="Hiện ở khối cam kết trang sản phẩm. Dòng đầu tiên hiện dưới giá ở trang chủ & trang danh mục.">
+                <textarea rows={3} className={inputCls} style={{ borderColor: LINE, background: "#fff" }}
+                  value={w.promo} onChange={(e) => setWeb({ promo: e.target.value })}
+                  placeholder={"Tặng balo laptop chính hãng\nTặng chuột không dây trị giá 150.000đ\nGiảm thêm 500.000đ khi mua kèm màn hình"} />
               </Field>
             </div>
           </div>
@@ -11591,7 +11605,7 @@ function WebProductPage({ product, setProducts, webCats, onBack }) {
 
           <div className="p-4 rounded-sm space-y-3" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
             <p className="text-sm font-medium" style={{ color: INK }}>SEO Google</p>
-            <Field label="Đường dẫn (slug)" hint="Bỏ trống = tự tạo từ tên + SKU">
+            <Field label="Đường dẫn (slug)" hint="Bỏ trống = tự tạo từ tên sản phẩm">
               <input className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} value={w.slug} onChange={(e) => setWeb({ slug: webSlugify(e.target.value) })} placeholder={effSlug} />
             </Field>
             <Field label="Tiêu đề SEO" hint={`Bỏ trống = dùng tên sản phẩm. ~60 ký tự (${seoTitle.length})`}>
@@ -11844,6 +11858,134 @@ function WebMenuEditor({ webConfig, setWebConfig, products }) {
   );
 }
 
+// Trình sửa "Khối sản phẩm trang chủ" — các hàng sản phẩm chạy ngang ở trang chủ web khách.
+function HomeSectionsEditor({ webConfig, setWebConfig, products }) {
+  const menu = webConfig && Array.isArray(webConfig.MENU) && webConfig.MENU.length ? webConfig.MENU : WEB_DEFAULT_MENU;
+  const sections = Array.isArray(webConfig.HOME_SECTIONS) ? webConfig.HOME_SECTIONS : WEB_DEFAULT_HOME_SECTIONS;
+  const brands = [...new Set((products || []).map((p) => p.brand).filter(Boolean))].sort((a, b) => a.localeCompare(b, "vi"));
+
+  const mut = (fn) => setWebConfig((x) => {
+    const cur = Array.isArray(x.HOME_SECTIONS) ? x.HOME_SECTIONS : WEB_DEFAULT_HOME_SECTIONS;
+    return { ...x, HOME_SECTIONS: fn(cur.map((s) => ({ ...s }))) };
+  });
+  const setAt = (i, patch) => mut((arr) => { arr[i] = { ...arr[i], ...patch }; return arr; });
+  const addBlock = () => mut((arr) => [...arr, {
+    title: "Khối mới", group: "", cat: "", brand: "", onSale: false, pmin: null, pmax: null,
+    skus: [], sort: "discount", limit: 12, rows: 1, layout: "carousel", seeAllText: "Xem tất cả", seeAllHref: "", enabled: true,
+  }]);
+  const delBlock = (i) => mut((arr) => arr.filter((_, j) => j !== i));
+  const moveBlock = (i, d) => mut((arr) => {
+    const j = i + d;
+    if (j < 0 || j >= arr.length) return arr;
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+    return arr;
+  });
+  const reset = () => setWebConfig((x) => { const y = { ...x }; delete y.HOME_SECTIONS; return y; });
+  const groupSubs = (g) => { const m = menu.find((x) => x.group === g); return m ? (m.subs || []).map((s) => s.name) : []; };
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs opacity-55">
+        Mỗi khối = 1 hàng sản phẩm chạy ngang ở trang chủ (kiểu hotgear.vn). Chọn nhóm / danh mục phụ / thương hiệu / “đang giảm giá”… để quyết định sản phẩm nào hiện.
+        Nút “Xem tất cả” tự mở trang danh mục đã lọc sẵn. Sản phẩm phải đang “Đăng web”.
+      </p>
+      {sections.length === 0 && <p className="text-xs" style={{ color: RUST }}>Chưa có khối nào — trang chủ sẽ không hiện hàng sản phẩm. Bấm “+ Thêm khối”.</p>}
+
+      {sections.map((s, i) => (
+        <div key={i} className="rounded-sm p-3 space-y-2.5" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
+          <div className="flex items-center gap-2">
+            <input value={s.title || ""} onChange={(e) => setAt(i, { title: e.target.value })} placeholder="Tên khối (VD: Laptop khuyến mãi Hot)"
+              className={inputCls} style={{ borderColor: LINE, fontWeight: 600 }} />
+            <button onClick={() => moveBlock(i, -1)} disabled={i === 0} className="text-xs px-1.5 py-1 rounded-sm border disabled:opacity-30" style={{ borderColor: LINE }} title="Lên">↑</button>
+            <button onClick={() => moveBlock(i, 1)} disabled={i === sections.length - 1} className="text-xs px-1.5 py-1 rounded-sm border disabled:opacity-30" style={{ borderColor: LINE }} title="Xuống">↓</button>
+            <button onClick={() => delBlock(i)} className="text-xs px-1.5 py-1" style={{ color: RUST }}>Xoá</button>
+          </div>
+
+          <div className="grid sm:grid-cols-3 gap-2">
+            <label className="text-xs block">Nhóm chính
+              <select value={s.group || ""} onChange={(e) => setAt(i, { group: e.target.value, cat: "" })} className={inputCls} style={{ borderColor: LINE }}>
+                <option value="">— Mọi nhóm —</option>
+                {menu.map((g) => <option key={g.group} value={g.group}>{g.group}</option>)}
+              </select>
+            </label>
+            <label className="text-xs block">Danh mục phụ
+              <select value={s.cat || ""} onChange={(e) => setAt(i, { cat: e.target.value })} className={inputCls} style={{ borderColor: LINE }}>
+                <option value="">— Mọi danh mục —</option>
+                {(s.group ? groupSubs(s.group) : menu.flatMap((g) => (g.subs || []).map((x) => x.name))).map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </label>
+            <label className="text-xs block">Thương hiệu
+              <select value={s.brand || ""} onChange={(e) => setAt(i, { brand: e.target.value })} className={inputCls} style={{ borderColor: LINE }}>
+                <option value="">— Mọi thương hiệu —</option>
+                {brands.map((b) => <option key={b} value={b}>{b}</option>)}
+              </select>
+            </label>
+          </div>
+
+          <div className="grid sm:grid-cols-4 gap-2">
+            <label className="text-xs block">Sắp xếp
+              <select value={s.sort || "discount"} onChange={(e) => setAt(i, { sort: e.target.value })} className={inputCls} style={{ borderColor: LINE }}>
+                {HOME_SECTION_SORTS.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+              </select>
+            </label>
+            <label className="text-xs block">Kiểu hiển thị
+              <select value={s.layout || "carousel"} onChange={(e) => setAt(i, { layout: e.target.value })} className={inputCls} style={{ borderColor: LINE }}>
+                {HOME_SECTION_LAYOUTS.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+              </select>
+            </label>
+            <label className="text-xs block">Số dòng
+              <select value={String(s.rows || 1)} onChange={(e) => setAt(i, { rows: Number(e.target.value) })} className={inputCls} style={{ borderColor: LINE }}>
+                <option value="1">1 dòng</option>
+                <option value="2">2 dòng</option>
+              </select>
+            </label>
+            <label className="text-xs block">Số sản phẩm
+              <input type="number" min={2} max={40} value={s.limit ?? 12}
+                onChange={(e) => setAt(i, { limit: Math.max(2, Math.min(40, Number(e.target.value) || 12)) })} className={inputCls} style={{ borderColor: LINE }} />
+            </label>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4">
+            <label className="flex items-center gap-1.5 text-xs">
+              <input type="checkbox" checked={!!s.onSale} onChange={(e) => setAt(i, { onSale: e.target.checked })} /> Chỉ hàng đang giảm giá
+            </label>
+            <label className="flex items-center gap-1.5 text-xs">
+              <input type="checkbox" checked={s.enabled !== false} onChange={(e) => setAt(i, { enabled: e.target.checked })} /> Hiện khối này
+            </label>
+          </div>
+
+          <details className="text-xs">
+            <summary className="cursor-pointer opacity-70">Nâng cao — khoảng giá · chọn SKU tay · link “Xem tất cả”</summary>
+            <div className="mt-2 grid sm:grid-cols-2 gap-2">
+              <label className="block">Giá từ (đ)
+                <input type="number" min={0} value={s.pmin ?? ""} onChange={(e) => setAt(i, { pmin: e.target.value === "" ? null : Number(e.target.value) })} className={inputCls} style={{ borderColor: LINE }} />
+              </label>
+              <label className="block">Giá đến (đ)
+                <input type="number" min={0} value={s.pmax ?? ""} onChange={(e) => setAt(i, { pmax: e.target.value === "" ? null : Number(e.target.value) })} className={inputCls} style={{ borderColor: LINE }} />
+              </label>
+              <label className="block sm:col-span-2">Chọn SKU tay (cách nhau bởi dấu phẩy — có giá trị thì bỏ qua mọi bộ lọc trên)
+                <input value={(s.skus || []).join(", ")} onChange={(e) => setAt(i, { skus: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) })}
+                  className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} placeholder="HI-LAP-001, HI-LAP-004" />
+              </label>
+              <label className="block">Chữ nút “Xem tất cả”
+                <input value={s.seeAllText || ""} onChange={(e) => setAt(i, { seeAllText: e.target.value })} className={inputCls} style={{ borderColor: LINE }} placeholder="Xem tất cả" />
+              </label>
+              <label className="block">Link “Xem tất cả” tự đặt
+                <input value={s.seeAllHref || ""} onChange={(e) => setAt(i, { seeAllHref: e.target.value })} className={inputCls} style={{ borderColor: LINE }} placeholder="#/danh-muc?group=Màn hình&sale=1" />
+              </label>
+            </div>
+          </details>
+        </div>
+      ))}
+
+      <div className="flex items-center gap-3">
+        <button onClick={addBlock} className="text-xs px-2.5 py-1.5 rounded-sm border" style={{ borderColor: LINE, color: INK }}>+ Thêm khối</button>
+        <button onClick={reset} className="text-xs underline" style={{ color: RUST }}>Đặt lại về mặc định</button>
+      </div>
+    </div>
+  );
+}
+
 function WebConfigForm({ webConfig, setWebConfig, addLog, products }) {
   const c = webConfig || {};
   const SITE = c.SITE || {};
@@ -11985,6 +12127,11 @@ function WebConfigForm({ webConfig, setWebConfig, addLog, products }) {
             </Field>
           </div>
         </div>
+      </section>
+
+      <section>
+        <h3 className="font-medium mb-3" style={{ color: INK }}>Khối sản phẩm trang chủ</h3>
+        <HomeSectionsEditor webConfig={webConfig} setWebConfig={setWebConfig} products={products} />
       </section>
 
       <section>

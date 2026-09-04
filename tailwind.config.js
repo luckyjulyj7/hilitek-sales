@@ -44,10 +44,16 @@ export default {
           "75%":  { transform: "scale(1.05) rotate(-2deg)" },
           "100%": { transform: "scale(1) rotate(0)",        boxShadow: "0 0 0 14px rgba(247,198,0,0)" },
         },
+        // Khối sản phẩm trang chủ kiểu "tự chạy" — trượt liên tục phải → trái.
+        marquee: {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
       },
       animation: {
         zalo: "zalo 1.3s ease-in-out infinite",
         cartbump: "cartbump 0.7s ease-in-out",
+        marquee: "marquee var(--marquee-duration, 40s) linear infinite",
       },
     },
   },

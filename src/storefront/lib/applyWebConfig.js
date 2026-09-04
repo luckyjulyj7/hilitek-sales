@@ -1,4 +1,4 @@
-import { SITE, FLASH_SALE, HOME_POSTERS, PRODUCT_SIDEBAR, CHECKOUT, PAGES, MENU, rebuildCatToGroup } from "../config.js";
+import { SITE, FLASH_SALE, HOME_POSTERS, HOME_SECTIONS, PRODUCT_SIDEBAR, CHECKOUT, PAGES, MENU, rebuildCatToGroup } from "../config.js";
 
 /**
  * Ghi đè cấu hình mặc định (config.js) bằng giá trị chủ shop chỉnh từ app quản lý
@@ -33,5 +33,11 @@ export function applyWebConfig(cfg) {
     MENU.length = 0;
     cfg.MENU.forEach((g) => MENU.push(g));
     rebuildCatToGroup();
+  }
+
+  // HOME_SECTIONS (khối sản phẩm trang chủ) — thay nguyên mảng. Mảng rỗng = ẩn hết khối.
+  if (Array.isArray(cfg.HOME_SECTIONS)) {
+    HOME_SECTIONS.length = 0;
+    cfg.HOME_SECTIONS.forEach((s) => HOME_SECTIONS.push(s));
   }
 }
