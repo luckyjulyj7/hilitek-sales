@@ -4,11 +4,11 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/admin", "destination": "/admin.html" },
-    { "source": "/admin/(.*)", "destination": "/admin.html" },
+    { "source": "/quanlybanhang", "destination": "/admin.html" },
+    { "source": "/quanlybanhang/(.*)", "destination": "/admin.html" },
     { "source": "/shop", "destination": "/shop.html" },
     { "source": "/shop/(.*)", "destination": "/shop.html" },
     { "source": "/media/(.*)", "destination": "https://wddfjbcrkwkzshibghdi.supabase.co/storage/v1/object/public/product-media/$1" },
-    { "source": "/((?!api/).*)", "destination": "/" }
+    { "source": "/((?!api/).*)", "destination": "/shop.html" }
   ]
 }

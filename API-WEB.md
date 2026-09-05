@@ -4,12 +4,11 @@
 
 | Đường dẫn | Trang |
 |---|---|
-| `/`  và  `/admin` | **App quản lý bán hàng** (đăng nhập) |
-| `/shop` | **Website bán hàng cho khách** — đang để riêng, CHƯA công khai ở `/` |
+| `/` và `/shop` | **Website bán hàng cho khách** (trang chủ domain) |
+| `/quanlybanhang` | **App quản lý bán hàng** (đăng nhập nội bộ) |
 | `/api/web/*` | API |
 
-> Khi muốn web khách lên trang chủ `/`: đổi nội dung 2 file `index.html` ↔ `shop.html`
-> (đang: `index.html` = quản lý, `shop.html` = web khách), rồi push lại.
+> Đường dẫn công khai (`/`, `/shop`, `/quanlybanhang`) định nghĩa ở `vercel.json` (mục `rewrites`) — sửa ở đó, không cần đổi tên file `index.html`/`admin.html`/`shop.html`.
 
 ---
 

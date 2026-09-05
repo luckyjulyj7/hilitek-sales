@@ -193,7 +193,7 @@ Danh sách Tỉnh/Phường-Xã lấy từ `src/storefront/data/vnAddress.js` (�
 
 ## 📝 Sản phẩm (tên, giá, ảnh, mô tả, thông số, tồn kho)
 
-Quản lý toàn bộ trong **app quản lý bán hàng** (`/admin`) → **Sản phẩm → Sửa/Thêm**:
+Quản lý toàn bộ trong **app quản lý bán hàng** (`/quanlybanhang`) → **Sản phẩm → Sửa/Thêm**:
 - Giá / tồn kho / SKU / bảo hành / ảnh: như bình thường.
 - Khối **"Đăng sản phẩm này lên website bán hàng"** ở cuối form: tick để lên web,
   + Giá web (bỏ trống = giá bán lẻ), Mô tả web, Thông số web (`Nhãn | Giá trị`).
