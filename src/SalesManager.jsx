@@ -11376,7 +11376,7 @@ function webOrderTotal(o) {
   return (o.items || []).reduce((s, it) => s + (Number(it.qty) || 0) * (Number(it.price) || 0), 0);
 }
 
-function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig, categories, addLog, onOpenOrder }) {
+function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig, categories, brands, addLog, onOpenOrder }) {
   const [sub, setSub] = useState("products");
   const subs = [
     { id: "products", label: "Sản phẩm web" },
@@ -11394,14 +11394,14 @@ function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig
           </button>
         ))}
       </div>
-      {sub === "products" && <WebProducts products={products} setProducts={setProducts} categories={categories} addLog={addLog} webConfig={webConfig} />}
+      {sub === "products" && <WebProducts products={products} setProducts={setProducts} categories={categories} brands={brands} addLog={addLog} webConfig={webConfig} />}
       {sub === "orders" && <WebOrders orders={orders} onOpenOrder={onOpenOrder} />}
       {sub === "config" && <WebConfigForm webConfig={webConfig} setWebConfig={setWebConfig} addLog={addLog} products={products} categories={categories} />}
     </div>
   );
 }
 
-function WebProducts({ products, setProducts, categories, addLog, webConfig }) {
+function WebProducts({ products, setProducts, categories, brands, addLog, webConfig }) {
   // Danh mục web khả dụng = danh mục con trong menu ở "Cấu hình web" (hoặc menu mặc định).
   const webCats = useMemo(() => {
     const src = webConfig && Array.isArray(webConfig.MENU) && webConfig.MENU.length ? webConfig.MENU : WEB_DEFAULT_MENU;
@@ -11409,16 +11409,28 @@ function WebProducts({ products, setProducts, categories, addLog, webConfig }) {
   }, [webConfig]);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("all"); // all | on | off
+  const [filterCategory, setFilterCategory] = useState("");
+  const [filterBrand, setFilterBrand] = useState("");
   const [editId, setEditId] = useState(null);
+
+  const categoryOptions = useMemo(() => [...new Set(categories || [])].sort((a, b) => a.localeCompare(b, "vi")), [categories]);
+  const brandOptions = useMemo(() => {
+    const source = filterCategory
+      ? (brands || []).filter((b) => b.category === filterCategory).map((b) => b.name)
+      : products.map((p) => p.brand).filter(Boolean);
+    return [...new Set(source)].sort((a, b) => a.localeCompare(b, "vi"));
+  }, [brands, products, filterCategory]);
 
   const rows = useMemo(() => {
     const kw = webSlugify(q);
     return products
       .filter((p) => !p.isService)
       .filter((p) => (filter === "on" ? p.web?.published : filter === "off" ? !p.web?.published : true))
+      .filter((p) => !filterCategory || p.category === filterCategory)
+      .filter((p) => !filterBrand || p.brand === filterBrand)
       .filter((p) => !kw || webSlugify(`${p.name} ${p.sku} ${p.code}`).includes(kw))
       .sort((a, b) => (a.variantGroupId || a.id).localeCompare(b.variantGroupId || b.id) || a.name.localeCompare(b.name));
-  }, [products, q, filter]);
+  }, [products, q, filter, filterCategory, filterBrand]);
 
   const patch = (id, fn) => setProducts((prev) => prev.map((p) => (p.id === id ? fn(p) : p)));
   const setWeb = (p, wpatch) => {
@@ -11444,7 +11456,7 @@ function WebProducts({ products, setProducts, categories, addLog, webConfig }) {
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-4 flex-wrap text-sm">
+      <div className="flex items-center gap-3 mb-3 flex-wrap text-sm">
         <span className="opacity-60">Đang đăng: <b>{publishedCount}</b> sản phẩm</span>
         <div className="flex-1" />
         <div className="flex gap-1">
@@ -11453,11 +11465,27 @@ function WebProducts({ products, setProducts, categories, addLog, webConfig }) {
               style={{ borderColor: filter === id ? INK : LINE, background: filter === id ? INK : "transparent", color: filter === id ? "#fff" : INK }}>{l}</button>
           ))}
         </div>
+      </div>
+      <div className="flex items-center gap-2 mb-4 flex-wrap text-sm">
+        <select value={filterCategory} onChange={(e) => { setFilterCategory(e.target.value); setFilterBrand(""); }}
+          className="border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
+          <option value="">Tất cả nhóm hàng</option>
+          {categoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select value={filterBrand} onChange={(e) => setFilterBrand(e.target.value)}
+          className="border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
+          <option value="">Tất cả nhãn hiệu</option>
+          {brandOptions.map((b) => <option key={b} value={b}>{b}</option>)}
+        </select>
+        {(filterCategory || filterBrand) && (
+          <button onClick={() => { setFilterCategory(""); setFilterBrand(""); }} className="text-xs underline opacity-60">Xoá lọc</button>
+        )}
+        <div className="flex-1" />
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm tên / SKU…" className="border rounded-sm py-1.5 px-2.5 text-sm w-48" style={{ borderColor: LINE }} />
       </div>
 
-      <div className="border rounded-sm overflow-hidden" style={{ borderColor: LINE }}>
-        <table className="w-full text-sm">
+      <div className="border rounded-sm overflow-x-auto" style={{ borderColor: LINE }}>
+        <table className="w-full text-sm" style={{ minWidth: 760 }}>
           <thead>
             <tr style={{ background: PAPER }}>
               <th className="text-left px-3 py-2.5 font-medium">Đăng web</th>
@@ -12648,7 +12676,7 @@ export default function SalesManager() {
             {tab === "suppliers" && <Suppliers suppliers={suppliers} setSuppliers={setSuppliers} purchaseOrders={purchaseOrders} addLog={addLog} goToDoc={goToDoc} navTarget={tab === "suppliers" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} />}
             {tab === "plans" && roleTabIds.includes("plans") && <Plans plans={plans} setPlans={setPlans} orders={orders} purchaseOrders={purchaseOrders} products={products} employeeNames={employeeNames} />}
             {tab === "reports" && roleTabIds.includes("reports") && <Reports orders={orders} products={products} customers={customers} accounts={accounts} purchaseOrders={purchaseOrders} warrantyTickets={warrantyTickets} />}
-            {tab === "website" && currentUser.role === "admin" && <WebsiteSection products={products} setProducts={setProducts} orders={orders} webConfig={webConfig} setWebConfig={setWebConfig} categories={categories} currentUser={currentUser} addLog={addLog} onOpenOrder={(id) => { setTab("orders"); setNavTarget({ type: "order", id }); }} />}
+            {tab === "website" && currentUser.role === "admin" && <WebsiteSection products={products} setProducts={setProducts} orders={orders} webConfig={webConfig} setWebConfig={setWebConfig} categories={categories} brands={brands} currentUser={currentUser} addLog={addLog} onOpenOrder={(id) => { setTab("orders"); setNavTarget({ type: "order", id }); }} />}
             {tab === "activity" && currentUser.role === "admin" && <ActivityLog log={activityLog} accounts={accounts} />}
             {tab === "accounts" && currentUser.isOwner && <Accounts accounts={accounts} setAccounts={setAccounts} currentUser={currentUser} addLog={addLog} onResetTestData={resetTestData} />}
             {tab === "profile" && <MyProfile currentUser={currentUser} setAccounts={setAccounts} addLog={addLog} />}

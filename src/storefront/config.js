@@ -49,10 +49,12 @@ export const SITE = {
   email: "hilitekcom3005@gmail.com",
   address: "6/27A Đường Số 3, C/x Lữ Gia, Phường Phú Thọ, TP Hồ Chí Minh, Việt Nam",
   workingHours: "8:00 – 21:00, cả T7 & CN", // sửa lại nếu khác
-  // Google Maps: nhúng trực tiếp theo địa chỉ (không cần API key). Muốn ghim đúng
-  // toạ độ hơn: mở Google Maps → Share → Embed a map → dán URL trong src="..." vào đây.
+  // Google Maps: URL nhúng CHÍNH THỨC lấy từ Google Maps → Share → Embed a map → copy src="...".
+  // (Không dùng dạng "maps?q=...&output=embed" — dạng đó hay bị Google chuyển hướng qua 1 bước
+  // có X-Frame-Options: SAMEORIGIN, khiến bản đồ không hiện được trên một số trình duyệt di động.)
+  // Đổi địa chỉ: mở lại Google Maps → Share → Embed a map → dán URL src mới vào đây.
   mapEmbedUrl:
-    "https://www.google.com/maps?q=6/27A%20%C4%90%C6%B0%E1%BB%9Dng%20S%E1%BB%91%203,%20C%C6%B0%20x%C3%A1%20L%E1%BB%AF%20Gia,%20Ph%C6%B0%E1%BB%9Dng%20Ph%C3%BA%20Th%E1%BB%8D,%20TP%20H%E1%BB%93%20Ch%C3%AD%20Minh&output=embed",
+    "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.4930578386857!2d106.654704!3d10.773498000000002!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752ec0eee44efd%3A0xdb1ba03123914dd6!2zNi8yN0EgxJAuIFPhu5EgMyBDxrAgWMOhIEzhu68gR2lhLCBQaMO6IFRo4buNLCBI4buTIENow60gTWluaCwgVmlldG5hbQ!5e0!3m2!1svi!2s!4v1788612575639!5m2!1svi!2s",
   mapLink:
     "https://www.google.com/maps/search/?api=1&query=6%2F27A%20%C4%90%C6%B0%E1%BB%9Dng%20S%E1%BB%91%203%2C%20C%C6%B0%20x%C3%A1%20L%E1%BB%AF%20Gia%2C%20Ph%C6%B0%E1%BB%9Dng%20Ph%C3%BA%20Th%E1%BB%8D%2C%20TP%20H%E1%BB%93%20Ch%C3%AD%20Minh",
   facebookHref: "https://www.facebook.com/HiLiPC627A",
