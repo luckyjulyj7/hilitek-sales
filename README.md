@@ -190,6 +190,35 @@ chỉ nên vậy lúc mới test. Local `npm run dev` KHÔNG chạy `api/` — c
   `ghnStatusToTicket`), hoặc webhook GHN → 1 function `api/ghn/webhook.js`.
 - **In nhãn GHN**: gọi `print-token` → mở `printUrls.A5`.
 
+## Bảo mật & sao lưu
+
+### Sao lưu dữ liệu
+
+Toàn bộ dữ liệu = 1 blob JSON trong bảng Supabase `app_state`. Supabase Free **không**
+tự backup → có 2 lớp sao lưu:
+
+1. **Thủ công (ngoài hệ thống)** — trong app quản lý: **Tài khoản → Sao lưu & phục hồi**
+   → *"Tải bản sao lưu (.json)"* (tải toàn bộ dữ liệu xuống máy chủ shop) /
+   *"Phục hồi từ file .json…"* (ghi đè + tự tải lại trang). Nên tải định kỳ, cất nơi an toàn.
+2. **Tự động hằng ngày** — `api/cron/backup.js` chụp blob vào bảng `app_state_backups`
+   (giữ 60 bản mới nhất). Bật lên:
+   - Chạy `supabase/backups.sql` trong Supabase SQL Editor.
+   - Vercel env: `SUPABASE_SERVICE_ROLE_KEY` (bắt buộc — bảng khoá anon) + `CRON_SECRET`.
+   - Lịch trong `vercel.json`: `"0 17 * * *"` = 00:00 giờ VN mỗi ngày. Test tay:
+     `/api/cron/backup?key=<CRON_SECRET>`.
+   - Khôi phục từ bản tự động: xem hướng dẫn SQL cuối file `supabase/backups.sql`.
+
+### Mã hoá mật khẩu
+
+**PBKDF2-HMAC-SHA256, 210.000 vòng** (khuyến nghị OWASP), salt 16 byte ngẫu nhiên mỗi
+tài khoản. Trường: `passwordHash` / `passwordSalt` / `passwordAlgo` / `passwordIter`.
+Tài khoản cũ (băm SHA-256 1 vòng) vẫn đăng nhập được và **tự nâng cấp sang PBKDF2** ngay
+lần đăng nhập kế tiếp (`verifyAccountPassword` trả `upgrade`, `LoginScreen` lưu lại).
+
+**Còn hạn chế (chưa làm — mục #3 đã hoãn):** việc kiểm mật khẩu vẫn chạy phía client;
+RLS bảng `app_state` vẫn mở cho `anon`. Muốn chặt hơn: chuyển app quản lý sang gọi qua
+`api/*` có secret (giống website khách) và/hoặc dùng Supabase Auth.
+
 ## Nghiệp vụ cần giữ nguyên khi refactor
 
 Xem `../README-MIGRATION.md` mục 5 — phân quyền 3 vai trò, giá bán tối thiểu theo vai trò,

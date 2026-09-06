@@ -82,6 +82,9 @@ function normalizeAccount(a) {
   return {
     id: a.id || uid(), username: (a.username || "").trim().toLowerCase(),
     passwordHash: a.passwordHash || "", passwordSalt: a.passwordSalt || "",
+    // Thuật toán băm mật khẩu: "pbkdf2" (mới, chậm có chủ đích) hoặc "sha256" (cũ, 1 vòng — sẽ tự nâng cấp khi đăng nhập).
+    passwordAlgo: a.passwordAlgo === "pbkdf2" ? "pbkdf2" : "sha256",
+    passwordIter: Number(a.passwordIter) > 0 ? Number(a.passwordIter) : PBKDF2_ITERATIONS,
     // Cờ tạm để nhận diện tài khoản còn lưu mật khẩu dạng thường (dữ liệu cũ) — sẽ được mã hoá lại ngay khi tải app.
     _legacyPassword: a.passwordHash ? undefined : (a.password || undefined),
     fullName: a.fullName || "", role: ACCOUNT_ROLES.some((r) => r.id === a.role) ? a.role : "staff",
@@ -113,33 +116,81 @@ function ensureOwner(accs) {
 function seedAccounts() {
   return [normalizeAccount({ username: "admin", password: "admin123", fullName: "Chủ cửa hàng", role: "admin", active: true, isOwner: true })];
 }
-// Mã hoá mật khẩu bằng SHA-256 (Web Crypto API có sẵn trên trình duyệt) kèm salt ngẫu nhiên cho từng tài khoản.
+/* ------------------------------------------------------------------
+   Mã hoá mật khẩu — PBKDF2-HMAC-SHA256 nhiều vạn vòng (chậm có chủ đích,
+   chống dò mật khẩu bằng GPU nếu lỡ lộ dữ liệu). Web Crypto API có sẵn ở
+   trình duyệt. Tài khoản cũ (băm SHA-256 1 vòng) vẫn đăng nhập được và
+   được TỰ NÂNG CẤP sang PBKDF2 ngay lần đăng nhập kế tiếp.
+------------------------------------------------------------------ */
+const PBKDF2_ITERATIONS = 210000; // khuyến nghị OWASP cho PBKDF2-HMAC-SHA256
+
 function randomSalt() {
-  const arr = crypto.getRandomValues(new Uint8Array(8));
+  const arr = crypto.getRandomValues(new Uint8Array(16));
   return Array.from(arr).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
-async function hashPassword(password, salt) {
-  const enc = new TextEncoder();
-  const data = enc.encode(`${salt}:${password}`);
-  const buf = await crypto.subtle.digest("SHA-256", data);
+function hexToBytes(hex) {
+  const s = String(hex || "");
+  const out = new Uint8Array(Math.floor(s.length / 2));
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(s.substr(i * 2, 2), 16);
+  return out;
+}
+function bytesToHex(buf) {
   return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
-async function verifyPassword(password, salt, hash) {
-  if (!hash) return false;
-  const h = await hashPassword(password, salt);
-  return h === hash;
+// Băm cũ: SHA-256(`${salt}:${password}`) — chỉ dùng để xác thực tài khoản chưa nâng cấp.
+async function sha256Legacy(password, salt) {
+  const data = new TextEncoder().encode(`${salt}:${password}`);
+  return bytesToHex(await crypto.subtle.digest("SHA-256", data));
 }
-// Chuyển các tài khoản còn lưu mật khẩu dạng thường (từ dữ liệu cũ) sang dạng đã mã hoá.
+async function pbkdf2Hash(password, salt, iterations = PBKDF2_ITERATIONS) {
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt: hexToBytes(salt), iterations, hash: "SHA-256" },
+    keyMaterial, 256
+  );
+  return bytesToHex(bits);
+}
+// Tạo bộ trường mật khẩu mới (luôn PBKDF2). Dùng ở mọi chỗ đặt/đổi mật khẩu.
+async function makePasswordFields(password) {
+  const passwordSalt = randomSalt();
+  const passwordHash = await pbkdf2Hash(password, passwordSalt, PBKDF2_ITERATIONS);
+  return { passwordHash, passwordSalt, passwordAlgo: "pbkdf2", passwordIter: PBKDF2_ITERATIONS };
+}
+// So khớp không phụ thuộc thời gian (tránh timing attack lặt vặt).
+function timingSafeEqual(a, b) {
+  if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+async function verifyPassword(password, salt, hash, algo = "sha256", iter = PBKDF2_ITERATIONS) {
+  if (!hash || !salt) return false;
+  const h = algo === "pbkdf2"
+    ? await pbkdf2Hash(password, salt, Number(iter) || PBKDF2_ITERATIONS)
+    : await sha256Legacy(password, salt);
+  return timingSafeEqual(h, hash);
+}
+// Xác thực bằng đúng thuật toán của tài khoản; nếu vẫn là SHA-256 cũ thì trả kèm
+// bộ trường PBKDF2 mới để nơi gọi lưu lại (nâng cấp trong suốt, không phiền người dùng).
+async function verifyAccountPassword(acc, password) {
+  if (!acc) return { ok: false };
+  const ok = await verifyPassword(password, acc.passwordSalt, acc.passwordHash, acc.passwordAlgo, acc.passwordIter);
+  if (!ok) return { ok: false };
+  if (acc.passwordAlgo !== "pbkdf2") {
+    return { ok: true, upgrade: await makePasswordFields(password) };
+  }
+  return { ok: true };
+}
+// Chuyển các tài khoản còn lưu mật khẩu dạng thường (dữ liệu cũ) sang PBKDF2.
 async function migrateAccountPasswords(accs) {
   const out = [];
   for (const a of accs) {
-    if (a._legacyPassword) {
-      const salt = randomSalt();
-      const hash = await hashPassword(a._legacyPassword, salt);
-      const { _legacyPassword, ...rest } = a;
-      out.push({ ...rest, passwordHash: hash, passwordSalt: salt });
+    const { _legacyPassword, ...rest } = a;
+    if (_legacyPassword) {
+      out.push({ ...rest, ...(await makePasswordFields(_legacyPassword)) });
     } else {
-      const { _legacyPassword, ...rest } = a;
       out.push(rest);
     }
   }
@@ -8312,7 +8363,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
   const [deletePasswordInput, setDeletePasswordInput] = useState("");
   const [deletePasswordError, setDeletePasswordError] = useState("");
   const confirmDeleteOrder = async () => {
-    const ok = await verifyPassword(deletePasswordInput, currentUser.passwordSalt, currentUser.passwordHash);
+    const { ok } = await verifyAccountPassword(currentUser, deletePasswordInput);
     if (!ok) { setDeletePasswordError("Sai mật khẩu."); return; }
     remove(deletingOrder.id);
     addLog("Xoá đơn hàng", deletingOrder.code);
@@ -11021,19 +11072,28 @@ function HiliLogo({ size = 40, radius = 8 }) {
   );
 }
 
-function LoginScreen({ accounts, onLogin }) {
+function LoginScreen({ accounts, onLogin, onUpgradeHash }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
   const submit = async () => {
+    if (busy) return;
     const acc = accounts.find((a) => a.username === username.trim().toLowerCase());
     if (!acc || !acc.active) { setError("Tài khoản không tồn tại hoặc đã bị khoá."); return; }
-    const ok = await verifyPassword(password, acc.passwordSalt, acc.passwordHash);
-    if (!ok) { setError("Sai mật khẩu."); return; }
-    setError("");
-    onLogin(acc.id);
+    setBusy(true);
+    try {
+      const { ok, upgrade } = await verifyAccountPassword(acc, password);
+      if (!ok) { setError("Sai mật khẩu."); return; }
+      setError("");
+      // Nâng cấp băm SHA-256 cũ -> PBKDF2 ngay khi đăng nhập thành công (một lần).
+      if (upgrade && onUpgradeHash) onUpgradeHash(acc.id, upgrade);
+      onLogin(acc.id);
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -11060,17 +11120,35 @@ function LoginScreen({ accounts, onLogin }) {
           </div>
         </Field>
         {error && <p className="text-sm mb-3" style={{ color: RUST }}>{error}</p>}
-        <button type="button" onClick={submit} className="w-full py-2.5 rounded-sm text-white text-sm mt-2" style={{ background: INK }}>Đăng nhập</button>
+        <button type="button" onClick={submit} disabled={busy} className="w-full py-2.5 rounded-sm text-white text-sm mt-2 disabled:opacity-60" style={{ background: INK }}>{busy ? "Đang kiểm tra…" : "Đăng nhập"}</button>
       </div>
     </div>
   );
 }
 
-function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData }) {
+function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData, onDownloadBackup, onRestoreBackup }) {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({});
   const [confirmReset, setConfirmReset] = useState(false);
   const [confirmResetText, setConfirmResetText] = useState("");
+  const [restoreErr, setRestoreErr] = useState("");
+  const [restoreBusy, setRestoreBusy] = useState(false);
+  const fileRef = useRef(null);
+  const pickRestore = () => { setRestoreErr(""); fileRef.current && fileRef.current.click(); };
+  const onRestoreFile = async (e) => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!f) return;
+    if (!window.confirm("Phục hồi sẽ GHI ĐÈ toàn bộ dữ liệu hiện tại bằng nội dung file này, không thể hoàn tác. Nên tải một bản sao lưu hiện tại trước. Tiếp tục?")) return;
+    setRestoreBusy(true); setRestoreErr("");
+    try {
+      const parsed = JSON.parse(await f.text());
+      await onRestoreBackup(parsed); // sẽ tự tải lại trang
+    } catch (err) {
+      setRestoreErr(String(err.message || err));
+      setRestoreBusy(false);
+    }
+  };
   const isOwnerViewer = currentUser.isOwner === true;
   // QTV thường không thấy tài khoản chủ; chỉ chính chủ mới thấy và sửa được nó.
   const visibleAccounts = isOwnerViewer ? accounts : accounts.filter((a) => !a.isOwner);
@@ -11083,12 +11161,8 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData 
     if (!editing.id && !form.password) { alert("Vui lòng đặt mật khẩu cho tài khoản mới."); return; }
     if (accounts.some((a) => a.username === username && a.id !== editing.id)) { alert("Tên đăng nhập đã tồn tại."); return; }
     if (editing.id && !canManage(editing)) { alert("Bạn không có quyền sửa tài khoản này."); return; }
-    let passFields = {};
-    if (form.password) {
-      const salt = randomSalt();
-      const hash = await hashPassword(form.password, salt);
-      passFields = { passwordHash: hash, passwordSalt: salt };
-    }
+    if (form.password && form.password.length < 6) { alert("Mật khẩu tối thiểu 6 ký tự."); return; }
+    const passFields = form.password ? await makePasswordFields(form.password) : {};
     if (editing.id) {
       // Tài khoản chủ luôn giữ vai trò admin và đang hoạt động, không cho đổi.
       const role = editing.isOwner ? "admin" : form.role;
@@ -11170,8 +11244,29 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData 
         </table>
       </div>
 
+      {onDownloadBackup && (
+        <div className="mt-8 p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+          <p className="text-sm font-medium mb-1" style={{ color: INK }}>Sao lưu &amp; phục hồi</p>
+          <p className="text-xs opacity-70 mb-3">
+            Tải toàn bộ dữ liệu (sản phẩm, đơn hàng, khách hàng, kho, tài khoản, cấu hình web…) xuống máy dưới dạng 1 file <code>.json</code> —
+            bản sao ngoài hệ thống, nên tải định kỳ và cất nơi an toàn. Ngoài ra hệ thống tự sao lưu hằng ngày lên Supabase
+            (bảng <code>app_state_backups</code>) nếu đã bật Vercel Cron.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={onDownloadBackup} className="text-xs px-3.5 py-2 rounded-sm text-white" style={{ background: INK }}>
+              Tải bản sao lưu (.json)
+            </button>
+            <button onClick={pickRestore} disabled={restoreBusy} className="text-xs px-3.5 py-2 rounded-sm border disabled:opacity-50" style={{ borderColor: RUST, color: RUST }}>
+              {restoreBusy ? "Đang phục hồi…" : "Phục hồi từ file .json…"}
+            </button>
+            <input ref={fileRef} type="file" accept="application/json,.json" onChange={onRestoreFile} className="hidden" />
+          </div>
+          {restoreErr && <p className="text-xs mt-2" style={{ color: RUST }}>{restoreErr}</p>}
+        </div>
+      )}
+
       {onResetTestData && (
-        <div className="mt-8 p-4 rounded-sm" style={{ border: `1px solid ${RUST}44`, background: `${RUST}08` }}>
+        <div className="mt-6 p-4 rounded-sm" style={{ border: `1px solid ${RUST}44`, background: `${RUST}08` }}>
           <p className="text-sm font-medium mb-1" style={{ color: RUST }}>Vùng nguy hiểm</p>
           <p className="text-xs opacity-70 mb-3">Xoá toàn bộ đơn bán, đơn nhập hàng và báo giá đang có (thường dùng để dọn sạch dữ liệu test trước khi đưa vào dùng thật). Sản phẩm, khách hàng, nhà cung cấp, kế hoạch và tài khoản sẽ được giữ nguyên.</p>
           <button onClick={() => { setConfirmResetText(""); setConfirmReset(true); }} className="text-xs px-3.5 py-2 rounded-sm border" style={{ borderColor: RUST, color: RUST }}>
@@ -11251,11 +11346,10 @@ function MyProfile({ currentUser, setAccounts, addLog }) {
     if (!curPw) { setPwMsg({ ok: false, text: "Nhập mật khẩu hiện tại." }); return; }
     if (!newPw || newPw.length < 6) { setPwMsg({ ok: false, text: "Mật khẩu mới tối thiểu 6 ký tự." }); return; }
     if (newPw !== newPw2) { setPwMsg({ ok: false, text: "Xác nhận mật khẩu mới không khớp." }); return; }
-    const ok = await verifyPassword(curPw, currentUser.passwordSalt, currentUser.passwordHash);
+    const { ok } = await verifyAccountPassword(currentUser, curPw);
     if (!ok) { setPwMsg({ ok: false, text: "Mật khẩu hiện tại không đúng." }); return; }
-    const salt = randomSalt();
-    const hash = await hashPassword(newPw, salt);
-    setAccounts((prev) => prev.map((a) => (a.id === currentUser.id ? { ...a, passwordHash: hash, passwordSalt: salt } : a)));
+    const fields = await makePasswordFields(newPw);
+    setAccounts((prev) => prev.map((a) => (a.id === currentUser.id ? { ...a, ...fields } : a)));
     addLog && addLog("Đổi mật khẩu", currentUser.username);
     setCurPw(""); setNewPw(""); setNewPw2("");
     setPwMsg({ ok: true, text: "Đã đổi mật khẩu. Lần đăng nhập sau dùng mật khẩu mới." });
@@ -12583,7 +12677,7 @@ export default function SalesManager() {
 
   const currentUser = accounts.find((a) => a.id === currentUserId) || null;
   if (!currentUser) {
-    return <LoginScreen accounts={accounts} onLogin={(id) => setCurrentUserId(id)} />;
+    return <LoginScreen accounts={accounts} onLogin={(id) => setCurrentUserId(id)} onUpgradeHash={(id, fields) => setAccounts((prev) => prev.map((a) => (a.id === id ? { ...a, ...fields } : a)))} />;
   }
 
   const addLog = (action, detail) => {
@@ -12602,6 +12696,32 @@ export default function SalesManager() {
       movements: (p.movements || []).filter((m) => !/^(DH|POH)/i.test(m.docNo || "")),
     })));
     addLog("Đặt lại dữ liệu test", "Đã xoá toàn bộ đơn bán, đơn nhập hàng, báo giá và các bút toán kho liên quan");
+  };
+
+  // Sao lưu thủ công: tải TOÀN BỘ dữ liệu hiện tại xuống máy dưới dạng 1 file .json (bản sao "ngoài hệ thống").
+  const buildSnapshot = () => ({
+    _backup: { app: "hilitek", version: STORAGE_KEY, at: new Date().toISOString(), by: currentUser?.username || "" },
+    products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes,
+    warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, plans, accounts,
+    activityLog, notifications, printSettings, quotations, webConfig,
+  });
+  const downloadBackup = () => {
+    const blob = new Blob([JSON.stringify(buildSnapshot(), null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `hilitek-sao-luu-${todayISO()}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    addLog("Tải bản sao lưu", a.download);
+  };
+  // Phục hồi từ file .json: ghi thẳng vào kho lưu trữ rồi tải lại trang để nạp bằng luồng chuẩn.
+  const restoreBackup = async (parsed) => {
+    if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.products)) {
+      throw new Error("File không đúng định dạng sao lưu Hilitek.");
+    }
+    const { _backup, ...state } = parsed;
+    await saveData({ ...state, session: { userId: currentUserId } });
+    location.reload();
   };
 
   const roleTabIds = currentUser.role === "admin" ? ["dashboard", "products", "quotes", "orders", "shipping", "customers", "suppliers", "plans", "reports"]
@@ -12678,7 +12798,7 @@ export default function SalesManager() {
             {tab === "reports" && roleTabIds.includes("reports") && <Reports orders={orders} products={products} customers={customers} accounts={accounts} purchaseOrders={purchaseOrders} warrantyTickets={warrantyTickets} />}
             {tab === "website" && currentUser.role === "admin" && <WebsiteSection products={products} setProducts={setProducts} orders={orders} webConfig={webConfig} setWebConfig={setWebConfig} categories={categories} brands={brands} currentUser={currentUser} addLog={addLog} onOpenOrder={(id) => { setTab("orders"); setNavTarget({ type: "order", id }); }} />}
             {tab === "activity" && currentUser.role === "admin" && <ActivityLog log={activityLog} accounts={accounts} />}
-            {tab === "accounts" && currentUser.isOwner && <Accounts accounts={accounts} setAccounts={setAccounts} currentUser={currentUser} addLog={addLog} onResetTestData={resetTestData} />}
+            {tab === "accounts" && currentUser.isOwner && <Accounts accounts={accounts} setAccounts={setAccounts} currentUser={currentUser} addLog={addLog} onResetTestData={resetTestData} onDownloadBackup={downloadBackup} onRestoreBackup={restoreBackup} />}
             {tab === "profile" && <MyProfile currentUser={currentUser} setAccounts={setAccounts} addLog={addLog} />}
           </AppErrorBoundary>
         </div>

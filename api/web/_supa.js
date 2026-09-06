@@ -45,6 +45,35 @@ export async function writeState(state) {
   if (error) throw new Error("Supabase ghi lỗi: " + error.message);
 }
 
+/* ---------------- Sao lưu tự động (bảng app_state_backups) ---------------- */
+
+const BACKUP_TABLE = "app_state_backups";
+
+/** Chụp 1 bản blob hiện tại vào bảng backup. Cần SUPABASE_SERVICE_ROLE_KEY (bảng khoá anon). */
+export async function snapshotBackup(reason = "cron") {
+  const { data, error: readErr } = await client()
+    .from(TABLE).select("value").eq("key", STORAGE_KEY).maybeSingle();
+  if (readErr) throw new Error("Đọc blob lỗi: " + readErr.message);
+  const value = (data && data.value) || "{}";
+  const { error } = await client()
+    .from(BACKUP_TABLE)
+    .insert({ reason: String(reason).slice(0, 40), bytes: value.length, value });
+  if (error) throw new Error("Ghi backup lỗi: " + error.message + " (đã tạo bảng app_state_backups và đặt SUPABASE_SERVICE_ROLE_KEY chưa?)");
+  return { bytes: value.length };
+}
+
+/** Giữ lại `keep` bản mới nhất, xoá phần cũ hơn. */
+export async function pruneBackups(keep = 60) {
+  const { data, error } = await client()
+    .from(BACKUP_TABLE).select("taken_at").order("taken_at", { ascending: false }).limit(keep + 200);
+  if (error || !Array.isArray(data) || data.length <= keep) return { pruned: 0 };
+  const cutoff = data[keep].taken_at;
+  const { error: delErr, count } = await client()
+    .from(BACKUP_TABLE).delete({ count: "exact" }).lt("taken_at", cutoff);
+  if (delErr) return { pruned: 0, warn: delErr.message };
+  return { pruned: count || 0 };
+}
+
 export function json(res, status, payload) {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.setHeader("Cache-Control", "no-store");
