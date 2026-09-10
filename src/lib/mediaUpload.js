@@ -40,6 +40,24 @@ export async function uploadProductImage(fileOrBlob) {
   return { path, url: "/media/" + path };
 }
 
+/**
+ * Chuẩn hoá 1 link để nhúng thẳng vào <img> (KHÔNG tải về kho Hilitek).
+ *  • Google Drive (link chia sẻ "Bất kỳ ai có đường liên kết"):
+ *      .../file/d/<ID>/view   ·   ...?id=<ID>   ·   .../open?id=<ID>
+ *      → https://drive.google.com/thumbnail?id=<ID>&sz=w2000  (cho phép hotlink, ổn định)
+ *  • Link ảnh khác: giữ nguyên.
+ * Trả "" nếu không phải http(s).
+ */
+export function toDirectImageUrl(raw) {
+  const s = String(raw || "").trim();
+  if (!/^https?:\/\//i.test(s)) return "";
+  if (/(?:drive|docs)\.google\.com/i.test(s)) {
+    const m = s.match(/\/d\/([-\w]{20,})/) || s.match(/[?&]id=([-\w]{20,})/);
+    if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w2000`;
+  }
+  return s;
+}
+
 // fetch có giới hạn thời gian — tránh treo vô hạn khi trang nguồn chậm / không phản hồi.
 function fetchWithTimeout(url, opts = {}, ms = 15000) {
   const ctrl = new AbortController();

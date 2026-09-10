@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Package, ShoppingCart, Users, BarChart3,
   Plus, Trash2, Pencil, X, Search, Store, Globe,
   TrendingUp, AlertTriangle, Loader2, ChevronDown, ChevronRight, ChevronLeft, ChevronUp,
-  ArrowDownToLine, ArrowUpFromLine, Barcode, ImagePlus, ImageOff, Check, Printer, RotateCcw, KeyRound, LogOut, Eye, EyeOff, Filter, Target, History, ShieldCheck, XCircle, Wallet, PackageCheck, Truck, Clock, Bell, FileSpreadsheet, FileText, MapPin, UserCircle, Crown
+  ArrowDownToLine, ArrowUpFromLine, Barcode, ImagePlus, ImageOff, Check, Printer, RotateCcw, KeyRound, LogOut, Eye, EyeOff, Filter, Target, History, ShieldCheck, XCircle, Wallet, PackageCheck, Truck, Clock, Bell, FileSpreadsheet, FileText, MapPin, UserCircle, Crown, Link2 as LinkIcon
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -14,7 +14,7 @@ import { ghn as ghnApi } from "./lib/ghn.js";
 // Nội dung mặc định cho web (dùng làm điểm khởi đầu khi chưa chỉnh trong "Cấu hình web").
 import { PAGES as WEB_DEFAULT_PAGES, MENU as WEB_DEFAULT_MENU, allWebCategories as webAllCategories, webCategoryGroups, HOME_SECTIONS as WEB_DEFAULT_HOME_SECTIONS, HOME_SECTION_SORTS, HOME_SECTION_LAYOUTS, LANDINGS as WEB_DEFAULT_LANDINGS } from "./storefront/config.js";
 import { GROUP_ICON_NAMES, groupIcon as webGroupIcon } from "./storefront/components/groupIcons.js";
-import { uploadProductImage, rehostExternalImage } from "./lib/mediaUpload.js";
+import { uploadProductImage, rehostExternalImage, toDirectImageUrl } from "./lib/mediaUpload.js";
 
 // Xuất 1 hoặc nhiều bảng dữ liệu ra 1 file Excel (.xlsx), mỗi bảng là 1 sheet riêng.
 function exportExcel(filename, sheets) {
@@ -744,6 +744,8 @@ function WebDescEditor({ value, onChange, rows = 6, bg }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [drag, setDrag] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [linkVal, setLinkVal] = useState("");
 
   const insert = (snippet) => {
     const ta = taRef.current;
@@ -842,6 +844,15 @@ function WebDescEditor({ value, onChange, rows = 6, bg }) {
     await addFiles(ev.dataTransfer.files);
   };
 
+  // Chèn ảnh bằng link ngoài (web khác / Google Drive) — KHÔNG tải về kho.
+  const addExternalLink = () => {
+    const u = toDirectImageUrl(linkVal);
+    if (!u) { setMsg("Link phải bắt đầu bằng https://"); return; }
+    insert(`![](${u})`);
+    setLinkVal(""); setLinkOpen(false);
+    setMsg(/drive\.google\.com/.test(u) ? "Đã chèn link Google Drive (ảnh phải ở chế độ 'Bất kỳ ai có link')." : "Đã chèn link ảnh ngoài.");
+  };
+
   return (
     <div>
       <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -849,12 +860,28 @@ function WebDescEditor({ value, onChange, rows = 6, bg }) {
           className="text-xs px-2 py-1 rounded-sm border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy ? 0.5 : 1 }}>
           <ImagePlus size={13} /> Chèn ảnh
         </button>
+        <button type="button" onClick={() => { setLinkOpen((v) => !v); setMsg(""); }} disabled={busy}
+          className="text-xs px-2 py-1 rounded-sm border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy ? 0.5 : 1 }}>
+          <LinkIcon size={13} /> Link ảnh ngoài
+        </button>
         <span className="text-[11px] opacity-55">Dán ảnh (Ctrl+V) · kéo–thả file · dán cả bài từ web khác</span>
         {busy && <span className="text-[11px] inline-flex items-center gap-1" style={{ color: BLUE }}><Loader2 size={12} className="animate-spin" /> {msg}</span>}
-        {!busy && msg && <span className="text-[11px]" style={{ color: /Lỗi|không/i.test(msg) ? RUST : BLUE }}>{msg}</span>}
+        {!busy && msg && <span className="text-[11px]" style={{ color: /Lỗi|không|phải/i.test(msg) ? RUST : BLUE }}>{msg}</span>}
         <input ref={fileRef} type="file" accept="image/*" multiple className="hidden"
           onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
       </div>
+      {linkOpen && (
+        <div className="mb-1">
+          <div className="flex gap-2">
+            <input value={linkVal} onChange={(e) => setLinkVal(e.target.value)} autoFocus
+              placeholder="https://.../anh.jpg  hoặc  link Google Drive"
+              className="flex-1 border rounded-sm px-2 py-1 text-sm" style={{ borderColor: LINE }}
+              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addExternalLink())} />
+            <button type="button" onClick={addExternalLink} className="px-3 py-1 rounded-sm text-white text-sm" style={{ background: INK }}>Chèn</button>
+          </div>
+          <div className="text-[11px] opacity-55 mt-1">Ảnh giữ nguyên link gốc, không tải về kho. Google Drive: chia sẻ ở chế độ “Bất kỳ ai có đường liên kết”.</div>
+        </div>
+      )}
       <div className="relative" onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={onDrop}>
         <textarea
           ref={taRef} rows={rows} className={inputCls}
@@ -902,17 +929,26 @@ function WebImageGrid({ images, onChange, max = 10 }) {
     } catch (e) { setMsg("Lỗi: " + (e.message || e)); }
     finally { setBusy(false); }
   };
+  // "Tải về kho": lưu ảnh vào Supabase (ẩn nguồn gốc, không phụ thuộc web ngoài).
   const addUrl = async () => {
-    const u = urlVal.trim();
-    if (!/^https?:\/\//i.test(u)) { setMsg("Link phải bắt đầu https://"); return; }
+    const u = toDirectImageUrl(urlVal);
+    if (!u) { setMsg("Link phải bắt đầu bằng https://"); return; }
     setBusy(true); setMsg("Đang tải ảnh về kho…"); setUrlOpen(false); setUrlVal("");
     try {
       let final = u;
-      try { final = await rehostExternalImage(u); } catch { setMsg("Không tải về được — dùng tạm link gốc."); }
+      try { final = await rehostExternalImage(u); } catch { setMsg("Không tải về được — giữ tạm link gốc."); }
       onChange([...list, final].slice(0, max));
       if (final !== u) setMsg("");
     } catch (e) { setMsg("Lỗi: " + (e.message || e)); }
     finally { setBusy(false); }
+  };
+  // "Giữ link ngoài": nhúng thẳng link (web khác / Google Drive), KHÔNG tốn dung lượng kho.
+  const addUrlDirect = () => {
+    const u = toDirectImageUrl(urlVal);
+    if (!u) { setMsg("Link phải bắt đầu bằng https://"); return; }
+    onChange([...list, u].slice(0, max));
+    setUrlOpen(false); setUrlVal("");
+    setMsg(/drive\.google\.com/.test(u) ? "Đã thêm link Google Drive (ảnh phải ở chế độ 'Bất kỳ ai có link')." : "Đã thêm link ảnh ngoài.");
   };
   const move = (i, d) => { const j = i + d; if (j < 0 || j >= list.length) return; const n = [...list]; [n[i], n[j]] = [n[j], n[i]]; onChange(n); };
   const del = (i) => onChange(list.filter((_, k) => k !== i));
@@ -925,17 +961,27 @@ function WebImageGrid({ images, onChange, max = 10 }) {
           className="px-2 py-1 rounded-sm border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy || !room() ? 0.5 : 1 }}>
           <ImagePlus size={13} /> Thêm ảnh
         </button>
-        <button type="button" disabled={busy || !room()} onClick={() => setUrlOpen((v) => !v)}
-          className="px-2 py-1 rounded-sm border" style={{ borderColor: LINE, color: INK, opacity: busy || !room() ? 0.5 : 1 }}>Từ URL</button>
+        <button type="button" disabled={busy || !room()} onClick={() => { setUrlOpen((v) => !v); setMsg(""); }}
+          className="px-2 py-1 rounded-sm border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy || !room() ? 0.5 : 1 }}>
+          <LinkIcon size={13} /> Từ URL / Drive
+        </button>
         {busy && <span className="inline-flex items-center gap-1" style={{ color: BLUE }}><Loader2 size={12} className="animate-spin" /> {msg}</span>}
-        {!busy && msg && <span style={{ color: /Lỗi|không/i.test(msg) ? RUST : BLUE }}>{msg}</span>}
+        {!busy && msg && <span style={{ color: /Lỗi|không|phải/i.test(msg) ? RUST : BLUE }}>{msg}</span>}
         <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
       </div>
       {urlOpen && (
-        <div className="flex gap-2 mb-2">
-          <input value={urlVal} onChange={(e) => setUrlVal(e.target.value)} placeholder="https://.../anh.jpg"
-            className="flex-1 border rounded-sm px-2 py-1 text-sm" style={{ borderColor: LINE }} onKeyDown={(e) => e.key === "Enter" && addUrl()} />
-          <button type="button" onClick={addUrl} className="px-3 py-1 rounded-sm text-white text-sm" style={{ background: INK }}>Thêm</button>
+        <div className="mb-2">
+          <div className="flex gap-2 flex-wrap">
+            <input value={urlVal} onChange={(e) => setUrlVal(e.target.value)} autoFocus
+              placeholder="https://.../anh.jpg  hoặc  link Google Drive"
+              className="flex-1 min-w-[180px] border rounded-sm px-2 py-1 text-sm" style={{ borderColor: LINE }}
+              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addUrlDirect())} />
+            <button type="button" onClick={addUrl} className="px-3 py-1 rounded-sm border text-sm" style={{ borderColor: LINE, color: INK }}>Tải về kho</button>
+            <button type="button" onClick={addUrlDirect} className="px-3 py-1 rounded-sm text-white text-sm" style={{ background: INK }}>Giữ link ngoài</button>
+          </div>
+          <div className="text-[11px] opacity-55 mt-1">
+            <b>Giữ link ngoài</b>: không tốn dung lượng kho, nhưng ảnh phụ thuộc web nguồn. Google Drive phải chia sẻ “Bất kỳ ai có đường liên kết”.
+          </div>
         </div>
       )}
       <div
