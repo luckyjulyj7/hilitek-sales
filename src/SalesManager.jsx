@@ -5095,14 +5095,15 @@ function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, a
               <Field label="Số bản / kiện"><input type="number" min={1} max={20} className={inputCls} style={{ borderColor: LINE }} value={printOpts.copies} onChange={(e) => setPrintOpts((o) => ({ ...o, copies: Math.max(1, Math.min(20, Number(e.target.value) || 1)) }))} /></Field>
               <Field label="Khổ giấy">
                 <select className={inputCls} style={{ borderColor: LINE }} value={printOpts.paper} onChange={(e) => setPrintOpts((o) => ({ ...o, paper: e.target.value }))}>
-                  <option value="A4">A4 — 2 nhãn/hàng</option>
-                  <option value="A5">A5 — 1 nhãn to</option>
+                  <option value="A4">A4 ngang — 2 nhãn / trang</option>
+                  <option value="A5">A5 ngang — 1 nhãn to</option>
                 </select>
               </Field>
             </div>
             <p className="text-xs opacity-55">
-              Tổng {printOpts.boxes * printOpts.copies} nhãn.
+              In <b>nằm ngang</b> · tổng {printOpts.boxes * printOpts.copies} nhãn ({printOpts.paper === "A5" ? 1 : 2}/trang).
               {printOpts.boxes > 1 ? ` Mỗi kiện đánh số 1/${printOpts.boxes} … ${printOpts.boxes}/${printOpts.boxes}.` : ""}
+              {" "}Trong hộp thoại in, chọn <b>Layout: Landscape</b> nếu trình duyệt chưa tự nhận.
             </p>
             <button onClick={doPrint} className="w-full py-2.5 rounded-sm text-white text-sm" style={{ background: INK }}>🖨 In</button>
           </div>
@@ -8002,11 +8003,13 @@ function buildParcelLabelHTML(label, opts = {}) {
   const copies = Math.max(1, Math.min(20, Math.floor(Number(opts.copies) || 2)));
   const boxes = Math.max(1, Math.min(50, Math.floor(Number(opts.boxes) || 1)));
   const paper = opts.paper === "A5" ? "A5" : "A4";
+  // Luôn in NẰM NGANG (landscape) — nhãn to, 2 nhãn/hàng trên A4 giống mẫu nhà xe.
   const perRow = paper === "A5" ? 1 : 2;
   const pageCss = paper === "A5"
     ? `@page { size: A5 landscape; margin: 6mm; }`
-    : `@page { size: A4 portrait; margin: 8mm; }`;
-  const base = paper === "A5" ? 14 : 12;
+    : `@page { size: A4 landscape; margin: 8mm; }`;
+  const base = paper === "A5" ? 15 : 13;
+  const minH = paper === "A5" ? 120 : 178; // mm — nhãn chiếm gần hết chiều cao trang
 
   const e = (s) => escapeHtml(String(s == null ? "" : s));
   const rcvContact = [label.recipientPhone, label.recipientName].filter(Boolean).join(" - ");
@@ -8040,18 +8043,19 @@ function buildParcelLabelHTML(label, opts = {}) {
       * { box-sizing: border-box; }
       body { font-family: 'Times New Roman', Times, serif; color:#000; margin:0; font-size:${base}px; }
       ${pageCss}
-      .row { display:flex; gap:6mm; margin-bottom:6mm; page-break-inside:avoid; }
-      .lbl { flex:1; border:2px solid #000; }
-      .hd { background:#19d3ec; text-align:center; font-weight:bold; font-size:${base + 3}px; padding:4px 6px; border-bottom:2px solid #000; position:relative; }
-      .hd .kien { position:absolute; right:6px; top:3px; font-size:${base}px; background:#000; color:#fff; padding:1px 6px; }
-      table.bx { width:100%; border-collapse:collapse; }
-      .bx td { border:1px solid #000; padding:6px 8px; vertical-align:top; }
-      .bx td.k { width:26%; white-space:nowrap; }
+      .row { display:flex; gap:6mm; page-break-inside:avoid; page-break-after:always; }
+      .row:last-child { page-break-after:auto; }
+      .lbl { flex:1; border:2px solid #000; min-height:${minH}mm; display:flex; flex-direction:column; }
+      .hd { background:#19d3ec; text-align:center; font-weight:bold; font-size:${base + 4}px; padding:6px; border-bottom:2px solid #000; position:relative; }
+      .hd .kien { position:absolute; right:6px; top:5px; font-size:${base}px; background:#000; color:#fff; padding:2px 7px; }
+      table.bx { width:100%; height:100%; border-collapse:collapse; flex:1; }
+      .bx td { border:1px solid #000; padding:9px 11px; vertical-align:middle; line-height:1.35; }
+      .bx td.k { width:24%; white-space:nowrap; }
       .bx td.v { font-size:${base + 1}px; }
-      .bx td.v.big { font-size:${base + 5}px; }
+      .bx td.v.big { font-size:${base + 7}px; }
       .bx td.b { font-weight:bold; }
-      .bx td.sp { height:14px; border-left:1px solid #000; border-right:1px solid #000; border-top:none; border-bottom:none; }
-      .bx td.note { text-align:center; font-weight:bold; font-size:${base + 4}px; letter-spacing:1px; padding:8px; }
+      .bx td.sp { height:34px; border-left:1px solid #000; border-right:1px solid #000; border-top:none; border-bottom:none; }
+      .bx td.note { text-align:center; font-weight:bold; font-size:${base + 6}px; letter-spacing:1px; padding:12px; }
       @media print { body { -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
     </style>
   </head><body>${rows.join("")}</body></html>`;
