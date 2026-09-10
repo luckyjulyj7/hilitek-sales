@@ -11918,9 +11918,15 @@ function WebOrders({ orders, onOpenOrder }) {
 }
 
 const WEB_PAGE_KEYS = [
-  ["huong-dan-thanh-toan", "Hướng dẫn thanh toán"],
-  ["chinh-sach-giao-hang", "Chính sách giao hàng"],
+  ["chinh-sach-bao-mat", "Chính sách bảo mật"],
   ["chinh-sach-bao-hanh", "Chính sách bảo hành"],
+  ["chinh-sach-giao-hang", "Chính sách giao hàng - kiểm hàng"],
+  ["huong-dan-thanh-toan", "Chính sách thanh toán (Hướng dẫn thanh toán)"],
+  ["chinh-sach-doi-tra", "Chính sách đổi trả - hoàn tiền"],
+  ["quyen-nghia-vu", "Quyền và nghĩa vụ của người mua và người bán"],
+  ["dieu-khoan-website", "Điều khoản và điều kiện của website"],
+  ["chinh-sach-kiem-hang", "Chính sách kiểm hàng"],
+  ["chinh-sach-van-chuyen", "Chính sách về vận chuyển và giao nhận"],
 ];
 function webPageToText(page) {
   if (!page || !Array.isArray(page.sections)) return "";

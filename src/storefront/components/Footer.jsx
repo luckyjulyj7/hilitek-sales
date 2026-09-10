@@ -1,6 +1,6 @@
 import React from "react";
 import { Phone, MessageCircle, Mail, MapPin, Clock } from "lucide-react";
-import { SITE, MENU, FEATURES } from "../config.js";
+import { SITE, MENU, FEATURES, POLICY_LINKS } from "../config.js";
 import { href } from "../router.js";
 import Logo from "./Logo.jsx";
 import SocialLinks from "./SocialLinks.jsx";
@@ -13,7 +13,7 @@ export default function Footer({ navigate }) {
 
   return (
     <footer className="mt-16 bg-ink text-white/70 font-sans">
-      <div className="mx-auto max-w-[1500px] px-4 py-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1.2fr_1.4fr]">
+      <div className="mx-auto max-w-[1500px] px-4 py-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.3fr_0.9fr_0.9fr_1.2fr_1.1fr_1.3fr]">
         <div>
           <Logo size={34} textClass="text-xl text-white" className="text-white" />
           <p className="mt-3 text-[14px] leading-relaxed">{SITE.intro}</p>
@@ -45,10 +45,19 @@ export default function Footer({ navigate }) {
           <h4 className="font-display text-[14px] font-semibold uppercase tracking-wide text-white mb-3">Hỗ trợ</h4>
           <ul className="space-y-2 text-[14px]">
             <li><a href="#/tra-cuu-don-hang" onClick={go("/tra-cuu-don-hang")} className="hover:text-white">Tra cứu đơn hàng</a></li>
-            <li><a href="#/huong-dan-thanh-toan" onClick={go("/huong-dan-thanh-toan")} className="hover:text-white">Hướng dẫn thanh toán</a></li>
-            <li><a href="#/chinh-sach-giao-hang" onClick={go("/chinh-sach-giao-hang")} className="hover:text-white">Chính sách giao hàng</a></li>
-            <li><a href="#/bao-hanh" onClick={go("/bao-hanh")} className="hover:text-white">Chính sách bảo hành</a></li>
+            <li><a href="#/xay-dung-cau-hinh" onClick={go("/xay-dung-cau-hinh")} className="hover:text-white">Xây dựng cấu hình PC</a></li>
             <li><a href="#/lien-he" onClick={go("/lien-he")} className="hover:text-white">Liên hệ &amp; địa chỉ</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 className="font-display text-[14px] font-semibold uppercase tracking-wide text-white mb-3">Chính sách</h4>
+          <ul className="space-y-2 text-[14px]">
+            {POLICY_LINKS.map((p) => (
+              <li key={p.to}>
+                <a href={"#" + p.to} onClick={go(p.to)} className="hover:text-white">{p.label}</a>
+              </li>
+            ))}
           </ul>
         </div>
 

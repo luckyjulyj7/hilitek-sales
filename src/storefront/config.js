@@ -423,8 +423,8 @@ export const CHECKOUT = {
   // Dòng checkbox điều khoản (bắt buộc tick mới đặt được hàng).
   termsLabel:
     "Tôi đã đọc và đồng ý với Điều khoản & Điều kiện bán hàng của website Hilitek. Bấm “Đặt hàng” đồng nghĩa với việc đồng ý các điều khoản này.",
-  termsLinkText: "Chính sách & Điều khoản bán hàng",
-  termsLinkTo: "/chinh-sach",
+  termsLinkText: "Điều khoản và điều kiện của website",
+  termsLinkTo: "/dieu-khoan-website",
   // Các dòng ghi chú dưới form.
   notes: [
     "Dữ liệu cá nhân của Quý khách chỉ dùng để xử lý đơn hàng và hỗ trợ trong quá trình mua hàng, theo Chính sách bảo mật của Hilitek.",
@@ -570,4 +570,286 @@ export const PAGES = {
       },
     ],
   },
+
+  "chinh-sach-bao-mat": {
+    title: "Chính sách bảo mật",
+    intro:
+      `${SITE.legalName} cam kết bảo mật thông tin cá nhân của Quý khách khi mua sắm tại website ${SITE.name}. Chính sách này giải thích cách chúng tôi thu thập, sử dụng và bảo vệ thông tin của Quý khách.`,
+    sections: [
+      {
+        heading: "1. Mục đích thu thập thông tin",
+        bullets: [
+          "Xử lý đơn hàng, giao hàng và xuất hoá đơn.",
+          "Liên hệ xác nhận đơn, hỗ trợ tư vấn, chăm sóc sau bán và bảo hành.",
+          "Thông báo chương trình khuyến mãi, sản phẩm mới (khi Quý khách đồng ý nhận).",
+          "Nâng cao chất lượng dịch vụ và trải nghiệm mua sắm.",
+        ],
+      },
+      {
+        heading: "2. Phạm vi thông tin thu thập",
+        bullets: [
+          "Họ tên, số điện thoại, email, địa chỉ giao hàng.",
+          "Thông tin đơn hàng: sản phẩm, số lượng, giá trị, phương thức thanh toán.",
+          "Thông tin xuất hoá đơn (nếu Quý khách yêu cầu): tên công ty, mã số thuế, địa chỉ.",
+        ],
+      },
+      {
+        heading: "3. Thời gian lưu trữ",
+        body: "Thông tin được lưu trữ cho đến khi Quý khách yêu cầu xoá, hoặc theo thời hạn lưu trữ chứng từ kế toán theo quy định pháp luật.",
+      },
+      {
+        heading: "4. Đối tượng được tiếp cận thông tin",
+        bullets: [
+          "Nhân viên phụ trách xử lý đơn hàng, giao hàng, bảo hành, kế toán của Hilitek.",
+          "Đơn vị vận chuyển (chỉ tên, số điện thoại, địa chỉ nhận hàng để giao hàng).",
+          "Cơ quan nhà nước có thẩm quyền khi có yêu cầu hợp pháp.",
+        ],
+      },
+      {
+        heading: "5. Cam kết bảo mật",
+        bullets: [
+          "Không mua bán, trao đổi thông tin cá nhân của Quý khách với bên thứ ba vì mục đích thương mại.",
+          "Áp dụng các biện pháp kỹ thuật và quản lý phù hợp để bảo vệ dữ liệu.",
+          "Trường hợp máy chủ lưu trữ bị tấn công dẫn tới mất dữ liệu, Hilitek sẽ thông báo và phối hợp cơ quan chức năng điều tra, xử lý.",
+        ],
+      },
+      {
+        heading: "6. Quyền của khách hàng",
+        body:
+          `Quý khách có quyền yêu cầu xem, cập nhật hoặc xoá thông tin cá nhân của mình. Vui lòng liên hệ hotline ${SITE.phone} hoặc email ${SITE.email} để được hỗ trợ.`,
+      },
+    ],
+  },
+
+  "chinh-sach-doi-tra": {
+    title: "Chính sách đổi trả - hoàn tiền",
+    intro:
+      "Hilitek hỗ trợ đổi trả sản phẩm trong trường hợp lỗi do nhà sản xuất hoặc giao sai đơn. Vui lòng kiểm tra kỹ điều kiện bên dưới trước khi yêu cầu.",
+    sections: [
+      {
+        heading: "1. Thời gian đổi trả",
+        bullets: [
+          "Đổi mới trong 07 ngày kể từ ngày nhận hàng nếu sản phẩm bị lỗi kỹ thuật do nhà sản xuất.",
+          "Đổi trả trong 24 giờ nếu giao sai mẫu, sai cấu hình, thiếu phụ kiện, thiếu số lượng so với đơn.",
+        ],
+      },
+      {
+        heading: "2. Điều kiện đổi trả",
+        bullets: [
+          "Sản phẩm còn nguyên hộp, đầy đủ phụ kiện, quà tặng đi kèm (nếu có).",
+          "Tem niêm phong, tem bảo hành, tem của Hilitek còn nguyên vẹn, không rách/tẩy xoá.",
+          "Sản phẩm không trầy xước, nứt vỡ, cấn móp, vào nước do người dùng.",
+          "Có thông tin đơn hàng (mã đơn / số điện thoại đặt hàng) để đối chiếu.",
+        ],
+      },
+      {
+        heading: "3. Trường hợp KHÔNG áp dụng đổi trả",
+        bullets: [
+          "Sản phẩm đã qua sử dụng, cài đặt phần mềm, kích hoạt bản quyền (Windows, Office…).",
+          "Hư hỏng do lỗi người dùng, lắp đặt sai, dùng nguồn điện không ổn định.",
+          "Không còn hộp / thiếu phụ kiện / mất tem.",
+          "Sản phẩm giảm giá thanh lý (ghi rõ 'không đổi trả' khi bán).",
+        ],
+      },
+      {
+        heading: "4. Cách thức đổi trả",
+        bullets: [
+          `Liên hệ hotline ${SITE.phone} hoặc Zalo ${SITE.zalo} để thông báo và được hướng dẫn.`,
+          `Mang sản phẩm đến trực tiếp cửa hàng (${SITE.address}) hoặc gửi về theo hướng dẫn của nhân viên.`,
+          "Hilitek kiểm tra và phản hồi trong vòng 1–3 ngày làm việc.",
+        ],
+      },
+      {
+        heading: "5. Hoàn tiền",
+        bullets: [
+          "Áp dụng khi Hilitek không còn sản phẩm để đổi hoặc theo thoả thuận với Quý khách.",
+          "Hình thức: chuyển khoản về đúng tài khoản người mua hoặc hoàn tiền mặt tại cửa hàng.",
+          "Thời gian: 3–7 ngày làm việc kể từ khi hai bên thống nhất.",
+          "Phí vận chuyển đổi trả: Hilitek chịu nếu lỗi do Hilitek; Quý khách chịu nếu đổi trả vì lý do cá nhân.",
+        ],
+      },
+    ],
+  },
+
+  "quyen-nghia-vu": {
+    title: "Quyền và nghĩa vụ của người mua và người bán",
+    intro:
+      `Nội dung dưới đây quy định quyền và nghĩa vụ của Quý khách (người mua) và ${SITE.legalName} (người bán) khi giao dịch qua website ${SITE.name}.`,
+    sections: [
+      {
+        heading: "1. Quyền của người mua",
+        bullets: [
+          "Được cung cấp đầy đủ thông tin về sản phẩm: tên, xuất xứ, tình trạng, giá, chính sách bảo hành.",
+          "Được kiểm tra hàng (đồng kiểm) trước khi thanh toán / nhận hàng.",
+          "Được bảo hành, đổi trả theo đúng chính sách đã công bố.",
+          "Được bảo mật thông tin cá nhân, khiếu nại và yêu cầu giải quyết khi quyền lợi bị ảnh hưởng.",
+        ],
+      },
+      {
+        heading: "2. Nghĩa vụ của người mua",
+        bullets: [
+          "Cung cấp thông tin đặt hàng (họ tên, số điện thoại, địa chỉ) chính xác.",
+          "Thanh toán đầy đủ, đúng hạn theo phương thức đã chọn.",
+          "Kiểm tra hàng khi nhận và phản hồi trong thời hạn quy định nếu có sai sót.",
+          "Không sử dụng website vào mục đích gian lận, phá hoại hoặc vi phạm pháp luật.",
+        ],
+      },
+      {
+        heading: "3. Quyền của người bán",
+        bullets: [
+          "Từ chối hoặc huỷ đơn hàng có dấu hiệu gian lận, thông tin không hợp lệ, hoặc vượt khả năng cung ứng.",
+          "Yêu cầu người mua đặt cọc với đơn giá trị lớn / đơn đặt trước / đơn giao tỉnh.",
+          "Thay đổi giá bán, chương trình khuyến mãi theo từng thời điểm (áp dụng cho đơn phát sinh sau thời điểm thay đổi).",
+        ],
+      },
+      {
+        heading: "4. Nghĩa vụ của người bán",
+        bullets: [
+          "Giao đúng sản phẩm, đúng số lượng, đúng thời gian đã cam kết.",
+          "Cung cấp hoá đơn, phiếu bảo hành và hỗ trợ kỹ thuật theo chính sách.",
+          "Tiếp nhận và giải quyết khiếu nại của người mua trong thời gian hợp lý.",
+          "Bảo mật thông tin người mua theo Chính sách bảo mật.",
+        ],
+      },
+      {
+        heading: "5. Giải quyết tranh chấp",
+        body:
+          `Hai bên ưu tiên thương lượng, hoà giải trên tinh thần thiện chí. Trường hợp không thống nhất được, tranh chấp sẽ được giải quyết tại cơ quan có thẩm quyền theo quy định pháp luật Việt Nam. Mọi phản ánh vui lòng gửi về hotline ${SITE.phone} hoặc email ${SITE.email}.`,
+      },
+    ],
+  },
+
+  "dieu-khoan-website": {
+    title: "Điều khoản và điều kiện của website",
+    intro:
+      `Khi truy cập và mua hàng tại ${SITE.name}, Quý khách đồng ý với các điều khoản dưới đây. ${SITE.legalName} có thể cập nhật điều khoản theo từng thời điểm và sẽ công bố tại trang này.`,
+    sections: [
+      {
+        heading: "1. Nguyên tắc chung",
+        bullets: [
+          "Website hỗ trợ khách hàng tìm hiểu sản phẩm và đặt mua trực tuyến.",
+          "Quý khách phải đủ năng lực hành vi dân sự theo quy định pháp luật để giao dịch.",
+          "Thông tin sản phẩm, giá bán, khuyến mãi có thể thay đổi mà không cần báo trước; đơn hàng được xác nhận qua điện thoại/Zalo trước khi giao.",
+        ],
+      },
+      {
+        heading: "2. Tài khoản & thông tin đặt hàng",
+        bullets: [
+          "Quý khách chịu trách nhiệm về tính chính xác của thông tin cung cấp khi đặt hàng.",
+          "Hilitek có quyền từ chối/huỷ đơn nếu phát hiện thông tin sai lệch hoặc dấu hiệu gian lận.",
+        ],
+      },
+      {
+        heading: "3. Giá cả & thanh toán",
+        body: "Giá niêm yết trên website đã bao gồm VAT (trừ khi ghi chú khác). Các hình thức thanh toán và hướng dẫn chi tiết xem tại trang Chính sách thanh toán.",
+      },
+      {
+        heading: "4. Quyền sở hữu trí tuệ",
+        body: `Toàn bộ nội dung, hình ảnh, logo, thiết kế trên website thuộc sở hữu của ${SITE.legalName} hoặc đối tác. Không sao chép, sử dụng lại cho mục đích thương mại khi chưa được đồng ý bằng văn bản.`,
+      },
+      {
+        heading: "5. Giới hạn trách nhiệm",
+        bullets: [
+          "Hilitek không chịu trách nhiệm với thiệt hại gián tiếp phát sinh ngoài giá trị đơn hàng.",
+          "Hilitek không chịu trách nhiệm với gián đoạn do sự cố kỹ thuật, đường truyền, hoặc nguyên nhân bất khả kháng.",
+        ],
+      },
+      {
+        heading: "6. Luật áp dụng",
+        body: "Các điều khoản này được điều chỉnh bởi pháp luật Việt Nam. Tranh chấp (nếu có) được giải quyết theo quy định pháp luật hiện hành.",
+      },
+    ],
+  },
+
+  "chinh-sach-kiem-hang": {
+    title: "Chính sách kiểm hàng",
+    intro:
+      "Hilitek khuyến khích Quý khách kiểm tra kỹ hàng hoá trước khi thanh toán hoặc ký nhận, nhằm đảm bảo quyền lợi của cả hai bên.",
+    sections: [
+      {
+        heading: "1. Quý khách được đồng kiểm khi nhận hàng",
+        bullets: [
+          "Mở kiện hàng, kiểm tra ngoại quan sản phẩm, hộp, tem niêm phong.",
+          "Đối chiếu tên sản phẩm, cấu hình, số lượng, phụ kiện, quà tặng so với đơn hàng.",
+          "Đối chiếu số serial trên thân máy / tem với thông tin trên phiếu (nếu có).",
+        ],
+      },
+      {
+        heading: "2. Lưu ý khi kiểm hàng",
+        bullets: [
+          "Với sản phẩm còn niêm phong hãng, việc bật nguồn/chạy thử chỉ thực hiện tại cửa hàng hoặc theo thoả thuận, tránh làm mất điều kiện đổi trả.",
+          "Không tự ý bóc tem bảo hành, tem chống giả trước khi hoàn tất kiểm tra.",
+        ],
+      },
+      {
+        heading: "3. Nếu phát hiện sai lệch / hư hỏng",
+        bullets: [
+          "Từ chối nhận hàng hoặc ghi chú rõ tình trạng với nhân viên giao hàng.",
+          `Chụp ảnh/quay video hiện trạng và liên hệ ngay hotline ${SITE.phone} hoặc Zalo ${SITE.zalo}.`,
+          "Hilitek sẽ đổi mới, bổ sung hoặc thu hồi xử lý trong thời gian sớm nhất.",
+        ],
+      },
+      {
+        heading: "4. Sau khi ký nhận",
+        body: "Sau khi Quý khách đã đồng kiểm và ký nhận (hoặc thanh toán đối với đơn COD), các khiếu nại về ngoại quan, thiếu phụ kiện sẽ được xem xét theo Chính sách đổi trả và Chính sách bảo hành.",
+      },
+    ],
+  },
+
+  "chinh-sach-van-chuyen": {
+    title: "Chính sách về vận chuyển và giao nhận",
+    intro:
+      "Hilitek giao hàng toàn quốc qua đội giao hàng của cửa hàng và các đơn vị vận chuyển uy tín. Đơn hàng luôn được xác nhận qua điện thoại/Zalo trước khi giao.",
+    sections: [
+      {
+        heading: "1. Khu vực & phương thức giao hàng",
+        bullets: [
+          "Nội thành TP.HCM: đội giao hàng của Hilitek, giao trong ngày hoặc trong 24 giờ.",
+          "Ngoại thành & các tỉnh: qua đơn vị vận chuyển (Viettel Post, GHN, GHTK, nhà xe…).",
+          "Giao hoả tốc nội thành (Grab, Ahamove…) theo yêu cầu, phí do Quý khách chi trả.",
+        ],
+      },
+      {
+        heading: "2. Phí vận chuyển",
+        bullets: [
+          "Miễn phí giao hàng nội thành TP.HCM cho đơn từ 500.000đ (theo tuyến giao của cửa hàng).",
+          "Ngoại thành / đi tỉnh: phí theo bảng giá của đơn vị vận chuyển và khối lượng/kích thước kiện hàng.",
+          "Với đơn đi tỉnh, Quý khách chuyển khoản trước tiền hàng; phí ship thu khi nhận (hoặc theo thoả thuận).",
+        ],
+      },
+      {
+        heading: "3. Thời gian giao hàng dự kiến",
+        bullets: [
+          "Nội thành TP.HCM: trong ngày hoặc 24 giờ kể từ khi xác nhận đơn.",
+          "Các tỉnh: 2–5 ngày làm việc tuỳ khu vực và đơn vị vận chuyển.",
+          "Thời gian có thể thay đổi vào dịp lễ, Tết, cao điểm hoặc do thời tiết, sự cố vận chuyển.",
+        ],
+      },
+      {
+        heading: "4. Đóng gói & trách nhiệm khi vận chuyển",
+        bullets: [
+          "Hàng hoá được đóng gói chống sốc phù hợp với từng loại sản phẩm.",
+          "Hư hỏng do vận chuyển: Quý khách từ chối nhận hoặc ghi nhận hiện trạng và liên hệ Hilitek để được đổi mới.",
+          `Mọi thắc mắc về vận chuyển vui lòng liên hệ hotline ${SITE.phone}.`,
+        ],
+      },
+    ],
+  },
 };
+
+/**
+ * Danh sách link chính sách hiện ở chân trang (cột "Chính sách").
+ * Thêm/bớt/sửa nội dung từng trang trong app quản lý: Website → Cấu hình web → "Trang chính sách".
+ * `to` khớp key trong PAGES ở trên (route tự map).
+ */
+export const POLICY_LINKS = [
+  { label: "Chính sách bảo mật", to: "/chinh-sach-bao-mat" },
+  { label: "Chính sách bảo hành", to: "/chinh-sach-bao-hanh" },
+  { label: "Chính sách giao hàng - kiểm hàng", to: "/chinh-sach-giao-hang" },
+  { label: "Chính sách thanh toán", to: "/huong-dan-thanh-toan" },
+  { label: "Chính sách đổi trả - hoàn tiền", to: "/chinh-sach-doi-tra" },
+  { label: "Quyền và nghĩa vụ của người mua và người bán", to: "/quyen-nghia-vu" },
+  { label: "Điều khoản và điều kiện của website", to: "/dieu-khoan-website" },
+  { label: "Chính sách kiểm hàng", to: "/chinh-sach-kiem-hang" },
+  { label: "Chính sách về vận chuyển và giao nhận", to: "/chinh-sach-van-chuyen" },
+];

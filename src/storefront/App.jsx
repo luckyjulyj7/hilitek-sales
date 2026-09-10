@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useRoute, match } from "./router.js";
 import { fetchCatalog } from "./lib/api.js";
+import { PAGES } from "./config.js";
 import { CatalogCtx } from "./catalogContext.js";
 import Header from "./components/Header.jsx";
 import Footer from "./components/Footer.jsx";
@@ -59,6 +60,9 @@ export default function App() {
     page = <PolicyPage pageKey="chinh-sach-giao-hang" />;
   } else if (route.path === "/chinh-sach-bao-hanh") {
     page = <PolicyPage pageKey="chinh-sach-bao-hanh" />;
+  } else if (route.path.startsWith("/") && PAGES[route.path.slice(1)]) {
+    // Mọi trang chính sách khác trong PAGES (config.js) tự map route theo key — không cần khai từng cái.
+    page = <PolicyPage pageKey={route.path.slice(1)} />;
   } else if (route.path === "/chinh-sach") {
     page = <Policy />;
   } else if (route.path === "/lien-he") {
