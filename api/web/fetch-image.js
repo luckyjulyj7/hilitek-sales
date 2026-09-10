@@ -24,10 +24,16 @@ export default handler(async (req, res) => {
   let origin = "";
   try { origin = new URL(src).origin; } catch { /* noop */ }
 
-  const up = await fetch(src, {
-    headers: { "User-Agent": "Mozilla/5.0 (compatible; HilitekBot/1.0)", Referer: origin || src },
-    redirect: "follow",
-  });
+  let up;
+  try {
+    up = await fetch(src, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; HilitekBot/1.0)", Referer: origin || src },
+      redirect: "follow",
+      signal: AbortSignal.timeout(20000), // không chờ quá 20s cho trang nguồn
+    });
+  } catch (e) {
+    return json(res, 504, { error: "Trang nguồn tải quá lâu hoặc không phản hồi." });
+  }
   if (!up.ok) return json(res, 502, { error: `Trang nguồn trả mã ${up.status}.` });
 
   const ct = (up.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();

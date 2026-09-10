@@ -784,20 +784,37 @@ function WebDescEditor({ value, onChange, rows = 6, bg }) {
         .filter((s) => /^https?:\/\//i.test(s || ""));
       if (!plain) plain = (doc.body && doc.body.textContent) || "";
     } catch { /* noop */ }
+
+    const MAX_IMG = 20;
+    const capped = srcs.length > MAX_IMG;
+    srcs = srcs.slice(0, MAX_IMG);
+
     setBusy(true);
+    setMsg(srcs.length ? `Đang tải ${srcs.length} ảnh về kho…` : "");
+
+    // Tải song song (tối đa 3 ảnh cùng lúc), mỗi ảnh có timeout riêng nên KHÔNG treo cả cụm.
+    const results = new Array(srcs.length);
+    let done = 0, fail = 0, next = 0;
+    const worker = async () => {
+      while (next < srcs.length) {
+        const k = next++;
+        try { results[k] = `![](${await rehostExternalImage(srcs[k])})`; }
+        catch { fail++; results[k] = `![](${srcs[k]})`; }
+        done++;
+        setMsg(`Đang tải ảnh ${done}/${srcs.length} về kho…`);
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(3, srcs.length) }, worker));
+
     const parts = [];
     if ((plain || "").trim()) parts.push(plain.trim());
-    let fail = 0;
-    for (let k = 0; k < srcs.length; k++) {
-      setMsg(`Đang tải ảnh ${k + 1}/${srcs.length} về kho…`);
-      try { parts.push(`![](${await rehostExternalImage(srcs[k])})`); }
-      catch { fail++; parts.push(`![](${srcs[k]})`); }
-    }
+    parts.push(...results.filter(Boolean));
     setBusy(false);
     setMsg(
       srcs.length
         ? `Xong — ${srcs.length - fail}/${srcs.length} ảnh đã lưu về Hilitek` +
-          (fail ? `, ${fail} ảnh không tải được (giữ tạm link gốc, nên thay sau).` : ".")
+          (fail ? `, ${fail} ảnh không tải được (giữ tạm link gốc, nên thay sau).` : ".") +
+          (capped ? " (Chỉ xử lý 20 ảnh đầu.)" : "")
         : ""
     );
     insert(parts.join("\n\n"));

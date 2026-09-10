@@ -40,24 +40,33 @@ export async function uploadProductImage(fileOrBlob) {
   return { path, url: "/media/" + path };
 }
 
+// fetch có giới hạn thời gian — tránh treo vô hạn khi trang nguồn chậm / không phản hồi.
+function fetchWithTimeout(url, opts = {}, ms = 15000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { ...opts, signal: ctrl.signal }).finally(() => clearTimeout(t));
+}
+
 /**
  * Đưa 1 ảnh từ URL ngoài về kho Hilitek. Trả link "/media/..." mới.
  * Thử tải trực tiếp ở trình duyệt trước (CDN cho phép CORS), không được thì
- * nhờ serverless /api/web/fetch-image tải hộ.
+ * nhờ serverless /api/web/fetch-image tải hộ. Có timeout ở cả 2 bước để KHÔNG bị treo.
  */
 export async function rehostExternalImage(src) {
   try {
-    const r = await fetch(src, { mode: "cors" });
+    const r = await fetchWithTimeout(src, { mode: "cors" }, 12000);
     if (r.ok) {
       const b = await r.blob();
       if (b.type && b.type.startsWith("image/")) return (await uploadProductImage(b)).url;
     }
   } catch {
-    /* CORS chặn -> thử proxy */
+    /* CORS chặn / quá lâu -> thử proxy */
   }
-  const r = await fetch(`/api/web/fetch-image?url=${encodeURIComponent(src)}`, {
-    headers: { "x-media-key": SUPABASE_ANON_KEY },
-  });
+  const r = await fetchWithTimeout(
+    `/api/web/fetch-image?url=${encodeURIComponent(src)}`,
+    { headers: { "x-media-key": SUPABASE_ANON_KEY } },
+    30000
+  );
   const j = await r.json().catch(() => ({}));
   if (!r.ok || !j.url) throw new Error(j.error || `Không tải được ảnh (mã ${r.status})`);
   return j.url;
