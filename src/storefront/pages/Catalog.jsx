@@ -94,7 +94,7 @@ export default function Catalog({ catalog, route, navigate }) {
   return (
     <div className="mx-auto max-w-[1500px] px-4 py-6 font-sans">
       <nav className="flex items-center gap-1 text-[13px] text-mute mb-4 flex-wrap">
-        <a href="#/" onClick={(e) => { e.preventDefault(); navigate("/"); }} className="hover:text-navy">Trang chủ</a>
+        <a href="/" onClick={(e) => { e.preventDefault(); navigate("/"); }} className="hover:text-navy">Trang chủ</a>
         <ChevronRight size={12} />
         {group && !cat && <span className="text-ink/70">{group}</span>}
         {cat && (

@@ -52,8 +52,10 @@ export default function PosterSlider({ slot, navigate, interval = 5000, classNam
       {list.map((s, i) => (
         <a
           key={i}
-          href={s.href || "#"}
+          href={(s.href ? s.href.replace(/^#/, "") : "") || "#"}
           onClick={openLink(s.href)}
+          target={s.href && /^https?:\/\//i.test(s.href) ? "_blank" : undefined}
+          rel={s.href && /^https?:\/\//i.test(s.href) ? "noreferrer" : undefined}
           className="absolute inset-0 transition-opacity duration-700 ease-in-out"
           style={{ opacity: i === idx ? 1 : 0, pointerEvents: i === idx ? "auto" : "none" }}
           aria-hidden={i === idx ? undefined : true}

@@ -223,7 +223,7 @@ export default function Checkout({ navigate }) {
               <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-0.5 shrink-0" />
               <span>
                 {CHECKOUT.termsLabel}{" "}
-                <a href={"#" + CHECKOUT.termsLinkTo} onClick={(e) => { e.preventDefault(); navigate(CHECKOUT.termsLinkTo); }} className="text-navy font-medium hover:underline">
+                <a href={CHECKOUT.termsLinkTo} onClick={(e) => { e.preventDefault(); navigate(CHECKOUT.termsLinkTo); }} className="text-navy font-medium hover:underline">
                   {CHECKOUT.termsLinkText}
                 </a>{" "}
                 <span className="text-sale">*</span>

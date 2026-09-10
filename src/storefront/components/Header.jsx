@@ -89,7 +89,7 @@ export default function Header({ route, navigate }) {
           </button>
 
           {/* LOGO — góc trên bên trái, kèm tên Hilitek */}
-          <a href="#/" onClick={(e) => { e.preventDefault(); go("/"); }} className="shrink-0">
+          <a href="/" onClick={(e) => { e.preventDefault(); go("/"); }} className="shrink-0">
             <Logo size={46} textClass="text-xl sm:text-2xl text-white" className="text-white" />
           </a>
 

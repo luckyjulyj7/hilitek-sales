@@ -44,9 +44,9 @@ export default function Footer({ navigate }) {
         <div>
           <h4 className="font-display text-[14px] font-semibold uppercase tracking-wide text-white mb-3">Hỗ trợ</h4>
           <ul className="space-y-2 text-[14px]">
-            <li><a href="#/tra-cuu-don-hang" onClick={go("/tra-cuu-don-hang")} className="hover:text-white">Tra cứu đơn hàng</a></li>
-            <li><a href="#/xay-dung-cau-hinh" onClick={go("/xay-dung-cau-hinh")} className="hover:text-white">Xây dựng cấu hình PC</a></li>
-            <li><a href="#/lien-he" onClick={go("/lien-he")} className="hover:text-white">Liên hệ &amp; địa chỉ</a></li>
+            <li><a href="/tra-cuu-don-hang" onClick={go("/tra-cuu-don-hang")} className="hover:text-white">Tra cứu đơn hàng</a></li>
+            <li><a href="/xay-dung-cau-hinh" onClick={go("/xay-dung-cau-hinh")} className="hover:text-white">Xây dựng cấu hình PC</a></li>
+            <li><a href="/lien-he" onClick={go("/lien-he")} className="hover:text-white">Liên hệ &amp; địa chỉ</a></li>
           </ul>
         </div>
 
@@ -55,7 +55,7 @@ export default function Footer({ navigate }) {
           <ul className="space-y-2 text-[14px]">
             {POLICY_LINKS.map((p) => (
               <li key={p.to}>
-                <a href={"#" + p.to} onClick={go(p.to)} className="hover:text-white">{p.label}</a>
+                <a href={p.to} onClick={go(p.to)} className="hover:text-white">{p.label}</a>
               </li>
             ))}
           </ul>

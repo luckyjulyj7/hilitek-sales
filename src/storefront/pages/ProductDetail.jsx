@@ -13,6 +13,7 @@ import ProductCommitments from "../components/ProductCommitments.jsx";
 import ProductShipping from "../components/ProductShipping.jsx";
 import SocialLinks from "../components/SocialLinks.jsx";
 import PosterSlot from "../components/PosterSlot.jsx";
+import RichText from "../components/RichText.jsx";
 
 export default function ProductDetail({ slug, navigate, catalog }) {
   const { add } = useCart();
@@ -108,7 +109,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
   return (
     <div className="mx-auto max-w-[1500px] px-3 sm:px-4 py-6 font-sans">
       <nav className="flex items-center gap-1 text-[13px] text-mute mb-5 flex-wrap">
-        <a href="#/" onClick={(e) => { e.preventDefault(); navigate("/"); }} className="hover:text-navy">Trang chủ</a>
+        <a href="/" onClick={(e) => { e.preventDefault(); navigate("/"); }} className="hover:text-navy">Trang chủ</a>
         <ChevronRight size={12} />
         <a href={href("/danh-muc", { group: groupName })} onClick={(e) => { e.preventDefault(); navigate(href("/danh-muc", { group: groupName }).slice(1)); }} className="hover:text-navy">{groupName}</a>
         <ChevronRight size={12} />
@@ -462,80 +463,10 @@ function Lightbox({ images, index, alt, onIndex, onClose }) {
   );
 }
 
-const YT_RE = /(?:youtube\.com\/(?:watch\?(?:[^ ]*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{11})/;
-const IMG_MD_RE = /^!\[([^\]]*)\]\(\s*((?:https?:\/\/|\/)[^\s)]+)\s*\)$/;
-const IMG_URL_RE = /^((?:https?:\/\/|\/)\S+?\.(?:png|jpe?g|webp|gif|avif|svg))(?:\?\S*)?$/i;
-
-/**
- * Render mô tả sản phẩm:
- *  - dòng trống = đoạn mới · dòng "- " = gạch đầu dòng
- *  - dòng là ảnh:  ![mô tả](https://.../anh.jpg)  hoặc chỉ dán link ảnh
- *  - dòng là video YouTube: dán link youtube.com/watch?v=... hoặc youtu.be/... -> nhúng khung phát
- */
-function RichText({ text }) {
-  const lines = String(text).replace(/\r/g, "").split("\n");
-  const blocks = [];
-  let para = [];
-  let list = [];
-  const flushPara = () => { if (para.length) { blocks.push({ type: "p", text: para.join(" ") }); para = []; } };
-  const flushList = () => { if (list.length) { blocks.push({ type: "ul", items: list }); list = []; } };
-  for (const raw of lines) {
-    const line = raw.trim();
-    if (!line) { flushPara(); flushList(); continue; }
-
-    const yt = line.match(YT_RE);
-    const imgMd = line.match(IMG_MD_RE);
-    const imgUrl = !imgMd && line.match(IMG_URL_RE);
-    if (yt && /^(https?:\/\/|www\.)/i.test(line)) {
-      flushPara(); flushList();
-      blocks.push({ type: "yt", id: yt[1] });
-    } else if (imgMd) {
-      flushPara(); flushList();
-      blocks.push({ type: "img", src: imgMd[2], alt: imgMd[1] });
-    } else if (imgUrl) {
-      flushPara(); flushList();
-      blocks.push({ type: "img", src: imgUrl[1] + (line.slice(imgUrl[1].length) || ""), alt: "" });
-    } else if (line.startsWith("- ")) {
-      flushPara(); list.push(line.slice(2));
-    } else {
-      flushList(); para.push(line);
-    }
-  }
-  flushPara(); flushList();
-
-  return (
-    <div className="space-y-3 text-[15px] text-ink/80 leading-relaxed">
-      {blocks.map((b, i) => {
-        if (b.type === "ul")
-          return (
-            <ul key={i} className="list-disc pl-5 space-y-1">
-              {b.items.map((it, j) => <li key={j}>{it}</li>)}
-            </ul>
-          );
-        if (b.type === "img")
-          return <img key={i} src={b.src} alt={b.alt} loading="lazy" className="rounded-lg border border-line max-w-full mx-auto my-2" />;
-        if (b.type === "yt")
-          return (
-            <div key={i} className="relative w-full my-3 rounded-lg overflow-hidden border border-line" style={{ aspectRatio: "16 / 9" }}>
-              <iframe
-                src={`https://www.youtube.com/embed/${b.id}`}
-                title="Video"
-                loading="lazy"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-                className="absolute inset-0 w-full h-full"
-              />
-            </div>
-          );
-        return <p key={i}>{b.text}</p>;
-      })}
-    </div>
-  );
-}
 
 function RelatedCard({ p, onOpen }) {
   return (
-    <a href={`#/san-pham/${p.slug}`} onClick={(e) => { e.preventDefault(); onOpen(); }} className="border border-line rounded-lg bg-white p-3 hover:shadow-card hover:border-navy/30">
+    <a href={`/san-pham/${p.slug}`} onClick={(e) => { e.preventDefault(); onOpen(); }} className="border border-line rounded-lg bg-white p-3 hover:shadow-card hover:border-navy/30">
       <img src={p.images?.[0]?.src || p.images?.[0] || placeholderImage(p.brand, p.category)} alt={p.name} className="w-full aspect-square object-cover rounded-md bg-navy-050" />
       <div className="mt-2 text-[13px] text-ink line-clamp-2 min-h-[34px]">{p.name}</div>
       <div className="mt-1 font-mono text-[15px] font-bold text-sale">{formatVND(p.price)}</div>

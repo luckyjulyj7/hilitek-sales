@@ -30,7 +30,7 @@ export default function Cart({ navigate }) {
               <div className="flex-1 min-w-[200px]">
                 <div className="font-mono text-[12px] uppercase tracking-wide text-mute">{it.brand} · {it.sku}</div>
                 <a
-                  href={`#/san-pham/${it.slug}`}
+                  href={`/san-pham/${it.slug}`}
                   onClick={(e) => { e.preventDefault(); navigate(`/san-pham/${it.slug}`); }}
                   className="mt-0.5 block text-[15px] font-medium text-ink hover:text-navy leading-snug"
                 >

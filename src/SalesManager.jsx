@@ -12,7 +12,7 @@ import {
 import * as XLSX from "xlsx";
 import { ghn as ghnApi } from "./lib/ghn.js";
 // Nội dung mặc định cho web (dùng làm điểm khởi đầu khi chưa chỉnh trong "Cấu hình web").
-import { PAGES as WEB_DEFAULT_PAGES, MENU as WEB_DEFAULT_MENU, allWebCategories as webAllCategories, webCategoryGroups, HOME_SECTIONS as WEB_DEFAULT_HOME_SECTIONS, HOME_SECTION_SORTS, HOME_SECTION_LAYOUTS } from "./storefront/config.js";
+import { PAGES as WEB_DEFAULT_PAGES, MENU as WEB_DEFAULT_MENU, allWebCategories as webAllCategories, webCategoryGroups, HOME_SECTIONS as WEB_DEFAULT_HOME_SECTIONS, HOME_SECTION_SORTS, HOME_SECTION_LAYOUTS, LANDINGS as WEB_DEFAULT_LANDINGS } from "./storefront/config.js";
 import { GROUP_ICON_NAMES, groupIcon as webGroupIcon } from "./storefront/components/groupIcons.js";
 import { uploadProductImage, rehostExternalImage } from "./lib/mediaUpload.js";
 
@@ -12280,7 +12280,7 @@ function HomeSectionsEditor({ webConfig, setWebConfig, products }) {
                 <input value={s.seeAllText || ""} onChange={(e) => setAt(i, { seeAllText: e.target.value })} className={inputCls} style={{ borderColor: LINE }} placeholder="Xem tất cả" />
               </label>
               <label className="block">Link “Xem tất cả” tự đặt
-                <input value={s.seeAllHref || ""} onChange={(e) => setAt(i, { seeAllHref: e.target.value })} className={inputCls} style={{ borderColor: LINE }} placeholder="#/danh-muc?group=Màn hình&sale=1" />
+                <input value={s.seeAllHref || ""} onChange={(e) => setAt(i, { seeAllHref: e.target.value })} className={inputCls} style={{ borderColor: LINE }} placeholder="/danh-muc?group=Màn hình&sale=1" />
               </label>
             </div>
           </details>
@@ -12289,6 +12289,72 @@ function HomeSectionsEditor({ webConfig, setWebConfig, products }) {
 
       <div className="flex items-center gap-3">
         <button onClick={addBlock} className="text-xs px-2.5 py-1.5 rounded-sm border" style={{ borderColor: LINE, color: INK }}>+ Thêm khối</button>
+        <button onClick={reset} className="text-xs underline" style={{ color: RUST }}>Đặt lại về mặc định</button>
+      </div>
+    </div>
+  );
+}
+
+// Trình sửa "Trang nội dung (landing)" — trang tự tạo để poster/banner trỏ tới (bài viết, ảnh, video…).
+function LandingsEditor({ webConfig, setWebConfig }) {
+  const list = Array.isArray(webConfig.LANDINGS) ? webConfig.LANDINGS : WEB_DEFAULT_LANDINGS;
+
+  const mut = (fn) => setWebConfig((x) => {
+    const cur = Array.isArray(x.LANDINGS) ? x.LANDINGS : WEB_DEFAULT_LANDINGS;
+    return { ...x, LANDINGS: fn(cur.map((l) => ({ ...l }))) };
+  });
+  const setAt = (i, patch) => mut((arr) => { arr[i] = { ...arr[i], ...patch }; return arr; });
+  const setTitle = (i, title) => mut((arr) => {
+    const old = arr[i] || {};
+    const autoSlug = !old.slug || old.slug === webSlugify(old.title || "");
+    arr[i] = { ...old, title, slug: autoSlug ? webSlugify(title) : old.slug };
+    return arr;
+  });
+  const addOne = () => mut((arr) => [...arr, { slug: "", title: "Trang mới", body: "", published: true }]);
+  const delOne = (i) => mut((arr) => arr.filter((_, j) => j !== i));
+  const move = (i, d) => mut((arr) => { const j = i + d; if (j < 0 || j >= arr.length) return arr; [arr[i], arr[j]] = [arr[j], arr[i]]; return arr; });
+  const reset = () => setWebConfig((x) => { const y = { ...x }; delete y.LANDINGS; return y; });
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs opacity-55">
+        Trang tự tạo để <b>poster / banner</b> trỏ tới (bài viết, hình ảnh, video, chương trình khuyến mãi…).
+        Mỗi trang có địa chỉ <code>/trang/&lt;đường-dẫn&gt;</code> — dán địa chỉ này vào ô "link" của poster ở mục bên dưới.
+        Nội dung soạn giống mô tả sản phẩm: xuống dòng đôi = đoạn mới · <code>## </code> = tiêu đề · <code>- </code> = gạch đầu dòng · dán ảnh / link YouTube = tự nhúng.
+      </p>
+      {list.length === 0 && <p className="text-xs" style={{ color: RUST }}>Chưa có trang nội dung nào. Bấm "+ Thêm trang".</p>}
+
+      {list.map((l, i) => (
+        <div key={i} className="rounded-sm p-3 space-y-2.5" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
+          <div className="flex items-center gap-2">
+            <input value={l.title || ""} onChange={(e) => setTitle(i, e.target.value)} placeholder="Tiêu đề trang"
+              className={inputCls} style={{ borderColor: LINE, fontWeight: 600 }} />
+            <label className="flex items-center gap-1 text-xs shrink-0">
+              <input type="checkbox" checked={l.published !== false} onChange={(e) => setAt(i, { published: e.target.checked })} /> Hiện
+            </label>
+            <button onClick={() => move(i, -1)} disabled={i === 0} className="text-xs px-1.5 py-1 rounded-sm border disabled:opacity-30" style={{ borderColor: LINE }} title="Lên">↑</button>
+            <button onClick={() => move(i, 1)} disabled={i === list.length - 1} className="text-xs px-1.5 py-1 rounded-sm border disabled:opacity-30" style={{ borderColor: LINE }} title="Xuống">↓</button>
+            <button onClick={() => delOne(i)} className="text-xs px-1.5 py-1" style={{ color: RUST }}>Xoá</button>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs">
+            <span className="opacity-60 shrink-0">Đường dẫn</span>
+            <span className="opacity-50">/trang/</span>
+            <input value={l.slug || ""} onChange={(e) => setAt(i, { slug: webSlugify(e.target.value) })} placeholder={webSlugify(l.title || "") || "duong-dan"}
+              className="flex-1 border rounded-sm py-1 px-2" style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} />
+            <button type="button"
+              onClick={() => { try { navigator.clipboard.writeText(`/trang/${l.slug || webSlugify(l.title || "")}`); } catch (e) {} }}
+              className="text-xs px-2 py-1 rounded-sm border shrink-0" style={{ borderColor: LINE, color: INK }}>Sao chép link</button>
+          </div>
+
+          <Field label="Nội dung">
+            <WebDescEditor rows={10} bg="#fff" value={l.body || ""} onChange={(v) => setAt(i, { body: v })} />
+          </Field>
+        </div>
+      ))}
+
+      <div className="flex items-center gap-3">
+        <button onClick={addOne} className="text-xs px-2.5 py-1.5 rounded-sm border" style={{ borderColor: LINE, color: INK }}>+ Thêm trang</button>
         <button onClick={reset} className="text-xs underline" style={{ color: RUST }}>Đặt lại về mặc định</button>
       </div>
     </div>
@@ -12349,6 +12415,11 @@ function WebConfigForm({ webConfig, setWebConfig, addLog, products, categories }
   });
   const ip = (val, on, ph) => (
     <input value={val ?? ""} onChange={(e) => on(e.target.value)} placeholder={ph} className={inputCls} style={{ borderColor: LINE }} />
+  );
+  // Ô nhập "link" của poster/banner — gợi ý sẵn các trang nội dung (landing) đã tạo.
+  const landings = Array.isArray(c.LANDINGS) ? c.LANDINGS : WEB_DEFAULT_LANDINGS;
+  const hrefIp = (val, on, ph) => (
+    <input list="webPosterLinks" value={val ?? ""} onChange={(e) => on(e.target.value)} placeholder={ph} className={inputCls} style={{ borderColor: LINE }} />
   );
 
   return (
@@ -12444,8 +12515,25 @@ function WebConfigForm({ webConfig, setWebConfig, addLog, products, categories }
       </section>
 
       <section>
+        <h3 className="font-medium mb-3" style={{ color: INK }}>Trang nội dung (landing)</h3>
+        <LandingsEditor webConfig={webConfig} setWebConfig={setWebConfig} />
+      </section>
+
+      <section>
         <h3 className="font-medium mb-3" style={{ color: INK }}>Poster / banner trang chủ (URL ảnh + link)</h3>
-        <p className="text-xs opacity-50 mb-3">Ảnh: tải lên host bất kỳ hoặc để trong thư mục <code>public/posters/</code> rồi điền đường dẫn (vd <code>/posters/hero.jpg</code>).</p>
+        <p className="text-xs opacity-50 mb-3">
+          Ảnh: tải lên host bất kỳ hoặc để trong <code>public/posters/</code> rồi điền đường dẫn (vd <code>/posters/hero.jpg</code>).<br />
+          Ô "link" nhận: sản phẩm <code>/san-pham/&lt;slug&gt;</code> · danh mục <code>/danh-muc?group=…</code> · web ngoài <code>https://…</code> · hoặc trang nội dung <code>/trang/&lt;slug&gt;</code> (bấm vào ô sẽ gợi ý sẵn các trang đã tạo ở trên).
+        </p>
+        <datalist id="webPosterLinks">
+          <option value="/danh-muc?sort=discount">Trang danh mục — đang giảm giá</option>
+          {(Array.isArray(c.MENU) && c.MENU.length ? c.MENU : WEB_DEFAULT_MENU).map((g) => (
+            <option key={g.group} value={`/danh-muc?group=${encodeURIComponent(g.group)}`}>{`Danh mục: ${g.group}`}</option>
+          ))}
+          {landings.map((l) => (
+            <option key={l.slug} value={`/trang/${l.slug || webSlugify(l.title || "")}`}>{`Trang nội dung: ${l.title || l.slug}`}</option>
+          ))}
+        </datalist>
         <div className="space-y-3">
           <div className="rounded-sm p-2.5" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
             <div className="flex items-center justify-between mb-1.5">
@@ -12457,7 +12545,7 @@ function WebConfigForm({ webConfig, setWebConfig, addLog, products, categories }
             {heroSlides.map((s, i) => (
               <div key={i} className="grid gap-2 mb-2" style={{ gridTemplateColumns: "1fr 1fr auto" }}>
                 {ip(s.image, (v) => setHeroSlide(i, "image", v), `/posters/hero-${i + 1}.jpg`)}
-                {ip(s.href, (v) => setHeroSlide(i, "href", v), "#/danh-muc?sort=discount")}
+                {hrefIp(s.href, (v) => setHeroSlide(i, "href", v), "/danh-muc?sort=discount")}
                 <div className="flex items-center gap-1">
                   <button onClick={() => moveHeroSlide(i, -1)} disabled={i === 0} className="text-xs px-1.5 py-1 rounded-sm border disabled:opacity-30" style={{ borderColor: LINE }} title="Lên">↑</button>
                   <button onClick={() => moveHeroSlide(i, 1)} disabled={i === heroSlides.length - 1} className="text-xs px-1.5 py-1 rounded-sm border disabled:opacity-30" style={{ borderColor: LINE }} title="Xuống">↓</button>
@@ -12469,13 +12557,13 @@ function WebConfigForm({ webConfig, setWebConfig, addLog, products, categories }
           {[0, 1].map((i) => (
             <div key={i} className="grid sm:grid-cols-2 gap-3">
               <Field label={`Poster phụ ${i + 1} — ảnh`}>{ip((HP.side || [])[i]?.image, (v) => setSidePoster(i, "image", v), `/posters/phu-${i + 1}.jpg`)}</Field>
-              <Field label={`Poster phụ ${i + 1} — link`}>{ip((HP.side || [])[i]?.href, (v) => setSidePoster(i, "href", v), "#/danh-muc")}</Field>
+              <Field label={`Poster phụ ${i + 1} — link`}>{hrefIp((HP.side || [])[i]?.href, (v) => setSidePoster(i, "href", v), "/danh-muc")}</Field>
             </div>
           ))}
           {[0, 1, 2].map((i) => (
             <div key={i} className="grid sm:grid-cols-2 gap-3">
               <Field label={`Banner ${i + 1} — ảnh`}>{ip((HP.strip || [])[i]?.image, (v) => setStripPoster(i, "image", v), `/posters/banner-${i + 1}.jpg`)}</Field>
-              <Field label={`Banner ${i + 1} — link`}>{ip((HP.strip || [])[i]?.href, (v) => setStripPoster(i, "href", v), "#/danh-muc")}</Field>
+              <Field label={`Banner ${i + 1} — link`}>{hrefIp((HP.strip || [])[i]?.href, (v) => setStripPoster(i, "href", v), "/danh-muc")}</Field>
             </div>
           ))}
           <div className="grid sm:grid-cols-2 gap-3 pt-3" style={{ borderTop: `1px solid ${LINE}` }}>
@@ -12483,7 +12571,7 @@ function WebConfigForm({ webConfig, setWebConfig, addLog, products, categories }
               {ip(PS.banner?.image, (v) => setSideBanner("image", v), "/posters/banner-doc.jpg")}
             </Field>
             <Field label="Banner dọc trang sản phẩm — link">
-              {ip(PS.banner?.href, (v) => setSideBanner("href", v), "#/danh-muc")}
+              {hrefIp(PS.banner?.href, (v) => setSideBanner("href", v), "/danh-muc")}
             </Field>
           </div>
         </div>

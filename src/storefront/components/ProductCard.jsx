@@ -16,7 +16,7 @@ export default function ProductCard({ product, onOpen }) {
   return (
     <div className="group flex h-full flex-col bg-white border border-line rounded-lg overflow-hidden hover:shadow-card hover:border-navy/30 transition">
       <a
-        href={`#/san-pham/${p.slug}`}
+        href={`/san-pham/${p.slug}`}
         onClick={(e) => { e.preventDefault(); onOpen(p.slug); }}
         className="block relative aspect-square bg-navy-050"
       >
@@ -36,7 +36,7 @@ export default function ProductCard({ product, onOpen }) {
       <div className="flex flex-col flex-1 p-3">
         <div className="text-[12px] uppercase tracking-wide text-mute font-mono">{p.brand}</div>
         <a
-          href={`#/san-pham/${p.slug}`}
+          href={`/san-pham/${p.slug}`}
           onClick={(e) => { e.preventDefault(); onOpen(p.slug); }}
           className="mt-1 text-[14px] leading-snug text-ink line-clamp-2 hover:text-navy min-h-[38px]"
         >

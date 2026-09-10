@@ -51,15 +51,15 @@ export default function Home({ catalog, navigate }) {
         </section>
       )}
 
-      {/* ===== Cam kết ===== */}
-      <section className="mx-auto max-w-[1500px] px-3 sm:px-4 py-6">
-        <TrustBar />
-      </section>
-
       {/* ===== Khối sản phẩm trang chủ (cấu hình ở app quản lý) ===== */}
       {HOME_SECTIONS.filter((s) => s && s.enabled !== false).map((s, i) => (
         <HomeSectionRow key={i} section={s} products={products} navigate={navigate} />
       ))}
+
+      {/* ===== Cam kết (cuối trang) ===== */}
+      <section className="mx-auto max-w-[1500px] px-3 sm:px-4 pt-4 pb-8">
+        <TrustBar />
+      </section>
     </div>
   );
 }

@@ -26,7 +26,7 @@ export default function FlashSaleCard({ product, onOpen, navigate }) {
 
   return (
     <div className="group flex h-full flex-col bg-white border border-line rounded-xl overflow-hidden hover:shadow-card hover:border-navy/30 transition">
-      <a href={`#/san-pham/${p.slug}`} onClick={open} className="block relative p-3 pb-0">
+      <a href={`/san-pham/${p.slug}`} onClick={open} className="block relative p-3 pb-0">
         <div className="relative aspect-square">
           <img src={img} alt={p.name} loading="lazy" className="w-full h-full object-contain" />
         </div>
@@ -46,7 +46,7 @@ export default function FlashSaleCard({ product, onOpen, navigate }) {
 
       <div className="flex flex-col flex-1 px-3 pb-3 pt-2">
         <a
-          href={`#/san-pham/${p.slug}`}
+          href={`/san-pham/${p.slug}`}
           onClick={open}
           className="text-[13px] leading-snug text-ink line-clamp-2 min-h-[36px] hover:text-navy"
         >

@@ -16,6 +16,7 @@ import OrderLookup from "./pages/OrderLookup.jsx";
 import BuildPC from "./pages/BuildPC.jsx";
 import Policy from "./pages/Policy.jsx";
 import PolicyPage from "./pages/PolicyPage.jsx";
+import LandingPage from "./pages/LandingPage.jsx";
 import Contact from "./pages/Contact.jsx";
 
 const EMPTY = { products: [], categories: [], brands: [] };
@@ -38,10 +39,13 @@ export default function App() {
   }, [route.path]);
 
   const productMatch = match("/san-pham/:slug", route.path);
+  const landingMatch = match("/trang/:slug", route.path);
 
   let page;
   if (productMatch) {
     page = <ProductDetail slug={productMatch.slug} navigate={route.navigate} catalog={catalog} />;
+  } else if (landingMatch) {
+    page = <LandingPage slug={landingMatch.slug} navigate={route.navigate} />;
   } else if (route.path === "/danh-muc") {
     page = <Catalog catalog={catalog} route={route} navigate={route.navigate} />;
   } else if (route.path === "/gio-hang") {

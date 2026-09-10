@@ -237,7 +237,7 @@ export function brandsInGroup(products, group) {
 /**
  * Khu vực poster / banner trang chủ (bố cục kiểu maianhpc.vn).
  * Giờ chỉ là KHUNG TRỐNG — khi có ảnh, thêm `image` (đặt file trong `public/`,
- * ví dụ "/posters/hero.jpg") và `href` ("#/danh-muc?..." hoặc link ngoài).
+ * ví dụ "/posters/hero.jpg") và `href` ("/danh-muc?..." hoặc link ngoài).
  * `w`/`h` chỉ để hiển thị gợi ý kích thước trên khung trống, không ép ảnh.
  *
  * Poster CHÍNH chạy được slide nhiều ảnh: điền `slides: [{ image, href }, ...]`.
@@ -299,7 +299,7 @@ export const FLASH_SALE = {
  *   rows      : 1 hoặc 2 (số dòng khi cuộn ngang)
  *   layout    : "carousel" (nút ‹ ›) | "marquee" (tự chạy phải→trái) | "grid" (lưới, không cuộn)
  *   seeAllText: chữ nút xem tất cả (mặc định "Xem tất cả")
- *   seeAllHref: link xem tất cả tự đặt (VD "#/danh-muc?..."); bỏ trống = tự suy từ bộ lọc
+ *   seeAllHref: link xem tất cả tự đặt (VD "/danh-muc?..."); bỏ trống = tự suy từ bộ lọc
  *   enabled   : bật/tắt khối
  */
 export const HOME_SECTIONS = MENU.map((g) => ({
@@ -911,4 +911,28 @@ export const POLICY_LINKS = [
   { label: "Điều khoản và điều kiện của website", to: "/dieu-khoan-website" },
   { label: "Chính sách kiểm hàng", to: "/chinh-sach-kiem-hang" },
   { label: "Chính sách về vận chuyển và giao nhận", to: "/chinh-sach-van-chuyen" },
+];
+
+/**
+ * TRANG NỘI DUNG / LANDING — trang tự tạo để poster / banner trỏ tới (bài viết, ảnh, video,
+ * chương trình khuyến mãi…). Chủ shop thêm/sửa ở: app quản lý → Website → Cấu hình web →
+ * "Trang nội dung (landing)". Mỗi trang có URL:  /trang/<slug>
+ *   { slug, title, body, published }
+ *   body: dùng cùng bộ soạn thảo như mô tả sản phẩm — xuống dòng đôi = đoạn mới,
+ *         "## " = tiêu đề, "- " = gạch đầu dòng, dán ảnh / link ảnh, dán link YouTube = nhúng video.
+ */
+export const LANDINGS = [
+  {
+    slug: "gioi-thieu-hilitek",
+    title: "Giới thiệu Hilitek",
+    published: true,
+    body:
+      "Hilitek chuyên cung cấp linh kiện PC, gaming gear, thiết bị lưu trữ, màn hình và phần mềm bản quyền — hàng chính hãng, đủ hoá đơn VAT, bảo hành tra cứu theo số serial.\n\n" +
+      "## Vì sao chọn Hilitek\n" +
+      "- Hàng chính hãng, nhập trực tiếp, đủ hoá đơn VAT\n" +
+      "- Bảo hành theo serial — không cần giữ hoá đơn giấy\n" +
+      "- Ráp PC theo yêu cầu, hỗ trợ kỹ thuật trọn đời máy\n\n" +
+      "## Liên hệ\n" +
+      `Địa chỉ: ${SITE.address}\nHotline: ${SITE.phone} — Kỹ thuật: ${SITE.techPhone}\n`,
+  },
 ];

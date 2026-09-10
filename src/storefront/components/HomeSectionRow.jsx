@@ -50,15 +50,11 @@ export default function HomeSectionRow({ section, products, navigate, flash = fa
   if (items.length === 0) return null;
 
   const seeAll = homeSectionSeeAll(section);
-  const seeAllTo = seeAll._href ? seeAll._href : href("/danh-muc", seeAll);
+  const seeAllTo = seeAll._href ? seeAll._href.replace(/^#/, "") : href("/danh-muc", seeAll);
   const goSeeAll = (e) => {
     e.preventDefault();
-    if (seeAll._href) {
-      if (/^https?:\/\//i.test(seeAll._href)) { window.location.href = seeAll._href; return; }
-      navigate(seeAll._href.replace(/^#/, "") || "/");
-    } else {
-      navigate(seeAllTo.slice(1));
-    }
+    if (seeAll._href && /^https?:\/\//i.test(seeAll._href)) { window.location.href = seeAll._href; return; }
+    navigate(seeAllTo || "/");
   };
 
   const openProduct = (slug) => navigate(`/san-pham/${slug}`);

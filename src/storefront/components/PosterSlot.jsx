@@ -16,11 +16,13 @@ export default function PosterSlot({ slot, fill = false, className = "", navigat
 
   const [origin, setOrigin] = useState(null); // null = đang không rê chuột
 
+  // Chấp nhận link kiểu cũ "#/..." lẫn kiểu mới "/..."
+  const cleanLink = link ? link.replace(/^#/, "") : "";
   const go = (e) => {
     if (!link) return;
     if (link.startsWith("#") || link.startsWith("/")) {
       e.preventDefault();
-      navigate?.(link.replace(/^#/, ""));
+      navigate?.(cleanLink);
     }
   };
 
@@ -32,11 +34,15 @@ export default function PosterSlot({ slot, fill = false, className = "", navigat
     setOrigin(`${x}% ${y}%`);
   };
 
+  const external = !!link && /^https?:\/\//i.test(link);
+
   if (image) {
     return (
       <a
-        href={link || "#"}
+        href={cleanLink || "#"}
         onClick={go}
+        target={external ? "_blank" : undefined}
+        rel={external ? "noreferrer" : undefined}
         onMouseMove={onMove}
         onMouseLeave={() => setOrigin(null)}
         className={

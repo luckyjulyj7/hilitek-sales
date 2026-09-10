@@ -1,4 +1,4 @@
-import { SITE, FLASH_SALE, HOME_POSTERS, HOME_SECTIONS, PRODUCT_SIDEBAR, CHECKOUT, PAGES, MENU, rebuildCatToGroup } from "../config.js";
+import { SITE, FLASH_SALE, HOME_POSTERS, HOME_SECTIONS, PRODUCT_SIDEBAR, CHECKOUT, PAGES, MENU, LANDINGS, rebuildCatToGroup } from "../config.js";
 
 /**
  * Ghi đè cấu hình mặc định (config.js) bằng giá trị chủ shop chỉnh từ app quản lý
@@ -44,5 +44,11 @@ export function applyWebConfig(cfg) {
   if (Array.isArray(cfg.HOME_SECTIONS)) {
     HOME_SECTIONS.length = 0;
     cfg.HOME_SECTIONS.forEach((s) => HOME_SECTIONS.push(s));
+  }
+
+  // LANDINGS (trang nội dung / landing do chủ shop tạo) — thay nguyên mảng.
+  if (Array.isArray(cfg.LANDINGS)) {
+    LANDINGS.length = 0;
+    cfg.LANDINGS.forEach((l) => LANDINGS.push(l));
   }
 }

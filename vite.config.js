@@ -11,8 +11,26 @@ import { resolve } from "node:path";
 // LƯU Ý: không đưa index.html vào rollupOptions.input — nếu build ra dist/index.html,
 // Vercel sẽ tự ưu tiên phục vụ file tĩnh này ở "/" TRƯỚC KHI áp dụng rewrite trong
 // vercel.json, khiến domain gốc luôn ra trang quản lý dù rewrite đã trỏ sang shop.html.
+// DEV: web khách dùng router theo đường dẫn thật (không có #). Cần trả shop.html cho mọi
+// path "sạch" (không có đuôi file) — giống rewrite catch-all của vercel.json trên production.
+const shopSpaFallbackDev = {
+  name: "shop-spa-fallback-dev",
+  apply: "serve",
+  configureServer(server) {
+    server.middlewares.use((req, _res, next) => {
+      const url = (req.url || "/").split("?")[0];
+      const skip =
+        url === "/" || url === "/index.html" || url === "/admin.html" || url === "/shop.html" ||
+        url.includes(".") ||
+        /^\/(src|@|node_modules|api|media|quanlybanhang|admin)(\/|$)/.test(url);
+      if (!skip) req.url = "/shop.html";
+      next();
+    });
+  },
+};
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), shopSpaFallbackDev],
   server: {
     port: 5173,
     open: false,

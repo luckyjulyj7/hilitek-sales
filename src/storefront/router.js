@@ -1,16 +1,27 @@
 import { useEffect, useState, useCallback } from "react";
 
 /**
- * Router hash gọn nhẹ (không cần thư viện, không cần cấu hình rewrite cho web tĩnh).
- * URL dạng:  https://hilitek.vn/#/san-pham/tai-nghe-h500?x=1
+ * Router theo đường dẫn thật (History API) — URL sạch, KHÔNG có dấu #.
+ *   https://hilipc.vn/san-pham/tai-nghe-h500?x=1
+ *
+ * Server phải trả shop.html cho mọi path "sạch" (không phải file / api):
+ *   - Production: rewrite catch-all trong vercel.json.
+ *   - Dev: middleware `shop-spa-fallback-dev` trong vite.config.js.
  */
 
 function parse() {
-  const hash = window.location.hash.replace(/^#/, "") || "/";
-  const [pathPart, queryPart = ""] = hash.split("?");
-  const path = pathPart || "/";
-  const query = Object.fromEntries(new URLSearchParams(queryPart));
+  let path = window.location.pathname || "/";
+  // Dev: shop.html phục vụ tại "/shop.html" · path cũ "/shop" -> coi như gốc "/"
+  if (path === "/shop.html" || path === "/shop" || path === "/shop/") path = "/";
+  const query = Object.fromEntries(new URLSearchParams(window.location.search));
   return { path, query };
+}
+
+// Chuẩn hoá "to" về "/path?query" — chấp nhận cả "#/path", "path", "/path" (tương thích link cũ).
+function normalize(to) {
+  let s = String(to == null ? "/" : to).replace(/^#/, "");
+  if (!s.startsWith("/")) s = "/" + s;
+  return s;
 }
 
 export function useRoute() {
@@ -18,32 +29,33 @@ export function useRoute() {
 
   useEffect(() => {
     const onChange = () => setRoute(parse());
-    window.addEventListener("hashchange", onChange);
-    return () => window.removeEventListener("hashchange", onChange);
+    window.addEventListener("popstate", onChange);
+    return () => window.removeEventListener("popstate", onChange);
   }, []);
 
   const navigate = useCallback((to) => {
-    if (!to.startsWith("#")) to = "#" + (to.startsWith("/") ? to : "/" + to);
-    if (window.location.hash === to) {
+    const next = normalize(to);
+    if (window.location.pathname + window.location.search === next) {
       setRoute(parse());
       return;
     }
-    window.location.hash = to;
+    window.history.pushState(null, "", next);
+    setRoute(parse());
   }, []);
 
   return { ...route, navigate };
 }
 
-/** Ghép path + query thành href hash. */
+/** Ghép path + query thành href sạch (không dấu #). */
 export function href(path, query) {
   const qs = query ? new URLSearchParams(query).toString() : "";
-  return "#" + path + (qs ? "?" + qs : "");
+  return path + (qs ? "?" + qs : "");
 }
 
 /** So khớp `/san-pham/:slug` -> { slug }. Trả null nếu không khớp. */
 export function match(pattern, path) {
   const pp = pattern.split("/").filter(Boolean);
-  const ap = path.split("/").filter(Boolean);
+  const ap = String(path || "").split("/").filter(Boolean);
   if (pp.length !== ap.length) return null;
   const params = {};
   for (let i = 0; i < pp.length; i++) {
