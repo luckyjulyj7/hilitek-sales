@@ -16,7 +16,7 @@ import PosterSlot from "../components/PosterSlot.jsx";
 import RichText from "../components/RichText.jsx";
 
 export default function ProductDetail({ slug, navigate, catalog }) {
-  const { add } = useCart();
+  const { add, openOrder } = useCart();
   const [product, setProduct] = useState(undefined);
   const [imgIdx, setImgIdx] = useState(0);
   const [zoom, setZoom] = useState(false);
@@ -102,7 +102,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
     .filter(Boolean);
 
   const doAdd = () => { add(p, qty, { preorder: out }); setAdded(true); };
-  const doBuyNow = () => { add(p, qty, { preorder: out }); navigate("/dat-hang"); };
+  const doBuyNow = () => { add(p, qty, { preorder: out }); openOrder(p); };
   const prevImg = () => setImgIdx((i) => (i - 1 + imgs.length) % imgs.length);
   const nextImg = () => setImgIdx((i) => (i + 1) % imgs.length);
 

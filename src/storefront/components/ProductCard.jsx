@@ -6,8 +6,12 @@ import { useCart } from "../cart.jsx";
 
 export default function ProductCard({ product, onOpen }) {
   const p = product;
-  const { items, add } = useCart();
+  const { items, add, openOrder } = useCart();
   const inCart = items.some((x) => x.id === p.id);
+  const buy = () => {
+    if (!inCart) add(p, 1, { preorder: !p.stock });
+    openOrder(p);
+  };
   const off = discountPercent(p.price, p.listPrice);
   const img = p.images?.[0]?.src || p.images?.[0] || placeholderImage(p.brand, p.category);
   const low = p.stock > 0 && p.stock <= LOW_STOCK_THRESHOLD;
@@ -31,6 +35,11 @@ export default function ProductCard({ product, onOpen }) {
         ) : low ? (
           <span className="absolute top-2 right-2 bg-[#E8730C] text-white text-[12px] px-1.5 py-0.5 rounded">Còn ít</span>
         ) : null}
+        {off > 0 && (
+          <span className="absolute left-0 bottom-2 bg-[#00A8E8] text-white text-[11px] font-semibold px-2 py-0.5 rounded-r-md shadow-sm">
+            Tiết kiệm {off}%
+          </span>
+        )}
       </a>
 
       <div className="flex flex-col flex-1 p-3">
@@ -44,10 +53,10 @@ export default function ProductCard({ product, onOpen }) {
         </a>
 
         <div className="mt-auto pt-3">
-          <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="font-mono font-bold text-[15px] text-sale">{formatVND(p.price)}</span>
+          <div className="flex items-baseline gap-1.5 flex-wrap">
+            <span className="font-mono font-extrabold text-[19px] sm:text-[20px] text-sale leading-none">{formatVND(p.price)}</span>
             {off > 0 && (
-              <span className="font-mono text-[12px] text-mute line-through">{formatVND(p.listPrice)}</span>
+              <span className="font-mono text-[11px] text-mute/80 line-through">{formatVND(p.listPrice)}</span>
             )}
           </div>
 
@@ -59,13 +68,10 @@ export default function ProductCard({ product, onOpen }) {
           )}
 
           <button
-            onClick={() => add(p, 1, { preorder: out })}
-            className={
-              "mt-3 w-full inline-flex items-center justify-center gap-1.5 rounded-md text-[14px] font-semibold py-2 transition " +
-              (inCart ? "bg-navy-050 text-navy" : "bg-navy text-white hover:bg-navy-600")
-            }
+            onClick={buy}
+            className="mt-3 w-full inline-flex items-center justify-center gap-1.5 rounded-md text-[14px] font-semibold py-2 transition bg-navy text-white hover:bg-navy-600"
           >
-            {inCart ? (<><Check size={15} /> Đã thêm</>) : (<><Plus size={15} /> Thêm vào giỏ</>)}
+            {inCart ? <Check size={15} /> : <Plus size={15} />} Đặt hàng
           </button>
         </div>
       </div>

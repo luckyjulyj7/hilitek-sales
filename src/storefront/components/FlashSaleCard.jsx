@@ -12,15 +12,16 @@ import { useCart } from "../cart.jsx";
  */
 export default function FlashSaleCard({ product, onOpen, navigate }) {
   const p = product;
-  const { add } = useCart();
+  const { items, add, openOrder } = useCart();
+  const inCart = items.some((x) => x.id === p.id);
   const off = discountPercent(p.price, p.listPrice);
   const saving = Math.max(0, (Number(p.listPrice) || 0) - (Number(p.price) || 0));
   const img = p.images?.[0]?.src || p.images?.[0] || placeholderImage(p.brand, p.category);
   const out = !p.stock;
 
   const order = () => {
-    add(p, 1, { preorder: out });
-    if (navigate) navigate("/dat-hang");
+    if (!inCart) add(p, 1, { preorder: out });
+    openOrder(p);
   };
   const open = (e) => { e.preventDefault(); onOpen(p.slug); };
 
@@ -55,9 +56,9 @@ export default function FlashSaleCard({ product, onOpen, navigate }) {
 
         <div className="mt-auto pt-1.5 sm:pt-2">
           {off > 0 && (
-            <div className="font-mono text-[10px] sm:text-[12px] text-mute line-through">{formatVND(p.listPrice)}</div>
+            <div className="font-mono text-[10px] sm:text-[11px] text-mute/80 line-through">{formatVND(p.listPrice)}</div>
           )}
-          <div className="font-mono font-bold text-[14px] sm:text-[16px] text-sale">{formatVND(p.price)}</div>
+          <div className="font-mono font-extrabold text-[16px] sm:text-[19px] text-sale leading-none">{formatVND(p.price)}</div>
 
           <button
             onClick={order}
