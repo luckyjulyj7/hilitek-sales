@@ -584,6 +584,41 @@ function normalizeShippingTicket(t) {
   };
 }
 
+/* ---------------- Phiếu gửi hàng (nhãn dán thùng cho khách gửi xe tải, dùng nhiều lần) ---------------- */
+const PARCEL_DEFAULT_NOTE = "HÀNG DỄ VỠ XIN NHẸ TAY";
+function normalizeParcelLabel(p) {
+  return {
+    id: p.id || uid(),
+    code: p.code || "",
+    createdAt: p.createdAt || new Date().toISOString(),
+    createdBy: p.createdBy || "",
+    lastPrintedAt: p.lastPrintedAt || "",
+    route: p.route || "",                 // tuyến / nhà xe — hiện ở thanh tiêu đề nhãn
+    // Bên nhận (khách)
+    company: p.company || "",
+    recipientName: p.recipientName || "",
+    recipientPhone: p.recipientPhone || "",
+    recipientAddress: p.recipientAddress || "",
+    // Bên gửi (mặc định lấy COMPANY_INFO — có thể sửa cho gọn)
+    senderName: p.senderName || COMPANY_INFO.name,
+    senderPhone: p.senderPhone || COMPANY_INFO.phone,
+    senderAddress: p.senderAddress || COMPANY_INFO.address,
+    note: p.note == null ? PARCEL_DEFAULT_NOTE : p.note,
+  };
+}
+function nextParcelCode(list) {
+  const now = new Date();
+  const prefix = `PGH${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getFullYear()).slice(-2)}`;
+  let max = 0;
+  (list || []).forEach((p) => {
+    if (p.code && p.code.startsWith(prefix)) {
+      const seq = parseInt(p.code.slice(prefix.length), 10);
+      if (!isNaN(seq)) max = Math.max(max, seq);
+    }
+  });
+  return `${prefix}${String(max + 1).padStart(2, "0")}`;
+}
+
 function seedData() {
   const win11 = uid(), office = uid(), khungTivi = uid();
   return {
@@ -4898,8 +4933,195 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
   );
 }
 
+/**
+ * Phiếu gửi hàng — nhãn dán thùng/kiện cho khách gửi qua xe tải (dùng lại nhiều lần).
+ * Lưu thông tin bên nhận theo từng khách; in ra nhiều bản / nhiều kiện trên 1 trang.
+ */
+function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, addLog }) {
+  const [view, setView] = useState("list");      // list | form
+  const [editingId, setEditingId] = useState(null);
+  const [q, setQ] = useState("");
+  const [custQuery, setCustQuery] = useState("");
+  const [printFor, setPrintFor] = useState(null); // label đang mở hộp thoại in
+  const [printOpts, setPrintOpts] = useState({ copies: 2, boxes: 1, paper: "A4" });
+  const [printBlockedUrl, setPrintBlockedUrl] = useState(null);
+
+  const blank = () => ({
+    route: "", company: "", recipientName: "", recipientPhone: "", recipientAddress: "",
+    senderName: COMPANY_INFO.name, senderPhone: COMPANY_INFO.phone, senderAddress: COMPANY_INFO.address,
+    note: PARCEL_DEFAULT_NOTE,
+  });
+  const [form, setForm] = useState(blank());
+  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  const routes = [...new Set((parcelLabels || []).map((p) => p.route).filter(Boolean))];
+  const list = (parcelLabels || []).filter((p) => {
+    const s = q.trim().toLowerCase();
+    if (!s) return true;
+    return [p.company, p.recipientName, p.recipientPhone, p.route].filter(Boolean).join(" ").toLowerCase().includes(s);
+  });
+
+  const custMatches = custQuery.trim()
+    ? (customers || []).filter((c) => (c.name || "").toLowerCase().includes(custQuery.trim().toLowerCase()) || (c.phone || "").includes(custQuery.trim())).slice(0, 12)
+    : [];
+  const pickCust = (c) => {
+    setForm((f) => ({
+      ...f,
+      company: c.name || f.company,
+      recipientName: c.contactPerson || c.representativeName || f.recipientName,
+      recipientPhone: c.phone || f.recipientPhone,
+      recipientAddress: [c.addressDetail, c.ward, c.province].filter(Boolean).join(", ") || f.recipientAddress,
+    }));
+    setCustQuery("");
+  };
+
+  const openNew = () => { setForm(blank()); setEditingId(null); setView("form"); };
+  const openEdit = (p) => { setForm({ ...p }); setEditingId(p.id); setView("form"); };
+  const dup = (p) => { setForm({ ...p, company: p.company, recipientName: p.recipientName }); setEditingId(null); setView("form"); };
+  const del = (p) => { if (window.confirm(`Xoá phiếu gửi hàng của "${p.company || p.recipientName}"?`)) setParcelLabels((prev) => prev.filter((x) => x.id !== p.id)); };
+
+  const save = () => {
+    if (!form.company.trim() && !form.recipientName.trim()) { alert("Nhập tên công ty hoặc tên người nhận."); return; }
+    if (editingId) {
+      setParcelLabels((prev) => prev.map((x) => (x.id === editingId ? normalizeParcelLabel({ ...x, ...form }) : x)));
+      addLog("Sửa phiếu gửi hàng", form.company || form.recipientName);
+    } else {
+      const rec = normalizeParcelLabel({ ...form, id: uid(), code: nextParcelCode(parcelLabels), createdAt: new Date().toISOString(), createdBy: currentUser.fullName });
+      setParcelLabels((prev) => [rec, ...prev]);
+      addLog("Tạo phiếu gửi hàng", `${rec.code} · ${rec.company || rec.recipientName}`);
+    }
+    setForm(blank()); setEditingId(null); setView("list");
+  };
+
+  const doPrint = () => {
+    if (!printFor) return;
+    const html = buildParcelLabelHTML(printFor, printOpts);
+    const r = printHTML(html);
+    setPrintBlockedUrl(r.ok ? null : r.url);
+    setParcelLabels((prev) => prev.map((x) => (x.id === printFor.id ? { ...x, lastPrintedAt: new Date().toISOString() } : x)));
+    setPrintFor(null);
+  };
+
+  if (view === "form") {
+    return (
+      <div className="max-w-3xl">
+        <button onClick={() => { setForm(blank()); setEditingId(null); setView("list"); }} className="text-sm mb-4 opacity-60 hover:opacity-100">← Quay lại danh sách phiếu gửi hàng</button>
+
+        <div className="p-4 rounded-sm mb-4" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+          <p className="text-xs uppercase tracking-wider mb-2 opacity-60">Điền nhanh từ khách hàng có sẵn (không bắt buộc)</p>
+          <div className="relative">
+            <input value={custQuery} onChange={(e) => setCustQuery(e.target.value)} placeholder="Tìm theo tên / SĐT khách…"
+              className="w-full border rounded-sm py-2 px-3 text-sm" style={{ borderColor: LINE }} />
+            {custMatches.length > 0 && (
+              <div className="absolute z-20 mt-1 w-full max-h-52 overflow-y-auto rounded-sm shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+                {custMatches.map((c) => (
+                  <button key={c.id} onClick={() => pickCust(c)} className="w-full text-left px-3 py-2 text-sm hover:bg-black/5 flex justify-between gap-3" style={{ borderBottom: `1px dashed ${LINE}` }}>
+                    <span>{c.name}</span><span className="opacity-60">{c.phone}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="p-4 rounded-sm mb-4 space-y-4" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+          <p className="text-sm font-medium" style={{ color: INK }}>Bên nhận (khách)</p>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <Field label="Tên công ty"><input className={inputCls} style={{ borderColor: LINE }} value={form.company} onChange={(e) => set("company", e.target.value)} placeholder="CÔNG TY TNHH …" /></Field>
+            <Field label="Tên người nhận"><input className={inputCls} style={{ borderColor: LINE }} value={form.recipientName} onChange={(e) => set("recipientName", e.target.value)} placeholder="A Phương" /></Field>
+            <Field label="Số điện thoại nhận"><input className={inputCls} style={{ borderColor: LINE }} value={form.recipientPhone} onChange={(e) => set("recipientPhone", e.target.value)} /></Field>
+            <Field label="Tuyến / nhà xe" hint="Hiện ở thanh xanh trên đầu nhãn">
+              <input list="parcelRoutes" className={inputCls} style={{ borderColor: LINE }} value={form.route} onChange={(e) => set("route", e.target.value)} placeholder="VD: Nhà xe Phương Trang" />
+              <datalist id="parcelRoutes">{routes.map((r) => <option key={r} value={r} />)}</datalist>
+            </Field>
+          </div>
+          <Field label="Địa chỉ nhận"><input className={inputCls} style={{ borderColor: LINE }} value={form.recipientAddress} onChange={(e) => set("recipientAddress", e.target.value)} /></Field>
+        </div>
+
+        <details className="p-4 rounded-sm mb-4" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+          <summary className="text-sm font-medium cursor-pointer" style={{ color: INK }}>Bên gửi (mặc định theo công ty — bấm để sửa)</summary>
+          <div className="grid sm:grid-cols-2 gap-4 mt-3">
+            <Field label="Tên bên gửi"><input className={inputCls} style={{ borderColor: LINE }} value={form.senderName} onChange={(e) => set("senderName", e.target.value)} /></Field>
+            <Field label="SĐT bên gửi"><input className={inputCls} style={{ borderColor: LINE }} value={form.senderPhone} onChange={(e) => set("senderPhone", e.target.value)} /></Field>
+          </div>
+          <Field label="Địa chỉ bên gửi"><input className={inputCls} style={{ borderColor: LINE }} value={form.senderAddress} onChange={(e) => set("senderAddress", e.target.value)} /></Field>
+        </details>
+
+        <Field label="Dòng lưu ý (in đậm dưới nhãn)"><input className={inputCls} style={{ borderColor: LINE }} value={form.note} onChange={(e) => set("note", e.target.value)} placeholder={PARCEL_DEFAULT_NOTE} /></Field>
+
+        <button onClick={save} className="w-full py-2.5 rounded-sm text-white text-sm mt-3" style={{ background: INK }}>{editingId ? "Lưu thay đổi" : "Lưu phiếu gửi hàng"}</button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm công ty / người nhận / SĐT / tuyến…"
+          className="border rounded-sm py-2 px-3 text-sm flex-1 min-w-[220px]" style={{ borderColor: LINE }} />
+        <button onClick={openNew} className="px-4 py-2 rounded-sm text-white text-sm shrink-0" style={{ background: INK }}>+ Tạo phiếu gửi hàng</button>
+      </div>
+
+      {list.length === 0 ? (
+        <p className="text-sm opacity-50 py-10 text-center">Chưa có phiếu gửi hàng nào. Bấm “+ Tạo phiếu gửi hàng”.</p>
+      ) : (
+        <div className="space-y-2">
+          {list.map((p) => (
+            <div key={p.id} className="p-3 rounded-sm flex items-start justify-between gap-3 flex-wrap" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+              <div className="min-w-0">
+                <p className="font-medium" style={{ color: INK }}>{p.company || p.recipientName || "—"}</p>
+                <p className="text-xs opacity-60">
+                  {[p.recipientName, p.recipientPhone].filter(Boolean).join(" · ")}
+                  {p.route ? ` · 🚛 ${p.route}` : ""}
+                </p>
+                <p className="text-xs opacity-50 truncate">{p.recipientAddress}</p>
+              </div>
+              <div className="flex gap-1.5 shrink-0">
+                <button onClick={() => { setPrintFor(p); setPrintOpts({ copies: 2, boxes: 1, paper: "A4" }); }} className="text-xs px-2.5 py-1.5 rounded-sm text-white" style={{ background: BLUE }}>🖨 In nhãn</button>
+                <button onClick={() => openEdit(p)} className="text-xs px-2 py-1.5 rounded-sm border" style={{ borderColor: LINE, color: INK }}>Sửa</button>
+                <button onClick={() => dup(p)} className="text-xs px-2 py-1.5 rounded-sm border" style={{ borderColor: LINE, color: INK }}>Nhân bản</button>
+                <button onClick={() => del(p)} className="text-xs px-2 py-1.5" style={{ color: RUST }}>Xoá</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {printFor && (
+        <Modal title={`In nhãn — ${printFor.company || printFor.recipientName}`} onClose={() => setPrintFor(null)}>
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-3">
+              <Field label="Số kiện (thùng)"><input type="number" min={1} max={50} className={inputCls} style={{ borderColor: LINE }} value={printOpts.boxes} onChange={(e) => setPrintOpts((o) => ({ ...o, boxes: Math.max(1, Math.min(50, Number(e.target.value) || 1)) }))} /></Field>
+              <Field label="Số bản / kiện"><input type="number" min={1} max={20} className={inputCls} style={{ borderColor: LINE }} value={printOpts.copies} onChange={(e) => setPrintOpts((o) => ({ ...o, copies: Math.max(1, Math.min(20, Number(e.target.value) || 1)) }))} /></Field>
+              <Field label="Khổ giấy">
+                <select className={inputCls} style={{ borderColor: LINE }} value={printOpts.paper} onChange={(e) => setPrintOpts((o) => ({ ...o, paper: e.target.value }))}>
+                  <option value="A4">A4 — 2 nhãn/hàng</option>
+                  <option value="A5">A5 — 1 nhãn to</option>
+                </select>
+              </Field>
+            </div>
+            <p className="text-xs opacity-55">
+              Tổng {printOpts.boxes * printOpts.copies} nhãn.
+              {printOpts.boxes > 1 ? ` Mỗi kiện đánh số 1/${printOpts.boxes} … ${printOpts.boxes}/${printOpts.boxes}.` : ""}
+            </p>
+            <button onClick={doPrint} className="w-full py-2.5 rounded-sm text-white text-sm" style={{ background: INK }}>🖨 In</button>
+          </div>
+        </Modal>
+      )}
+
+      {printBlockedUrl && (
+        <Modal title="Trình duyệt chặn cửa sổ in" onClose={() => setPrintBlockedUrl(null)}>
+          <p className="text-sm mb-3">Cho phép pop-up cho trang này, hoặc mở nhãn ở tab mới:</p>
+          <a href={printBlockedUrl} target="_blank" rel="noreferrer" className="inline-block px-4 py-2 rounded-sm text-white text-sm" style={{ background: INK }}>Mở nhãn để in</a>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
 // Vận chuyển — quản lý vận đơn thủ công, liên kết với đơn hàng. Chưa kết nối API thật với các hãng vận chuyển (cần backend riêng), nhập tay mã vận đơn.
-function Shipping({ shippingTickets, setShippingTickets, orders, customers, currentUser, addLog }) {
+function Shipping({ shippingTickets, setShippingTickets, parcelLabels, setParcelLabels, orders, customers, currentUser, addLog }) {
+  const [navSub, setNavSub] = useState("van_don"); // van_don | phieu_gui
   const [view, setView] = useState("history");
   const [statusFilter, setStatusFilter] = useState("all");
   const [carrierFilter, setCarrierFilter] = useState("all");
@@ -4974,9 +5196,30 @@ function Shipping({ shippingTickets, setShippingTickets, orders, customers, curr
 
   const filtered = shippingTickets.filter((t) => (statusFilter === "all" || t.status === statusFilter) && (carrierFilter === "all" || t.carrier === carrierFilter));
 
+  const subTabBar = (
+    <div className="flex gap-2 mb-5">
+      {[["van_don", "Vận đơn"], ["phieu_gui", "Phiếu gửi hàng"]].map(([id, label]) => (
+        <button key={id} onClick={() => setNavSub(id)} className="px-4 py-2 rounded-full text-sm border"
+          style={{ borderColor: navSub === id ? INK : LINE, background: navSub === id ? INK : "transparent", color: navSub === id ? "#fff" : INK }}>
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+
+  if (navSub === "phieu_gui") {
+    return (
+      <div>
+        {subTabBar}
+        <ParcelLabels parcelLabels={parcelLabels} setParcelLabels={setParcelLabels} customers={customers} currentUser={currentUser} addLog={addLog} />
+      </div>
+    );
+  }
+
   if (view === "new") {
     return (
       <div>
+        {subTabBar}
         <button onClick={() => { setForm(emptyForm()); setEditingId(null); setView("history"); }} className="text-sm mb-4 opacity-60 hover:opacity-100">← Quay lại danh sách vận đơn</button>
 
         <div className="p-5 rounded-sm mb-5" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
@@ -5039,6 +5282,7 @@ function Shipping({ shippingTickets, setShippingTickets, orders, customers, curr
 
   return (
     <div>
+      {subTabBar}
       <div className="mb-4 p-3 rounded-sm flex items-center gap-3 flex-wrap" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
         <span className="text-xs uppercase tracking-wider opacity-60">Kết nối GHN</span>
         <button onClick={testGhn} disabled={ghnPing?.loading} className="text-xs px-3 py-1.5 rounded-sm border disabled:opacity-50" style={{ borderColor: BLUE, color: BLUE }}>
@@ -7748,6 +7992,70 @@ function buildShippingLabelHTML(ticket, paperSize) {
 
 
 
+
+/**
+ * HTML nhãn "Phiếu gửi hàng" để dán thùng — theo mẫu nhà xe (thanh tiêu đề tuyến,
+ * ô Bên gửi / Bên nhận, dòng lưu ý). In nhiều bản / nhiều kiện trên 1 trang.
+ * opts: { copies (bản mỗi kiện), boxes (số kiện), paper: "A4"|"A5" }
+ */
+function buildParcelLabelHTML(label, opts = {}) {
+  const copies = Math.max(1, Math.min(20, Math.floor(Number(opts.copies) || 2)));
+  const boxes = Math.max(1, Math.min(50, Math.floor(Number(opts.boxes) || 1)));
+  const paper = opts.paper === "A5" ? "A5" : "A4";
+  const perRow = paper === "A5" ? 1 : 2;
+  const pageCss = paper === "A5"
+    ? `@page { size: A5 landscape; margin: 6mm; }`
+    : `@page { size: A4 portrait; margin: 8mm; }`;
+  const base = paper === "A5" ? 14 : 12;
+
+  const e = (s) => escapeHtml(String(s == null ? "" : s));
+  const rcvContact = [label.recipientPhone, label.recipientName].filter(Boolean).join(" - ");
+
+  const oneLabel = (boxNo) => `
+    <div class="lbl">
+      <div class="hd">${e(label.route || "PHIẾU GỬI HÀNG")}${boxes > 1 ? `<span class="kien">KIỆN ${boxNo}/${boxes}</span>` : ""}</div>
+      <table class="bx">
+        <tr><td class="k">Bên gửi:</td><td class="v b">${e(label.senderName)}</td></tr>
+        <tr><td class="k">SĐT:</td><td class="v b">${e(label.senderPhone)}</td></tr>
+        <tr><td class="k">Địa chỉ:</td><td class="v">${e(label.senderAddress)}</td></tr>
+        <tr><td class="sp" colspan="2"></td></tr>
+        <tr><td class="k">Bên nhận:</td><td class="v big b">${e(label.company || label.recipientName)}</td></tr>
+        <tr><td class="k">SĐT:</td><td class="v b big">${e(rcvContact || "—")}</td></tr>
+        <tr><td class="k">Địa chỉ:</td><td class="v b">${e(label.recipientAddress)}</td></tr>
+        ${label.note ? `<tr><td class="note" colspan="2">${e(label.note)}</td></tr>` : ""}
+      </table>
+    </div>`;
+
+  const cells = [];
+  for (let b = 1; b <= boxes; b++) {
+    for (let c = 0; c < copies; c++) cells.push(oneLabel(b));
+  }
+  const rows = [];
+  for (let i = 0; i < cells.length; i += perRow) {
+    rows.push(`<div class="row">${cells.slice(i, i + perRow).join("")}</div>`);
+  }
+
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${e(label.code || "Phieu gui hang")}</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { font-family: 'Times New Roman', Times, serif; color:#000; margin:0; font-size:${base}px; }
+      ${pageCss}
+      .row { display:flex; gap:6mm; margin-bottom:6mm; page-break-inside:avoid; }
+      .lbl { flex:1; border:2px solid #000; }
+      .hd { background:#19d3ec; text-align:center; font-weight:bold; font-size:${base + 3}px; padding:4px 6px; border-bottom:2px solid #000; position:relative; }
+      .hd .kien { position:absolute; right:6px; top:3px; font-size:${base}px; background:#000; color:#fff; padding:1px 6px; }
+      table.bx { width:100%; border-collapse:collapse; }
+      .bx td { border:1px solid #000; padding:6px 8px; vertical-align:top; }
+      .bx td.k { width:26%; white-space:nowrap; }
+      .bx td.v { font-size:${base + 1}px; }
+      .bx td.v.big { font-size:${base + 5}px; }
+      .bx td.b { font-weight:bold; }
+      .bx td.sp { height:14px; border-left:1px solid #000; border-right:1px solid #000; border-top:none; border-bottom:none; }
+      .bx td.note { text-align:center; font-weight:bold; font-size:${base + 4}px; letter-spacing:1px; padding:8px; }
+      @media print { body { -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
+    </style>
+  </head><body>${rows.join("")}</body></html>`;
+}
 
 const QUOTE_STATUS_LABEL = { active: "Còn hiệu lực", converted: "Đã chuyển đơn", cancelled: "Đã huỷ", expired: "Hết hiệu lực" };
 
@@ -12781,6 +13089,7 @@ export default function SalesManager() {
   const [repairTickets, setRepairTickets] = useState([]);
   const [helpdeskTickets, setHelpdeskTickets] = useState([]);
   const [shippingTickets, setShippingTickets] = useState([]);
+  const [parcelLabels, setParcelLabels] = useState([]);
   const [plans, setPlans] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [activityLog, setActivityLog] = useState([]);
@@ -12836,6 +13145,7 @@ export default function SalesManager() {
           setRepairTickets((data.repairTickets || []).map(normalizeRepairTicket));
           setHelpdeskTickets((data.helpdeskTickets || []).map(normalizeHelpdeskTicket));
           setShippingTickets((data.shippingTickets || []).map(normalizeShippingTicket));
+          setParcelLabels((data.parcelLabels || []).map(normalizeParcelLabel));
           setPlans((data.plans || []).map(normalizePlan));
           setActivityLog((data.activityLog || []).map(normalizeLog));
           setNotifications((data.notifications || []).map(normalizeNotif));
@@ -12886,9 +13196,9 @@ export default function SalesManager() {
 
   useEffect(() => {
     if (!loaded) return;
-    const t = setTimeout(() => { saveData({ products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, plans, accounts, activityLog, notifications, printSettings, quotations, webConfig, session: { userId: currentUserId } }); }, 400);
+    const t = setTimeout(() => { saveData({ products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, parcelLabels, plans, accounts, activityLog, notifications, printSettings, quotations, webConfig, session: { userId: currentUserId } }); }, 400);
     return () => clearTimeout(t);
-  }, [products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, plans, accounts, activityLog, notifications, printSettings, quotations, webConfig, currentUserId, loaded]);
+  }, [products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, parcelLabels, plans, accounts, activityLog, notifications, printSettings, quotations, webConfig, currentUserId, loaded]);
 
   // Tự kéo đơn hàng mới từ website khách về (khách đặt trên web ghi thẳng vào blob chung).
   // 30s/lần, CHỈ THÊM đơn chưa có (không đụng đơn đang sửa) — hết cảnh phải F5 mới thấy đơn web.
@@ -13051,7 +13361,7 @@ export default function SalesManager() {
   const buildSnapshot = () => ({
     _backup: { app: "hilitek", version: STORAGE_KEY, at: new Date().toISOString(), by: currentUser?.username || "" },
     products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes,
-    warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, plans, accounts,
+    warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, parcelLabels, plans, accounts,
     activityLog, notifications, printSettings, quotations, webConfig,
   });
   const downloadBackup = () => {
@@ -13140,7 +13450,7 @@ export default function SalesManager() {
             {tab === "products" && roleTabIds.includes("products") && <ProductsSection products={products} setProducts={setProducts} purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} suppliers={suppliers} setSuppliers={setSuppliers} categories={categories} setCategories={setCategories} brands={brands} setBrands={setBrands} stocktakes={stocktakes} setStocktakes={setStocktakes} warrantyTickets={warrantyTickets} setWarrantyTickets={setWarrantyTickets} repairTickets={repairTickets} setRepairTickets={setRepairTickets} helpdeskTickets={helpdeskTickets} setHelpdeskTickets={setHelpdeskTickets} orders={orders} customers={customers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} navTarget={tab === "products" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} goToDoc={goToDoc} goToSupplier={goToSupplier} webConfig={webConfig} />}
             {tab === "quotes" && <Quotations quotations={quotations} setQuotations={setQuotations} orders={orders} setOrders={setOrders} products={products} setProducts={setProducts} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} brands={brands} />}
             {tab === "orders" && <Orders orders={orders} setOrders={setOrders} products={products} setProducts={setProducts} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} focusOrderId={tab === "orders" ? navTarget?.type === "order" ? navTarget.id : null : null} initialFilterStatus={tab === "orders" && navTarget?.type === "orders-filter" ? navTarget.status : null} onFocusHandled={() => setNavTarget(null)} printSettings={printSettings} setPrintSettings={setPrintSettings} />}
-            {tab === "shipping" && roleTabIds.includes("shipping") && <Shipping shippingTickets={shippingTickets} setShippingTickets={setShippingTickets} orders={orders} customers={customers} currentUser={currentUser} addLog={addLog} />}
+            {tab === "shipping" && roleTabIds.includes("shipping") && <Shipping shippingTickets={shippingTickets} setShippingTickets={setShippingTickets} parcelLabels={parcelLabels} setParcelLabels={setParcelLabels} orders={orders} customers={customers} currentUser={currentUser} addLog={addLog} />}
             {tab === "customers" && <Customers customers={customers} setCustomers={setCustomers} orders={orders} products={products} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} employeeNames={employeeNames} />}
             {tab === "suppliers" && <Suppliers suppliers={suppliers} setSuppliers={setSuppliers} purchaseOrders={purchaseOrders} addLog={addLog} goToDoc={goToDoc} navTarget={tab === "suppliers" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} />}
             {tab === "plans" && roleTabIds.includes("plans") && <Plans plans={plans} setPlans={setPlans} orders={orders} purchaseOrders={purchaseOrders} products={products} employeeNames={employeeNames} />}
