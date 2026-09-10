@@ -21,8 +21,14 @@ const shopSpaFallbackDev = {
       const url = (req.url || "/").split("?")[0];
       const skip =
         url === "/" || url === "/index.html" || url === "/admin.html" || url === "/shop.html" ||
-        url.includes(".") ||
-        /^\/(src|@|node_modules|api|media|quanlybanhang|admin)(\/|$)/.test(url);
+        url.startsWith("/@") ||
+        url.startsWith("/src/") ||
+        url.startsWith("/node_modules/") ||
+        url.startsWith("/api") ||
+        url.startsWith("/media/") ||
+        url.startsWith("/quanlybanhang") ||
+        url.startsWith("/admin") ||
+        /\.\w+$/.test(url); // có đuôi file (.js .css .png .jsx ...)
       if (!skip) req.url = "/shop.html";
       next();
     });
