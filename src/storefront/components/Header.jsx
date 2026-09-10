@@ -63,7 +63,7 @@ export default function Header({ route, navigate, drawer, setDrawer }) {
       ];
 
   return (
-    <header className="sticky top-0 z-50 font-sans">
+    <header className="lg:sticky lg:top-0 z-50 font-sans">
       {/* Thanh trên cùng */}
       <div className="bg-ink text-white/75 text-[13px]">
         <div className="mx-auto max-w-[1500px] px-4 h-9 flex items-center justify-between gap-4">
