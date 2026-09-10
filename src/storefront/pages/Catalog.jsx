@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { SlidersHorizontal, X, ChevronRight } from "lucide-react";
 import ProductCard from "../components/ProductCard.jsx";
 import { discountPercent, formatVND } from "../lib/format.js";
@@ -27,6 +27,7 @@ export default function Catalog({ catalog, route, navigate }) {
   const sort = route.query.sort || "popular";
   const inStock = route.query.stock === "1";
   const onSale = route.query.sale === "1";
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const setParam = (patch) => {
     const next = { ...route.query, ...patch };
@@ -91,6 +92,109 @@ export default function Catalog({ catalog, route, navigate }) {
 
   const priceActive = (b) => (b.min ?? null) === pmin && (b.max ?? null) === pmax;
 
+  // Số bộ lọc đang bật (không tính sắp xếp) — hiện trên nút "Bộ lọc" ở mobile.
+  const activeCount =
+    (group || cat ? 1 : 0) + (brand ? 1 : 0) + (hasPrice ? 1 : 0) + (inStock ? 1 : 0) + (onSale ? 1 : 0);
+
+  // Nội dung bộ lọc — dùng chung cho cột trái (desktop) và tấm trượt dưới (mobile).
+  const filterBody = (
+    <>
+      <div className={"items-center gap-2 text-ink font-display font-semibold text-[15px] " + (hasFilter ? "flex" : "hidden lg:flex")}>
+        <span className="hidden lg:inline-flex items-center gap-2"><SlidersHorizontal size={16} /> Bộ lọc</span>
+        {hasFilter && (
+          <button onClick={() => { navigate("/danh-muc"); setSheetOpen(false); }} className="ml-auto text-[13px] text-navy inline-flex items-center gap-0.5 font-sans font-normal">
+            <X size={12} /> Xoá lọc
+          </button>
+        )}
+      </div>
+
+      {/* Nhóm chính + danh mục phụ */}
+      <div>
+        <div className="text-[13px] uppercase tracking-wide text-mute mb-2">Danh mục</div>
+        <ul className="space-y-1 text-[14px]">
+          <li>
+            <button onClick={() => navigate("/danh-muc")} className={!group && !cat ? "text-navy font-semibold" : "text-ink/75 hover:text-navy"}>
+              Tất cả
+            </button>
+          </li>
+          {MENU.map((g) => {
+            const GIcon = groupIcon(g.icon);
+            const gActive = g.group === activeGroup;
+            return (
+              <li key={g.slug}>
+                <button
+                  onClick={() => setParam({ group: g.group, cat: "", brand: "", pmin: "", pmax: "" })}
+                  className={"flex items-center gap-1.5 " + (g.group === group && !cat ? "text-navy font-semibold" : "text-ink/75 hover:text-navy")}
+                >
+                  <GIcon size={15} className="text-navy/70" /> {g.group}
+                </button>
+                {gActive && (g.subs || []).length > 0 && (
+                  <ul className="mt-1 ml-3 space-y-1 border-l border-line pl-3">
+                    {g.subs.map((s) => (
+                      <li key={s.slug || s.name}>
+                        <button
+                          onClick={() => setParam({ group: "", cat: s.name === cat ? "" : s.name, brand: "", pmin: "", pmax: "" })}
+                          className={s.name === cat ? "text-navy font-semibold" : "text-ink/70 hover:text-navy"}
+                        >
+                          {s.name}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+
+      {/* Khoảng giá (tự sinh) */}
+      <div>
+        <div className="text-[13px] uppercase tracking-wide text-mute mb-2">Khoảng giá</div>
+        <ul className="space-y-1 text-[14px]">
+          {PRICE_BUCKETS.map((b, i) => (
+            <li key={i}>
+              <button
+                onClick={() => setParam(priceActive(b) ? { pmin: "", pmax: "" } : { pmin: b.min ?? "", pmax: b.max ?? "" })}
+                className={priceActive(b) ? "text-navy font-semibold" : "text-ink/75 hover:text-navy"}
+              >
+                {b.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Thương hiệu (tự sinh) */}
+      {brandsHere.length > 1 && (
+        <div>
+          <div className="text-[13px] uppercase tracking-wide text-mute mb-2">Thương hiệu</div>
+          <ul className="space-y-1 text-[14px]">
+            <li>
+              <button onClick={() => setParam({ brand: "" })} className={!brand ? "text-navy font-semibold" : "text-ink/75 hover:text-navy"}>Tất cả</button>
+            </li>
+            {brandsHere.map((b) => (
+              <li key={b}>
+                <button onClick={() => setParam({ brand: b === brand ? "" : b })} className={b === brand ? "text-navy font-semibold" : "text-ink/75 hover:text-navy"}>
+                  {b}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <label className="flex items-center gap-2 text-[14px] text-ink/80">
+        <input type="checkbox" checked={inStock} onChange={(e) => setParam({ stock: e.target.checked ? "1" : "" })} />
+        Chỉ hàng còn sẵn
+      </label>
+      <label className="flex items-center gap-2 text-[14px] text-ink/80">
+        <input type="checkbox" checked={onSale} onChange={(e) => setParam({ sale: e.target.checked ? "1" : "" })} />
+        Đang khuyến mãi
+      </label>
+    </>
+  );
+
   return (
     <div className="mx-auto max-w-[1500px] px-4 py-6 font-sans">
       <nav className="flex items-center gap-1 text-[13px] text-mute mb-4 flex-wrap">
@@ -133,103 +237,20 @@ export default function Catalog({ catalog, route, navigate }) {
         </div>
       )}
 
+      {/* Nút mở bộ lọc — chỉ hiện trên điện thoại */}
+      <button
+        onClick={() => setSheetOpen(true)}
+        className="lg:hidden mb-4 inline-flex items-center gap-2 border border-line rounded-md px-3 py-2 text-[14px] font-medium text-ink"
+      >
+        <SlidersHorizontal size={16} /> Bộ lọc
+        {activeCount > 0 && (
+          <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-navy text-white text-[11px] font-bold grid place-items-center">{activeCount}</span>
+        )}
+      </button>
+
       <div className="grid lg:grid-cols-[240px_1fr] gap-8">
-        {/* Bộ lọc */}
-        <aside className="space-y-6">
-          <div className="flex items-center gap-2 text-ink font-display font-semibold text-[15px]">
-            <SlidersHorizontal size={16} /> Bộ lọc
-            {hasFilter && (
-              <button onClick={() => navigate("/danh-muc")} className="ml-auto text-[13px] text-navy inline-flex items-center gap-0.5 font-sans font-normal">
-                <X size={12} /> Xoá lọc
-              </button>
-            )}
-          </div>
-
-          {/* Nhóm chính + danh mục phụ */}
-          <div>
-            <div className="text-[13px] uppercase tracking-wide text-mute mb-2">Danh mục</div>
-            <ul className="space-y-1 text-[14px]">
-              <li>
-                <button onClick={() => navigate("/danh-muc")} className={!group && !cat ? "text-navy font-semibold" : "text-ink/75 hover:text-navy"}>
-                  Tất cả
-                </button>
-              </li>
-              {MENU.map((g) => {
-                const GIcon = groupIcon(g.icon);
-                const gActive = g.group === activeGroup;
-                return (
-                  <li key={g.slug}>
-                    <button
-                      onClick={() => setParam({ group: g.group, cat: "", brand: "", pmin: "", pmax: "" })}
-                      className={"flex items-center gap-1.5 " + (g.group === group && !cat ? "text-navy font-semibold" : "text-ink/75 hover:text-navy")}
-                    >
-                      <GIcon size={15} className="text-navy/70" /> {g.group}
-                    </button>
-                    {gActive && (g.subs || []).length > 0 && (
-                      <ul className="mt-1 ml-3 space-y-1 border-l border-line pl-3">
-                        {g.subs.map((s) => (
-                          <li key={s.slug || s.name}>
-                            <button
-                              onClick={() => setParam({ group: "", cat: s.name === cat ? "" : s.name, brand: "", pmin: "", pmax: "" })}
-                              className={s.name === cat ? "text-navy font-semibold" : "text-ink/70 hover:text-navy"}
-                            >
-                              {s.name}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-
-          {/* Khoảng giá (tự sinh) */}
-          <div>
-            <div className="text-[13px] uppercase tracking-wide text-mute mb-2">Khoảng giá</div>
-            <ul className="space-y-1 text-[14px]">
-              {PRICE_BUCKETS.map((b, i) => (
-                <li key={i}>
-                  <button
-                    onClick={() => setParam(priceActive(b) ? { pmin: "", pmax: "" } : { pmin: b.min ?? "", pmax: b.max ?? "" })}
-                    className={priceActive(b) ? "text-navy font-semibold" : "text-ink/75 hover:text-navy"}
-                  >
-                    {b.label}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Thương hiệu (tự sinh) */}
-          {brandsHere.length > 1 && (
-            <div>
-              <div className="text-[13px] uppercase tracking-wide text-mute mb-2">Thương hiệu</div>
-              <ul className="space-y-1 text-[14px]">
-                <li>
-                  <button onClick={() => setParam({ brand: "" })} className={!brand ? "text-navy font-semibold" : "text-ink/75 hover:text-navy"}>Tất cả</button>
-                </li>
-                {brandsHere.map((b) => (
-                  <li key={b}>
-                    <button onClick={() => setParam({ brand: b === brand ? "" : b })} className={b === brand ? "text-navy font-semibold" : "text-ink/75 hover:text-navy"}>
-                      {b}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <label className="flex items-center gap-2 text-[14px] text-ink/80">
-            <input type="checkbox" checked={inStock} onChange={(e) => setParam({ stock: e.target.checked ? "1" : "" })} />
-            Chỉ hàng còn sẵn
-          </label>
-          <label className="flex items-center gap-2 text-[14px] text-ink/80">
-            <input type="checkbox" checked={onSale} onChange={(e) => setParam({ sale: e.target.checked ? "1" : "" })} />
-            Đang khuyến mãi
-          </label>
-        </aside>
+        {/* Bộ lọc — cột trái (desktop), ẩn trên điện thoại */}
+        <aside className="hidden lg:block space-y-6">{filterBody}</aside>
 
         {/* Kết quả */}
         <div>
@@ -256,6 +277,28 @@ export default function Catalog({ catalog, route, navigate }) {
           )}
         </div>
       </div>
+
+      {/* Tấm trượt bộ lọc — điện thoại */}
+      {sheetOpen && (
+        <div className="lg:hidden fixed inset-0 z-[70]">
+          <div className="absolute inset-0 bg-ink/50" onClick={() => setSheetOpen(false)} />
+          <div className="absolute left-0 right-0 bottom-0 max-h-[82vh] flex flex-col bg-white rounded-t-2xl">
+            <div className="flex items-center justify-between px-4 h-12 border-b border-line shrink-0">
+              <span className="font-display font-semibold text-[15px]">Bộ lọc</span>
+              <button onClick={() => setSheetOpen(false)} aria-label="Đóng"><X size={20} /></button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">{filterBody}</div>
+            <div
+              className="p-3 border-t border-line shrink-0"
+              style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
+            >
+              <button onClick={() => setSheetOpen(false)} className="w-full bg-navy text-white font-semibold rounded-md py-2.5 text-[14px]">
+                Xem {list.length} sản phẩm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

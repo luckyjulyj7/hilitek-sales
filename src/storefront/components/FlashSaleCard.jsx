@@ -26,42 +26,42 @@ export default function FlashSaleCard({ product, onOpen, navigate }) {
 
   return (
     <div className="group flex h-full flex-col bg-white border border-line rounded-xl overflow-hidden hover:shadow-card hover:border-navy/30 transition">
-      <a href={`/san-pham/${p.slug}`} onClick={open} className="block relative p-3 pb-0">
+      <a href={`/san-pham/${p.slug}`} onClick={open} className="block relative p-1.5 pb-0 sm:p-3 sm:pb-0">
         <div className="relative aspect-square">
           <img src={img} alt={p.name} loading="lazy" className="w-full h-full object-contain" />
         </div>
         {off > 0 && (
-          <span className="absolute top-2 right-2 inline-flex items-center gap-0.5 bg-gradient-to-br from-[#ff4b2b] to-[#c40812] text-white text-[12px] font-extrabold px-2 py-0.5 rounded-full animate-emberglow">
-            <ArrowDown size={11} strokeWidth={3} /> {off}%
+          <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 inline-flex items-center gap-0.5 bg-gradient-to-br from-[#ff4b2b] to-[#c40812] text-white text-[11px] sm:text-[12px] font-extrabold px-1.5 sm:px-2 py-0.5 rounded-full animate-emberglow">
+            <ArrowDown size={10} strokeWidth={3} /> {off}%
           </span>
         )}
         {saving > 0 && (
-          <span className="absolute left-0 bottom-1 bg-[#00A8E8] text-white text-[10px] font-medium leading-tight px-2 py-1 rounded-r-md">
+          <span className="absolute left-0 bottom-1 bg-[#00A8E8] text-white text-[9px] sm:text-[10px] font-medium leading-tight px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-r-md">
             Tiết kiệm
             <br />
-            <b className="text-[12px] font-bold">{formatVND(saving)}</b>
+            <b className="text-[11px] sm:text-[12px] font-bold">{formatVND(saving)}</b>
           </span>
         )}
       </a>
 
-      <div className="flex flex-col flex-1 px-3 pb-3 pt-2">
+      <div className="flex flex-col flex-1 px-2 pb-2 pt-1.5 sm:px-3 sm:pb-3 sm:pt-2">
         <a
           href={`/san-pham/${p.slug}`}
           onClick={open}
-          className="text-[13px] leading-snug text-ink line-clamp-2 min-h-[36px] hover:text-navy"
+          className="text-[11px] sm:text-[13px] leading-snug text-ink line-clamp-2 min-h-[30px] sm:min-h-[36px] hover:text-navy"
         >
           {p.name}
         </a>
 
-        <div className="mt-auto pt-2">
+        <div className="mt-auto pt-1.5 sm:pt-2">
           {off > 0 && (
-            <div className="font-mono text-[12px] text-mute line-through">{formatVND(p.listPrice)}</div>
+            <div className="font-mono text-[10px] sm:text-[12px] text-mute line-through">{formatVND(p.listPrice)}</div>
           )}
-          <div className="font-mono font-bold text-[16px] text-sale">{formatVND(p.price)}</div>
+          <div className="font-mono font-bold text-[14px] sm:text-[16px] text-sale">{formatVND(p.price)}</div>
 
           <button
             onClick={order}
-            className="mt-2 inline-flex items-center justify-center bg-sale text-white text-[13px] font-semibold rounded-md px-5 py-1.5 hover:brightness-110 transition"
+            className="mt-1.5 sm:mt-2 inline-flex items-center justify-center bg-sale text-white text-[11px] sm:text-[13px] font-semibold rounded-md px-3 sm:px-5 py-1 sm:py-1.5 hover:brightness-110 transition"
           >
             Đặt hàng
           </button>

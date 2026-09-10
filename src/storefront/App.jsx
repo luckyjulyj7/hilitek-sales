@@ -6,6 +6,7 @@ import { CatalogCtx } from "./catalogContext.js";
 import Header from "./components/Header.jsx";
 import Footer from "./components/Footer.jsx";
 import FloatingContact from "./components/FloatingContact.jsx";
+import BottomNav from "./components/BottomNav.jsx";
 import Home from "./pages/Home.jsx";
 import Catalog from "./pages/Catalog.jsx";
 import ProductDetail from "./pages/ProductDetail.jsx";
@@ -26,6 +27,10 @@ export default function App() {
   const [catalog, setCatalog] = useState(EMPTY);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [drawer, setDrawer] = useState(false);
+
+  // Đóng menu danh mục (drawer trái) mỗi khi chuyển trang.
+  useEffect(() => { setDrawer(false); }, [route.path]);
 
   useEffect(() => {
     fetchCatalog()
@@ -85,8 +90,8 @@ export default function App() {
   return (
     <CatalogCtx.Provider value={catalog}>
     <div className="min-h-full flex flex-col bg-paper text-ink">
-      <Header route={route} navigate={route.navigate} />
-      <main className="flex-1">
+      <Header route={route} navigate={route.navigate} drawer={drawer} setDrawer={setDrawer} />
+      <main className="flex-1 pb-[calc(env(safe-area-inset-bottom)+56px)] lg:pb-0">
         {error ? (
           <div className="mx-auto max-w-3xl px-4 py-20 text-center text-navy font-sans">
             Không tải được dữ liệu: {error}
@@ -99,6 +104,7 @@ export default function App() {
       </main>
       <Footer navigate={route.navigate} />
       <FloatingContact />
+      <BottomNav route={route} navigate={route.navigate} onOpenCategories={() => setDrawer(true)} />
     </div>
     </CatalogCtx.Provider>
   );

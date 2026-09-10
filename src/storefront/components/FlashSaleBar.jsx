@@ -33,28 +33,27 @@ export default function FlashSaleBar({ navigate }) {
   };
 
   const cell = (v, label) => (
-    <div className="flex flex-col items-center justify-center bg-sale text-white rounded-lg w-[56px] h-[52px] sm:w-[62px] sm:h-[56px] shadow-[0_2px_8px_rgba(237,28,36,0.35)]">
-      <span className="font-mono font-extrabold text-lg leading-none tabular-nums">{String(v).padStart(2, "0")}</span>
-      <span className="text-[10px] uppercase tracking-wide mt-1 text-white/85">{label}</span>
+    <div className="flex flex-col items-center justify-center bg-sale text-white rounded-md sm:rounded-lg w-[38px] h-[38px] sm:w-[62px] sm:h-[56px] shadow-[0_2px_8px_rgba(237,28,36,0.35)]">
+      <span className="font-mono font-extrabold text-[13px] sm:text-lg leading-none tabular-nums">{String(v).padStart(2, "0")}</span>
+      <span className="text-[8px] sm:text-[10px] uppercase tracking-wide mt-0.5 sm:mt-1 text-white/85">{label}</span>
     </div>
   );
 
   return (
-    <div className="flex flex-wrap items-center gap-3 sm:gap-6">
+    <div className="flex flex-wrap items-center gap-2 sm:gap-6">
       {/* Logo FLASH SALE — khối 2 màu nghiêng + tia sét vàng, nhấp nháy & rung theo nhịp */}
-      <div className="relative shrink-0 select-none pr-5 origin-center animate-flashpulse">
+      <div className="relative shrink-0 select-none pr-4 sm:pr-5 origin-center animate-flashpulse">
         <div className="font-display font-extrabold italic leading-none -skew-x-6">
-          <div className="bg-ink text-white text-lg sm:text-xl px-3 py-1 rounded-t-md">FLASH</div>
-          <div className="bg-sale text-white text-lg sm:text-xl px-3 py-1 rounded-b-md shadow-[0_0_14px_rgba(237,28,36,0.55)]">SALE</div>
+          <div className="bg-ink text-white text-[13px] sm:text-xl px-2 sm:px-3 py-0.5 sm:py-1 rounded-t-md">FLASH</div>
+          <div className="bg-sale text-white text-[13px] sm:text-xl px-2 sm:px-3 py-0.5 sm:py-1 rounded-b-md shadow-[0_0_14px_rgba(237,28,36,0.55)]">SALE</div>
         </div>
         <Zap
-          size={40}
-          className="absolute -right-1 top-1/2 -translate-y-1/2 text-yellow fill-yellow drop-shadow-[0_2px_4px_rgba(0,0,0,0.25)] animate-flashbolt"
+          className="absolute -right-1 top-1/2 -translate-y-1/2 w-6 h-6 sm:w-10 sm:h-10 text-yellow fill-yellow drop-shadow-[0_2px_4px_rgba(0,0,0,0.25)] animate-flashbolt"
         />
       </div>
 
       {/* Đồng hồ đếm ngược */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 sm:gap-2">
         {cell(days, "Ngày")}
         {cell(hours, "Giờ")}
         {cell(mins, "Phút")}
@@ -63,7 +62,7 @@ export default function FlashSaleBar({ navigate }) {
 
       <button
         onClick={goSeeAll}
-        className="ml-auto text-sale font-semibold text-[14px] underline underline-offset-2 hover:text-red-700 shrink-0"
+        className="ml-auto text-sale font-semibold text-[12px] sm:text-[14px] underline underline-offset-2 hover:text-red-700 shrink-0"
       >
         Xem tất cả
       </button>

@@ -12,10 +12,9 @@ import { groupIcon } from "./groupIcons.js";
 
 const ICONS = { CreditCard, Wallet, Truck, ShieldCheck, Wrench };
 
-export default function Header({ route, navigate }) {
+export default function Header({ route, navigate, drawer, setDrawer }) {
   const { count, bump } = useCart();
   const [term, setTerm] = useState(route.query.q || "");
-  const [drawer, setDrawer] = useState(false);
   const [catOpen, setCatOpen] = useState(false);
   const [mobileGroup, setMobileGroup] = useState(null);
   const [cartBump, setCartBump] = useState(false);
