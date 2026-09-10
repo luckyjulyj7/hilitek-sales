@@ -42,38 +42,41 @@ export default function ProductCard({ product, onOpen }) {
         )}
       </a>
 
+      {/* Bố cục cố định chiều cao từng dòng → giá đỏ luôn nằm đúng một vị trí trên mọi thẻ */}
       <div className="flex flex-col flex-1 p-3">
-        <div className="text-[12px] uppercase tracking-wide text-mute font-mono">{p.brand}</div>
+        <div className="text-[12px] uppercase tracking-wide text-mute font-mono line-clamp-1 min-h-[15px]">{p.brand}</div>
         <a
           href={`/san-pham/${p.slug}`}
           onClick={(e) => { e.preventDefault(); onOpen(p.slug); }}
-          className="mt-1 text-[14px] leading-snug text-ink line-clamp-2 hover:text-navy min-h-[38px]"
+          className="mt-1 text-[14px] leading-snug text-ink line-clamp-2 hover:text-navy h-[38px]"
         >
           {p.name}
         </a>
 
-        <div className="mt-auto pt-3">
-          <div className="flex items-baseline gap-1.5 flex-wrap">
-            <span className="font-mono font-extrabold text-[19px] sm:text-[20px] text-sale leading-none">{formatVND(p.price)}</span>
-            {off > 0 && (
-              <span className="font-mono text-[11px] text-mute/80 line-through">{formatVND(p.listPrice)}</span>
-            )}
-          </div>
+        {/* Giá — vị trí cố định */}
+        <div className="mt-2.5 flex items-baseline gap-1.5 flex-wrap">
+          <span className="font-mono font-extrabold text-[21px] sm:text-[23px] text-sale leading-none">{formatVND(p.price)}</span>
+          {off > 0 && (
+            <span className="font-mono text-[11px] text-mute/80 line-through">{formatVND(p.listPrice)}</span>
+          )}
+        </div>
 
+        {/* Dòng khuyến mãi — luôn chừa 1 dòng để nút bên dưới cũng thẳng hàng */}
+        <div className="mt-1 min-h-[18px] flex items-start gap-1 text-[12px] leading-snug text-[#E8730C]">
           {p.promo && (
-            <div className="mt-1.5 flex items-start gap-1 text-[12px] leading-snug text-[#E8730C]">
+            <>
               <Gift size={13} className="mt-[1px] shrink-0" />
               <span className="line-clamp-1">{String(p.promo).split("\n")[0].replace(/^[-+•*]\s*/, "")}</span>
-            </div>
+            </>
           )}
-
-          <button
-            onClick={buy}
-            className="mt-3 w-full inline-flex items-center justify-center gap-1.5 rounded-md text-[14px] font-semibold py-2 transition bg-navy text-white hover:bg-navy-600"
-          >
-            {inCart ? <Check size={15} /> : <Plus size={15} />} Đặt hàng
-          </button>
         </div>
+
+        <button
+          onClick={buy}
+          className="mt-2 w-full inline-flex items-center justify-center gap-1.5 rounded-md text-[14px] font-semibold py-2 transition bg-navy text-white hover:bg-navy-600"
+        >
+          {inCart ? <Check size={15} /> : <Plus size={15} />} Đặt hàng
+        </button>
       </div>
     </div>
   );

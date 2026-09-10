@@ -10,7 +10,7 @@ import SearchSelect from "../components/SearchSelect.jsx";
 const ORDER_SOURCE = "Đặt hàng website";
 
 export default function Checkout({ navigate }) {
-  const { items, subtotal, clear } = useCart();
+  const { items, subtotal, discount, total, coupon, clear } = useCart();
   const [form, setForm] = useState({
     name: "", phone: "", email: "", province: "", ward: "", address: "", note: "", pay: "bank",
   });
@@ -91,6 +91,9 @@ export default function Checkout({ navigate }) {
       payment: form.pay, // 'cod' | 'bank'
       items: items.map((it) => ({ productId: it.id, sku: it.sku, name: it.name, price: it.price, qty: it.qty, preorder: !!it.preorder })),
       subtotal,
+      coupon: coupon ? coupon.code : "",
+      discount, // số tiền giảm (client tính; server tự kiểm tra lại theo mã)
+      total,
       hasPreorder: items.some((it) => it.preorder),
     };
 
@@ -191,9 +194,19 @@ export default function Checkout({ navigate }) {
               ))}
             </ul>
             <div className="my-3 border-t border-line" />
-            <div className="flex items-center justify-between">
-              <span className="text-[15px] text-mute">Tạm tính</span>
-              <span className="font-price text-xl font-bold text-sale">{formatVND(subtotal)}</span>
+            <div className="flex items-center justify-between text-[14px]">
+              <span className="text-mute">Tạm tính</span>
+              <span className="font-price text-ink">{formatVND(subtotal)}</span>
+            </div>
+            {discount > 0 && (
+              <div className="mt-1 flex items-center justify-between text-[14px]">
+                <span className="text-mute">Giảm giá {coupon ? `(${coupon.code})` : ""}</span>
+                <span className="font-price text-sale">− {formatVND(discount)}</span>
+              </div>
+            )}
+            <div className="mt-2 pt-2 border-t border-line flex items-center justify-between">
+              <span className="text-[15px] font-semibold text-ink">Thành tiền</span>
+              <span className="font-price text-xl font-bold text-sale">{formatVND(total)}</span>
             </div>
             <p className="mt-2 text-[13px] text-mute">Đã bao gồm VAT · Phí vận chuyển báo khi xác nhận đơn.</p>
             {items.some((it) => it.preorder) && (

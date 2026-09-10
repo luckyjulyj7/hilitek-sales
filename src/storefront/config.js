@@ -434,6 +434,50 @@ export const CHECKOUT = {
 };
 
 /**
+ * Mã giảm giá — chủ shop tự tạo ở "Cấu hình web → Mã giảm giá".
+ * Mỗi mã: { code, kind: "percent"|"amount", value, enabled?, note?, minSubtotal?, until? }
+ *   • kind "percent": value = % giảm (vd 10)  → đơn ở app quản lý: chiết khấu 10%
+ *   • kind "amount":  value = số tiền giảm (vd 20000) → chiết khấu 20.000₫
+ * Danh sách này được ghi đè bằng webConfig.COUPONS (applyWebConfig).
+ */
+export const COUPONS = [];
+
+const normCode = (s) => String(s || "").trim().toUpperCase().replace(/\s+/g, "");
+
+/** Tìm mã theo code (không phân biệt hoa/thường, bỏ khoảng trắng). */
+export function findCoupon(code) {
+  const k = normCode(code);
+  if (!k) return null;
+  return COUPONS.find((c) => c && normCode(c.code) === k) || null;
+}
+
+/**
+ * Kiểm tra 1 mã với đơn có tạm tính `subtotal`.
+ * → { ok:true, coupon:{code,kind,value}, discount } | { ok:false, error }
+ */
+export function evalCoupon(code, subtotal) {
+  const c = findCoupon(code);
+  if (!c) return { ok: false, error: "Mã giảm giá không đúng." };
+  if (c.enabled === false) return { ok: false, error: "Mã này đang tạm ngưng." };
+  if (c.until) {
+    const end = Date.parse(c.until);
+    if (Number.isFinite(end) && Date.now() > end + 86400000)
+      return { ok: false, error: "Mã giảm giá đã hết hạn." };
+  }
+  const min = Math.max(0, Number(c.minSubtotal) || 0);
+  if (min > 0 && Number(subtotal) < min)
+    return { ok: false, error: `Đơn tối thiểu ${min.toLocaleString("vi-VN")}₫ mới dùng được mã này.` };
+
+  const kind = c.kind === "percent" ? "percent" : "amount";
+  const value = Math.max(0, Number(c.value) || 0);
+  if (!value) return { ok: false, error: "Mã giảm giá không hợp lệ." };
+  const st = Math.max(0, Number(subtotal) || 0);
+  const discount =
+    kind === "percent" ? Math.round((st * Math.min(100, value)) / 100) : Math.min(st, value);
+  return { ok: true, coupon: { code: normCode(c.code), kind, value }, discount };
+}
+
+/**
  * Nội dung các trang chính sách (soạn theo mẫu maianhpc.vn, thay thông tin Hilitek).
  * Sửa text trực tiếp ở đây — trang tự render (components/pages/PolicyPage.jsx).
  * Mỗi section: { heading, body?: string|string[], bullets?: string[] }.

@@ -48,6 +48,34 @@ export default handler(async (req, res) => {
   // VAT cấp đơn (app tính công nợ theo o.vat): dùng VAT của mặt hàng đầu tiên.
   const orderVat = mapped[0] && mapped[0].vat ? mapped[0].vat : "VAT10";
 
+  // Mã giảm giá — server tự kiểm tra lại theo state.webConfig.COUPONS (không tin client).
+  // Mã % → chiết khấu đơn theo %; mã tiền → chiết khấu số tiền cố định.
+  const subtotal = mapped.reduce((s, it) => s + it.price * it.qty, 0);
+  const normCode = (s) => String(s || "").trim().toUpperCase().replace(/\s+/g, "");
+  const couponCode = normCode(body.coupon);
+  let orderDiscount = 0;
+  let discountType = "amount";
+  let couponNote = "";
+  if (couponCode) {
+    const list = Array.isArray(state.webConfig && state.webConfig.COUPONS) ? state.webConfig.COUPONS : [];
+    const c = list.find((x) => x && normCode(x.code) === couponCode);
+    const expired = c && c.until && Number.isFinite(Date.parse(c.until)) && Date.now() > Date.parse(c.until) + 86400000;
+    const belowMin = c && Number(c.minSubtotal) > 0 && subtotal < Number(c.minSubtotal);
+    if (c && c.enabled !== false && !expired && !belowMin && Number(c.value) > 0) {
+      if (c.kind === "percent") {
+        discountType = "percent";
+        orderDiscount = Math.min(100, Number(c.value));
+        couponNote = `Mã giảm giá: ${couponCode} (-${orderDiscount}%)`;
+      } else {
+        discountType = "amount";
+        orderDiscount = Math.min(subtotal, Math.round(Number(c.value)));
+        couponNote = `Mã giảm giá: ${couponCode} (-${orderDiscount.toLocaleString("vi-VN")}₫)`;
+      }
+    } else {
+      couponNote = `Mã giảm giá khách nhập (KHÔNG hợp lệ / hết hạn): ${couponCode}`;
+    }
+  }
+
   const source = body.source || "Đặt hàng website";
   const code = body.code || "WEB" + Date.now().toString(36).toUpperCase().slice(-8);
   const now = new Date().toISOString();
@@ -71,6 +99,7 @@ export default handler(async (req, res) => {
       `Khách: ${cust.name} · ${phone}` + (cust.email ? ` · ${cust.email}` : ""),
       sh.fullAddress ? `Giao tới: ${sh.fullAddress}` : "",
       sh.note ? `Ghi chú KH: ${sh.note}` : "",
+      couponNote,
       `Thanh toán: ${body.payment === "bank" ? "Chuyển khoản trước" : "COD (thu khi giao)"}`,
     ].filter(Boolean).join("\n"),
     shippingAddress: {
@@ -82,8 +111,8 @@ export default handler(async (req, res) => {
     },
     items: mapped,
     vat: orderVat,
-    orderDiscount: 0,
-    discountType: "amount",
+    orderDiscount,
+    discountType,
     shippingFee: 0,
     paidAmount: 0,
     payments: [],

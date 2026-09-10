@@ -1,10 +1,22 @@
-import React from "react";
-import { Trash2, ShoppingCart, ArrowRight, ArrowLeft } from "lucide-react";
+import React, { useState } from "react";
+import { Trash2, ShoppingCart, ArrowRight, ArrowLeft, Tag, X, Check } from "lucide-react";
 import { useCart } from "../cart.jsx";
-import { formatVND } from "../lib/format.js";
+import { formatVND, placeholderImage } from "../lib/format.js";
 
 export default function Cart({ navigate }) {
-  const { items, subtotal, setQty, remove } = useCart();
+  const {
+    items, subtotal, discount, total, coupon, couponError,
+    setQty, remove, applyCoupon, removeCoupon,
+  } = useCart();
+
+  const [code, setCode] = useState("");
+  const [msg, setMsg] = useState("");
+
+  const tryApply = () => {
+    const r = applyCoupon(code);
+    if (r.ok) { setMsg(""); setCode(""); }
+    else setMsg(r.error || "Mã không dùng được.");
+  };
 
   if (items.length === 0)
     return (
@@ -27,7 +39,20 @@ export default function Cart({ navigate }) {
         <div className="space-y-3">
           {items.map((it) => (
             <div key={it.id} className="border border-line rounded-lg bg-white p-4 flex flex-wrap gap-4 items-start">
-              <div className="flex-1 min-w-[200px]">
+              <a
+                href={`/san-pham/${it.slug}`}
+                onClick={(e) => { e.preventDefault(); navigate(`/san-pham/${it.slug}`); }}
+                className="w-20 h-20 shrink-0 rounded-md border border-line bg-white overflow-hidden grid place-items-center"
+              >
+                <img
+                  src={it.image || placeholderImage(it.brand, "")}
+                  alt={it.name}
+                  className="w-full h-full object-contain"
+                  onError={(e) => { e.currentTarget.src = placeholderImage(it.brand, ""); }}
+                />
+              </a>
+
+              <div className="flex-1 min-w-[180px]">
                 <div className="font-mono text-[12px] uppercase tracking-wide text-mute">{it.brand} · {it.sku}</div>
                 <a
                   href={`/san-pham/${it.slug}`}
@@ -40,11 +65,6 @@ export default function Cart({ navigate }) {
                   <span className="mt-1 inline-block bg-[#E8730C]/10 text-[#E8730C] text-[12px] font-semibold px-2 py-0.5 rounded">
                     Đặt trước — chờ hàng về
                   </span>
-                )}
-                {it.specChips?.length > 0 && (
-                  <div className="mt-1.5 inline-block border-l-[3px] border-yellow bg-navy-050 rounded-r px-2 py-1 text-[12px] font-mono text-ink/70">
-                    {it.specChips.join(" · ")}
-                  </div>
                 )}
               </div>
 
@@ -74,10 +94,59 @@ export default function Cart({ navigate }) {
         </div>
 
         <div className="border border-line rounded-lg bg-white p-5 lg:sticky lg:top-[150px]">
-          <div className="flex items-center justify-between">
-            <span className="text-[15px] text-mute">Tạm tính</span>
-            <span className="font-mono text-2xl font-bold text-sale">{formatVND(subtotal)}</span>
+          {/* Mã giảm giá */}
+          <div className="pb-4 border-b border-line">
+            <div className="flex items-center gap-1.5 text-[13px] font-semibold text-ink">
+              <Tag size={14} /> Mã giảm giá
+            </div>
+            {coupon ? (
+              <div className="mt-2 flex items-center justify-between gap-2 bg-navy-050 rounded-md px-3 py-2">
+                <span className="inline-flex items-center gap-1.5 text-[13px] text-navy font-semibold">
+                  <Check size={14} /> {coupon.code}
+                  <span className="font-normal text-mute">
+                    ({coupon.kind === "percent" ? `-${coupon.value}%` : `-${formatVND(coupon.value)}`})
+                  </span>
+                </span>
+                <button onClick={() => { removeCoupon(); setMsg(""); }} className="text-mute hover:text-sale" aria-label="Bỏ mã">
+                  <X size={15} />
+                </button>
+              </div>
+            ) : (
+              <div className="mt-2 flex gap-2">
+                <input
+                  value={code}
+                  onChange={(e) => { setCode(e.target.value); setMsg(""); }}
+                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), tryApply())}
+                  placeholder="Nhập mã…"
+                  className="flex-1 min-w-0 border border-line rounded-md px-3 py-2 text-[14px] outline-none focus:border-navy uppercase"
+                />
+                <button onClick={tryApply} className="shrink-0 rounded-md bg-navy text-white text-[13px] font-semibold px-3 py-2 hover:bg-navy-600">
+                  Áp dụng
+                </button>
+              </div>
+            )}
+            {(msg || couponError) && (
+              <p className="mt-1.5 text-[12px] text-sale">{msg || couponError}</p>
+            )}
           </div>
+
+          <div className="mt-4 space-y-1.5">
+            <div className="flex items-center justify-between text-[14px]">
+              <span className="text-mute">Tạm tính</span>
+              <span className="font-mono text-ink">{formatVND(subtotal)}</span>
+            </div>
+            {discount > 0 && (
+              <div className="flex items-center justify-between text-[14px]">
+                <span className="text-mute">Giảm giá {coupon ? `(${coupon.code})` : ""}</span>
+                <span className="font-mono text-sale">− {formatVND(discount)}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between pt-1.5 border-t border-line">
+              <span className="text-[15px] font-semibold text-ink">Thành tiền</span>
+              <span className="font-mono text-2xl font-bold text-sale">{formatVND(total)}</span>
+            </div>
+          </div>
+
           <div className="mt-1 text-right text-[13px] text-mute">Đã bao gồm VAT</div>
           <p className="mt-3 text-[13px] text-mute leading-relaxed">
             Phí vận chuyển tính ở bước tiếp theo, sau khi chọn địa chỉ giao hàng.

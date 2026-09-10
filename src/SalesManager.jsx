@@ -12424,6 +12424,82 @@ function LandingsEditor({ webConfig, setWebConfig }) {
   );
 }
 
+/**
+ * Mã giảm giá cho website. Lưu trong webConfig.COUPONS.
+ * Mã % → đơn web tự set chiết khấu %; mã tiền → chiết khấu số tiền cố định.
+ */
+function CouponsEditor({ webConfig, setWebConfig }) {
+  const list = Array.isArray(webConfig.COUPONS) ? webConfig.COUPONS : [];
+  const mut = (fn) => setWebConfig((x) => {
+    const cur = Array.isArray(x.COUPONS) ? x.COUPONS : [];
+    return { ...x, COUPONS: fn(cur.map((c) => ({ ...c }))) };
+  });
+  const setAt = (i, patch) => mut((arr) => { arr[i] = { ...arr[i], ...patch }; return arr; });
+  const addOne = () => mut((arr) => [...arr, { code: "", kind: "percent", value: 10, enabled: true, minSubtotal: 0, until: "", note: "" }]);
+  const delOne = (i) => mut((arr) => arr.filter((_, j) => j !== i));
+  const mono = { fontFamily: "'IBM Plex Mono', monospace" };
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs opacity-55 leading-relaxed">
+        Khách nhập mã ở <b>trang giỏ hàng</b>. Mã kiểu <b>%</b> → đơn từ web tự đặt <b>chiết khấu %</b>;
+        mã kiểu <b>đ</b> → chiết khấu số tiền cố định. Đơn về mục "Bán hàng" đã có sẵn chiết khấu này.
+        <br />Danh sách mã nằm trong cấu hình công khai của web (khách rành kỹ thuật có thể xem) — dùng cho mã phát cho khách, không đặt mã "bí mật".
+      </p>
+      {list.length === 0 && <p className="text-xs" style={{ color: RUST }}>Chưa có mã nào. Bấm "+ Thêm mã".</p>}
+
+      {list.map((c, i) => (
+        <div key={i} className="rounded-sm p-3 space-y-2" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="flex-1 min-w-[180px]">
+              <div className="text-xs opacity-60 mb-1">Mã (khách gõ)</div>
+              <input value={c.code || ""} onChange={(e) => setAt(i, { code: e.target.value.toUpperCase().replace(/\s+/g, "") })}
+                placeholder="HILIVUICUNGASUS" className={inputCls} style={{ borderColor: LINE, fontWeight: 600, ...mono }} />
+            </div>
+            <div>
+              <div className="text-xs opacity-60 mb-1">Kiểu</div>
+              <div className="flex rounded-sm overflow-hidden border" style={{ borderColor: LINE }}>
+                <button type="button" onClick={() => setAt(i, { kind: "percent" })} className="px-3 py-1.5 text-xs"
+                  style={{ background: c.kind !== "amount" ? INK : "transparent", color: c.kind !== "amount" ? "#fff" : INK }}>%</button>
+                <button type="button" onClick={() => setAt(i, { kind: "amount" })} className="px-3 py-1.5 text-xs"
+                  style={{ background: c.kind === "amount" ? INK : "transparent", color: c.kind === "amount" ? "#fff" : INK }}>đ</button>
+              </div>
+            </div>
+            <div>
+              <div className="text-xs opacity-60 mb-1">{c.kind === "amount" ? "Giảm (₫)" : "Giảm (%)"}</div>
+              <MoneyInput value={c.value} onChange={(v) => setAt(i, { value: v })}
+                className="w-28 border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE, ...mono }} />
+            </div>
+            <label className="flex items-center gap-1 text-xs pb-2">
+              <input type="checkbox" checked={c.enabled !== false} onChange={(e) => setAt(i, { enabled: e.target.checked })} /> Bật
+            </label>
+            <button onClick={() => delOne(i)} className="text-xs pb-2 ml-auto" style={{ color: RUST }}>Xoá</button>
+          </div>
+          <div className="flex flex-wrap items-end gap-3">
+            <div>
+              <div className="text-xs opacity-60 mb-1">Đơn tối thiểu (₫)</div>
+              <MoneyInput value={c.minSubtotal || 0} onChange={(v) => setAt(i, { minSubtotal: v })}
+                className="w-32 border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE, ...mono }} />
+            </div>
+            <div>
+              <div className="text-xs opacity-60 mb-1">Hết hạn (tuỳ chọn)</div>
+              <input type="date" value={c.until || ""} onChange={(e) => setAt(i, { until: e.target.value })}
+                className="border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
+            </div>
+            <div className="flex-1 min-w-[160px]">
+              <div className="text-xs opacity-60 mb-1">Ghi chú (nội bộ)</div>
+              <input value={c.note || ""} onChange={(e) => setAt(i, { note: e.target.value })}
+                placeholder="vd: chương trình ASUS tháng 5" className={inputCls} style={{ borderColor: LINE }} />
+            </div>
+          </div>
+        </div>
+      ))}
+
+      <button onClick={addOne} className="text-xs px-2.5 py-1.5 rounded-sm border" style={{ borderColor: LINE, color: INK }}>+ Thêm mã</button>
+    </div>
+  );
+}
+
 function WebConfigForm({ webConfig, setWebConfig, addLog, products, categories }) {
   const c = webConfig || {};
   const SITE = c.SITE || {};
@@ -12516,6 +12592,11 @@ function WebConfigForm({ webConfig, setWebConfig, addLog, products, categories }
           <Field label="Chủ tài khoản">{ip(bank.holder, (v) => setBank("holder", v), "CÔNG TY TNHH …")}</Field>
           <Field label="Chi nhánh">{ip(bank.branch, (v) => setBank("branch", v), "PGD Lý Thường Kiệt")}</Field>
         </div>
+      </section>
+
+      <section>
+        <h3 className="font-medium mb-3" style={{ color: INK }}>Mã giảm giá <span className="text-xs opacity-50">(khách nhập ở trang giỏ hàng → chiết khấu đơn)</span></h3>
+        <CouponsEditor webConfig={webConfig} setWebConfig={setWebConfig} />
       </section>
 
       <section>
