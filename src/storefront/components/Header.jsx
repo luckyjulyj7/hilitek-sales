@@ -53,10 +53,11 @@ export default function Header({ route, navigate }) {
     closeTimer.current = setTimeout(() => setCatOpen(false), 130);
   };
 
+  const mainPhone = SITE.phone || SITE.phoneRaw || "";
   const hotlines = SITE.hotlines?.length
     ? SITE.hotlines
     : [
-        { label: "HOTLINE", number: SITE.phone, raw: SITE.phoneRaw },
+        ...(mainPhone ? [{ label: "HOTLINE", number: mainPhone, raw: SITE.phoneRaw || String(mainPhone).replace(/\D/g, "") }] : []),
         ...(SITE.techPhone
           ? [{ label: "HỖ TRỢ KỸ THUẬT", number: SITE.techPhone, raw: SITE.techPhoneRaw || String(SITE.techPhone).replace(/\D/g, "") }]
           : []),

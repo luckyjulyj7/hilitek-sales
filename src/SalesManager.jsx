@@ -695,7 +695,13 @@ function normalizeWeb(w) {
       : [],
     seoTitle: typeof w.seoTitle === "string" ? w.seoTitle : "",
     seoDesc: typeof w.seoDesc === "string" ? w.seoDesc : "",
+    virtualStock: !!w.virtualStock,               // bật tồn kho ảo bán online (dropship)
+    virtualStockQty: Math.max(0, Math.floor(Number(w.virtualStockQty) || 0)),
   };
+}
+// Số tồn kho ảo ngẫu nhiên "trông thật" cho hàng dropship (5–29).
+function randomVirtualStock() {
+  return Math.floor(Math.random() * 25) + 5;
 }
 // Thông số kỹ thuật web ↔ mảng [[nhãn, giá trị], ...].
 //  - Dòng có "|"  -> thông số mới:  Nhãn | Giá trị
@@ -2414,15 +2420,39 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           <Field label="Tên vật tư"><input className={inputCls} style={{ borderColor: LINE }} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            <Field label="Nhóm hàng" hint={isAdmin ? "Quản lý danh sách nhóm hàng ở nút bên trên" : "Chỉ chọn được nhóm hàng do quản trị viên tạo sẵn"}>
-              <select className={inputCls} style={{ borderColor: LINE }} value={form.category || ""} onChange={(e) => setForm({ ...form, category: e.target.value, brand: e.target.value !== form.category ? "" : form.brand })}>
+            <Field label="Nhóm hàng" hint={isAdmin ? "Chọn “+ Tạo nhóm hàng mới…” để thêm nhanh ngay tại đây" : "Chỉ chọn được nhóm hàng do quản trị viên tạo sẵn"}>
+              <select className={inputCls} style={{ borderColor: LINE }} value={form.category || ""}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === "__new__") {
+                    const name = (prompt("Tên nhóm hàng mới:") || "").trim();
+                    if (!name) return;
+                    if (!(categories || []).some((x) => x.toLowerCase() === name.toLowerCase())) { setCategories([...(categories || []), name]); addLog("Thêm nhóm hàng", name); }
+                    setForm({ ...form, category: name, brand: "" });
+                    return;
+                  }
+                  setForm({ ...form, category: v, brand: v !== form.category ? "" : form.brand });
+                }}>
                 <option value="">— Chưa chọn —</option>
+                {isAdmin && <option value="__new__">+ Tạo nhóm hàng mới…</option>}
                 {categoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </Field>
-            <Field label="Nhãn hiệu" hint={!form.category ? "Chọn nhóm hàng trước" : isAdmin ? "Quản lý danh sách nhãn hiệu ở nút bên trên" : "Chỉ chọn được nhãn hiệu do quản trị viên tạo sẵn"}>
-              <select className={inputCls} style={{ borderColor: LINE }} value={form.brand || ""} onChange={(e) => setForm({ ...form, brand: e.target.value })} disabled={!form.category}>
+            <Field label="Nhãn hiệu" hint={!form.category ? "Chọn nhóm hàng trước" : isAdmin ? "Chọn “+ Tạo nhãn hiệu mới…” để thêm nhanh ngay tại đây" : "Chỉ chọn được nhãn hiệu do quản trị viên tạo sẵn"}>
+              <select className={inputCls} style={{ borderColor: LINE }} value={form.brand || ""} disabled={!form.category}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === "__new__") {
+                    const name = (prompt(`Tên nhãn hiệu mới (nhóm "${form.category}"):`) || "").trim();
+                    if (!name) return;
+                    if (!(brands || []).some((b) => b.category === form.category && b.name.toLowerCase() === name.toLowerCase())) { setBrands([...(brands || []), { id: uid(), name, category: form.category }]); addLog("Thêm nhãn hiệu", `${name} (${form.category})`); }
+                    setForm({ ...form, brand: name });
+                    return;
+                  }
+                  setForm({ ...form, brand: v });
+                }}>
                 <option value="">— Chưa chọn —</option>
+                {isAdmin && form.category && <option value="__new__">+ Tạo nhãn hiệu mới…</option>}
                 {brandOptionsOf(form.category).map((b) => <option key={b} value={b}>{b}</option>)}
               </select>
             </Field>
@@ -2798,10 +2828,17 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                       )}
                       <button
                         onClick={() => {
-                          if (usedCount > 0) { alert(`Không thể xoá — đang có ${usedCount} sản phẩm thuộc nhóm hàng này. Hãy đổi nhóm hàng cho các sản phẩm đó trước.`); return; }
-                          if (brandCount > 0) { alert(`Không thể xoá — nhóm hàng này đang có ${brandCount} nhãn hiệu con. Hãy xoá hoặc chuyển các nhãn hiệu đó sang nhóm khác trước (mục Quản lý nhãn hiệu).`); return; }
+                          const parts = [];
+                          if (usedCount > 0) parts.push(`${usedCount} sản phẩm`);
+                          if (brandCount > 0) parts.push(`${brandCount} nhãn hiệu`);
+                          if (parts.length && !confirm(
+                            `Nhóm hàng "${c}" đang có ${parts.join(" và ")}.\n\n` +
+                            `Xoá nhóm này sẽ KHÔNG xoá sản phẩm/nhãn hiệu — chúng chỉ chuyển về trạng thái "chưa phân nhóm", bạn gán lại nhóm khác sau (nhãn hiệu gán lại ở mục Quản lý nhãn hiệu).\n\nTiếp tục xoá?`
+                          )) return;
                           setCategories((categories || []).filter((x) => x !== c));
-                          addLog("Xoá nhóm hàng", c);
+                          if (usedCount > 0) setProducts((prev) => prev.map((p) => (p.category === c ? { ...p, category: "" } : p)));
+                          if (brandCount > 0) setBrands((prev) => prev.map((b) => (b.category === c ? { ...b, category: "" } : b)));
+                          addLog("Xoá nhóm hàng", `${c}${parts.length ? ` (bỏ gán ${parts.join(", ")})` : ""}`);
                         }}
                         className="p-1.5 rounded-sm hover:bg-black/5 opacity-60" style={{ color: RUST }}>
                         <Trash2 size={14} />
@@ -2844,9 +2881,13 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                           <span key={b.id} className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-full text-xs" style={{ background: `${PURPLE}17`, color: PURPLE }} title={usedCount > 0 ? `${usedCount} sản phẩm đang dùng` : "Chưa có sản phẩm nào dùng"}>
                             {b.name}
                             <button type="button" onClick={() => {
-                              if (usedCount > 0) { alert(`Không thể xoá — đang có ${usedCount} sản phẩm thuộc nhãn hiệu "${b.name}". Hãy đổi nhãn hiệu cho các sản phẩm đó trước.`); return; }
+                              if (usedCount > 0 && !confirm(
+                                `Nhãn hiệu "${b.name}" đang có ${usedCount} sản phẩm.\n\n` +
+                                `Xoá nhãn hiệu này sẽ KHÔNG xoá sản phẩm — các sản phẩm đó chỉ bị bỏ trống ô nhãn hiệu, bạn chọn lại nhãn khác sau.\n\nTiếp tục xoá?`
+                              )) return;
+                              if (usedCount > 0) setProducts((prev) => prev.map((p) => (p.brand === b.name ? { ...p, brand: "" } : p)));
                               setBrands((brands || []).filter((x) => x.id !== b.id));
-                              addLog("Xoá nhãn hiệu", `${b.name} (${cat})`);
+                              addLog("Xoá nhãn hiệu", `${b.name} (${cat})${usedCount > 0 ? ` — bỏ nhãn khỏi ${usedCount} sản phẩm` : ""}`);
                             }} className="hover:opacity-60 rounded-full" style={{ padding: 2 }}><X size={11} /></button>
                           </span>
                         );
@@ -2879,7 +2920,10 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                           </select>
                           <button onClick={() => {
                             const usedCount = products.filter((p) => p.brand === b.name).length;
-                            if (usedCount > 0) { alert(`Không thể xoá — đang có ${usedCount} sản phẩm thuộc nhãn hiệu "${b.name}".`); return; }
+                            if (usedCount > 0 && !confirm(
+                              `Nhãn hiệu "${b.name}" đang có ${usedCount} sản phẩm.\n\nXoá sẽ bỏ trống ô nhãn hiệu ở các sản phẩm đó (KHÔNG xoá sản phẩm). Tiếp tục?`
+                            )) return;
+                            if (usedCount > 0) setProducts((prev) => prev.map((p) => (p.brand === b.name ? { ...p, brand: "" } : p)));
                             setBrands((brands || []).filter((x) => x.id !== b.id));
                           }} className="p-1 rounded-sm hover:bg-black/5 opacity-60" style={{ color: RUST }}><Trash2 size={13} /></button>
                         </div>
@@ -3022,9 +3066,9 @@ function ProductPicker({ products, onPick, onQuickCreate, brands }) {
         )}
       </div>
       {(open || creatingNew) && (
-        <div className="absolute z-20 mt-1 w-full max-h-[420px] overflow-y-auto rounded-sm shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+        <div className="absolute z-20 mt-1 w-full rounded-sm shadow-lg overflow-hidden" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           {creatingNew ? (
-            <div className="p-3">
+            <div className="p-3 max-h-[70vh] overflow-y-auto">
               <p className="text-xs uppercase tracking-wider opacity-50 mb-2">Tạo nhanh sản phẩm mới</p>
               <div className="grid grid-cols-2 gap-2 mb-2">
                 <input value={newForm.code} onChange={(e) => setNewForm({ ...newForm, code: e.target.value })} placeholder="Mã vật tư *" className="border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} />
@@ -3058,22 +3102,24 @@ function ProductPicker({ products, onPick, onQuickCreate, brands }) {
             </div>
           ) : (
             <>
-              {matches.length === 0 ? (
-                <p className="text-sm opacity-50 p-3">Không tìm thấy sản phẩm.</p>
-              ) : matches.map((p) => (
-                <button key={p.id} onMouseDown={() => { onPick(p.id); setQuery(""); setOpen(false); }}
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-black/5 flex items-center justify-between gap-3"
-                  style={{ borderBottom: `1px dashed ${LINE}` }}>
-                  <span style={{ color: INK }}>{p.name}</span>
-                  <span className="opacity-50 text-xs whitespace-nowrap shrink-0" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.code}{p.hasSeries ? " · series" : ""}</span>
-                </button>
-              ))}
               {onQuickCreate && (
                 <button type="button" onMouseDown={(e) => { e.preventDefault(); startQuickCreate(); }}
-                  className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-1.5 font-medium" style={{ color: BLUE }}>
+                  className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-1.5 font-medium bg-white" style={{ color: BLUE, borderBottom: `1px solid ${LINE}` }}>
                   <Plus size={14} /> Tạo sản phẩm mới nhanh{query ? `: "${query}"` : ""}
                 </button>
               )}
+              <div className="max-h-[220px] overflow-y-auto">
+                {matches.length === 0 ? (
+                  <p className="text-sm opacity-50 p-3">Không tìm thấy sản phẩm.</p>
+                ) : matches.map((p) => (
+                  <button key={p.id} onMouseDown={() => { onPick(p.id); setQuery(""); setOpen(false); }}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-black/5 flex items-center justify-between gap-3"
+                    style={{ borderBottom: `1px dashed ${LINE}` }}>
+                    <span style={{ color: INK }}>{p.name}</span>
+                    <span className="opacity-50 text-xs whitespace-nowrap shrink-0" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.code}{p.hasSeries ? " · series" : ""}</span>
+                  </button>
+                ))}
+              </div>
             </>
           )}
         </div>
@@ -11622,7 +11668,11 @@ function WebProducts({ products, setProducts, categories, brands, addLog, webCon
                       <MoneyInput className="text-right border rounded-sm py-1 px-1.5 w-28 text-sm" style={{ borderColor: LINE }}
                         value={p.web?.compareAtPrice || ""} onChange={(v) => setWeb(p, { compareAtPrice: v })} placeholder="—" />
                     </td>
-                    <td className="px-3 py-2.5 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace", color: st.closingQty <= 0 ? RUST : INK }}>{st.closingQty}</td>
+                    <td className="px-3 py-2.5 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
+                      {p.web?.virtualStock
+                        ? <span style={{ color: BLUE }} title="Tồn kho ảo bán online">{p.web.virtualStockQty || 8} <span className="text-[10px] opacity-60">ảo</span></span>
+                        : <span style={{ color: st.closingQty <= 0 ? RUST : INK }}>{st.closingQty}</span>}
+                    </td>
                     <td className="px-3 py-2.5 text-right">
                       <button onClick={() => setEditId(p.id)} className="text-xs px-2.5 py-1 rounded-sm border" style={{ borderColor: LINE, color: INK }}>
                         Sửa
@@ -11723,6 +11773,24 @@ function WebProductPage({ product, setProducts, webCats, onBack }) {
               <span>{w.published ? "Đang bán trên web" : "Ẩn khỏi web"}</span>
             </label>
             <p className="text-[11px] opacity-50 mt-1">Bỏ tick = sản phẩm không hiện trên website khách.</p>
+
+            <div className="mt-3 pt-3" style={{ borderTop: `1px dashed ${LINE}` }}>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input type="checkbox" checked={!!w.virtualStock}
+                  onChange={(e) => setWeb({ virtualStock: e.target.checked, virtualStockQty: e.target.checked ? (w.virtualStockQty || randomVirtualStock()) : 0 })} />
+                <span>Tồn kho ảo bán online</span>
+              </label>
+              <p className="text-[11px] opacity-50 mt-1">Web hiển thị "còn hàng" theo số ảo bên dưới (không lộ tồn thật) — dùng cho hàng dropship / nhập nhanh từ NPP.</p>
+              {w.virtualStock && (
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="text-xs opacity-60">Số lượng ảo</span>
+                  <input type="number" min={1} className="w-20 border rounded-sm py-1 px-2 text-sm" style={{ borderColor: LINE }}
+                    value={w.virtualStockQty || ""} onChange={(e) => setWeb({ virtualStockQty: Math.max(0, Math.floor(Number(e.target.value) || 0)) })} />
+                  <button type="button" onClick={() => setWeb({ virtualStockQty: randomVirtualStock() })}
+                    className="text-xs px-2 py-1 rounded-sm border" style={{ borderColor: LINE, color: INK }}>🎲 Số khác</button>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>

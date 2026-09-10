@@ -3,7 +3,7 @@
  * body: { source, code?, customer:{name,phone,email}, shipping:{province,ward,address,fullAddress,note},
  *         payment:'cod'|'bank', items:[{productId|sku, qty, price, name?, preorder?}], subtotal? }
  */
-import { handler, json, readState, writeState, stockOf } from "./_supa.js";
+import { handler, json, readState, writeState, webStockOf } from "./_supa.js";
 
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 
@@ -29,7 +29,7 @@ export default handler(async (req, res) => {
   const mapped = items.map((it) => {
     const p = products.find((x) => x.id === it.productId || x.sku === it.productId || x.sku === it.sku);
     const qty = Math.max(1, Math.floor(Number(it.qty) || 1));
-    const avail = p ? stockOf(p) : 0;
+    const avail = p ? webStockOf(p) : 0;
     const isPre = !!it.preorder || (p && !p.isService && avail < qty);
     if (isPre) preorderNames.push((p ? p.name : it.name || it.sku) + (avail > 0 ? ` (còn ${avail}/${qty})` : ""));
     return {

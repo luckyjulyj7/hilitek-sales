@@ -14,7 +14,12 @@ function deepMerge(target, src) {
     const cur = target[k];
     if (v && typeof v === "object" && !Array.isArray(v) && cur && typeof cur === "object" && !Array.isArray(cur)) {
       deepMerge(cur, v);
-    } else if (v !== undefined) {
+    } else if (v === undefined) {
+      // bỏ qua
+    } else if (typeof v === "string" && v.trim() === "") {
+      // Ô để trống trong "Cấu hình web" = giữ giá trị mặc định (đúng như hướng dẫn trong form).
+      // (Trước đây "" ghi đè lên mặc định khiến hotline/email... bị mất khi lưu form với ô trống.)
+    } else {
       target[k] = v; // mảng & giá trị đơn: thay thế
     }
   }

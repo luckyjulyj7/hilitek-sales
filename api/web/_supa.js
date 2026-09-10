@@ -114,6 +114,21 @@ export function stockOf(p) {
   return (Number(p.openingQty) || 0) + inQ - outQ;
 }
 
+/**
+ * Tồn KHO HIỂN THỊ TRÊN WEB.
+ * - Nếu chủ shop bật "Tồn kho ảo bán online" (web.virtualStock): dùng số ảo (không lộ tồn thật,
+ *   web luôn có vẻ còn hàng — dùng cho hàng dropship / nhập nhanh từ NPP).
+ * - Ngược lại: dùng tồn thật.
+ */
+export function webStockOf(p) {
+  const web = p && p.web ? p.web : {};
+  if (web.virtualStock) {
+    const q = Math.floor(Number(web.virtualStockQty) || 0);
+    return q > 0 ? q : 8; // dự phòng nếu chưa đặt số
+  }
+  return Math.max(0, stockOf(p));
+}
+
 /** Chỉ trả field an toàn cho web. KHÔNG có: giá vốn, giá sỉ, NCC, movements, series. */
 export function publicProduct(p, { detail = false } = {}) {
   const web = p.web || {};
@@ -155,7 +170,7 @@ export function publicProduct(p, { detail = false } = {}) {
     listPrice,
     warrantyMonths: Number(p.warrantyMonths) || 0,
     weight: Number(p.weight) || 0,
-    stock: Math.max(0, stockOf(p)),
+    stock: webStockOf(p),
     hasSerial: !!p.hasSeries,
     shortDesc,
     promo: typeof web.promo === "string" ? web.promo.trim().slice(0, 600) : "", // khuyến mãi / quà tặng ngắn (mỗi dòng 1 ý)
