@@ -1,5 +1,5 @@
 import React from "react";
-import { HOME_POSTERS, HOME_SECTIONS, FLASH_SALE, homeSectionProducts } from "../config.js";
+import { HOME_POSTERS, HOME_SECTIONS, FLASH_SALE, FLASH_SALE_CATEGORY, homeSectionProducts } from "../config.js";
 import TrustBar from "../components/TrustBar.jsx";
 import CategoryRail from "../components/CategoryRail.jsx";
 import PosterSlot from "../components/PosterSlot.jsx";
@@ -10,9 +10,14 @@ import HomeSectionRow from "../components/HomeSectionRow.jsx";
 export default function Home({ catalog, navigate }) {
   const { products } = catalog;
 
-  const flashItems = FLASH_SALE.enabled
-    ? homeSectionProducts(products, { ...FLASH_SALE, onSale: FLASH_SALE.onSale !== false })
-    : [];
+  // Khối Flash Sale = đúng các sản phẩm được gán danh mục "Flash Sale" (chọn tay từng cái),
+  // KHÔNG lọc theo nhóm/thương hiệu/% giảm — chỉ sắp xếp + giới hạn số lượng theo cấu hình.
+  const flashSection = {
+    ...FLASH_SALE,
+    group: "", brand: "", cat: FLASH_SALE_CATEGORY,
+    onSale: false, minDiscount: 0, pmin: null, pmax: null, skus: [],
+  };
+  const flashItems = FLASH_SALE.enabled ? homeSectionProducts(products, flashSection) : [];
 
   return (
     <div className="font-sans">
@@ -45,7 +50,7 @@ export default function Home({ catalog, navigate }) {
           <div className="rounded-xl sm:rounded-2xl bg-white border border-line shadow-card p-2.5 sm:p-6">
             <FlashSaleBar navigate={navigate} />
             <div className="mt-3 sm:mt-5">
-              <HomeSectionRow section={{ ...FLASH_SALE, title: "", seeAllText: "", seeAllHref: "" }} products={products} navigate={navigate} flash bare />
+              <HomeSectionRow section={{ ...flashSection, title: "", seeAllText: "", seeAllHref: "" }} products={products} navigate={navigate} flash bare />
             </div>
           </div>
         </section>

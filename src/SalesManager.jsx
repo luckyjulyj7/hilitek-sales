@@ -12,7 +12,7 @@ import {
 import * as XLSX from "xlsx";
 import { ghn as ghnApi } from "./lib/ghn.js";
 // Nội dung mặc định cho web (dùng làm điểm khởi đầu khi chưa chỉnh trong "Cấu hình web").
-import { PAGES as WEB_DEFAULT_PAGES, MENU as WEB_DEFAULT_MENU, allWebCategories as webAllCategories, webCategoryGroups, HOME_SECTIONS as WEB_DEFAULT_HOME_SECTIONS, HOME_SECTION_SORTS, HOME_SECTION_LAYOUTS, LANDINGS as WEB_DEFAULT_LANDINGS } from "./storefront/config.js";
+import { PAGES as WEB_DEFAULT_PAGES, MENU as WEB_DEFAULT_MENU, allWebCategories as webAllCategories, webCategoryGroups, HOME_SECTIONS as WEB_DEFAULT_HOME_SECTIONS, HOME_SECTION_SORTS, HOME_SECTION_LAYOUTS, LANDINGS as WEB_DEFAULT_LANDINGS, FLASH_SALE_CATEGORY as WEB_FLASH_CAT } from "./storefront/config.js";
 import { GROUP_ICON_NAMES, groupIcon as webGroupIcon } from "./storefront/components/groupIcons.js";
 import { uploadProductImage, rehostExternalImage, toDirectImageUrl } from "./lib/mediaUpload.js";
 
@@ -11854,6 +11854,20 @@ function WebProductPage({ product, setProducts, webCats, onBack }) {
                 </div>
               )}
             </div>
+
+            <div className="mt-3 pt-3" style={{ borderTop: `1px dashed ${LINE}` }}>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input type="checkbox"
+                  checked={(w.categories || []).includes(WEB_FLASH_CAT)}
+                  onChange={(e) => setWeb({
+                    categories: e.target.checked
+                      ? [...new Set([...(w.categories || []), WEB_FLASH_CAT])]
+                      : (w.categories || []).filter((x) => x !== WEB_FLASH_CAT),
+                  })} />
+                <span>⚡ Đưa vào khối Flash Sale trang chủ</span>
+              </label>
+              <p className="text-[11px] opacity-50 mt-1">Sản phẩm sẽ hiện trong khối Flash Sale (không cần nằm trong menu danh mục). Số lượng & cách sắp xếp chỉnh ở Cấu hình web → Flash Sale.</p>
+            </div>
           </div>
 
           <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
@@ -12514,8 +12528,6 @@ function WebConfigForm({ webConfig, setWebConfig, addLog, products, categories }
   }));
   const setBank = (k, v) => setWebConfig((x) => ({ ...x, SITE: { ...(x.SITE || {}), bank: { ...((x.SITE || {}).bank || {}), [k]: v } } }));
   const setFlash = (k, v) => setWebConfig((x) => ({ ...x, FLASH_SALE: { ...(x.FLASH_SALE || {}), [k]: v } }));
-  const fsMenu = webConfig && Array.isArray(webConfig.MENU) && webConfig.MENU.length ? webConfig.MENU : WEB_DEFAULT_MENU;
-  const fsBrands = [...new Set((products || []).map((p) => p.brand).filter(Boolean))].sort((a, b) => a.localeCompare(b, "vi"));
   const setPoster = (key, k, v) => setWebConfig((x) => {
     const hp = { ...(x.HOME_POSTERS || {}) };
     hp[key] = { ...(hp[key] || {}), [k]: v };
@@ -12609,36 +12621,18 @@ function WebConfigForm({ webConfig, setWebConfig, addLog, products, categories }
         <label className="flex items-center gap-2 text-sm mb-3">
           <input type="checkbox" checked={FS.enabled !== false} onChange={(e) => setFlash("enabled", e.target.checked)} /> Bật khối Flash Sale trên trang chủ
         </label>
+        <div className="p-3 rounded-sm text-xs mb-3" style={{ background: `${BLUE}0D`, border: `1px solid ${BLUE}` }}>
+          Sản phẩm trong khối này <b>chọn tay từng cái</b>: mở <b>Website → Sản phẩm web</b>, sửa 1 sản phẩm rồi tick
+          <b> “⚡ Đưa vào khối Flash Sale”</b>. Không lọc theo nhóm / thương hiệu / % giảm nữa.
+        </div>
         <div className="grid sm:grid-cols-2 gap-3">
           <Field label="Tiêu đề">{ip(FS.title, (v) => setFlash("title", v), "Flash Sale")}</Field>
           <Field label="Kết thúc lúc" hint="Bỏ trống = tự đặt +2 ngày">
             <input type="datetime-local" value={FS.endsAt || ""} onChange={(e) => setFlash("endsAt", e.target.value)} className={inputCls} style={{ borderColor: LINE }} />
           </Field>
-          <Field label="Giảm giá tối thiểu (%)" hint="Chỉ lấy sản phẩm giảm từ mức này trở lên">
-            <input type="number" min={0} max={90} value={FS.minDiscount ?? 10}
-              onChange={(e) => setFlash("minDiscount", Math.max(0, Math.min(90, Number(e.target.value) || 0)))} className={inputCls} style={{ borderColor: LINE }} />
-          </Field>
-          <Field label="Số sản phẩm">
+          <Field label="Số sản phẩm tối đa">
             <input type="number" min={2} max={40} value={FS.limit ?? 12}
               onChange={(e) => setFlash("limit", Math.max(2, Math.min(40, Number(e.target.value) || 12)))} className={inputCls} style={{ borderColor: LINE }} />
-          </Field>
-          <Field label="Nhóm chính">
-            <select value={FS.group || ""} onChange={(e) => setFlash("group", e.target.value)} className={inputCls} style={{ borderColor: LINE }}>
-              <option value="">— Mọi nhóm —</option>
-              {fsMenu.map((g) => <option key={g.group} value={g.group}>{g.group}</option>)}
-            </select>
-          </Field>
-          <Field label="Danh mục phụ">
-            <select value={FS.cat || ""} onChange={(e) => setFlash("cat", e.target.value)} className={inputCls} style={{ borderColor: LINE }}>
-              <option value="">— Mọi danh mục —</option>
-              {(FS.group ? (fsMenu.find((g) => g.group === FS.group)?.subs || []).map((s) => s.name) : fsMenu.flatMap((g) => (g.subs || []).map((s) => s.name))).map((n) => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </Field>
-          <Field label="Thương hiệu">
-            <select value={FS.brand || ""} onChange={(e) => setFlash("brand", e.target.value)} className={inputCls} style={{ borderColor: LINE }}>
-              <option value="">— Mọi thương hiệu —</option>
-              {fsBrands.map((b) => <option key={b} value={b}>{b}</option>)}
-            </select>
           </Field>
           <Field label="Kiểu hiển thị">
             <select value={FS.layout || "carousel"} onChange={(e) => setFlash("layout", e.target.value)} className={inputCls} style={{ borderColor: LINE }}>

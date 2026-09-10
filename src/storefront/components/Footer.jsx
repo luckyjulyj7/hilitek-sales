@@ -123,9 +123,8 @@ export default function Footer({ navigate }) {
       </div>
 
       <div className="border-t border-white/10">
-        <div className="mx-auto max-w-[1500px] px-4 py-4 text-[13px] text-white/45 flex flex-col sm:flex-row gap-1 sm:gap-4 justify-between">
+        <div className="mx-auto max-w-[1500px] px-4 py-4 text-[13px] text-white/45">
           <span>© {new Date().getFullYear()} {SITE.name}. Giá và tình trạng hàng có thể thay đổi không báo trước.</span>
-          <a href="/quanlybanhang" className="hover:text-white/80">Trang quản lý nội bộ</a>
         </div>
       </div>
     </footer>

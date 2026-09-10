@@ -143,9 +143,14 @@ export function publicProduct(p, { detail = false } = {}) {
   const desc = typeof web.description === "string" ? web.description : "";
 
   // Danh mục web: ưu tiên web.categories (chủ shop tự gán), không có thì dùng "Nhóm hàng".
-  const webCats = Array.isArray(web.categories) && web.categories.length
+  // "Flash Sale" là danh mục đặc biệt (chỉ để lọc khối Flash Sale) — giữ trong mảng nhưng
+  // KHÔNG để nó làm danh mục chính (tránh hiện "Flash Sale" ở breadcrumb sản phẩm).
+  const FLASH_CAT = "Flash Sale";
+  const rawCats = Array.isArray(web.categories) && web.categories.length
     ? web.categories.filter((x) => typeof x === "string" && x.trim())
     : (p.category ? [p.category] : []);
+  const realCats = rawCats.filter((c) => c !== FLASH_CAT);
+  const webCats = realCats.length ? [...realCats, ...rawCats.filter((c) => c === FLASH_CAT)] : rawCats;
 
   // Ảnh: ưu tiên ảnh chất lượng cao chủ shop thêm riêng cho web (web.images), không có thì lấy ảnh sản phẩm.
   const webImgs = (Array.isArray(web.images) ? web.images : []).filter((s) => typeof s === "string" && s.trim());

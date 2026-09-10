@@ -264,19 +264,15 @@ export const HOME_POSTERS = {
  * Dùng cùng bộ lọc như HOME_SECTIONS + thêm `minDiscount` (chỉ lấy hàng giảm sâu).
  * Chỉnh ở app quản lý → Website → Cấu hình web → "Flash Sale".
  */
+// Khối Flash Sale trang chủ = các sản phẩm web được gán danh mục đặc biệt này.
+// Danh mục này KHÔNG nằm trong menu; chủ shop tick "Đưa vào Flash Sale" ở từng sản phẩm web.
+export const FLASH_SALE_CATEGORY = "Flash Sale";
+
 export const FLASH_SALE = {
   enabled: true,
   endsAt: "",          // thời điểm kết thúc; để trống = tự +2 ngày (demo)
   title: "Flash Sale",
-  minDiscount: 10,     // % — chỉ lấy sản phẩm giảm từ mức này trở lên
-  group: "",
-  cat: "",
-  brand: "",
-  onSale: true,        // luôn ưu tiên hàng đang giảm giá
-  pmin: null,
-  pmax: null,
-  skus: [],
-  sort: "discount",
+  sort: "discount",    // discount | priceAsc | priceDesc | name | newest
   limit: 12,
   layout: "carousel",  // carousel | marquee | grid
 };
