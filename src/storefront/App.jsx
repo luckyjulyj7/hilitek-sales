@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useRoute, match } from "./router.js";
-import { fetchCatalog } from "./lib/api.js";
+import { fetchCatalog, fetchWebConfig } from "./lib/api.js";
+import { applyWebConfig } from "./lib/applyWebConfig.js";
 import { PAGES } from "./config.js";
 import { CatalogCtx } from "./catalogContext.js";
 import Header from "./components/Header.jsx";
@@ -29,6 +30,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [drawer, setDrawer] = useState(false);
+  const [cfgTick, setCfgTick] = useState(0); // bump để ép render lại khi cấu hình web đổi
 
   // Đóng menu danh mục (drawer trái) mỗi khi chuyển trang.
   useEffect(() => { setDrawer(false); }, [route.path]);
@@ -38,6 +40,23 @@ export default function App() {
       .then((c) => setCatalog({ ...EMPTY, ...c }))
       .catch((e) => setError(e.message || String(e)))
       .finally(() => setLoading(false));
+  }, []);
+
+  // Tự đồng bộ với app quản lý mỗi 60s: sản phẩm/giá + cấu hình web (menu, flash sale,
+  // poster, mã giảm giá…). Chủ shop sửa bên quản lý → web khách tự cập nhật, không cần F5.
+  useEffect(() => {
+    const REFRESH_MS = 60000;
+    let stopped = false;
+    const iv = setInterval(async () => {
+      if (document.hidden) return;
+      try {
+        const [cat, cfg] = await Promise.all([fetchCatalog(), fetchWebConfig()]);
+        if (stopped) return;
+        setCatalog({ ...EMPTY, ...cat });
+        if (cfg && typeof cfg === "object") { applyWebConfig(cfg); setCfgTick((n) => n + 1); }
+      } catch { /* mạng chập chờn — thử lại lần sau */ }
+    }, REFRESH_MS);
+    return () => { stopped = true; clearInterval(iv); };
   }, []);
 
   useEffect(() => {
@@ -90,7 +109,7 @@ export default function App() {
 
   return (
     <CatalogCtx.Provider value={catalog}>
-    <div className="min-h-full flex flex-col bg-paper text-ink">
+    <div className="min-h-full flex flex-col bg-paper text-ink" data-cfg={cfgTick}>
       <Header route={route} navigate={route.navigate} drawer={drawer} setDrawer={setDrawer} />
       <main className="flex-1 pb-[calc(env(safe-area-inset-bottom)+56px)] lg:pb-0">
         {error ? (

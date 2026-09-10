@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowDown } from "lucide-react";
+import { ArrowDown, Gift } from "lucide-react";
 import { formatVND, discountPercent, placeholderImage } from "../lib/format.js";
 import { useCart } from "../cart.jsx";
 
@@ -58,7 +58,14 @@ export default function FlashSaleCard({ product, onOpen, navigate }) {
           {off > 0 && (
             <div className="font-mono text-[10px] sm:text-[11px] text-mute/80 line-through">{formatVND(p.listPrice)}</div>
           )}
-          <div className="font-mono font-extrabold text-[16px] sm:text-[19px] text-sale leading-none">{formatVND(p.price)}</div>
+          <div className="font-mono font-extrabold text-[15px] sm:text-[19px] text-sale leading-none whitespace-nowrap tabular-nums">{formatVND(p.price)}</div>
+
+          {p.promo && (
+            <div className="mt-1 flex items-start gap-1 text-[10px] sm:text-[11px] leading-snug text-[#E8730C]">
+              <Gift size={11} className="mt-[1px] shrink-0" />
+              <span className="line-clamp-1">{String(p.promo).split("\n")[0].replace(/^[-+•*]\s*/, "")}</span>
+            </div>
+          )}
 
           <button
             onClick={order}

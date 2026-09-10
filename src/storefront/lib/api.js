@@ -94,6 +94,26 @@ export async function placeOrder(order) {
   return data;
 }
 
+/** Tra cứu tình trạng 1 đơn (mã đơn + sđt). Trả object trạng thái hoặc ném lỗi tiếng Việt. */
+export async function lookupOrder(code, phone) {
+  const c = encodeURIComponent(String(code || "").trim());
+  const p = encodeURIComponent(String(phone || "").trim());
+  if (USE_MOCK || IS_LOCAL) {
+    return delay({
+      code: String(code || "WEBDEMO").toUpperCase(),
+      placedAt: new Date().toISOString(),
+      orderStatus: "Đang giao", orderStatusId: "shipping", itemCount: 2,
+      recipient: "Khách demo", address: "12 Nguyễn Trãi, P. Bến Thành, TP.HCM",
+      shipping: { carrier: "J&T Express", trackingCode: "JT000DEMO123", status: "Đang giao", statusId: "shipping", packDate: "", pickupDate: "", deliveredDate: "", cod: 1570000 },
+    }, 300);
+  }
+  const res = await fetch(`/api/web/order-lookup?code=${c}&phone=${p}`, { headers: { Accept: "application/json" } });
+  if (!isJson(res)) throw new Error("Hệ thống tra cứu chưa sẵn sàng");
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Không tra cứu được (lỗi ${res.status})`);
+  return data;
+}
+
 export async function fetchWebConfig() {
   if (USE_MOCK) return {};
   try {

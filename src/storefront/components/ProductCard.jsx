@@ -53,12 +53,14 @@ export default function ProductCard({ product, onOpen }) {
           {p.name}
         </a>
 
-        {/* Giá — vị trí cố định */}
-        <div className="mt-2.5 flex items-baseline gap-1.5 flex-wrap">
-          <span className="font-mono font-extrabold text-[21px] sm:text-[23px] text-sale leading-none">{formatVND(p.price)}</span>
-          {off > 0 && (
-            <span className="font-mono text-[11px] text-mute/80 line-through">{formatVND(p.listPrice)}</span>
-          )}
+        {/* Giá — vị trí cố định, không cho xuống dòng chữ "đ"; luôn chừa dòng giá gạch */}
+        <div className="mt-2.5">
+          <div className="font-mono font-extrabold text-[17px] sm:text-[23px] text-sale leading-none whitespace-nowrap tabular-nums">
+            {formatVND(p.price)}
+          </div>
+          <div className="mt-0.5 h-[15px] font-mono text-[11px] text-mute/80 line-through whitespace-nowrap">
+            {off > 0 ? formatVND(p.listPrice) : ""}
+          </div>
         </div>
 
         {/* Dòng khuyến mãi — luôn chừa 1 dòng để nút bên dưới cũng thẳng hàng */}

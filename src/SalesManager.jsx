@@ -12896,6 +12896,32 @@ export default function SalesManager() {
     return () => clearTimeout(t);
   }, [products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, plans, accounts, activityLog, notifications, printSettings, quotations, webConfig, currentUserId, loaded]);
 
+  // Tự kéo đơn hàng mới từ website khách về (khách đặt trên web ghi thẳng vào blob chung).
+  // 30s/lần, CHỈ THÊM đơn chưa có (không đụng đơn đang sửa) — hết cảnh phải F5 mới thấy đơn web.
+  useEffect(() => {
+    if (!loaded || !currentUserId) return;
+    let stopped = false;
+    const pull = async () => {
+      if (document.hidden) return;
+      try {
+        const raw = await window.storage.get(STORAGE_KEY, true);
+        if (stopped || !raw || !raw.value) return;
+        const remote = JSON.parse(raw.value);
+        const rOrders = Array.isArray(remote.orders) ? remote.orders : [];
+        if (!rOrders.length) return;
+        setOrders((cur) => {
+          const have = new Set(cur.map((o) => o.id));
+          const fresh = rOrders.filter((o) => o && o.id && !have.has(o.id)).map(normalizeOrder);
+          if (!fresh.length) return cur;
+          return [...fresh, ...cur];
+        });
+      } catch { /* mạng chập chờn — thử lại lần sau */ }
+    };
+    const iv = setInterval(pull, 30000);
+    pull();
+    return () => { stopped = true; clearInterval(iv); };
+  }, [loaded, currentUserId]);
+
   // Đồng bộ danh sách thông báo cho Admin từ dữ liệu thật: sản phẩm dưới định mức/âm tồn, công nợ NCC,
   // công nợ khách B2B quá hạn, đơn hàng cần duyệt (kể cả yêu cầu huỷ/đổi trả). Thông báo đã đọc tự xoá sau 3 ngày.
   useEffect(() => {
