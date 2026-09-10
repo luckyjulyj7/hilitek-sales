@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   LayoutDashboard, Package, ShoppingCart, Users, BarChart3,
   Plus, Trash2, Pencil, X, Search, Store, Globe,
-  TrendingUp, AlertTriangle, Loader2, ChevronDown, ChevronRight, ChevronLeft,
+  TrendingUp, AlertTriangle, Loader2, ChevronDown, ChevronRight, ChevronLeft, ChevronUp,
   ArrowDownToLine, ArrowUpFromLine, Barcode, ImagePlus, ImageOff, Check, Printer, RotateCcw, KeyRound, LogOut, Eye, EyeOff, Filter, Target, History, ShieldCheck, XCircle, Wallet, PackageCheck, Truck, Clock, Bell, FileSpreadsheet, FileText, MapPin, UserCircle, Crown
 } from "lucide-react";
 import {
@@ -12385,6 +12385,11 @@ function WebConfigForm({ webConfig, setWebConfig, addLog, products, categories }
       </section>
 
       <section>
+        <h3 className="font-medium mb-3" style={{ color: INK }}>Danh mục sản phẩm web (menu)</h3>
+        <WebMenuEditor webConfig={webConfig} setWebConfig={setWebConfig} products={products} categories={categories} />
+      </section>
+
+      <section>
         <h3 className="font-medium mb-3" style={{ color: INK }}>Flash Sale <span className="text-xs opacity-50">(khối nổi bật dưới dải đếm ngược — viền đỏ, nhãn ⚡)</span></h3>
         <label className="flex items-center gap-2 text-sm mb-3">
           <input type="checkbox" checked={FS.enabled !== false} onChange={(e) => setFlash("enabled", e.target.checked)} /> Bật khối Flash Sale trên trang chủ
@@ -12434,6 +12439,11 @@ function WebConfigForm({ webConfig, setWebConfig, addLog, products, categories }
       </section>
 
       <section>
+        <h3 className="font-medium mb-3" style={{ color: INK }}>Khối sản phẩm trang chủ</h3>
+        <HomeSectionsEditor webConfig={webConfig} setWebConfig={setWebConfig} products={products} />
+      </section>
+
+      <section>
         <h3 className="font-medium mb-3" style={{ color: INK }}>Poster / banner trang chủ (URL ảnh + link)</h3>
         <p className="text-xs opacity-50 mb-3">Ảnh: tải lên host bất kỳ hoặc để trong thư mục <code>public/posters/</code> rồi điền đường dẫn (vd <code>/posters/hero.jpg</code>).</p>
         <div className="space-y-3">
@@ -12480,11 +12490,6 @@ function WebConfigForm({ webConfig, setWebConfig, addLog, products, categories }
       </section>
 
       <section>
-        <h3 className="font-medium mb-3" style={{ color: INK }}>Khối sản phẩm trang chủ</h3>
-        <HomeSectionsEditor webConfig={webConfig} setWebConfig={setWebConfig} products={products} />
-      </section>
-
-      <section>
         <h3 className="font-medium mb-3" style={{ color: INK }}>Trang chính sách</h3>
         <div className="space-y-2">
           {WEB_PAGE_KEYS.map(([k, l]) => (
@@ -12493,16 +12498,34 @@ function WebConfigForm({ webConfig, setWebConfig, addLog, products, categories }
         </div>
       </section>
 
-      <section>
-        <h3 className="font-medium mb-3" style={{ color: INK }}>Danh mục sản phẩm web (menu)</h3>
-        <WebMenuEditor webConfig={webConfig} setWebConfig={setWebConfig} products={products} categories={categories} />
-      </section>
-
       <div className="flex items-center gap-3">
         <button onClick={() => { addLog("Cập nhật cấu hình web", ""); }} className="px-4 py-2 rounded-sm text-sm text-white" style={{ background: INK }}>Đã lưu (tự động)</button>
         <button onClick={() => { if (confirm("Xoá toàn bộ cấu hình web (web quay về mặc định)?")) setWebConfig({}); }} className="text-xs underline" style={{ color: RUST }}>Đặt lại về mặc định</button>
       </div>
     </div>
+  );
+}
+
+// Nút "Về đầu trang" — hiện khi cuộn xuống, bấm để cuộn mượt lên đầu.
+function ScrollTopButton() {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setShow(window.scrollY > 400);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  return (
+    <button
+      type="button"
+      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      title="Về đầu trang"
+      aria-label="Về đầu trang"
+      className="fixed bottom-6 right-6 z-50 w-11 h-11 rounded-full shadow-lg flex items-center justify-center transition-all hover:brightness-110"
+      style={{ background: INK, color: "#fff", opacity: show ? 1 : 0, pointerEvents: show ? "auto" : "none", transform: show ? "translateY(0)" : "translateY(12px)" }}
+    >
+      <ChevronUp size={20} />
+    </button>
   );
 }
 
@@ -12877,6 +12900,7 @@ export default function SalesManager() {
           </AppErrorBoundary>
         </div>
       </div>
+      <ScrollTopButton />
     </div>
   );
 }
