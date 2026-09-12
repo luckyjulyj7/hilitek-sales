@@ -119,7 +119,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
       </nav>
 
       {/* ===== Trên: ảnh + thông tin/mua + sidebar tuỳ chỉnh ===== */}
-      <div className="grid lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)_300px] gap-6 lg:gap-8 items-start">
+      <div className="grid lg:grid-cols-[minmax(0,480px)_minmax(0,1fr)_300px] gap-6 lg:gap-8 items-start">
         {/* Ảnh */}
         <div>
           <div className="group relative aspect-square bg-white border border-line rounded-lg overflow-hidden">
