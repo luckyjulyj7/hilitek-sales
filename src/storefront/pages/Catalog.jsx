@@ -4,9 +4,10 @@ import ProductCard from "../components/ProductCard.jsx";
 import { discountPercent, formatVND } from "../lib/format.js";
 import { href } from "../router.js";
 import {
-  MENU, CATEGORY_TO_GROUP, PRICE_BUCKETS, priceInRange, productInGroup, productInCategory,
+  MENU, CATEGORY_TO_GROUP, categoryBreadcrumb, PRICE_BUCKETS, priceInRange, productInGroup, productInCategory,
 } from "../config.js";
 import { groupIcon } from "../components/groupIcons.js";
+import CategoryTree from "../components/CategoryTree.jsx";
 
 const SORTS = [
   { id: "popular", label: "Phổ biến" },
@@ -129,18 +130,13 @@ export default function Catalog({ catalog, route, navigate }) {
                   <GIcon size={15} className="text-navy/70" /> {g.group}
                 </button>
                 {gActive && (g.subs || []).length > 0 && (
-                  <ul className="mt-1 ml-3 space-y-1 border-l border-line pl-3">
-                    {g.subs.map((s) => (
-                      <li key={s.slug || s.name}>
-                        <button
-                          onClick={() => setParam({ group: "", cat: s.name === cat ? "" : s.name, brand: "", pmin: "", pmax: "" })}
-                          className={s.name === cat ? "text-navy font-semibold" : "text-ink/70 hover:text-navy"}
-                        >
-                          {s.name}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+                  <CategoryTree
+                    nodes={g.subs}
+                    activeCat={cat}
+                    activePath={cat ? categoryBreadcrumb(cat) : []}
+                    onSelect={(name) => setParam({ group: "", cat: name === cat ? "" : name, brand: "", pmin: "", pmax: "" })}
+                    depth={1}
+                  />
                 )}
               </li>
             );

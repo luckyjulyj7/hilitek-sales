@@ -12,7 +12,7 @@ import {
 import * as XLSX from "xlsx";
 import { ghn as ghnApi } from "./lib/ghn.js";
 // Nội dung mặc định cho web (dùng làm điểm khởi đầu khi chưa chỉnh trong "Cấu hình web").
-import { PAGES as WEB_DEFAULT_PAGES, MENU as WEB_DEFAULT_MENU, allWebCategories as webAllCategories, webCategoryGroups, HOME_SECTIONS as WEB_DEFAULT_HOME_SECTIONS, HOME_SECTION_SORTS, HOME_SECTION_LAYOUTS, LANDINGS as WEB_DEFAULT_LANDINGS, FLASH_SALE_CATEGORY as WEB_FLASH_CAT } from "./storefront/config.js";
+import { PAGES as WEB_DEFAULT_PAGES, MENU as WEB_DEFAULT_MENU, flattenMenuTree as webFlattenMenuTree, MAX_CATEGORY_DEPTH as WEB_MAX_CATEGORY_DEPTH, HOME_SECTIONS as WEB_DEFAULT_HOME_SECTIONS, HOME_SECTION_SORTS, HOME_SECTION_LAYOUTS, LANDINGS as WEB_DEFAULT_LANDINGS, FLASH_SALE_CATEGORY as WEB_FLASH_CAT } from "./storefront/config.js";
 import { GROUP_ICON_NAMES, groupIcon as webGroupIcon } from "./storefront/components/groupIcons.js";
 import { uploadProductImage, rehostExternalImage, toDirectImageUrl } from "./lib/mediaUpload.js";
 import { SUPABASE_ANON_KEY } from "./lib/supabaseStorage.js";
@@ -2018,10 +2018,13 @@ function StatCard({ label, value, icon: Icon, accent }) {
 /* ---------------- Products & Inventory (Sản phẩm & Tồn kho) ---------------- */
 
 function ProductsInventory({ products, setProducts, addLog, currentUser, focusProductId, onFocusHandled, goToDoc, suppliers, goToSupplier, categories, setCategories, brands, setBrands, webConfig }) {
-  const webSubGroups = useMemo(
-    () => webCategoryGroups(webConfig && Array.isArray(webConfig.MENU) && webConfig.MENU.length ? webConfig.MENU : WEB_DEFAULT_MENU),
-    [webConfig]
-  );
+  // Cây danh mục web đầy đủ (mọi cấp), gom lại theo nhóm chính — cho ô chọn "Danh mục phụ trên web".
+  const webSubGroups = useMemo(() => {
+    const flat = webFlattenMenuTree(webConfig && Array.isArray(webConfig.MENU) && webConfig.MENU.length ? webConfig.MENU : WEB_DEFAULT_MENU);
+    const byGroup = new Map();
+    flat.forEach((n) => { if (!byGroup.has(n.group)) byGroup.set(n.group, []); byGroup.get(n.group).push(n); });
+    return [...byGroup.entries()].map(([group, subs]) => ({ group, subs }));
+  }, [webConfig]);
   const isAdmin = currentUser.role === "admin";
   const isCtv = currentUser.role === "ctv";
   const [query, setQuery] = useState("");
@@ -2965,13 +2968,13 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                           <div key={g.group}>
                             <div className="text-[11px] uppercase tracking-wider opacity-45 mb-1">{g.group}</div>
                             <div className="flex flex-wrap gap-1.5">
-                              {g.subs.map((name) => {
-                                const on = sel.includes(name);
+                              {g.subs.map((s) => {
+                                const on = sel.includes(s.name);
                                 return (
-                                  <button key={name} type="button" onClick={() => toggle(name)}
+                                  <button key={s.name} type="button" onClick={() => toggle(s.name)}
                                     className="px-2.5 py-1 rounded-sm text-xs border"
-                                    style={{ borderColor: on ? INK : LINE, background: on ? INK : "#fff", color: on ? "#fff" : INK }}>
-                                    {name}
+                                    style={{ borderColor: on ? INK : LINE, background: on ? INK : "#fff", color: on ? "#fff" : INK, marginLeft: (s.depth - 1) * 10 }}>
+                                    {s.depth > 1 ? "› " : ""}{s.name}
                                   </button>
                                 );
                               })}
@@ -12162,16 +12165,17 @@ function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig
       </div>
       {sub === "products" && <WebProducts products={products} setProducts={setProducts} categories={categories} brands={brands} addLog={addLog} webConfig={webConfig} />}
       {sub === "orders" && <WebOrders orders={orders} onOpenOrder={onOpenOrder} />}
-      {sub === "config" && <WebConfigForm webConfig={webConfig} setWebConfig={setWebConfig} addLog={addLog} products={products} categories={categories} />}
+      {sub === "config" && <WebConfigForm webConfig={webConfig} setWebConfig={setWebConfig} setProducts={setProducts} addLog={addLog} products={products} categories={categories} />}
     </div>
   );
 }
 
 function WebProducts({ products, setProducts, categories, brands, addLog, webConfig }) {
-  // Danh mục web khả dụng = danh mục con trong menu ở "Cấu hình web" (hoặc menu mặc định).
+  // Danh mục web khả dụng = toàn bộ cây danh mục (mọi cấp) trong menu ở "Cấu hình web" (hoặc menu mặc định),
+  // kèm cấp (depth) để hiện thụt lề đúng thứ bậc khi chọn cho sản phẩm.
   const webCats = useMemo(() => {
     const src = webConfig && Array.isArray(webConfig.MENU) && webConfig.MENU.length ? webConfig.MENU : WEB_DEFAULT_MENU;
-    return webAllCategories(src);
+    return webFlattenMenuTree(src);
   }, [webConfig]);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("all"); // all | on | off
@@ -12677,22 +12681,31 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, addLo
           </div>
 
           <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-            <p className="text-sm font-medium mb-2" style={{ color: INK }}>Danh mục phụ trên web</p>
+            <p className="text-sm font-medium mb-2" style={{ color: INK }}>Danh mục phụ trên web <span className="text-xs opacity-50">(mọi cấp — chọn được nhiều)</span></p>
             {webCats.length === 0 ? (
               <span className="text-xs" style={{ color: RUST }}>Chưa có danh mục — vào Cấu hình web → "Danh mục sản phẩm web".</span>
             ) : (
-              <div className="flex flex-wrap gap-1.5">
-                {webCats.map((cat) => {
-                  const on = (w.categories || []).includes(cat);
-                  return (
-                    <button key={cat} type="button"
-                      onClick={() => setWeb({ categories: on ? w.categories.filter((x) => x !== cat) : [...w.categories, cat] })}
-                      className="px-2.5 py-1 rounded-sm text-xs border"
-                      style={{ borderColor: on ? INK : LINE, background: on ? INK : "#fff", color: on ? "#fff" : INK }}>
-                      {cat}
-                    </button>
-                  );
-                })}
+              <div className="space-y-2">
+                {Object.entries(
+                  webCats.reduce((acc, c) => { (acc[c.group] = acc[c.group] || []).push(c); return acc; }, {})
+                ).map(([group, subs]) => (
+                  <div key={group}>
+                    <div className="text-[11px] uppercase tracking-wider opacity-45 mb-1">{group}</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {subs.map((c) => {
+                        const on = (w.categories || []).includes(c.name);
+                        return (
+                          <button key={c.name} type="button"
+                            onClick={() => setWeb({ categories: on ? w.categories.filter((x) => x !== c.name) : [...w.categories, c.name] })}
+                            className="px-2.5 py-1 rounded-sm text-xs border"
+                            style={{ borderColor: on ? INK : LINE, background: on ? INK : "#fff", color: on ? "#fff" : INK, marginLeft: (c.depth - 1) * 10 }}>
+                            {c.depth > 1 ? "› " : ""}{c.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -12837,28 +12850,126 @@ function webTextToPageSections(text) {
   }).filter((s) => s.heading || s.body.length || s.bullets.length);
 }
 // Menu 2 tầng: nhóm chính -> danh mục phụ (chỉ tên). Nhập mỗi dòng 1 danh mục phụ.
+// ── Cây danh mục web (nháp khi sửa) ─────────────────────────────────────────
+// Mỗi node nháp có thêm `_key` (chỉ dùng trong phiên sửa, KHÔNG lưu vào dữ liệu thật) để
+// nhận diện "đây có phải cùng 1 danh mục sau khi đổi tên không" — nhờ vậy đổi tên 1 danh mục
+// có thể tự CASCADE sang các sản phẩm đã gán, thay vì phải xoá gán + gán lại thủ công.
+function nodeToDraft(node) {
+  return { _key: uid(), name: node.name || "", subs: (node.subs || []).map(nodeToDraft) };
+}
 function menuToDraft(menu) {
   return (menu || []).map((g) => ({
+    _key: uid(),
     group: g.group || "",
     icon: g.icon || "Package",
-    subsText: (g.subs || []).map((s) => s.name).filter(Boolean).join("\n"),
+    subs: (g.subs || []).map(nodeToDraft),
   }));
 }
+function draftNodeToMenu(node) {
+  const name = (node.name || "").trim();
+  if (!name) return null;
+  const subs = (node.subs || []).map(draftNodeToMenu).filter(Boolean);
+  return subs.length ? { name, slug: webSlugify(name), subs } : { name, slug: webSlugify(name) };
+}
 function draftToMenu(draft) {
-  const seen = new Set();
   return (draft || [])
     .filter((g) => (g.group || "").trim())
     .map((g) => ({
       group: g.group.trim(),
       slug: webSlugify(g.group),
       icon: g.icon || "Package",
-      subs: String(g.subsText || "")
-        .split("\n")
-        .map((s) => s.trim())
-        .filter(Boolean)
-        .filter((name) => { const k = name.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; })
-        .map((name) => ({ name, slug: webSlugify(name) })),
+      subs: (g.subs || []).map(draftNodeToMenu).filter(Boolean),
     }));
+}
+// { _key -> tên hiện tại } của TOÀN CÂY nháp (cả nhóm chính lẫn mọi cấp danh mục con) — so sánh
+// bản trước/sau khi lưu để phát hiện đổi tên (cùng _key, khác tên).
+function collectDraftKeyNames(draft) {
+  const map = {};
+  const walk = (nodes, isGroup) => (nodes || []).forEach((n) => {
+    map[n._key] = isGroup ? n.group : n.name;
+    walk(n.subs, false);
+  });
+  walk(draft, true);
+  return map;
+}
+// Mọi TÊN (không phân biệt hoa/thường) đang dùng trong cây nháp — kiểm tra trùng trước khi lưu.
+function collectDraftNamesLower(draft) {
+  const out = [];
+  const walk = (nodes) => (nodes || []).forEach((n) => { const t = (n.name || "").trim(); if (t) out.push(t.toLowerCase()); walk(n.subs); });
+  (draft || []).forEach((g) => walk(g.subs));
+  return out;
+}
+// Cập nhật/xoá/thêm/di chuyển 1 node theo _key, ở BẤT KỲ cấp nào trong 1 mảng `subs`.
+function updateNodeByKey(nodes, key, patch) {
+  return (nodes || []).map((n) => (n._key === key ? { ...n, ...patch } : { ...n, subs: updateNodeByKey(n.subs, key, patch) }));
+}
+function removeNodeByKey(nodes, key) {
+  return (nodes || []).filter((n) => n._key !== key).map((n) => ({ ...n, subs: removeNodeByKey(n.subs, key) }));
+}
+function addChildByKey(nodes, parentKey, child) {
+  return (nodes || []).map((n) =>
+    n._key === parentKey ? { ...n, subs: [...(n.subs || []), child] } : { ...n, subs: addChildByKey(n.subs, parentKey, child) }
+  );
+}
+function moveNodeByKey(nodes, key, dir) {
+  const idx = (nodes || []).findIndex((n) => n._key === key);
+  if (idx >= 0) {
+    const j = idx + dir;
+    if (j < 0 || j >= nodes.length) return nodes;
+    const copy = [...nodes]; [copy[idx], copy[j]] = [copy[j], copy[idx]]; return copy;
+  }
+  return (nodes || []).map((n) => ({ ...n, subs: moveNodeByKey(n.subs, key, dir) }));
+}
+function countDraftDescendants(node) {
+  return (node.subs || []).reduce((s, c) => s + 1 + countDraftDescendants(c), 0);
+}
+function findDraftNodeDepth(nodes, key, depth = 1) {
+  for (const n of nodes || []) {
+    if (n._key === key) return depth;
+    const d = findDraftNodeDepth(n.subs, key, depth + 1);
+    if (d) return d;
+  }
+  return 0;
+}
+// Đổi hàng loạt web.categories của sản phẩm theo bảng đổi tên { tênCũ: tênMới } — dùng khi lưu
+// cây danh mục web mà có danh mục bị đổi tên, để KHÔNG làm rớt gán danh mục của sản phẩm đã có.
+function cascadeCategoryRename(setProducts, renameMap) {
+  if (!setProducts || !renameMap || !Object.keys(renameMap).length) return;
+  setProducts((prev) => prev.map((p) => {
+    const cats = p.web && Array.isArray(p.web.categories) ? p.web.categories : null;
+    if (!cats || !cats.length) return p;
+    let changed = false;
+    const next = cats.map((c) => { if (renameMap[c] && renameMap[c] !== c) { changed = true; return renameMap[c]; } return c; });
+    return changed ? { ...p, web: { ...p.web, categories: [...new Set(next)] } } : p;
+  }));
+}
+
+/** 1 dòng danh mục trong cây nháp (đệ quy) — sửa tên, thêm con, xoá, đổi thứ tự trong nhóm anh em. */
+function MenuNodeRow({ node, siblingsCount, index, depth, onUpdate, onDelete, onAddChild, onMove }) {
+  const childCount = countDraftDescendants(node);
+  return (
+    <div>
+      <div className="flex items-center gap-1.5 py-1" style={{ marginLeft: (depth - 1) * 20 }}>
+        {depth > 1 && <span className="text-mute text-xs shrink-0">└</span>}
+        <input
+          value={node.name}
+          onChange={(e) => onUpdate(node._key, { name: e.target.value })}
+          placeholder="Tên danh mục"
+          className="flex-1 border rounded-sm px-2 py-1 text-sm min-w-0" style={{ borderColor: LINE }}
+        />
+        <button onClick={() => onMove(node._key, -1)} disabled={index === 0} className="text-xs px-1 py-1 rounded-sm border disabled:opacity-30 shrink-0" style={{ borderColor: LINE, color: INK }} title="Lên">↑</button>
+        <button onClick={() => onMove(node._key, 1)} disabled={index === siblingsCount - 1} className="text-xs px-1 py-1 rounded-sm border disabled:opacity-30 shrink-0" style={{ borderColor: LINE, color: INK }} title="Xuống">↓</button>
+        {depth < WEB_MAX_CATEGORY_DEPTH && (
+          <button onClick={() => onAddChild(node._key)} className="text-xs px-2 py-1 rounded-sm border shrink-0 whitespace-nowrap" style={{ borderColor: LINE, color: INK }}>+ Con</button>
+        )}
+        <button onClick={() => onDelete(node._key, node.name, childCount)} className="text-xs px-1.5 shrink-0" style={{ color: RUST }}>Xoá</button>
+      </div>
+      {(node.subs || []).map((child, i) => (
+        <MenuNodeRow key={child._key} node={child} siblingsCount={node.subs.length} index={i} depth={depth + 1}
+          onUpdate={onUpdate} onDelete={onDelete} onAddChild={onAddChild} onMove={onMove} />
+      ))}
+    </div>
+  );
 }
 const WEB_ICON_NAMES = GROUP_ICON_NAMES; // đồng bộ với bảng icon web (storefront/components/groupIcons.js)
 
@@ -12894,78 +13005,8 @@ function WebPageEditor({ pageKey, label, webConfig, setWebConfig }) {
   );
 }
 
-// Ô chọn "Danh mục phụ" cho 1 nhóm chính — hiện dạng thẻ (chip), gõ để tìm/gợi ý từ
-// danh sách Nhóm hàng đã tạo (Sản phẩm & tồn kho → Quản lý nhóm hàng), hoặc gõ tên mới rồi Enter
-// để tự tạo danh mục phụ chỉ dùng riêng cho web (VD "Flash Sale", "Bàn phím cơ"...).
-function SubCategoryTagInput({ subsText, onChange, suggestions, disallow }) {
-  const [input, setInput] = useState("");
-  const [open, setOpen] = useState(false);
-  const tags = String(subsText || "").split("\n").map((s) => s.trim()).filter(Boolean);
-  const boxRef = useClickAway(open, () => setOpen(false));
 
-  const add = (name) => {
-    const v = name.trim();
-    if (!v) return;
-    if (tags.some((t) => t.toLowerCase() === v.toLowerCase())) { setInput(""); setOpen(false); return; }
-    if ((disallow || []).some((t) => t.toLowerCase() === v.toLowerCase())) {
-      alert(`Danh mục phụ "${v}" đã dùng ở nhóm chính khác — mỗi tên chỉ dùng 1 lần trên toàn menu.`);
-      return;
-    }
-    onChange([...tags, v].join("\n"));
-    setInput(""); setOpen(false);
-  };
-  const removeAt = (i) => onChange(tags.filter((_, idx) => idx !== i).join("\n"));
-
-  const q = input.trim().toLowerCase();
-  const suggestionList = (suggestions || []).filter(
-    (s) => !tags.some((t) => t.toLowerCase() === s.toLowerCase())
-      && !(disallow || []).some((t) => t.toLowerCase() === s.toLowerCase())
-      && (!q || s.toLowerCase().includes(q))
-  );
-
-  return (
-    <div className="relative" ref={boxRef}>
-      <div className="flex flex-wrap gap-1.5 p-2 border rounded-sm" style={{ borderColor: LINE, background: "#fff" }}>
-        {tags.map((t, i) => (
-          <span key={i} className="inline-flex items-center gap-1 pl-2.5 pr-1.5 py-1 rounded-full text-xs" style={{ background: `${BLUE}17`, color: BLUE }}>
-            {t}
-            <button type="button" onClick={() => removeAt(i)} className="hover:opacity-60 rounded-full" style={{ padding: 2 }}><X size={11} /></button>
-          </span>
-        ))}
-        <input
-          value={input}
-          onChange={(e) => { setInput(e.target.value); setOpen(true); }}
-          onFocus={() => setOpen(true)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") { e.preventDefault(); if (input.trim()) add(input); }
-            else if (e.key === "Backspace" && !input && tags.length) removeAt(tags.length - 1);
-          }}
-          placeholder={tags.length === 0 ? "Chọn từ Nhóm hàng hoặc gõ tên mới rồi Enter…" : ""}
-          className="flex-1 min-w-[160px] outline-none text-sm bg-transparent py-0.5"
-        />
-      </div>
-      {open && (suggestionList.length > 0 || q) && (
-        <div className="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto rounded-sm shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-          {suggestionList.map((s) => (
-            <button key={s} type="button" onMouseDown={(e) => { e.preventDefault(); add(s); }}
-              className="w-full text-left px-3 py-1.5 text-sm hover:bg-black/5" style={{ borderBottom: `1px dashed ${LINE}` }}>
-              {s}
-            </button>
-          ))}
-          {q && !suggestions.some((s) => s.toLowerCase() === q) && !tags.some((t) => t.toLowerCase() === q) && (
-            <button type="button" onMouseDown={(e) => { e.preventDefault(); add(input); }}
-              className="w-full text-left px-3 py-1.5 text-sm hover:bg-black/5 font-medium" style={{ color: BLUE }}>
-              + Tạo danh mục phụ mới: “{input.trim()}”
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function WebMenuEditor({ webConfig, setWebConfig, products, categories }) {
-  const categoryOptions = useMemo(() => [...new Set(categories || [])].sort((a, b) => a.localeCompare(b, "vi")), [categories]);
+function WebMenuEditor({ webConfig, setWebConfig, setProducts, products }) {
   const usedCats = useMemo(
     () => [...new Set((products || []).flatMap((p) => [p.category, ...((p.web && p.web.categories) || [])]).filter(Boolean))].sort(),
     [products]
@@ -12973,28 +13014,54 @@ function WebMenuEditor({ webConfig, setWebConfig, products, categories }) {
 
   const source = webConfig.MENU && webConfig.MENU.length ? webConfig.MENU : WEB_DEFAULT_MENU;
   const [draft, setDraft] = useState(() => menuToDraft(source));
+  const baselineRef = useRef(collectDraftKeyNames(draft)); // tên tại thời điểm mở trang / lần lưu gần nhất — so sánh để phát hiện đổi tên
   const [dirty, setDirty] = useState(false);
   const upd = (fn) => { setDraft(fn); setDirty(true); };
 
   const setG = (gi, k, v) => upd((d) => d.map((g, i) => (i === gi ? { ...g, [k]: v } : g)));
-  const addG = () => upd((d) => [...d, { group: "Nhóm mới", icon: "Package", subsText: "" }]);
-  const delG = (gi) => upd((d) => d.filter((_, i) => i !== gi));
+  const addG = () => upd((d) => [...d, { _key: uid(), group: "Nhóm mới", icon: "Package", subs: [] }]);
+  const delG = (gi, group, childCount) => {
+    if (childCount > 0 && !window.confirm(`Xoá nhóm "${group}" sẽ xoá luôn ${childCount} danh mục bên trong. Sản phẩm đã gán không bị xoá, chỉ không còn hiện trong menu. Tiếp tục?`)) return;
+    upd((d) => d.filter((_, i) => i !== gi));
+  };
   const moveG = (gi, dir) => upd((d) => {
     const j = gi + dir;
     if (j < 0 || j >= d.length) return d;
     const n = [...d]; [n[gi], n[j]] = [n[j], n[gi]]; return n;
   });
 
-  const save = () => { setWebConfig((x) => ({ ...x, MENU: draftToMenu(draft) })); setDirty(false); };
-  const reset = () => { setWebConfig((x) => { const y = { ...x }; delete y.MENU; return y; }); setDraft(menuToDraft(WEB_DEFAULT_MENU)); setDirty(false); };
+  const save = () => {
+    const names = collectDraftNamesLower(draft);
+    const dupes = [...new Set(names.filter((n, i) => names.indexOf(n) !== i))];
+    if (dupes.length) { alert(`Tên danh mục bị trùng — mỗi tên chỉ dùng 1 lần trên toàn cây:\n${dupes.join(", ")}`); return; }
+
+    const finalNames = collectDraftKeyNames(draft);
+    const renameMap = {};
+    Object.keys(baselineRef.current).forEach((key) => {
+      const oldName = baselineRef.current[key], newName = finalNames[key];
+      if (oldName && newName && oldName !== newName) renameMap[oldName] = newName;
+    });
+    if (Object.keys(renameMap).length) cascadeCategoryRename(setProducts, renameMap);
+
+    setWebConfig((x) => ({ ...x, MENU: draftToMenu(draft) }));
+    baselineRef.current = collectDraftKeyNames(draft);
+    setDirty(false);
+  };
+  const reset = () => {
+    setWebConfig((x) => { const y = { ...x }; delete y.MENU; return y; });
+    const fresh = menuToDraft(WEB_DEFAULT_MENU);
+    setDraft(fresh);
+    baselineRef.current = collectDraftKeyNames(fresh);
+    setDirty(false);
+  };
 
   return (
     <div className="space-y-4">
       <p className="text-xs opacity-70 leading-relaxed">
-        Menu 2 tầng: <b>Nhóm chính</b> → <b>Danh mục phụ</b>. Danh mục phụ có thể <b>chọn từ Nhóm hàng</b> đã tạo ở
-        "Sản phẩm &amp; tồn kho → Quản lý nhóm hàng", hoặc gõ tên mới rồi Enter để <b>tự tạo riêng cho web</b>
-        (VD: <i>Flash Sale, Bàn phím cơ, Bàn phím không dây…</i>) — không cần có trong Nhóm hàng. <b>Tên phải khác nhau</b> trên toàn menu.
-        Khi thêm/sửa sản phẩm, tick chọn sản phẩm thuộc <b>nhiều</b> danh mục phụ cùng lúc được (ô "Danh mục phụ trên web").
+        Cây danh mục tối đa <b>{WEB_MAX_CATEGORY_DEPTH + 1} cấp</b>: <b>Nhóm chính</b> → Danh mục phụ → Con → Nhỏ (nút "+ Con" tự ẩn khi đã tới cấp cuối).
+        Xem 1 danh mục CHA sẽ <b>tự gộp</b> luôn hàng của các danh mục con/cháu bên dưới — không cần gán lặp lại.
+        <b> Tên phải khác nhau</b> trên toàn cây. Đổi tên 1 danh mục sẽ <b>tự cập nhật</b> theo cho sản phẩm đã gán, không bị rớt mất.
+        Khi thêm/sửa sản phẩm, chọn được <b>nhiều</b> danh mục cùng lúc (ô "Danh mục phụ trên web").
         Cột <b>Thương hiệu</b> và <b>Khoảng giá</b> web <b>tự sinh</b> — không cần khai ở đây.
       </p>
       {usedCats.length > 0 && (
@@ -13003,12 +13070,8 @@ function WebMenuEditor({ webConfig, setWebConfig, products, categories }) {
         </div>
       )}
 
-      {draft.map((g, gi) => {
-        const disallowElsewhere = draft
-          .filter((_, i) => i !== gi)
-          .flatMap((gr) => String(gr.subsText || "").split("\n").map((s) => s.trim()).filter(Boolean));
-        return (
-        <div key={gi} className="border rounded-sm p-3" style={{ borderColor: LINE }}>
+      {draft.map((g, gi) => (
+        <div key={g._key} className="border rounded-sm p-3" style={{ borderColor: LINE }}>
           <div className="flex gap-3 items-end mb-3">
             <Field label="Tên nhóm chính"><input className={inputCls} style={{ borderColor: LINE }} value={g.group} onChange={(e) => setG(gi, "group", e.target.value)} /></Field>
             <div style={{ width: 170 }}>
@@ -13025,20 +13088,30 @@ function WebMenuEditor({ webConfig, setWebConfig, products, categories }) {
             <div className="flex items-center gap-1 pb-1.5">
               <button onClick={() => moveG(gi, -1)} disabled={gi === 0} className="text-xs px-1.5 py-1 rounded-sm border disabled:opacity-30" style={{ borderColor: LINE }} title="Lên">↑</button>
               <button onClick={() => moveG(gi, 1)} disabled={gi === draft.length - 1} className="text-xs px-1.5 py-1 rounded-sm border disabled:opacity-30" style={{ borderColor: LINE }} title="Xuống">↓</button>
-              <button onClick={() => delG(gi)} className="text-xs px-1.5" style={{ color: RUST }}>Xoá nhóm</button>
+              <button onClick={() => delG(gi, g.group, countDraftDescendants({ subs: g.subs }))} className="text-xs px-1.5" style={{ color: RUST }}>Xoá nhóm</button>
             </div>
           </div>
-          <Field label="Danh mục phụ">
-            <SubCategoryTagInput
-              subsText={g.subsText}
-              onChange={(v) => setG(gi, "subsText", v)}
-              suggestions={categoryOptions}
-              disallow={disallowElsewhere}
-            />
-          </Field>
+
+          <p className="text-[11px] uppercase tracking-wide opacity-50 mb-1.5">Danh mục phụ</p>
+          <div className="space-y-0.5">
+            {(g.subs || []).map((node, i) => (
+              <MenuNodeRow key={node._key} node={node} siblingsCount={g.subs.length} index={i} depth={1}
+                onUpdate={(key, patch) => setG(gi, "subs", updateNodeByKey(g.subs, key, patch))}
+                onDelete={(key, name, childCount) => {
+                  if (childCount > 0 && !window.confirm(`Xoá "${name}" sẽ xoá luôn ${childCount} danh mục con bên trong. Sản phẩm đã gán không bị xoá, chỉ không còn hiện trong menu. Tiếp tục?`)) return;
+                  setG(gi, "subs", removeNodeByKey(g.subs, key));
+                }}
+                onAddChild={(key) => setG(gi, "subs", addChildByKey(g.subs, key, { _key: uid(), name: "Danh mục mới", subs: [] }))}
+                onMove={(key, dir) => setG(gi, "subs", moveNodeByKey(g.subs, key, dir))}
+              />
+            ))}
+            <button onClick={() => setG(gi, "subs", [...(g.subs || []), { _key: uid(), name: "Danh mục mới", subs: [] }])}
+              className="text-xs px-2.5 py-1.5 rounded-sm border mt-1" style={{ borderColor: LINE, color: INK }}>
+              + Thêm danh mục phụ
+            </button>
+          </div>
         </div>
-        );
-      })}
+      ))}
 
       <div className="flex items-center gap-3">
         <button onClick={addG} className="text-sm px-3 py-1.5 rounded-sm border" style={{ borderColor: LINE, color: INK }}>+ Thêm nhóm chính</button>
@@ -13320,7 +13393,7 @@ function CouponsEditor({ webConfig, setWebConfig }) {
   );
 }
 
-function WebConfigForm({ webConfig, setWebConfig, addLog, products, categories }) {
+function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products, categories }) {
   const c = webConfig || {};
   const SITE = c.SITE || {};
   const bank = SITE.bank || {};
@@ -13419,7 +13492,7 @@ function WebConfigForm({ webConfig, setWebConfig, addLog, products, categories }
 
       <section>
         <h3 className="font-medium mb-3" style={{ color: INK }}>Danh mục sản phẩm web (menu)</h3>
-        <WebMenuEditor webConfig={webConfig} setWebConfig={setWebConfig} products={products} categories={categories} />
+        <WebMenuEditor webConfig={webConfig} setWebConfig={setWebConfig} setProducts={setProducts} products={products} />
       </section>
 
       <section>

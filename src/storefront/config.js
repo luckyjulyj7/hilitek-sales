@@ -120,13 +120,29 @@ export const LOW_STOCK_THRESHOLD = 5;
  * Chỉnh trong app quản lý: Website → Cấu hình web → "Danh mục sản phẩm web".
  * icon = tên icon lucide (xem components/groupIcons.js).
  */
+/**
+ * Cây danh mục — tối đa 4 CẤP: Nhóm chính (group) > Danh mục phụ > Danh mục con > Danh mục nhỏ.
+ * Từ cấp "Danh mục phụ" trở xuống, mỗi mục là { name, slug, subs?: [...] } — `subs` có thể lồng
+ * tiếp (tối đa tới cấp 4). Xem 1 danh mục CHA sẽ tự gộp luôn sản phẩm của mọi danh mục CON/CHÁU
+ * bên dưới (không cần gắn lặp lại). Tên mỗi mục phải DUY NHẤT trên toàn cây (mọi cấp).
+ */
 export const MENU = [
   {
     group: "Linh kiện PC", slug: "linh-kien-pc", icon: "Cpu",
     subs: [
       { name: "Card màn hình", slug: "card-man-hinh" },
       { name: "CPU", slug: "cpu" },
-      { name: "Mainboard", slug: "mainboard" },
+      {
+        name: "Mainboard", slug: "mainboard",
+        subs: [
+          { name: "Mainboard Intel", slug: "mainboard-intel", subs: [
+            { name: "Socket LGA1700", slug: "mainboard-intel-lga1700" },
+          ] },
+          { name: "Mainboard AMD", slug: "mainboard-amd", subs: [
+            { name: "Socket AM5", slug: "mainboard-amd-am5" },
+          ] },
+        ],
+      },
       { name: "RAM", slug: "ram" },
       { name: "Nguồn máy tính", slug: "nguon-may-tinh" },
       { name: "Tản nhiệt", slug: "tan-nhiet" },
@@ -189,29 +205,83 @@ export function priceBucketQuery(b, group) {
   return q;
 }
 
-/** Mọi tên danh mục phụ — dùng cho ô "Danh mục phụ trên web" của sản phẩm. */
+/** Cấp tối đa của cây danh mục (không tính nhóm chính): 1=Danh mục phụ, 2=Con, 3=Nhỏ. */
+export const MAX_CATEGORY_DEPTH = 3;
+
+/** Mọi tên danh mục (mọi cấp, đệ quy) — dùng cho ô "Danh mục phụ trên web" của sản phẩm. */
 export function allWebCategories(menu = MENU) {
   const out = [];
-  (menu || []).forEach((g) => (g.subs || []).forEach((s) => {
+  const walk = (nodes) => (nodes || []).forEach((s) => {
     if (s.name && !out.includes(s.name)) out.push(s.name);
-  }));
+    walk(s.subs);
+  });
+  (menu || []).forEach((g) => walk(g.subs));
   return out;
 }
-/** [{ group, subs:[tên] }] — cho ô chọn có nhóm ở app quản lý. */
+/** [{ group, subs:[tên] }] — CHỈ cấp 1 (Danh mục phụ trực tiếp), cho ô chọn có nhóm ở app quản lý. */
 export function webCategoryGroups(menu = MENU) {
   return (menu || []).map((g) => ({ group: g.group, subs: (g.subs || []).map((s) => s.name).filter(Boolean) }));
 }
 
-/** Tra nhanh: tên danh mục phụ -> nhóm cha. */
+/**
+ * Cây danh mục dạng phẳng, kèm đủ thông tin để vẽ UI dạng cây (thu gọn/xổ ra) hoặc breadcrumb:
+ *   [{ name, slug, depth, parent, group, hasChildren, node }]
+ * `depth`: 0 = nhóm chính, 1 = Danh mục phụ, 2 = Con, 3 = Nhỏ. `parent`: tên cha trực tiếp ("" nếu cha là nhóm chính).
+ */
+export function flattenMenuTree(menu = MENU) {
+  const out = [];
+  const walk = (nodes, group, parent, depth) => (nodes || []).forEach((node) => {
+    if (!node.name) return;
+    out.push({ name: node.name, slug: node.slug || "", depth, parent, group, hasChildren: !!(node.subs || []).length, node });
+    walk(node.subs, group, node.name, depth + 1);
+  });
+  (menu || []).forEach((g) => walk(g.subs, g.group, "", 1));
+  return out;
+}
+
+/** Tra nhanh (đệ quy mọi cấp): tên danh mục -> nhóm chính · tên cha trực tiếp · tập tên con/cháu. */
 export const CATEGORY_TO_GROUP = {};
+export const CATEGORY_PARENT = {};
+export const CATEGORY_DEPTH = {};
+const CATEGORY_DESCENDANTS = {};
 function rebuildCatToGroup(menu = MENU) {
-  Object.keys(CATEGORY_TO_GROUP).forEach((k) => delete CATEGORY_TO_GROUP[k]);
-  (menu || []).forEach((g) => (g.subs || []).forEach((s) => {
-    if (s.name) CATEGORY_TO_GROUP[s.name] = g.group;
-  }));
+  [CATEGORY_TO_GROUP, CATEGORY_PARENT, CATEGORY_DEPTH, CATEGORY_DESCENDANTS].forEach((obj) =>
+    Object.keys(obj).forEach((k) => delete obj[k])
+  );
+  const walk = (node, group, parent, depth) => {
+    if (node.name) {
+      CATEGORY_TO_GROUP[node.name] = group;
+      CATEGORY_PARENT[node.name] = parent;
+      CATEGORY_DEPTH[node.name] = depth;
+      CATEGORY_DESCENDANTS[node.name] = new Set();
+    }
+    (node.subs || []).forEach((child) => {
+      walk(child, group, node.name || parent, depth + 1);
+      if (node.name && child.name) {
+        CATEGORY_DESCENDANTS[node.name].add(child.name);
+        CATEGORY_DESCENDANTS[child.name].forEach((d) => CATEGORY_DESCENDANTS[node.name].add(d));
+      }
+    });
+  };
+  (menu || []).forEach((g) => (g.subs || []).forEach((s) => walk(s, g.group, "", 1)));
 }
 rebuildCatToGroup();
 export { rebuildCatToGroup };
+
+/** Danh sách tên con/cháu (đệ quy) của 1 danh mục — dùng để "xem cha thấy luôn hàng của con". */
+export function categoryDescendants(cat) {
+  return [...(CATEGORY_DESCENDANTS[cat] || [])];
+}
+
+/** Breadcrumb đầy đủ từ nhóm chính tới 1 danh mục (mọi cấp): [nhóm, phụ, con, nhỏ]. */
+export function categoryBreadcrumb(cat) {
+  const chain = [];
+  let cur = cat;
+  while (cur) { chain.unshift(cur); cur = CATEGORY_PARENT[cur] || ""; }
+  const group = CATEGORY_TO_GROUP[cat];
+  if (group) chain.unshift(group);
+  return chain;
+}
 
 /* ── Helpers ── */
 export function productCategories(p) {
@@ -223,7 +293,14 @@ export function productGroups(p) {
   return [...new Set(productCategories(p).map((c) => CATEGORY_TO_GROUP[c]).filter(Boolean))];
 }
 export const productInGroup = (p, group) => productGroups(p).includes(group);
-export const productInCategory = (p, cat) => productCategories(p).includes(cat);
+// Sản phẩm thuộc 1 danh mục nếu gắn ĐÚNG danh mục đó, HOẶC gắn 1 danh mục con/cháu bên dưới nó
+// (xem danh mục cha sẽ tự gộp luôn hàng của các nhánh con).
+export function productInCategory(p, cat) {
+  const cats = productCategories(p);
+  if (cats.includes(cat)) return true;
+  const desc = CATEGORY_DESCENDANTS[cat];
+  return !!desc && cats.some((c) => desc.has(c));
+}
 
 /** Nhãn hiệu của các sản phẩm thuộc 1 nhóm — cho cột "Thương hiệu" tự sinh. */
 export function brandsInGroup(products, group) {

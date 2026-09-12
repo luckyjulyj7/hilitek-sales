@@ -3,11 +3,12 @@ import {
   MapPin, Search, Phone, ShoppingCart, ChevronDown, Menu, X, Truck, PackageSearch,
   ShieldCheck, CreditCard, Wallet, Wrench, LayoutGrid,
 } from "lucide-react";
-import { SITE, MENU, FEATURES, SUPPORT_LINKS } from "../config.js";
+import { SITE, MENU, FEATURES, SUPPORT_LINKS, categoryBreadcrumb } from "../config.js";
 import { href } from "../router.js";
 import { useCart } from "../cart.jsx";
 import Logo from "./Logo.jsx";
 import CategoryRail from "./CategoryRail.jsx";
+import CategoryTree from "./CategoryTree.jsx";
 import { groupIcon } from "./groupIcons.js";
 
 const ICONS = { CreditCard, Wallet, Truck, ShieldCheck, Wrench };
@@ -228,21 +229,21 @@ export default function Header({ route, navigate, drawer, setDrawer }) {
                     <ChevronDown size={16} className={mobileGroup === g.slug ? "rotate-180" : ""} />
                   </button>
                   {mobileGroup === g.slug && (
-                    <div className="pb-2">
+                    <div className="pb-2 px-6">
                       <button
                         onClick={() => go(href("/danh-muc", { group: g.group }).slice(1))}
-                        className="block px-6 py-1.5 text-[15px] text-navy font-medium"
+                        className="block py-1.5 text-[15px] text-navy font-medium"
                       >
                         Tất cả {g.group}
                       </button>
-                      {(g.subs || []).map((s) => {
-                        const sh = href("/danh-muc", { group: g.group, cat: s.name });
-                        return (
-                          <button key={s.slug || s.name} onClick={() => go(sh.slice(1))} className="block px-6 py-1.5 text-[15px] text-ink/75">
-                            {s.name}
-                          </button>
-                        );
-                      })}
+                      {(g.subs || []).length > 0 && (
+                        <CategoryTree
+                          nodes={g.subs}
+                          activeCat={route.query.cat || ""}
+                          activePath={route.query.cat ? categoryBreadcrumb(route.query.cat) : []}
+                          onSelect={(name) => go(href("/danh-muc", { group: g.group, cat: name }).slice(1))}
+                        />
+                      )}
                     </div>
                   )}
                 </li>

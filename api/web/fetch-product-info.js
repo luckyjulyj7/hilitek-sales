@@ -70,11 +70,52 @@ const JUNK_BLOCK_RE = /search|tim-kiem|viewed|history|xem-gan-day|related|lien-q
 const JUNK_TEXT_RE = /giỏ hàng trống|hãy thêm sản phẩm|đăng nhập|đăng ký tài khoản|quên mật khẩu|no products found|empty cart|404|không tìm thấy trang/i;
 // id/class hay gặp cho khối mô tả / thông số (Shopify, WooCommerce, Haravan, Sapo... đều theo mẫu này).
 const DESC_HINT_RE = /description|mo-?ta|gioi-?thieu|overview|tong-?quan|product-?detail|noi-?dung-?san-?pham/i;
-const SPEC_HINT_RE = /specification|technical|thong-?so|additional-?information|attribute|characteristic/i;
+const SPEC_HINT_RE = /specification|technical|thong-?so|additional-?information|attribute|characteristic|model/i;
 // Chữ tiêu đề hay gặp ngay phía trên khối mô tả / thông số.
 const DESC_HEADING_RE = /^(giới thiệu|mô tả|tổng quan|chi tiết sản phẩm|thông tin sản phẩm|description|overview|product detail|product overview)\b/i;
-const SPEC_HEADING_RE = /^(thông số|specification|technical spec|spec)\b/i;
+const SPEC_HEADING_RE = /^(thông số|specification|technical spec|spec|model)\b/i;
 const HEADING_TAGS = new Set(["h1", "h2", "h3", "h4", "h5", "h6"]);
+
+// Các nhãn "lõi" hầu như trang sản phẩm nào cũng có (mã sản phẩm/model/thương hiệu/tên sản phẩm) —
+// quét RIÊNG trên toàn trang (không chỉ trong khối thông số) vì nhiều trang đặt mấy dòng này
+// ngay dưới tên sản phẩm, tách khỏi bảng thông số chính. Luôn đưa lên ĐẦU danh sách thông số.
+const KEY_SPEC_FIELDS = [
+  { label: "Mã sản phẩm", re: /^(mã sản phẩm|mã sp|product code|item no\.?|sku)$/i },
+  { label: "Tên sản phẩm", re: /^(tên sản phẩm|product name)$/i },
+  { label: "Thương hiệu", re: /^(thương hiệu|hãng sản xuất|hãng|nhà sản xuất|brand|manufacturer)$/i },
+  { label: "Model", re: /^(model|mẫu mã|mã model)$/i },
+];
+// Quét toàn trang tìm dòng ngắn "Nhãn: Giá trị" khớp 1 trong các nhãn lõi ở trên.
+function scanKeySpecs($) {
+  const found = {};
+  $("li,p,dt,dd,span,div,td,th").each((_, el) => {
+    const $el = $(el);
+    if ($el.children().length > 2) return; // chỉ quét dòng ngắn, tránh nuốt cả khối lớn
+    const t = $el.text().replace(/\s+/g, " ").trim();
+    if (!t || t.length > 150) return;
+    const m = t.match(/^([^:：]{2,30})[:：]\s*(.+)$/);
+    if (!m) return;
+    const value = m[2].trim();
+    if (!value) return;
+    const field = KEY_SPEC_FIELDS.find((f) => f.re.test(m[1].trim()));
+    if (field && !found[field.label]) found[field.label] = value;
+  });
+  return found;
+}
+// Đọc JSON-LD Schema.org "Product" (rất phổ biến, nhiều nền tảng tự chèn cho SEO) — nguồn
+// đáng tin cậy nhất khi có, vì dữ liệu có cấu trúc rõ ràng thay vì phải đoán qua HTML.
+function readProductJsonLd($) {
+  let prod = null;
+  $('script[type="application/ld+json"]').each((_, el) => {
+    if (prod) return;
+    let data;
+    try { data = JSON.parse($(el).contents().text()); } catch { return; }
+    const list = Array.isArray(data) ? data : (Array.isArray(data["@graph"]) ? data["@graph"] : [data]);
+    const isProduct = (d) => d && (d["@type"] === "Product" || (Array.isArray(d["@type"]) && d["@type"].includes("Product")));
+    prod = list.find(isProduct) || null;
+  });
+  return prod;
+}
 
 // Tìm phần tử có id/class khớp `re` (bỏ qua nếu cũng khớp `avoidRe`) — ưu tiên khối text DÀI nhất
 // (thường là khối bao ngoài cùng của cả mục, không phải 1 dòng con bên trong).
@@ -175,10 +216,14 @@ function extract(html, src) {
   const $ = cheerio.load(html);
   const abs = (u) => { try { return new URL(u, src).href; } catch { return u; } };
 
+  // Đọc JSON-LD Product TRƯỚC khi gỡ bỏ <script> (script chứa JSON-LD cũng bị gỡ nếu gỡ sau).
+  const ld = readProductJsonLd($);
+
   $("script,style,nav,header,footer,noscript,form").remove();
 
   const title =
     $("h1").first().text().trim() ||
+    (ld && ld.name) ||
     $('meta[property="og:title"]').attr("content") ||
     $("title").text().trim() ||
     "";
