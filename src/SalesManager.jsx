@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Package, ShoppingCart, Users, BarChart3,
   Plus, Trash2, Pencil, X, Search, Store, Globe,
   TrendingUp, AlertTriangle, Loader2, ChevronDown, ChevronRight, ChevronLeft, ChevronUp,
-  ArrowDownToLine, ArrowUpFromLine, Barcode, ImagePlus, ImageOff, Check, Printer, RotateCcw, KeyRound, LogOut, Eye, EyeOff, Filter, Target, History, ShieldCheck, XCircle, Wallet, PackageCheck, Truck, Clock, Bell, FileSpreadsheet, FileText, MapPin, UserCircle, Crown, Link2 as LinkIcon, Copy, Wand2, Bold, Italic, Heading1, Heading2, Heading3, List, Sparkles
+  ArrowDownToLine, ArrowUpFromLine, Barcode, ImagePlus, ImageOff, Check, Printer, RotateCcw, KeyRound, LogOut, Eye, EyeOff, Filter, Target, History, ShieldCheck, XCircle, Wallet, PackageCheck, Truck, Clock, Bell, FileSpreadsheet, FileText, MapPin, UserCircle, Crown, Link2 as LinkIcon, Copy, Wand2, Bold, Italic, Heading1, Heading2, Heading3, List, Sparkles, Save
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -15,6 +15,7 @@ import { ghn as ghnApi } from "./lib/ghn.js";
 import { PAGES as WEB_DEFAULT_PAGES, MENU as WEB_DEFAULT_MENU, allWebCategories as webAllCategories, webCategoryGroups, HOME_SECTIONS as WEB_DEFAULT_HOME_SECTIONS, HOME_SECTION_SORTS, HOME_SECTION_LAYOUTS, LANDINGS as WEB_DEFAULT_LANDINGS, FLASH_SALE_CATEGORY as WEB_FLASH_CAT } from "./storefront/config.js";
 import { GROUP_ICON_NAMES, groupIcon as webGroupIcon } from "./storefront/components/groupIcons.js";
 import { uploadProductImage, rehostExternalImage, toDirectImageUrl } from "./lib/mediaUpload.js";
+import { SUPABASE_ANON_KEY } from "./lib/supabaseStorage.js";
 
 // Xuất 1 hoặc nhiều bảng dữ liệu ra 1 file Excel (.xlsx), mỗi bảng là 1 sheet riêng.
 function exportExcel(filename, sheets) {
@@ -12216,7 +12217,7 @@ function WebProducts({ products, setProducts, categories, brands, addLog, webCon
 
   const editing = editId ? products.find((x) => x.id === editId) : null;
   if (editing) {
-    return <WebProductPage product={editing} products={products} setProducts={setProducts} webCats={webCats} onBack={() => setEditId(null)} />;
+    return <WebProductPage product={editing} products={products} setProducts={setProducts} webCats={webCats} onBack={() => setEditId(null)} addLog={addLog} />;
   }
 
   return (
@@ -12410,37 +12411,169 @@ function CopyWebInfoButton({ product, products, setWeb }) {
   );
 }
 
-/** Trang sửa 1 sản phẩm trên web — bố cục 2 cột kiểu Sapo. */
-function WebProductPage({ product, products, setProducts, webCats, onBack }) {
-  const p = product;
-  const w = normalizeWeb(p.web);
-  const shareKeys = ["description", "specsText", "categories", "images", "shortDesc", "promo"];
+/**
+ * "Link tham khảo" — dán link trang sản phẩm của NCC/hãng, tự lấy mô tả + thông số + ảnh về
+ * điền sẵn vào bản NHÁP (chưa lưu). Kết quả chỉ mang tính tham khảo — mỗi trang cấu trúc khác
+ * nhau nên luôn cần xem & sửa lại trước khi bấm Lưu. Ảnh được tải hẳn về kho Hilitek.
+ */
+function FetchFromSupplierUrl({ onApply }) {
+  const [url, setUrl] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [preview, setPreview] = useState(null);
+  const [pick, setPick] = useState({ description: true, specsText: true, images: true });
 
-  const setWeb = (wpatch) => {
-    const shared = shareKeys.some((k) => k in wpatch);
+  const fetchInfo = async () => {
+    const u = url.trim();
+    if (!/^https?:\/\//i.test(u)) { setMsg("Nhập link sản phẩm hợp lệ (bắt đầu https://)."); return; }
+    setBusy(true); setMsg("Đang lấy thông tin từ trang nguồn…"); setPreview(null);
+    try {
+      const r = await fetch(`/api/web/fetch-product-info?url=${encodeURIComponent(u)}`, {
+        headers: { "x-media-key": SUPABASE_ANON_KEY },
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || `Lỗi ${r.status}`);
+      if (!j.description && !(j.specs || []).length && !(j.images || []).length)
+        throw new Error("Không lấy được nội dung nào từ trang này — thử dán/kéo–thả trực tiếp.");
+      setPick({ description: !!j.description, specsText: !!(j.specs || []).length, images: !!(j.images || []).length });
+      setPreview(j);
+      setMsg("");
+    } catch (e) {
+      setMsg("Lỗi: " + (e.message || e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const apply = async () => {
+    if (!preview) return;
+    setBusy(true);
+    const patch = {};
+    if (pick.description && preview.description) patch.description = preview.description;
+    if (pick.specsText && (preview.specs || []).length) patch.specsText = preview.specs.map(([k, v]) => `${k} | ${v}`).join("\n");
+    if (pick.images && (preview.images || []).length) {
+      const srcs = preview.images.slice(0, 10);
+      setMsg(`Đang tải ${srcs.length} ảnh về kho…`);
+      const results = new Array(srcs.length);
+      let done = 0, next = 0;
+      const worker = async () => {
+        while (next < srcs.length) {
+          const k = next++;
+          try { results[k] = await rehostExternalImage(srcs[k]); } catch { results[k] = null; }
+          done++; setMsg(`Đang tải ảnh ${done}/${srcs.length} về kho…`);
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(3, srcs.length) }, worker));
+      patch.images = results.filter(Boolean);
+    }
+    onApply(patch);
+    setBusy(false);
+    setMsg("Đã điền vào bản nháp — kiểm tra lại rồi bấm Lưu.");
+    setPreview(null); setUrl("");
+  };
+
+  return (
+    <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+      <p className="text-sm font-medium mb-1 flex items-center gap-1.5" style={{ color: INK }}>
+        <Globe size={15} /> Link tham khảo (lấy tự động từ trang NCC/hãng)
+      </p>
+      <p className="text-[11px] opacity-50 mb-2">
+        Dán link trang sản phẩm — hệ thống tự lấy mô tả, thông số kỹ thuật và ảnh về điền vào bản nháp bên dưới.
+        Chỉ mang tính tham khảo, luôn xem & sửa lại trước khi bấm <b>Lưu</b>.
+      </p>
+      <div className="flex gap-2 flex-wrap">
+        <input value={url} onChange={(e) => setUrl(e.target.value)} disabled={busy}
+          placeholder="https://vsp.vn/man-hinh-..."
+          className="flex-1 min-w-[220px] border rounded-sm px-2 py-1.5 text-sm" style={{ borderColor: LINE }}
+          onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), fetchInfo())} />
+        <button type="button" onClick={fetchInfo} disabled={busy}
+          className="px-3 py-1.5 rounded-sm text-white text-sm inline-flex items-center gap-1.5 disabled:opacity-50 shrink-0" style={{ background: INK }}>
+          {busy ? <Loader2 size={14} className="animate-spin" /> : <Globe size={14} />} Lấy thông tin
+        </button>
+      </div>
+      {msg && <p className="text-[12px] mt-1.5" style={{ color: /Lỗi|không/i.test(msg) ? RUST : BLUE }}>{msg}</p>}
+
+      {preview && (
+        <div className="mt-3 p-3 rounded-sm space-y-2" style={{ background: PAPER, border: `1px dashed ${LINE}` }}>
+          <p className="text-xs font-medium truncate" style={{ color: INK }}>Đã lấy được từ: <span className="opacity-60 font-normal">{preview.title || preview.sourceUrl}</span></p>
+          <label className="flex items-start gap-2 text-xs cursor-pointer">
+            <input type="checkbox" checked={pick.description} disabled={!preview.description} onChange={(e) => setPick((v) => ({ ...v, description: e.target.checked }))} />
+            <span>Nội dung mô tả {preview.description ? `(${preview.description.length} ký tự)` : "— không tìm thấy"}</span>
+          </label>
+          <label className="flex items-start gap-2 text-xs cursor-pointer">
+            <input type="checkbox" checked={pick.specsText} disabled={!(preview.specs || []).length} onChange={(e) => setPick((v) => ({ ...v, specsText: e.target.checked }))} />
+            <span>Thông số kỹ thuật {(preview.specs || []).length ? `(${preview.specs.length} dòng)` : "— không tìm thấy"}</span>
+          </label>
+          <label className="flex items-start gap-2 text-xs cursor-pointer">
+            <input type="checkbox" checked={pick.images} disabled={!(preview.images || []).length} onChange={(e) => setPick((v) => ({ ...v, images: e.target.checked }))} />
+            <span>Ảnh sản phẩm {(preview.images || []).length ? `(${preview.images.length} ảnh — sẽ tải về kho Hilitek)` : "— không tìm thấy, trang có thể nạp ảnh bằng JS (thử dán ảnh thủ công)"}</span>
+          </label>
+          <div className="flex gap-2 pt-1">
+            <button type="button" onClick={apply} disabled={busy} className="px-3 py-1.5 rounded-sm text-white text-xs disabled:opacity-50" style={{ background: INK }}>Điền vào bản nháp</button>
+            <button type="button" onClick={() => { setPreview(null); setMsg(""); }} className="px-3 py-1.5 rounded-sm border text-xs" style={{ borderColor: LINE, color: INK }}>Bỏ qua</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Trang sửa 1 sản phẩm trên web — bố cục 2 cột kiểu Sapo.
+ * Sửa trên bản NHÁP tại chỗ — KHÔNG tự lưu; phải bấm "Lưu" mới ghi vào dữ liệu thật.
+ */
+function WebProductPage({ product, products, setProducts, webCats, onBack, addLog }) {
+  const p = product;
+  const shareKeys = ["description", "specsText", "categories", "images", "shortDesc", "promo"];
+  const [draft, setDraft] = useState(() => normalizeWeb(product.web));
+  const [weightDraft, setWeightDraft] = useState(product.weight ?? 0);
+  const [dirty, setDirty] = useState(false);
+
+  const setWeb = (wpatch) => { setDraft((d) => normalizeWeb({ ...d, ...wpatch })); setDirty(true); };
+  const setWeightField = (v) => { setWeightDraft(v); setDirty(true); };
+
+  const doSave = () => {
     setProducts((prev) => prev.map((x) => {
-      if (x.id === p.id) return { ...x, web: normalizeWeb({ ...normalizeWeb(x.web), ...wpatch }) };
-      if (shared && p.variantGroupId && x.variantGroupId === p.variantGroupId) {
-        const sh = {}; shareKeys.forEach((k) => { if (k in wpatch) sh[k] = wpatch[k]; });
+      if (x.id === p.id) return { ...x, weight: Number(weightDraft) || 0, web: normalizeWeb(draft) };
+      // Đồng bộ nội dung/thông số/danh mục/ảnh/mô tả ngắn/khuyến mãi sang các phiên bản cùng nhóm.
+      if (p.variantGroupId && x.variantGroupId === p.variantGroupId) {
+        const sh = {}; shareKeys.forEach((k) => { sh[k] = draft[k]; });
         return { ...x, web: normalizeWeb({ ...normalizeWeb(x.web), ...sh }) };
       }
       return x;
     }));
+    setDirty(false);
+    if (addLog) addLog("Lưu thông tin web sản phẩm", `${p.sku} · ${p.name}`);
   };
-  const setProdField = (k, v) => setProducts((prev) => prev.map((x) => (x.id === p.id ? { ...x, [k]: v } : x)));
+  const doDiscard = () => {
+    setDraft(normalizeWeb(product.web));
+    setWeightDraft(product.weight ?? 0);
+    setDirty(false);
+  };
+  const handleBack = () => {
+    if (dirty && !window.confirm("Có thay đổi chưa lưu. Rời khỏi trang sẽ mất các thay đổi này — tiếp tục?")) return;
+    onBack();
+  };
 
+  const w = draft;
   const effSlug = w.slug || webSlugify(p.name) || webSlugify(p.sku || "");
   const seoTitle = w.seoTitle || p.name;
   const seoDesc = w.seoDesc || w.shortDesc || (w.description.split(/\n{2,}/)[0] || "").replace(/!\[[^\]]*\]\([^)]*\)/g, "").slice(0, 160);
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-4">
-        <button onClick={onBack} className="text-sm inline-flex items-center gap-1" style={{ color: BLUE }}>
+      <div className="flex items-center gap-3 mb-4 flex-wrap">
+        <button onClick={handleBack} className="text-sm inline-flex items-center gap-1" style={{ color: BLUE }}>
           <ChevronLeft size={16} /> Danh sách sản phẩm web
         </button>
         <div className="flex-1" />
-        <span className="text-xs opacity-50">Tự lưu</span>
+        {dirty && <span className="text-xs font-medium" style={{ color: BRASS }}>● Có thay đổi chưa lưu</span>}
+        <button onClick={doDiscard} disabled={!dirty} className="text-xs px-3 py-1.5 rounded-sm border disabled:opacity-40" style={{ borderColor: LINE, color: INK }}>
+          Huỷ thay đổi
+        </button>
+        <button onClick={doSave} disabled={!dirty} className="text-xs px-3.5 py-1.5 rounded-sm text-white disabled:opacity-40 inline-flex items-center gap-1.5" style={{ background: FOREST }}>
+          <Save size={13} /> Lưu
+        </button>
       </div>
 
       <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
@@ -12455,6 +12588,8 @@ function WebProductPage({ product, products, setProducts, webCats, onBack }) {
         {/* Cột trái */}
         <div className="space-y-4">
           {p.variantGroupId && <p className="text-xs p-2 rounded-sm" style={{ background: `${BLUE}0D`, color: BLUE }}>Nội dung · thông số · ảnh · danh mục áp cho tất cả phiên bản cùng nhóm. Giá / SEO / slug riêng từng phiên bản.</p>}
+
+          <FetchFromSupplierUrl onApply={setWeb} />
 
           <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
             <Field label="Nội dung mô tả" hint="Dán / kéo–thả ảnh · dán cả bài từ web khác · dán link YouTube (dòng riêng) = nhúng video">
@@ -12571,7 +12706,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack }) {
               <MoneyInput className={inputCls} style={{ borderColor: LINE }} value={w.compareAtPrice || ""} onChange={(v) => setWeb({ compareAtPrice: v })} />
             </Field>
             <Field label="Khối lượng (gram)" hint="Tính phí ship">
-              <input type="number" min={0} className={inputCls} style={{ borderColor: LINE }} value={p.weight ?? ""} onChange={(e) => setProdField("weight", Number(e.target.value) || 0)} />
+              <input type="number" min={0} className={inputCls} style={{ borderColor: LINE }} value={weightDraft ?? ""} onChange={(e) => setWeightField(Number(e.target.value) || 0)} />
             </Field>
           </div>
 
