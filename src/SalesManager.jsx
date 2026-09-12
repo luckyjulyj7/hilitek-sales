@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Package, ShoppingCart, Users, BarChart3,
   Plus, Trash2, Pencil, X, Search, Store, Globe,
   TrendingUp, AlertTriangle, Loader2, ChevronDown, ChevronRight, ChevronLeft, ChevronUp,
-  ArrowDownToLine, ArrowUpFromLine, Barcode, ImagePlus, ImageOff, Check, Printer, RotateCcw, KeyRound, LogOut, Eye, EyeOff, Filter, Target, History, ShieldCheck, XCircle, Wallet, PackageCheck, Truck, Clock, Bell, FileSpreadsheet, FileText, MapPin, UserCircle, Crown, Link2 as LinkIcon, Copy, Wand2
+  ArrowDownToLine, ArrowUpFromLine, Barcode, ImagePlus, ImageOff, Check, Printer, RotateCcw, KeyRound, LogOut, Eye, EyeOff, Filter, Target, History, ShieldCheck, XCircle, Wallet, PackageCheck, Truck, Clock, Bell, FileSpreadsheet, FileText, MapPin, UserCircle, Crown, Link2 as LinkIcon, Copy, Wand2, Bold, Italic, Heading1, Heading2, Heading3, List, Sparkles
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -767,6 +767,29 @@ function autoFormatSpecsText(raw) {
     })
     .join("\n");
 }
+/**
+ * "Làm đẹp" nội dung mô tả dán nguyên khối từ trang khác (mỗi câu 1 dòng, không cách dòng) —
+ * chuyển các dòng dạng "Ý chính: nội dung" thành gạch đầu dòng + in đậm ý chính, để web khách
+ * hiện thành danh sách rõ ràng thay vì 1 khối chữ dính liền. Dòng đầu (thường là tên/giới thiệu)
+ * và các dòng đã có định dạng riêng (tiêu đề/bullet/ảnh/in đậm/link) được giữ nguyên.
+ */
+function beautifyDescription(raw) {
+  const lines = String(raw || "").split("\n");
+  const out = [];
+  let firstContentSeen = false;
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) { out.push(""); continue; }
+    const already = /^(#{1,3}\s|-\s|!\[)/.test(line) || /^https?:\/\//i.test(line) || line.includes("**");
+    if (already) { out.push(line); firstContentSeen = true; continue; }
+    const m = line.match(/^([^:：]{3,40})[:：]\s+(.+)$/);
+    if (m) out.push(`- **${m[1].trim()}:** ${m[2].trim()}`);
+    else if (!firstContentSeen) out.push(line); // dòng mở đầu (thường là tên SP) — giữ nguyên
+    else out.push(`- ${line}`);
+    firstContentSeen = true;
+  }
+  return out.join("\n").replace(/\n{3,}/g, "\n\n");
+}
 function webTextToSpecs(text) {
   const rows = [];
   String(text || "").split("\n").forEach((line) => {
@@ -810,6 +833,53 @@ function WebDescEditor({ value, onChange, rows = 6, bg }) {
     requestAnimationFrame(() => {
       if (!ta) return;
       const pos = (before + pre + snippet).length;
+      ta.focus(); ta.selectionStart = ta.selectionEnd = pos;
+    });
+  };
+
+  // Chèn văn bản NGAY tại vị trí con trỏ, không tự thêm dòng trống — dùng cho icon/ký tự đặc biệt.
+  const insertInline = (text) => {
+    const ta = taRef.current;
+    const v = value || "";
+    const s = ta && ta.selectionStart != null ? ta.selectionStart : v.length;
+    const e = ta && ta.selectionEnd != null ? ta.selectionEnd : s;
+    const next = v.slice(0, s) + text + v.slice(e);
+    onChange(next);
+    requestAnimationFrame(() => {
+      if (!ta) return;
+      const pos = s + text.length;
+      ta.focus(); ta.selectionStart = ta.selectionEnd = pos;
+    });
+  };
+  // Bọc đoạn đang bôi đen bằng dấu markdown (in đậm/in nghiêng) — chưa chọn gì thì chèn chữ mẫu.
+  const wrapSelection = (mark, placeholder) => {
+    const ta = taRef.current;
+    const v = value || "";
+    const s = ta && ta.selectionStart != null ? ta.selectionStart : v.length;
+    const e = ta && ta.selectionEnd != null ? ta.selectionEnd : s;
+    const sel = v.slice(s, e) || placeholder;
+    const next = v.slice(0, s) + mark + sel + mark + v.slice(e);
+    onChange(next);
+    requestAnimationFrame(() => {
+      if (!ta) return;
+      const start = s + mark.length;
+      ta.focus(); ta.selectionStart = start; ta.selectionEnd = start + sel.length;
+    });
+  };
+  // Đặt tiêu đề (##/###) hoặc gạch đầu dòng (-) cho DÒNG con trỏ đang đứng.
+  const prefixLine = (prefix) => {
+    const ta = taRef.current;
+    const v = value || "";
+    const s = ta && ta.selectionStart != null ? ta.selectionStart : v.length;
+    const lineStart = v.lastIndexOf("\n", s - 1) + 1;
+    let lineEnd = v.indexOf("\n", lineStart);
+    if (lineEnd === -1) lineEnd = v.length;
+    const lineText = v.slice(lineStart, lineEnd).replace(/^(#{1,3}\s+|-\s+)/, "");
+    const next = v.slice(0, lineStart) + prefix + lineText + v.slice(lineEnd);
+    onChange(next);
+    requestAnimationFrame(() => {
+      if (!ta) return;
+      const pos = lineStart + prefix.length + lineText.length;
       ta.focus(); ta.selectionStart = ta.selectionEnd = pos;
     });
   };
@@ -914,11 +984,35 @@ function WebDescEditor({ value, onChange, rows = 6, bg }) {
           className="text-xs px-2 py-1 rounded-sm border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy ? 0.5 : 1 }}>
           <LinkIcon size={13} /> Link ảnh ngoài
         </button>
+        <button type="button" onClick={() => { onChange(beautifyDescription(value)); setMsg("Đã làm đẹp — tách gạch đầu dòng + in đậm ý chính. Kiểm tra lại rồi sửa thêm nếu cần."); }} disabled={busy}
+          className="text-xs px-2 py-1 rounded-sm border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy ? 0.5 : 1 }}>
+          <Sparkles size={13} /> Làm đẹp mô tả
+        </button>
         <span className="text-[11px] opacity-55">Dán ảnh (Ctrl+V) · kéo–thả file · dán cả bài từ web khác</span>
         {busy && <span className="text-[11px] inline-flex items-center gap-1" style={{ color: BLUE }}><Loader2 size={12} className="animate-spin" /> {msg}</span>}
         {!busy && msg && <span className="text-[11px]" style={{ color: /Lỗi|không|phải/i.test(msg) ? RUST : BLUE }}>{msg}</span>}
         <input ref={fileRef} type="file" accept="image/*" multiple className="hidden"
           onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
+      </div>
+      <div className="flex items-center gap-1 mb-1.5 flex-wrap">
+        <button type="button" onClick={() => wrapSelection("**", "chữ đậm")} title="In đậm (**chữ**)"
+          className="w-7 h-7 grid place-items-center rounded-sm border" style={{ borderColor: LINE, color: INK }}><Bold size={13} /></button>
+        <button type="button" onClick={() => wrapSelection("*", "chữ nghiêng")} title="In nghiêng (*chữ*)"
+          className="w-7 h-7 grid place-items-center rounded-sm border" style={{ borderColor: LINE, color: INK }}><Italic size={13} /></button>
+        <button type="button" onClick={() => prefixLine("# ")} title="Tiêu đề LỚN nhất — to, in đậm"
+          className="w-7 h-7 grid place-items-center rounded-sm border" style={{ borderColor: LINE, color: INK }}><Heading1 size={14} /></button>
+        <button type="button" onClick={() => prefixLine("## ")} title="Tiêu đề VỪA — in đậm"
+          className="w-7 h-7 grid place-items-center rounded-sm border" style={{ borderColor: LINE, color: INK }}><Heading2 size={14} /></button>
+        <button type="button" onClick={() => prefixLine("### ")} title="Tiêu đề NHỎ — in đậm"
+          className="w-7 h-7 grid place-items-center rounded-sm border" style={{ borderColor: LINE, color: INK }}><Heading3 size={14} /></button>
+        <button type="button" onClick={() => prefixLine("- ")} title="Gạch đầu dòng"
+          className="w-7 h-7 grid place-items-center rounded-sm border" style={{ borderColor: LINE, color: INK }}><List size={14} /></button>
+        <span className="w-px h-5 mx-0.5" style={{ background: LINE }} />
+        {["📦", "🎁", "⚡", "✅", "⭐", "🔥", "🚚", "🛡️", "📞"].map((emo) => (
+          <button key={emo} type="button" onClick={() => insertInline(emo + " ")}
+            className="w-7 h-7 grid place-items-center rounded-sm border text-[13px]" style={{ borderColor: LINE }}>{emo}</button>
+        ))}
+        <span className="text-[11px] opacity-45 ml-1">**đậm** · *nghiêng* · # / ## / ### tiêu đề (to→nhỏ, đều đậm) · - danh sách</span>
       </div>
       {linkOpen && (
         <div className="mb-1">
@@ -952,6 +1046,20 @@ function WebDescEditor({ value, onChange, rows = 6, bg }) {
   );
 }
 
+// Kiểm tra 1 link có thực sự tải được thành ảnh không (dùng cho "Giữ link ngoài" —
+// tránh nhúng nhầm link trang web / link gallery không phải ảnh trực tiếp).
+function testImageLoads(url, timeoutMs = 8000) {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (ok) => { if (!done) { done = true; resolve(ok); } };
+    const img = new Image();
+    img.onload = () => finish(true);
+    img.onerror = () => finish(false);
+    img.src = url;
+    setTimeout(() => finish(false), timeoutMs);
+  });
+}
+
 /**
  * Lưới ảnh chất lượng cao riêng cho web (tối đa `max` ảnh).
  * Thêm bằng: dán/kéo–thả file · nút chọn file · nút "Từ URL" (tự tải về kho Hilitek).
@@ -965,6 +1073,8 @@ function WebImageGrid({ images, onChange, max = 10 }) {
   const [drag, setDrag] = useState(false);
   const [urlOpen, setUrlOpen] = useState(false);
   const [urlVal, setUrlVal] = useState("");
+  const [brokenUrls, setBrokenUrls] = useState(() => new Set());
+  const markBroken = (url) => setBrokenUrls((s) => (s.has(url) ? s : new Set(s).add(url)));
 
   const room = () => Math.max(0, max - list.length);
   const addFiles = async (files) => {
@@ -993,9 +1103,17 @@ function WebImageGrid({ images, onChange, max = 10 }) {
     finally { setBusy(false); }
   };
   // "Giữ link ngoài": nhúng thẳng link (web khác / Google Drive), KHÔNG tốn dung lượng kho.
-  const addUrlDirect = () => {
+  // Kiểm tra link có thực sự là ảnh trước khi nhúng — tránh dính link trang sản phẩm/gallery (không phải ảnh).
+  const addUrlDirect = async () => {
     const u = toDirectImageUrl(urlVal);
     if (!u) { setMsg("Link phải bắt đầu bằng https://"); return; }
+    setBusy(true); setMsg("Đang kiểm tra link ảnh…");
+    const ok = await testImageLoads(u);
+    setBusy(false);
+    if (!ok) {
+      setMsg("Link này không tải được thành ảnh — chắc đây là link trang sản phẩm/gallery, không phải link ảnh trực tiếp. Bấm chuột phải ĐÚNG lên tấm ảnh → \"Copy image address\" (không phải \"Copy link\"), link thường có đuôi .jpg/.png/.webp.");
+      return;
+    }
     onChange([...list, u].slice(0, max));
     setUrlOpen(false); setUrlVal("");
     setMsg(/drive\.google\.com/.test(u) ? "Đã thêm link Google Drive (ảnh phải ở chế độ 'Bất kỳ ai có link')." : "Đã thêm link ảnh ngoài.");
@@ -1102,8 +1220,14 @@ function WebImageGrid({ images, onChange, max = 10 }) {
           </div>
         )}
         {list.map((src, i) => (
-          <div key={i} className="relative group aspect-square rounded-sm overflow-hidden" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-            <img src={src} alt="" className="w-full h-full object-cover" />
+          <div key={i} className="relative group aspect-square rounded-sm overflow-hidden" style={{ border: `1px solid ${brokenUrls.has(src) ? RUST : LINE}`, background: "#fff" }}>
+            {brokenUrls.has(src) ? (
+              <div className="w-full h-full grid place-items-center text-center px-1" style={{ color: RUST, background: `${RUST}0D` }}>
+                <span className="text-[10px] leading-tight">⚠ Ảnh lỗi<br />(xoá & thêm lại)</span>
+              </div>
+            ) : (
+              <img src={src} alt="" className="w-full h-full object-cover" onError={() => markBroken(src)} />
+            )}
             {i === 0 && <span className="absolute top-0.5 left-0.5 text-[9px] px-1 rounded-sm text-white" style={{ background: INK }}>Đại diện</span>}
             <div className="absolute inset-x-0 bottom-0 flex justify-between px-0.5 py-0.5 opacity-0 group-hover:opacity-100 transition" style={{ background: "rgba(0,0,0,0.45)" }}>
               <button type="button" onClick={() => move(i, -1)} disabled={i === 0} className="text-white text-xs px-1 disabled:opacity-30">←</button>
