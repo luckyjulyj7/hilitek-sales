@@ -20,6 +20,8 @@ export default function ProductDetail({ slug, navigate, catalog }) {
   const [product, setProduct] = useState(undefined);
   const [imgIdx, setImgIdx] = useState(0);
   const [zoom, setZoom] = useState(false);
+  const [imgOrigin, setImgOrigin] = useState(null); // vị trí con trỏ để phóng to ảnh khi rê chuột — null = không rê
+  const [imgHover, setImgHover] = useState(false); // đang rê chuột trên ảnh — tạm dừng tự chạy
   const [specOpen, setSpecOpen] = useState(false);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
@@ -44,6 +46,8 @@ export default function ProductDetail({ slug, navigate, catalog }) {
     setProduct(undefined);
     setImgIdx(0);
     setZoom(false);
+    setImgOrigin(null);
+    setImgHover(false);
     setSpecOpen(false);
     setQty(1);
     setAdded(false);
@@ -52,6 +56,15 @@ export default function ProductDetail({ slug, navigate, catalog }) {
     window.scrollTo(0, 0);
     return () => { alive = false; };
   }, [slug]);
+
+  // Ảnh chính tự chạy qua các ảnh phía dưới — dừng khi đang rê chuột (để xem hiệu ứng phóng to)
+  // hoặc khi đang mở khung phóng to toàn màn hình.
+  useEffect(() => {
+    const count = product?.images?.length || 0;
+    if (count < 2 || imgHover || zoom) return;
+    const id = setInterval(() => setImgIdx((i) => (i + 1) % count), 3500);
+    return () => clearInterval(id);
+  }, [product, imgHover, zoom]);
 
   // SEO: đặt tiêu đề trang + thẻ mô tả theo cấu hình SEO của sản phẩm.
   useEffect(() => {
@@ -129,10 +142,21 @@ export default function ProductDetail({ slug, navigate, catalog }) {
             <button
               type="button"
               onClick={() => setZoom(true)}
+              onMouseMove={(e) => {
+                const r = e.currentTarget.getBoundingClientRect();
+                setImgOrigin(`${((e.clientX - r.left) / r.width) * 100}% ${((e.clientY - r.top) / r.height) * 100}%`);
+                setImgHover(true);
+              }}
+              onMouseLeave={() => { setImgOrigin(null); setImgHover(false); }}
               className="block w-full h-full cursor-zoom-in"
               aria-label="Phóng to ảnh"
             >
-              <img src={imgs[imgIdx]} alt={p.name} className="w-full h-full object-cover" />
+              <img
+                src={imgs[imgIdx]}
+                alt={p.name}
+                className="w-full h-full object-cover transition-transform duration-300 ease-out will-change-transform"
+                style={{ transform: imgOrigin ? "scale(1.8)" : "scale(1)", transformOrigin: imgOrigin || "center" }}
+              />
             </button>
             <span className="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-1 bg-ink/70 text-white text-[12px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition">
               <ZoomIn size={13} /> Phóng to
