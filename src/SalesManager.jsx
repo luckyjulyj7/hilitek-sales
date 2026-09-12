@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Package, ShoppingCart, Users, BarChart3,
   Plus, Trash2, Pencil, X, Search, Store, Globe,
   TrendingUp, AlertTriangle, Loader2, ChevronDown, ChevronRight, ChevronLeft, ChevronUp,
-  ArrowDownToLine, ArrowUpFromLine, Barcode, ImagePlus, ImageOff, Check, Printer, RotateCcw, KeyRound, LogOut, Eye, EyeOff, Filter, Target, History, ShieldCheck, XCircle, Wallet, PackageCheck, Truck, Clock, Bell, FileSpreadsheet, FileText, MapPin, UserCircle, Crown, Link2 as LinkIcon
+  ArrowDownToLine, ArrowUpFromLine, Barcode, ImagePlus, ImageOff, Check, Printer, RotateCcw, KeyRound, LogOut, Eye, EyeOff, Filter, Target, History, ShieldCheck, XCircle, Wallet, PackageCheck, Truck, Clock, Bell, FileSpreadsheet, FileText, MapPin, UserCircle, Crown, Link2 as LinkIcon, Copy, Wand2
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -752,6 +752,21 @@ function webSpecsToText(specs) {
     })
     .join("\n");
 }
+// Tự thêm dấu "|" vào các dòng dán từ nơi khác (dùng ":", tab, hoặc " - ") để đúng định dạng "Nhãn | Giá trị".
+// Dòng đã có "|" hoặc dòng trống thì giữ nguyên (không đụng vào dòng nối tiếp/gạch đầu dòng).
+function autoFormatSpecsText(raw) {
+  return String(raw || "")
+    .split("\n")
+    .map((line) => {
+      if (!line.trim() || line.includes("|")) return line;
+      const m =
+        line.match(/^(.{1,40}?)\s*:\s*(.+)$/) ||
+        line.match(/^(.{1,40}?)\t+(.+)$/) ||
+        line.match(/^(.{1,40}?)\s+[-–]\s+(.+)$/);
+      return m ? `${m[1].trim()} | ${m[2].trim()}` : line;
+    })
+    .join("\n");
+}
 function webTextToSpecs(text) {
   const rows = [];
   String(text || "").split("\n").forEach((line) => {
@@ -985,6 +1000,57 @@ function WebImageGrid({ images, onChange, max = 10 }) {
     setUrlOpen(false); setUrlVal("");
     setMsg(/drive\.google\.com/.test(u) ? "Đã thêm link Google Drive (ảnh phải ở chế độ 'Bất kỳ ai có link')." : "Đã thêm link ảnh ngoài.");
   };
+  // Dán cả bài từ trang khác (Ctrl+V khi khung đang được chọn) — tự lấy MỌI ảnh có trong
+  // nội dung đã copy (VD copy nguyên trang sản phẩm của NCC), tải song song về kho.
+  const pasteArticleImages = async (html) => {
+    let srcs = [];
+    try {
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      srcs = [...new Set([...doc.querySelectorAll("img")].map((i) => i.getAttribute("src") || i.src).filter((s) => /^https?:\/\//i.test(s || "")))];
+    } catch { /* noop */ }
+    if (!srcs.length) { setMsg("Không thấy ảnh nào trong nội dung đã dán."); return; }
+    const cap = room();
+    if (!cap) { setMsg(`Đã đủ tối đa ${max} ảnh.`); return; }
+    const capped = srcs.length > cap;
+    srcs = srcs.slice(0, cap);
+
+    setBusy(true);
+    setMsg(`Đang tải ${srcs.length} ảnh về kho…`);
+    const results = new Array(srcs.length);
+    let done = 0, fail = 0, next = 0;
+    const worker = async () => {
+      while (next < srcs.length) {
+        const k = next++;
+        try { results[k] = await rehostExternalImage(srcs[k]); }
+        catch { fail++; results[k] = srcs[k]; }
+        done++;
+        setMsg(`Đang tải ảnh ${done}/${srcs.length} về kho…`);
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(3, srcs.length) }, worker));
+    onChange([...list, ...results.filter(Boolean)].slice(0, max));
+    setBusy(false);
+    setMsg(
+      `Xong — ${srcs.length - fail}/${srcs.length} ảnh đã lưu về kho` +
+      (fail ? `, ${fail} ảnh không tải được (giữ tạm link gốc).` : ".") +
+      (capped ? ` Đã đủ ${max} ảnh, bỏ qua phần còn lại.` : "")
+    );
+  };
+  const onPasteZone = async (ev) => {
+    const dt = ev.clipboardData;
+    if (!dt || busy) return;
+    const fileImgs = [...(dt.items || [])].filter((it) => it.kind === "file" && it.type.startsWith("image/"));
+    if (fileImgs.length) {
+      ev.preventDefault();
+      await addFiles(fileImgs.map((it) => it.getAsFile()).filter(Boolean));
+      return;
+    }
+    const html = dt.getData("text/html");
+    if (html && /<img\s/i.test(html)) {
+      ev.preventDefault();
+      await pasteArticleImages(html);
+    }
+  };
   const move = (i, d) => { const j = i + d; if (j < 0 || j >= list.length) return; const n = [...list]; [n[i], n[j]] = [n[j], n[i]]; onChange(n); };
   const del = (i) => onChange(list.filter((_, k) => k !== i));
 
@@ -1000,6 +1066,7 @@ function WebImageGrid({ images, onChange, max = 10 }) {
           className="px-2 py-1 rounded-sm border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy || !room() ? 0.5 : 1 }}>
           <LinkIcon size={13} /> Từ URL / Drive
         </button>
+        {!busy && !msg && <span className="opacity-55">hoặc bấm vào khung ảnh rồi dán (Ctrl+V) cả bài — tự lấy hết ảnh trong đó</span>}
         {busy && <span className="inline-flex items-center gap-1" style={{ color: BLUE }}><Loader2 size={12} className="animate-spin" /> {msg}</span>}
         {!busy && msg && <span style={{ color: /Lỗi|không|phải/i.test(msg) ? RUST : BLUE }}>{msg}</span>}
         <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
@@ -1020,14 +1087,19 @@ function WebImageGrid({ images, onChange, max = 10 }) {
         </div>
       )}
       <div
-        className="grid grid-cols-4 sm:grid-cols-5 gap-2 rounded-sm p-2"
+        tabIndex={0}
+        className="grid grid-cols-4 sm:grid-cols-5 gap-2 rounded-sm p-2 outline-none"
         style={{ border: `2px dashed ${drag ? BLUE : LINE}`, background: drag ? `${BLUE}0D` : PAPER }}
         onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
         onDragLeave={() => setDrag(false)}
         onDrop={(e) => { e.preventDefault(); setDrag(false); if (e.dataTransfer?.files?.length) addFiles(e.dataTransfer.files); }}
+        onPaste={onPasteZone}
       >
         {list.length === 0 && (
-          <div className="col-span-full text-center text-xs opacity-45 py-6">Kéo–thả ảnh vào đây, hoặc bấm "Thêm ảnh"</div>
+          <div className="col-span-full text-center text-xs opacity-45 py-6">
+            Kéo–thả ảnh vào đây, bấm "Thêm ảnh", hoặc bấm vào khung này rồi dán (Ctrl+V) —
+            dán cả bài từ trang khác sẽ tự lấy hết ảnh trong đó, tải song song về kho.
+          </div>
         )}
         {list.map((src, i) => (
           <div key={i} className="relative group aspect-square rounded-sm overflow-hidden" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
@@ -1890,6 +1962,15 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         "Quản lý series": p.hasSeries ? "Có" : "Không", "VAT": VAT_OPTIONS.find((v) => v.id === p.vat)?.label || p.vat, "Bảo hành": warrantyLabel(p.warrantyMonths || 0),
         "Tồn đầu kỳ": p.openingQty, "Nhập từ NCC": s.importedFromSupplierQty, "Nhập lại (đổi trả)": s.importedFromReturnQty,
         "Xuất trong kỳ": s.exportedQty, "Tồn cuối kỳ": s.closingQty, "Giá bán sỉ": p.wholesalePrice, "Giá bán lẻ": p.retailPrice,
+        // Thông tin web — để trống ở dòng mới = sản phẩm chưa đăng web / chưa có; điền vào rồi nhập lại để lên web hàng loạt.
+        "Đăng web": p.web?.published ? "Có" : "Không",
+        "Danh mục web": (p.web?.categories || []).join(", "),
+        "Giá so sánh (web)": p.web?.compareAtPrice || "",
+        "Mô tả ngắn (web)": p.web?.shortDesc || "",
+        "Nội dung mô tả (web)": p.web?.description || "",
+        "Thông số kỹ thuật (web)": p.web?.specsText || "",
+        "Khuyến mãi (web)": p.web?.promo || "",
+        "Ảnh (link, cách nhau bởi dấu phẩy)": (p.web?.images || []).join(", "),
       };
       if (isAdmin) row["Giá nhập"] = p.costPrice;
       return row;
@@ -1920,6 +2001,21 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
     return WARRANTY_OPTIONS.includes(n) ? n : 0;
   };
   const triggerImportFile = () => importFileRef.current && importFileRef.current.click();
+  // Đọc các cột "…(web)" trong 1 dòng Excel → patch cho field `web` — CHỈ lấy ô có điền
+  // (ô để trống = giữ nguyên, không ghi đè) trừ khi tạo sản phẩm hoàn toàn mới.
+  const parseWebColumns = (row) => {
+    const has = (k) => row[k] !== undefined && String(row[k]).trim() !== "";
+    const patch = {};
+    if (has("Đăng web")) patch.published = /^(có|co|yes|true|1|x)$/i.test(String(row["Đăng web"]).trim());
+    if (has("Danh mục web")) patch.categories = String(row["Danh mục web"]).split(",").map((s) => s.trim()).filter(Boolean);
+    if (has("Giá so sánh (web)")) patch.compareAtPrice = Number(row["Giá so sánh (web)"]) || 0;
+    if (has("Mô tả ngắn (web)")) patch.shortDesc = String(row["Mô tả ngắn (web)"]).trim();
+    if (has("Nội dung mô tả (web)")) patch.description = String(row["Nội dung mô tả (web)"]);
+    if (has("Thông số kỹ thuật (web)")) patch.specsText = String(row["Thông số kỹ thuật (web)"]);
+    if (has("Khuyến mãi (web)")) patch.promo = String(row["Khuyến mãi (web)"]).trim();
+    if (has("Ảnh (link, cách nhau bởi dấu phẩy)")) patch.images = String(row["Ảnh (link, cách nhau bởi dấu phẩy)"]).split(",").map((s) => s.trim()).filter(Boolean);
+    return patch;
+  };
   const handleImportFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1930,20 +2026,35 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         const wb = XLSX.read(data, { type: "array" });
         const sheet = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-        const existingCodes = new Set(products.map((p) => p.code.trim().toLowerCase()));
-        const existingSkus = new Set(products.filter((p) => p.sku).map((p) => p.sku.trim().toLowerCase()));
+        const byCode = new Map(products.map((p) => [p.code.trim().toLowerCase(), p]));
+        const bySku = new Map(products.filter((p) => p.sku).map((p) => [p.sku.trim().toLowerCase(), p]));
+        const existingCodes = new Set(byCode.keys());
+        const existingSkus = new Set(bySku.keys());
         const newProducts = [];
+        const webUpdates = new Map(); // productId -> patch web (sản phẩm đã có sẵn — chỉ cập nhật phần web, không đụng kho/giá)
         const skipped = [];
         const newCatsSet = new Set(categories || []);
         const newBrandsList = [...(brands || [])];
         rows.forEach((row) => {
           const code = String(row["Mã VT"] ?? "").trim();
-          const name = String(row["Tên vật tư"] ?? "").trim();
-          if (!code || !name) return; // bỏ qua dòng thiếu thông tin bắt buộc (mã VT / tên)
+          if (!code) return;
           const codeKey = code.toLowerCase();
           const sku = String(row["SKU"] ?? "").trim();
           const skuKey = sku.toLowerCase();
-          if (existingCodes.has(codeKey) || (skuKey && existingSkus.has(skuKey))) { skipped.push(code); return; }
+
+          // Mã đã có sẵn trong kho → coi đây là dòng "cập nhật thông tin web hàng loạt"
+          // (xuất Excel ra, điền cột web rồi nhập lại) — KHÔNG đụng tới giá/tồn kho của sản phẩm.
+          const existing = byCode.get(codeKey) || (skuKey ? bySku.get(skuKey) : undefined);
+          if (existing) {
+            const patch = parseWebColumns(row);
+            if (Object.keys(patch).length > 0) webUpdates.set(existing.id, patch);
+            else skipped.push(code);
+            return;
+          }
+
+          const name = String(row["Tên vật tư"] ?? "").trim();
+          if (!name) return; // sản phẩm mới bắt buộc phải có tên
+          if (existingCodes.has(codeKey) || (skuKey && existingSkus.has(skuKey))) { skipped.push(code); return; } // trùng với dòng khác trong cùng file
           existingCodes.add(codeKey);
           if (skuKey) existingSkus.add(skuKey);
           const category = String(row["Nhóm hàng"] ?? "").trim();
@@ -1959,15 +2070,27 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
             openingQty: Number(row["Tồn đầu kỳ"]) || 0,
             minStockLevel: row["Định mức tồn tối thiểu"] !== undefined && row["Định mức tồn tối thiểu"] !== "" ? Number(row["Định mức tồn tối thiểu"]) : 5,
             barcode: String(row["Mã vạch"] ?? "").trim(), movements: [],
+            web: parseWebColumns(row),
           }));
         });
-        if (newProducts.length > 0) setProducts((prev) => [...prev, ...newProducts]);
+        if (newProducts.length > 0 || webUpdates.size > 0) {
+          setProducts((prev) =>
+            prev
+              .map((p) => (webUpdates.has(p.id) ? { ...p, web: normalizeWeb({ ...normalizeWeb(p.web), ...webUpdates.get(p.id) }) } : p))
+              .concat(newProducts)
+          );
+        }
         if (newCatsSet.size !== (categories || []).length) setCategories([...newCatsSet]);
         if (newBrandsList.length !== (brands || []).length) setBrands(newBrandsList);
-        addLog("Nhập sản phẩm từ Excel", `${newProducts.length} sản phẩm mới${skipped.length > 0 ? ` · Bỏ qua ${skipped.length} mã đã tồn tại` : ""}`);
-        setImportResult({ added: newProducts.length, skipped });
+        addLog(
+          "Nhập sản phẩm từ Excel",
+          `${newProducts.length} sản phẩm mới` +
+            (webUpdates.size ? ` · Cập nhật web cho ${webUpdates.size} sản phẩm` : "") +
+            (skipped.length > 0 ? ` · Bỏ qua ${skipped.length} dòng` : "")
+        );
+        setImportResult({ added: newProducts.length, webUpdated: webUpdates.size, skipped });
       } catch (err) {
-        alert("Không đọc được file Excel — vui lòng dùng đúng file đã tải từ nút \"Xuất Excel\" (chỉ thêm dòng mới, không đổi tên cột) rồi thử lại.");
+        alert("Không đọc được file Excel — vui lòng dùng đúng file đã tải từ nút \"Xuất Excel\" (không đổi tên cột) rồi thử lại.");
       }
       if (importFileRef.current) importFileRef.current.value = "";
     };
@@ -2142,7 +2265,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
             <FileSpreadsheet size={15} /> Xuất Excel{selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}
           </button>
           {isAdmin && (
-            <button onClick={triggerImportFile} title="Dùng file đã tải từ nút Xuất Excel — thêm dòng sản phẩm mới rồi tải lên lại" className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm border whitespace-nowrap" style={{ borderColor: BLUE, color: BLUE }}>
+            <button onClick={triggerImportFile} title="Dùng file đã tải từ nút Xuất Excel — thêm dòng mới để tạo sản phẩm, hoặc điền cột (web) của sản phẩm đã có để cập nhật thông tin web hàng loạt" className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm border whitespace-nowrap" style={{ borderColor: BLUE, color: BLUE }}>
               <ArrowUpFromLine size={15} /> Nhập từ Excel
             </button>
           )}
@@ -2874,10 +2997,13 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         <Modal title="Kết quả nhập sản phẩm từ Excel" onClose={() => setImportResult(null)}>
           <div className="p-3 rounded-sm mb-3" style={{ background: `${FOREST}0D`, border: `1px solid ${FOREST}44` }}>
             <p className="text-sm" style={{ color: FOREST }}>Đã thêm <b>{importResult.added}</b> sản phẩm mới.</p>
+            {importResult.webUpdated > 0 && (
+              <p className="text-sm mt-1" style={{ color: FOREST }}>Đã cập nhật thông tin web cho <b>{importResult.webUpdated}</b> sản phẩm có sẵn (không đụng giá/tồn kho).</p>
+            )}
           </div>
           {importResult.skipped.length > 0 && (
             <div className="p-3 rounded-sm" style={{ background: `${BRASS}0D`, border: `1px solid ${BRASS}44` }}>
-              <p className="text-sm mb-1.5" style={{ color: BRASS }}>Bỏ qua {importResult.skipped.length} mã VT đã tồn tại (không ghi đè):</p>
+              <p className="text-sm mb-1.5" style={{ color: BRASS }}>Bỏ qua {importResult.skipped.length} dòng (mã đã tồn tại nhưng không có cột web nào được điền, hoặc trùng mã trong file):</p>
               <p className="text-xs opacity-70" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{importResult.skipped.join(", ")}</p>
             </div>
           )}
@@ -11966,7 +12092,7 @@ function WebProducts({ products, setProducts, categories, brands, addLog, webCon
 
   const editing = editId ? products.find((x) => x.id === editId) : null;
   if (editing) {
-    return <WebProductPage product={editing} setProducts={setProducts} webCats={webCats} onBack={() => setEditId(null)} />;
+    return <WebProductPage product={editing} products={products} setProducts={setProducts} webCats={webCats} onBack={() => setEditId(null)} />;
   }
 
   return (
@@ -12065,8 +12191,103 @@ function WebProducts({ products, setProducts, categories, brands, addLog, webCon
   );
 }
 
+/**
+ * Sao chép nhanh thông tin web từ 1 sản phẩm khác đã có sẵn — đỡ gõ lại từ đầu
+ * khi thêm sản phẩm cùng dòng hàng (chọn phần cần sao chép, phần còn lại tự chỉnh riêng).
+ */
+function CopyWebInfoButton({ product, products, setWeb }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const [picked, setPicked] = useState(null);
+  const [fields, setFields] = useState({
+    categories: true, specsText: true, description: false,
+    shortDesc: false, images: false, promo: false, seo: false,
+  });
+
+  const close = () => { setOpen(false); setPicked(null); setQ(""); };
+  const toggle = (k) => setFields((f) => ({ ...f, [k]: !f[k] }));
+
+  const matches = q.trim()
+    ? (products || [])
+        .filter((x) => x.id !== product.id && !x.isService)
+        .filter((x) => webSlugify(`${x.name} ${x.sku}`).includes(webSlugify(q)))
+        .slice(0, 15)
+    : [];
+
+  const apply = () => {
+    if (!picked) return;
+    const src = normalizeWeb(picked.web);
+    const patch = {};
+    if (fields.categories) patch.categories = src.categories;
+    if (fields.specsText) patch.specsText = src.specsText;
+    if (fields.description) patch.description = src.description;
+    if (fields.shortDesc) patch.shortDesc = src.shortDesc;
+    if (fields.images) patch.images = src.images;
+    if (fields.promo) patch.promo = src.promo;
+    if (fields.seo) { patch.seoTitle = src.seoTitle; patch.seoDesc = src.seoDesc; }
+    setWeb(patch);
+    close();
+  };
+
+  const FIELD_LABELS = [
+    ["categories", "Danh mục phụ trên web"],
+    ["specsText", "Thông số kỹ thuật"],
+    ["description", "Nội dung mô tả"],
+    ["shortDesc", "Mô tả ngắn"],
+    ["images", "Ảnh sản phẩm trên web"],
+    ["promo", "Khuyến mãi / quà tặng"],
+    ["seo", "Tiêu đề & mô tả SEO"],
+  ];
+
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)}
+        className="text-xs px-2.5 py-1.5 rounded-sm border inline-flex items-center gap-1.5" style={{ borderColor: LINE, color: INK }}>
+        <Copy size={13} /> Sao chép từ sản phẩm khác
+      </button>
+      {open && (
+        <Modal title="Sao chép thông tin web từ sản phẩm khác" onClose={close}>
+          {!picked ? (
+            <div>
+              <input value={q} onChange={(e) => setQ(e.target.value)} autoFocus placeholder="Tìm tên / SKU sản phẩm nguồn…"
+                className="w-full border rounded-sm py-2 px-3 text-sm mb-2" style={{ borderColor: LINE }} />
+              <div className="max-h-64 overflow-y-auto space-y-1">
+                {q.trim() && matches.length === 0 && <p className="text-xs opacity-50 py-4 text-center">Không tìm thấy sản phẩm nào.</p>}
+                {matches.map((x) => (
+                  <button key={x.id} onClick={() => setPicked(x)}
+                    className="w-full text-left px-3 py-2 rounded-sm text-sm hover:bg-black/5 flex items-center justify-between gap-3" style={{ border: `1px solid ${LINE}` }}>
+                    <span className="truncate">{x.name}</span>
+                    <span className="opacity-50 text-xs shrink-0" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{x.sku}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div className="flex items-center justify-between p-2.5 rounded-sm text-sm mb-3" style={{ background: PAPER }}>
+                <span><b>{picked.name}</b> <span className="opacity-50">({picked.sku})</span></span>
+                <button onClick={() => setPicked(null)} className="text-xs underline opacity-60 shrink-0">Đổi</button>
+              </div>
+              <p className="text-xs opacity-60 mb-2">Chọn phần muốn sao chép sang sản phẩm này (sẽ ghi đè phần đang có):</p>
+              <div className="space-y-1.5 text-sm">
+                {FIELD_LABELS.map(([k, label]) => (
+                  <label key={k} className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={fields[k]} onChange={() => toggle(k)} />
+                    <span>{label}</span>
+                  </label>
+                ))}
+              </div>
+              <button onClick={apply} className="w-full py-2.5 rounded-sm text-white text-sm mt-4" style={{ background: INK }}>Sao chép</button>
+            </div>
+          )}
+        </Modal>
+      )}
+    </>
+  );
+}
+
 /** Trang sửa 1 sản phẩm trên web — bố cục 2 cột kiểu Sapo. */
-function WebProductPage({ product, setProducts, webCats, onBack }) {
+function WebProductPage({ product, products, setProducts, webCats, onBack }) {
   const p = product;
   const w = normalizeWeb(p.web);
   const shareKeys = ["description", "specsText", "categories", "images", "shortDesc", "promo"];
@@ -12098,8 +12319,13 @@ function WebProductPage({ product, setProducts, webCats, onBack }) {
         <span className="text-xs opacity-50">Tự lưu</span>
       </div>
 
-      <h3 className="text-lg font-semibold mb-1" style={{ color: INK }}>{p.name}</h3>
-      <div className="text-[11px] opacity-50 mb-4" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.sku} · {p.category || "—"}</div>
+      <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
+        <div>
+          <h3 className="text-lg font-semibold mb-1" style={{ color: INK }}>{p.name}</h3>
+          <div className="text-[11px] opacity-50" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.sku} · {p.category || "—"}</div>
+        </div>
+        <CopyWebInfoButton product={p} products={products} setWeb={setWeb} />
+      </div>
 
       <div className="grid lg:grid-cols-[1fr_320px] gap-5 items-start">
         {/* Cột trái */}
@@ -12131,11 +12357,20 @@ function WebProductPage({ product, setProducts, webCats, onBack }) {
           </div>
 
           <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-            <Field label="Thông số kỹ thuật (web)" hint="Mỗi dòng: Nhãn | Giá trị. Dòng không có ký tự | sẽ nối tiếp (xuống dòng) vào giá trị phía trên.">
-              <textarea rows={8} className={inputCls} style={{ borderColor: LINE, background: "#fff", fontFamily: "'IBM Plex Mono', monospace" }}
-                value={w.specsText} onChange={(e) => setWeb({ specsText: e.target.value })}
-                placeholder={"Chất liệu | Kính cường lực\nĐộ cứng | 9H\nĐặc điểm | Cảm ứng nhạy\n- Viền phủ keo\n- Chống dầu vân tay"} />
-            </Field>
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <span className="text-sm font-medium" style={{ color: INK }}>Thông số kỹ thuật (web)</span>
+              <button type="button" onClick={() => setWeb({ specsText: autoFormatSpecsText(w.specsText) })}
+                className="text-xs px-2 py-1 rounded-sm border inline-flex items-center gap-1 shrink-0" style={{ borderColor: LINE, color: INK }}>
+                <Wand2 size={12} /> Chuẩn hoá "Nhãn | Giá trị"
+              </button>
+            </div>
+            <p className="text-[11px] opacity-50 mb-1.5">
+              Mỗi dòng: Nhãn | Giá trị. Dòng không có | sẽ nối tiếp (xuống dòng) vào giá trị phía trên.
+              Dán thông số từ trang khác (dùng dấu ":" hoặc tab) rồi bấm "Chuẩn hoá" để tự thêm dấu |.
+            </p>
+            <textarea rows={8} className={inputCls} style={{ borderColor: LINE, background: "#fff", fontFamily: "'IBM Plex Mono', monospace" }}
+              value={w.specsText} onChange={(e) => setWeb({ specsText: e.target.value })}
+              placeholder={"Chất liệu | Kính cường lực\nĐộ cứng | 9H\nĐặc điểm | Cảm ứng nhạy\n- Viền phủ keo\n- Chống dầu vân tay"} />
           </div>
         </div>
 
