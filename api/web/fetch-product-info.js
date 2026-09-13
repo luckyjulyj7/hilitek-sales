@@ -67,13 +67,17 @@ function htmlToInlineMd($, el) {
 }
 
 const JUNK_BLOCK_RE = /search|tim-kiem|viewed|history|xem-gan-day|related|lien-quan|menu|sidebar|compare|so-sanh|cart|gio-hang|cookie|breadcrumb|filter|facet|category|danh-muc|bo-loc|widget|collection/i;
-const JUNK_TEXT_RE = /giỏ hàng trống|hãy thêm sản phẩm|đăng nhập|đăng ký tài khoản|quên mật khẩu|no products found|empty cart|404|không tìm thấy trang/i;
+// "kinh doanh 1/2/3", "tổng đài hỗ trợ"... là mẫu widget "số điện thoại tư vấn" rất hay gặp ở
+// sidebar trang sản phẩm (VD techmall.vn) — dễ bị heuristic id/class "description..." bắt nhầm.
+const JUNK_TEXT_RE = /giỏ hàng trống|hãy thêm sản phẩm|đăng nhập|đăng ký tài khoản|quên mật khẩu|no products found|empty cart|404|không tìm thấy trang|tổng đài hỗ trợ|kinh doanh \d/i;
 // id/class hay gặp cho khối mô tả / thông số (Shopify, WooCommerce, Haravan, Sapo... đều theo mẫu này).
 const DESC_HINT_RE = /description|mo-?ta|gioi-?thieu|overview|tong-?quan|product-?detail|noi-?dung-?san-?pham/i;
 const SPEC_HINT_RE = /specification|technical|thong-?so|additional-?information|attribute|characteristic|model/i;
 // Chữ tiêu đề hay gặp ngay phía trên khối mô tả / thông số.
-const DESC_HEADING_RE = /^(giới thiệu|mô tả|tổng quan|chi tiết sản phẩm|thông tin sản phẩm|description|overview|product detail|product overview)\b/i;
-const SPEC_HEADING_RE = /^(thông số|specification|technical spec|spec|model)\b/i;
+// Lưu ý: dùng (?!\p{L}) thay cho \b — \b trong regex JS chỉ hiểu \w kiểu ASCII nên đứng ngay
+// sau 1 chữ có dấu (ô, ố, ả...) sẽ KHÔNG coi là ranh giới từ, khiến "thông số"/"mô tả" không khớp.
+const DESC_HEADING_RE = /^(giới thiệu|mô tả|tổng quan|chi tiết sản phẩm|thông tin sản phẩm|description|overview|product detail|product overview)(?!\p{L})/iu;
+const SPEC_HEADING_RE = /^(thông số|specification|technical spec|spec|model)(?!\p{L})/iu;
 const HEADING_TAGS = new Set(["h1", "h2", "h3", "h4", "h5", "h6"]);
 
 // Các nhãn "lõi" hầu như trang sản phẩm nào cũng có (mã sản phẩm/model/thương hiệu/tên sản phẩm) —
@@ -177,6 +181,22 @@ function contentFromBlock($, block) {
   return $b.text().replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
 }
 
+// Nhiều site (VD techmall.vn) không dùng <table>/<dl> cho bảng thông số mà nhét cả bảng vào
+// MỘT thẻ <p> dài, mỗi dòng "Nhãn: Giá trị" ngăn bởi <br> (đôi khi <br> lại nằm lồng trong
+// <strong>). Đệ quy tách theo <br> để khôi phục từng dòng trước khi áp quy tắc "Nhãn: Giá trị".
+function splitByBr($, el) {
+  const lines = [];
+  let cur = "";
+  const walk = (node) => {
+    if (node.type === "tag" && node.name === "br") { lines.push(cur); cur = ""; }
+    else if (node.type === "tag") $(node).contents().each((_, c) => walk(c));
+    else if (node.type === "text") cur += node.data;
+  };
+  $(el).contents().each((_, c) => walk(c));
+  if (cur) lines.push(cur);
+  return lines.map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean);
+}
+
 // Lấy bảng thông số (mảng [nhãn, giá trị]) trong PHẠM VI 1 khối cụ thể.
 function specsFromBlock($, block) {
   if (!block) return [];
@@ -199,6 +219,16 @@ function specsFromBlock($, block) {
         const k = $(dt).text().replace(/\s+/g, " ").trim();
         const v = $(dds.get(i)).length ? $(dds[i]).text().replace(/\s+/g, " ").trim() : "";
         if (k && v) specs.push([k, v]);
+      });
+    });
+  }
+  if (!specs.length) {
+    $b.find("p").each((_, p) => {
+      const lines = splitByBr($, p);
+      if (lines.length < 2) return;
+      lines.forEach((line) => {
+        const m = line.match(/^([^:：]{2,50})[:：]\s*(.+)$/);
+        if (m) specs.push([m[1].trim(), m[2].trim()]);
       });
     });
   }
@@ -229,12 +259,30 @@ function extract(html, src) {
     "";
 
   // ----- Mô tả -----
+  // Kiểm tra "có vẻ rác không" cho MỖI tầng riêng — nếu khối id/class gợi ý (tầng 1) trúng
+  // nhầm 1 widget khác (VD techmall.vn dùng chung class "description-product" cho cả khối
+  // "Tổng đài hỗ trợ" lẫn mô tả thật) thì phải rớt xuống tầng tiếp theo (heading) thay vì
+  // dừng lại ngay khi có chữ, như trước đây.
+  const isBadDesc = (s) => !s || s.length < 60 || JUNK_TEXT_RE.test(s);
   let description = "";
-  const descBlock = findByHint($, DESC_HINT_RE, SPEC_HINT_RE) || findByHeading($, DESC_HEADING_RE);
-  if (descBlock) description = contentFromBlock($, descBlock);
-
+  const descHintBlock = findByHint($, DESC_HINT_RE, SPEC_HINT_RE);
+  const descHintText = descHintBlock ? contentFromBlock($, descHintBlock) : "";
+  const descHeadingBlock = findByHeading($, DESC_HEADING_RE);
+  const descHeadingText = descHeadingBlock ? contentFromBlock($, descHeadingBlock) : "";
+  // Khối id/class gợi ý chỉ được ưu tiên nếu KHÔNG rác, và không bị heading-tier (tín hiệu
+  // đáng tin hơn vì bám đúng chữ "Mô tả/Giới thiệu") cho ra nội dung dài hơn hẳn (gấp rưỡi) —
+  // dấu hiệu tầng 1 chỉ trúng nhầm 1 widget nhỏ cùng tên class.
+  if (!isBadDesc(descHintText) && !(descHeadingText.length > descHintText.length * 1.5)) {
+    description = descHintText;
+  } else if (!isBadDesc(descHeadingText)) {
+    description = descHeadingText;
+  } else if (!isBadDesc(descHintText)) {
+    description = descHintText;
+  }
   if (!description) {
-    // Phương án cũ: đoán theo cấu trúc (danh sách nhiều mục / khối nhiều đoạn văn nhất trên trang).
+    // Phương án cũ: đoán theo cấu trúc — thử cả 2 kiểu (danh sách nhiều mục / khối nhiều đoạn
+    // văn nhất trên trang) rồi lấy kết quả DÀI HƠN (thường giàu nội dung hơn, ít khả năng chỉ
+    // là 1 khối phụ như "Chính sách - Chiết khấu" ngắn gọn nằm cạnh mô tả thật).
     let bestList = null;
     $("ul,ol").each((_, el) => {
       if ($(el).parents("aside").length) return;
@@ -246,19 +294,22 @@ function extract(html, src) {
       if (avgLen < 40) return;
       if (!bestList || items.length > bestList.count) bestList = { el, count: items.length };
     });
-    if (bestList) {
-      description = $(bestList.el).children("li").map((_, li) => "- " + htmlToInlineMd($, li)).get().filter(Boolean).join("\n");
-    }
-  }
-  if (!description) {
-    let best = null;
+    const listText = bestList
+      ? $(bestList.el).children("li").map((_, li) => "- " + htmlToInlineMd($, li)).get().filter(Boolean).join("\n")
+      : "";
+
+    let bestP = null;
     $("div,section,article").each((_, el) => {
       const cls = `${$(el).attr("class") || ""} ${$(el).attr("id") || ""}`;
       if (JUNK_BLOCK_RE.test(cls)) return;
       const pCount = $(el).children("p").length;
-      if (pCount >= 2 && (!best || pCount > best.pCount)) best = { el, pCount };
+      if (pCount >= 2 && (!bestP || pCount > bestP.pCount)) bestP = { el, pCount };
     });
-    if (best) description = $(best.el).children("p").map((_, p) => htmlToInlineMd($, p)).get().filter(Boolean).join("\n\n");
+    const pText = bestP
+      ? $(bestP.el).children("p").map((_, p) => htmlToInlineMd($, p)).get().filter(Boolean).join("\n\n")
+      : "";
+
+    description = pText.length >= listText.length ? (pText || listText) : listText;
   }
   // Loại kết quả rõ ràng sai (dính "giỏ hàng trống", "đăng nhập"... hoặc quá ngắn để có ý nghĩa).
   if (description && (description.length < 60 || JUNK_TEXT_RE.test(description))) description = "";
