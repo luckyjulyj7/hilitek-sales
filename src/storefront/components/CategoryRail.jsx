@@ -48,7 +48,7 @@ export default function CategoryRail({ navigate, className = "", hideHeading = f
                 <div
                   onMouseEnter={() => enter(g.slug)}
                   onMouseLeave={leave}
-                  className="absolute left-full top-0 z-30 ml-1 min-h-full w-[560px] max-w-[70vw] bg-white border border-line rounded-lg shadow-menu p-5"
+                  className="absolute left-full top-0 z-30 ml-1 min-h-full w-[900px] max-w-[85vw] max-h-[80vh] overflow-y-auto bg-white border border-line rounded-lg shadow-menu p-5"
                 >
                   <button
                     onClick={() => go(href("/danh-muc", { group: g.group }).slice(1))}

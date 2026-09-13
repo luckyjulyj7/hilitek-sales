@@ -263,7 +263,11 @@ function extract(html, src) {
   // Loại kết quả rõ ràng sai (dính "giỏ hàng trống", "đăng nhập"... hoặc quá ngắn để có ý nghĩa).
   if (description && (description.length < 60 || JUNK_TEXT_RE.test(description))) description = "";
   if (!description) {
-    description = $('meta[property="og:description"]').attr("content") || $('meta[name="description"]').attr("content") || "";
+    description =
+      $('meta[property="og:description"]').attr("content") ||
+      $('meta[name="description"]').attr("content") ||
+      (ld && ld.description) ||
+      "";
   }
 
   // ----- Thông số kỹ thuật -----
@@ -293,20 +297,41 @@ function extract(html, src) {
     });
   }
 
-  // ----- Ảnh: gom <img> + <img data-src> (lazy-load), quy về link tuyệt đối, loại icon/logo/ảnh nhỏ. -----
+  // Nhãn "lõi" (mã sản phẩm/tên sản phẩm/thương hiệu/model) — quét riêng toàn trang + JSON-LD
+  // (nếu có, ưu tiên hơn vì có cấu trúc rõ), rồi đưa lên ĐẦU danh sách thông số (không trùng nhãn đã có).
+  const keyFields = scanKeySpecs($);
+  if (ld) {
+    if (ld.sku) keyFields["Mã sản phẩm"] = String(ld.sku);
+    if (ld.name && !keyFields["Tên sản phẩm"]) keyFields["Tên sản phẩm"] = String(ld.name);
+    const brandName = ld.brand && (typeof ld.brand === "string" ? ld.brand : ld.brand.name);
+    if (brandName) keyFields["Thương hiệu"] = String(brandName);
+    if (ld.model) keyFields["Model"] = String(ld.model);
+  }
+  ["Model", "Thương hiệu", "Tên sản phẩm", "Mã sản phẩm"].forEach((label) => {
+    const value = keyFields[label];
+    if (value && !specs.some((s) => s[0].toLowerCase() === label.toLowerCase())) specs.unshift([label, value]);
+  });
+
+  // ----- Ảnh: gom <img> + <img data-src> (lazy-load) + ảnh khai báo trong JSON-LD,
+  // quy về link tuyệt đối, loại icon/logo/ảnh nhỏ. -----
   const seen = new Set();
   const images = [];
-  $("img").each((_, img) => {
-    const raw = $(img).attr("src") || $(img).attr("data-src") || $(img).attr("data-original") || "";
+  const addImage = (raw) => {
     if (!raw || /^data:/i.test(raw)) return;
     let u;
     try { u = abs(raw); } catch { return; }
     if (seen.has(u) || SKIP_IMG_RE.test(u)) return;
+    seen.add(u);
+    images.push(u);
+  };
+  if (ld && ld.image) (Array.isArray(ld.image) ? ld.image : [ld.image]).forEach((im) => addImage(typeof im === "string" ? im : im && im.url));
+  $("img").each((_, img) => {
+    const raw = $(img).attr("src") || $(img).attr("data-src") || $(img).attr("data-original") || "";
+    if (!raw) return;
     const w = parseInt($(img).attr("width") || "0", 10);
     const h = parseInt($(img).attr("height") || "0", 10);
     if ((w && w < 120) || (h && h < 120)) return;
-    seen.add(u);
-    images.push(u);
+    addImage(raw);
   });
 
   return {
