@@ -4,7 +4,7 @@ import { FEATURES, SITE } from "../config.js";
 import { lookupWarranty } from "../lib/api.js";
 import PolicyPage from "./PolicyPage.jsx";
 
-/** /bao-hanh — chính sách bảo hành (từ PAGES) + ô tra cứu serial (ẩn theo FEATURES). */
+/** /bao-hanh — ô tra cứu serial (ẩn theo FEATURES) ở trên, chính sách bảo hành (từ PAGES) bên dưới. */
 export default function Warranty() {
   const [serial, setSerial] = useState("");
   const [state, setState] = useState({ status: "idle" });
@@ -24,11 +24,9 @@ export default function Warranty() {
 
   return (
     <>
-      <PolicyPage pageKey="chinh-sach-bao-hanh" />
-
-      <div className="mx-auto max-w-3xl px-4 pb-14 font-sans">
+      <div className="mx-auto max-w-3xl px-4 pt-8 font-sans">
         {FEATURES.warrantyLookup ? (
-          <div className="border-t border-line pt-8">
+          <div>
             <h2 className="font-display text-xl font-bold text-ink">Tra cứu bảo hành theo số serial</h2>
             <p className="mt-2 text-[15px] text-ink/70 leading-relaxed">
               Nhập số serial in trên tem hoặc thân sản phẩm để xem tên sản phẩm, ngày xuất bán và
@@ -75,6 +73,11 @@ export default function Warranty() {
           </div>
         )}
       </div>
+
+      <div className="mx-auto max-w-3xl px-4 pt-8">
+        <div className="border-t border-line" />
+      </div>
+      <PolicyPage pageKey="chinh-sach-bao-hanh" />
     </>
   );
 }
