@@ -2230,6 +2230,8 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
   const submitInfo = () => {
     if (!form.code || !form.name) return;
     if (editing.id) {
+      const dup = products.find((p) => p.id !== editing.id && p.code.toLowerCase() === form.code.trim().toLowerCase());
+      if (dup) { alert(`Mã VT "${form.code}" đã dùng cho sản phẩm "${dup.name}" — vui lòng chọn mã khác.`); return; }
       setProducts((prev) => prev.map((p) => {
         if (p.id !== editing.id) return p;
         const newRetail = Number(form.retailPrice) || 0, newWholesale = Number(form.wholesalePrice) || 0, newCost = Number(form.costPrice) || 0;
@@ -2240,7 +2242,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         const now = new Date().toISOString();
         const newHistoryEntries = changes.map((c) => ({ id: uid(), date: now, changedBy: currentUser.fullName, field: c.field, oldValue: c.oldValue, newValue: c.newValue }));
         return {
-          ...p, code: form.code, name: form.name, unit: form.unit, category: form.category || "", brand: form.brand || "", hasSeries: !!form.hasSeries, isService: !!form.isService,
+          ...p, code: form.code.trim(), name: form.name, unit: form.unit, category: form.category || "", brand: form.brand || "", hasSeries: !!form.hasSeries, isService: !!form.isService,
           retailPrice: newRetail, wholesalePrice: newWholesale, costPrice: newCost, openingQty: Number(form.openingQty) || 0,
           minStockLevel: Number(form.minStockLevel) || 0, weight: Number(form.weight) || 0,
           sku: form.sku || p.sku, vat: form.vat, barcode: form.barcode || "", supplierId: form.supplierId || "", warrantyMonths: Number(form.warrantyMonths) || 0, image: form.image || null, images: Array.isArray(form.images) ? form.images.filter(Boolean).slice(0, 3) : [],
@@ -2753,7 +2755,9 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
       {editing !== null && (
         <Modal title={editing.id ? "Sửa thông tin sản phẩm" : "Thêm sản phẩm"} onClose={() => setEditing(null)} size="xl">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            <Field label="Mã VT"><input className={inputCls} style={{ borderColor: LINE }} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} disabled={!!editing.id} /></Field>
+            <Field label="Mã VT" hint={editing.id && !isAdmin ? "Chỉ admin được đổi Mã VT của sản phẩm đã tạo." : (editing.id ? "Đổi Mã VT không ảnh hưởng đơn hàng/phiếu cũ (đã ghi lại mã lúc đó) — chỉ áp dụng từ giờ về sau." : undefined)}>
+              <input className={inputCls} style={{ borderColor: LINE }} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} disabled={!!editing.id && !isAdmin} />
+            </Field>
             <Field label="Mã SKU" hint="Tự sinh — sửa được">
               <input className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} />
             </Field>
