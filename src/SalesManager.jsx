@@ -13603,10 +13603,89 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
         </div>
       </section>
 
+      <section>
+        <h3 className="font-medium mb-3" style={{ color: INK }}>Kho ảnh (Supabase Storage)</h3>
+        <MediaCleanupPanel />
+      </section>
+
       <div className="flex items-center gap-3">
         <button onClick={() => { addLog("Cập nhật cấu hình web", ""); }} className="px-4 py-2 rounded-sm text-sm text-white" style={{ background: INK }}>Đã lưu (tự động)</button>
         <button onClick={() => { if (confirm("Xoá toàn bộ cấu hình web (web quay về mặc định)?")) setWebConfig({}); }} className="text-xs underline" style={{ color: RUST }}>Đặt lại về mặc định</button>
       </div>
+    </div>
+  );
+}
+
+function formatBytes(n) {
+  const b = Number(n) || 0;
+  if (b < 1024) return `${b} B`;
+  if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+  return `${(b / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/**
+ * Quét + dọn ảnh rác trong kho Hilitek (Supabase Storage) — ảnh đã tải về nhưng không còn sản
+ * phẩm nào dùng (do đã thay ảnh khác / xoá ảnh khỏi sản phẩm). Gọi /api/web/media-cleanup:
+ * GET quét trước (không xoá gì), POST mới thực sự xoá — luôn quét lại ngay trước khi xoá để
+ * không lỡ xoá nhầm ảnh vừa được gán cho sản phẩm khác.
+ */
+function MediaCleanupPanel() {
+  const [busy, setBusy] = useState(false);
+  const [report, setReport] = useState(null); // { totalFiles, referencedCount, orphanCount, orphanBytes }
+  const [msg, setMsg] = useState("");
+
+  const call = async (method) => {
+    const r = await fetch("/api/web/media-cleanup", { method, headers: { "x-media-key": SUPABASE_ANON_KEY } });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || `Lỗi máy chủ (mã ${r.status})`);
+    return j;
+  };
+
+  const scan = async () => {
+    setBusy(true); setMsg(""); setReport(null);
+    try {
+      const j = await call("GET");
+      setReport(j);
+      setMsg(j.orphanCount ? "" : "Không có ảnh rác — kho đang sạch.");
+    } catch (e) { setMsg("Lỗi: " + (e.message || e)); }
+    finally { setBusy(false); }
+  };
+
+  const clean = async () => {
+    if (!report || !report.orphanCount) return;
+    if (!confirm(`Xoá ${report.orphanCount} ảnh rác (giải phóng ~${formatBytes(report.orphanBytes)})? Không thể hoàn tác.`)) return;
+    setBusy(true); setMsg("");
+    try {
+      const j = await call("POST");
+      setMsg(`Đã xoá ${j.deleted} ảnh, giải phóng ~${formatBytes(j.freedBytes)}.`);
+      setReport(null);
+    } catch (e) { setMsg("Lỗi: " + (e.message || e)); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <div className="p-4 rounded-sm border space-y-3" style={{ borderColor: LINE }}>
+      <p className="text-xs opacity-70">
+        Ảnh dán/tải về từ link NCC (mô tả, ảnh sản phẩm trên web) được lưu vào kho riêng của Hilitek trên Supabase.
+        Khi bạn thay ảnh khác hoặc xoá sản phẩm, ảnh cũ không tự mất — quét để tìm và dọn bớt ảnh không còn dùng.
+      </p>
+      <div className="flex items-center gap-3 flex-wrap">
+        <button onClick={scan} disabled={busy} className="px-3 py-1.5 rounded-sm text-sm border inline-flex items-center gap-1.5" style={{ borderColor: LINE, color: INK, opacity: busy ? 0.5 : 1 }}>
+          {busy && <Loader2 size={14} className="animate-spin" />} Quét ảnh rác
+        </button>
+        {report && report.orphanCount > 0 && (
+          <button onClick={clean} disabled={busy} className="px-3 py-1.5 rounded-sm text-sm text-white inline-flex items-center gap-1.5" style={{ background: RUST, opacity: busy ? 0.5 : 1 }}>
+            <Trash2 size={14} /> Xoá {report.orphanCount} ảnh rác (~{formatBytes(report.orphanBytes)})
+          </button>
+        )}
+      </div>
+      {report && (
+        <p className="text-xs opacity-70">
+          Tổng {report.totalFiles} ảnh trong kho · {report.referencedCount} ảnh đang được dùng · {report.orphanCount} ảnh rác
+          {report.orphanCount > 0 ? ` (~${formatBytes(report.orphanBytes)})` : ""}.
+        </p>
+      )}
+      {msg && <p className="text-xs" style={{ color: /^lỗi/i.test(msg) ? RUST : INK }}>{msg}</p>}
     </div>
   );
 }

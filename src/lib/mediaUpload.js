@@ -21,15 +21,49 @@ function randPath(ext) {
   return `desc/${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 }
 
-/** Upload 1 File/Blob ảnh. Trả { path, url } với url = "/media/desc/xxx.png". */
+// Giới hạn cạnh dài nhất + chất lượng nén khi upload trực tiếp từ trình duyệt (chọn file / kéo-thả /
+// dán ảnh) — cùng chuẩn với /api/web/fetch-image ở server, tránh ảnh gốc máy tính (vài MB/tấm,
+// máy ảnh/điện thoại hiện đại chụp 4000px+) ngốn dung lượng kho không cần thiết cho hiển thị web.
+const MAX_DIM = 1600;
+const QUALITY = 0.82;
+
+/** Nén lại 1 ảnh bằng canvas: giới hạn kích thước, WebP (giữ trong suốt) hoặc JPEG. Không hỗ trợ/lỗi thì trả bản gốc. */
+async function compressImage(fileOrBlob) {
+  // GIF ảnh động: canvas chỉ vẽ được khung hình đầu -> mất hiệu ứng động nếu nén lại.
+  // Ảnh sản phẩm hầu như không phải GIF nên bỏ qua cho an toàn thay vì đoán.
+  if (/gif/i.test(fileOrBlob.type || "")) return fileOrBlob;
+  try {
+    if (!("createImageBitmap" in window)) return fileOrBlob;
+    const bitmap = await createImageBitmap(fileOrBlob);
+    const scale = Math.min(1, MAX_DIM / Math.max(bitmap.width, bitmap.height));
+    const w = Math.max(1, Math.round(bitmap.width * scale));
+    const h = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    bitmap.close && bitmap.close();
+    // PNG/WebP có thể có nền trong suốt -> giữ bằng WebP; còn lại nén JPEG cho nhẹ.
+    const outType = /png|webp/i.test(fileOrBlob.type || "") ? "image/webp" : "image/jpeg";
+    const out = await new Promise((resolve) => canvas.toBlob(resolve, outType, QUALITY));
+    if (out && out.size > 0 && out.size < fileOrBlob.size) return out;
+  } catch {
+    /* trình duyệt không hỗ trợ / ảnh lỗi -> giữ bản gốc, không chặn upload */
+  }
+  return fileOrBlob;
+}
+
+/** Upload 1 File/Blob ảnh (tự nén trước). Trả { path, url } với url = "/media/desc/xxx.webp". */
 export async function uploadProductImage(fileOrBlob) {
   if (!isSupabaseConfigured())
     throw new Error("Chưa cấu hình Supabase (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY).");
-  const type = fileOrBlob.type || "image/png";
+  const compressed = await compressImage(fileOrBlob);
+  const type = compressed.type || fileOrBlob.type || "image/png";
   const path = randPath(extFromType(type));
   const { error } = await getClient()
     .storage.from(BUCKET)
-    .upload(path, fileOrBlob, { contentType: type, upsert: false, cacheControl: "31536000" });
+    .upload(path, compressed, { contentType: type, upsert: false, cacheControl: "31536000" });
   if (error) {
     const m = error.message || String(error);
     const hint = /bucket|not found|row-level|policy|unauthorized/i.test(m)
