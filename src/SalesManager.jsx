@@ -2445,11 +2445,11 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
 
       <div className="rounded-sm overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "65vh" }}>
         <table className="w-full text-sm" style={{ minWidth: 940 }}>
-          <thead>
+          <thead className="sticky top-0" style={{ zIndex: 2 }}>
             <tr style={{ borderBottom: `2px solid ${INK}` }}>
-              <th className="px-3 py-2.5 sticky top-0" style={{ background: "#fff", zIndex: 2, boxShadow: `0 1px 0 0 ${INK}` }}><input type="checkbox" checked={selectedIds.size > 0 && selectedIds.size === filtered.length} onChange={toggleSelectAll} /></th>
+              <th className="px-3 py-2.5" style={{ background: "#fff" }}><input type="checkbox" checked={selectedIds.size > 0 && selectedIds.size === filtered.length} onChange={toggleSelectAll} /></th>
               {["", "", "Mã VT", "SKU", "Tên vật tư", "ĐVT", "Tồn ĐK", "Nhập", "Xuất", "Tồn CK", ...(isAdmin ? ["Giá nhập"] : []), ""].map((h, hi) => (
-                <th key={hi} className="text-left px-2 py-2.5 text-xs uppercase tracking-wider whitespace-nowrap sticky top-0" style={h === "Tên vật tư" ? { color: INK, opacity: 0.6, background: "#fff", zIndex: 2, boxShadow: `0 1px 0 0 ${INK}`, minWidth: 260 } : { color: INK, opacity: 0.6, background: "#fff", zIndex: 2, boxShadow: `0 1px 0 0 ${INK}` }}>{h}</th>
+                <th key={hi} className="text-left px-2 py-2.5 text-xs uppercase tracking-wider whitespace-nowrap" style={h === "Tên vật tư" ? { color: INK, opacity: 0.6, background: "#fff", minWidth: 260 } : { color: INK, opacity: 0.6, background: "#fff" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -9380,11 +9380,11 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
 
       <div className="rounded-sm overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "65vh" }}>
         <table className="w-full text-sm" style={{ minWidth: 900 }}>
-          <thead>
+          <thead className="sticky top-0" style={{ zIndex: 2 }}>
             <tr style={{ borderBottom: `2px solid ${INK}` }}>
-              <th className="px-3 py-2.5 sticky top-0" style={{ background: "#fff", zIndex: 2, boxShadow: `0 1px 0 0 ${INK}` }}><input type="checkbox" checked={selectedIds.size > 0 && selectedIds.size === visible.length} onChange={toggleSelectAll} /></th>
+              <th className="px-3 py-2.5" style={{ background: "#fff" }}><input type="checkbox" checked={selectedIds.size > 0 && selectedIds.size === visible.length} onChange={toggleSelectAll} /></th>
               {["Mã đơn", "Ngày tạo", "Khách hàng", "Bán tại", "Trạng thái giao", "Xuất hoá đơn", "Tổng tiền", "Còn phải trả", ""].map((h, hi) => (
-                <th key={hi} className="text-left px-3 py-2.5 text-xs uppercase tracking-wider whitespace-nowrap sticky top-0" style={{ color: INK, opacity: 0.6, background: "#fff", zIndex: 2, boxShadow: `0 1px 0 0 ${INK}` }}>{h}</th>
+                <th key={hi} className="text-left px-3 py-2.5 text-xs uppercase tracking-wider whitespace-nowrap" style={{ color: INK, opacity: 0.6, background: "#fff" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -10270,10 +10270,10 @@ function ActivityLog({ log, accounts }) {
       </div>
       <div className="rounded-sm overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "70vh" }}>
         <table className="w-full text-sm" style={{ minWidth: 640 }}>
-          <thead>
+          <thead className="sticky top-0" style={{ zIndex: 2 }}>
             <tr style={{ borderBottom: `2px solid ${INK}` }}>
               {["Thời gian", "Nhân sự", "Vai trò", "Hoạt động", "Chi tiết"].map((h, hi) => (
-                <th key={hi} className="text-left px-3 py-2.5 text-xs uppercase tracking-wider whitespace-nowrap sticky top-0" style={{ color: INK, opacity: 0.6, background: "#fff", zIndex: 2, boxShadow: `0 1px 0 0 ${INK}` }}>{h}</th>
+                <th key={hi} className="text-left px-3 py-2.5 text-xs uppercase tracking-wider whitespace-nowrap" style={{ color: INK, opacity: 0.6, background: "#fff" }}>{h}</th>
               ))}
             </tr>
           </thead>
