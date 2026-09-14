@@ -16,7 +16,7 @@ import * as cheerio from "cheerio";
 import { handler, json } from "./_supa.js";
 
 const GATE = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
-const SKIP_IMG_RE = /logo|icon|favicon|sprite|avatar|payment|thanh-toan|zalo\.(png|svg)|facebook\.(png|svg)|qr-?code/i;
+const SKIP_IMG_RE = /logo|icon|favicon|sprite|avatar|payment|thanh-toan|zalo\.(png|svg)|facebook\.(png|svg)|qr-?code|dmca/i;
 
 export default handler(async (req, res) => {
   if (req.method !== "GET") return json(res, 405, { error: "Chỉ hỗ trợ GET." });
@@ -121,6 +121,24 @@ function readProductJsonLd($) {
   return prod;
 }
 
+// Nhiều khối rác (breadcrumb, sidebar...) chỉ gắn class rác lên thẻ CHA bao ngoài chứ không
+// phải lên chính thẻ <ul>/<div> — nên phải dò ngược lên tổ tiên, không chỉ xem class của
+// chính phần tử đó (VD breadcrumb ở vsp.vn: <div class="breadcrumb"><ol class="ul flex...">).
+function hasJunkAncestor($, el) {
+  let cur = $(el);
+  while (cur.length) {
+    const tag = (cur[0].tagName || "").toLowerCase();
+    // Dừng trước <body>/<html> — class ở đây là tiện ích CSS toàn trang (VD theme WordPress hay
+    // gắn "mobile-submenu-slide" lên <body>), chứa chữ "menu" một cách tình cờ, không liên quan
+    // gì đến khối nội dung đang xét — kiểm tra tới đó chỉ gây false positive tràn lan.
+    if (tag === "body" || tag === "html") break;
+    const cls = `${cur.attr("class") || ""} ${cur.attr("id") || ""}`;
+    if (JUNK_BLOCK_RE.test(cls)) return true;
+    cur = cur.parent();
+  }
+  return false;
+}
+
 // Tìm phần tử có id/class khớp `re` (bỏ qua nếu cũng khớp `avoidRe`) — ưu tiên khối text DÀI nhất
 // (thường là khối bao ngoài cùng của cả mục, không phải 1 dòng con bên trong).
 function findByHint($, re, avoidRe) {
@@ -166,8 +184,15 @@ function contentFromBlock($, block) {
   const $b = $(block);
   let list = null;
   $b.find("ul,ol").each((_, el) => {
+    // Khối tầng 1/2 (id/class gợi ý, heading) đôi khi là 1 khối bao RẤT rộng (VD 1 site đặt
+    // class kiểu "page-product-detail" cho cả trang) — bên trong lại lẫn breadcrumb/footer.
+    // Nên vẫn phải loại rác + đòi hỏi mỗi mục đủ dài mới coi là "danh sách mô tả" thật.
+    if (hasJunkAncestor($, el)) return;
     const items = $(el).children("li");
-    if (items.length >= 2 && (!list || items.length > $(list).children("li").length)) list = el;
+    if (items.length < 2) return;
+    const avgLen = items.toArray().reduce((s, li) => s + $(li).text().trim().length, 0) / items.length;
+    if (avgLen < 40) return;
+    if (!list || items.length > $(list).children("li").length) list = el;
   });
   if (list) {
     const text = $(list).children("li").map((_, li) => "- " + htmlToInlineMd($, li)).get().filter(Boolean).join("\n");
@@ -286,8 +311,7 @@ function extract(html, src) {
     let bestList = null;
     $("ul,ol").each((_, el) => {
       if ($(el).parents("aside").length) return;
-      const cls = `${$(el).attr("class") || ""} ${$(el).attr("id") || ""}`;
-      if (JUNK_BLOCK_RE.test(cls)) return;
+      if (hasJunkAncestor($, el)) return;
       const items = $(el).children("li");
       if (items.length < 2) return;
       const avgLen = items.toArray().reduce((s, li) => s + $(li).text().trim().length, 0) / items.length;
@@ -300,8 +324,7 @@ function extract(html, src) {
 
     let bestP = null;
     $("div,section,article").each((_, el) => {
-      const cls = `${$(el).attr("class") || ""} ${$(el).attr("id") || ""}`;
-      if (JUNK_BLOCK_RE.test(cls)) return;
+      if (hasJunkAncestor($, el)) return;
       const pCount = $(el).children("p").length;
       if (pCount >= 2 && (!bestP || pCount > bestP.pCount)) bestP = { el, pCount };
     });
@@ -379,8 +402,13 @@ function extract(html, src) {
   $("img").each((_, img) => {
     const raw = $(img).attr("src") || $(img).attr("data-src") || $(img).attr("data-original") || "";
     if (!raw) return;
-    const w = parseInt($(img).attr("width") || "0", 10);
-    const h = parseInt($(img).attr("height") || "0", 10);
+    // Chỉ áp bộ lọc kích thước khi width/height là SỐ PIXEL thật (VD "16") — nhiều site set
+    // width="100%" cho ảnh responsive, parseInt("100%") ra 100 (nhỏ hơn 120) sẽ loại NHẦM
+    // hết ảnh gallery thật, nên bỏ qua kiểm tra khi không phải số nguyên thuần.
+    const wAttr = $(img).attr("width") || "";
+    const hAttr = $(img).attr("height") || "";
+    const w = /^\d+$/.test(wAttr) ? parseInt(wAttr, 10) : 0;
+    const h = /^\d+$/.test(hAttr) ? parseInt(hAttr, 10) : 0;
     if ((w && w < 120) || (h && h < 120)) return;
     addImage(raw);
   });
