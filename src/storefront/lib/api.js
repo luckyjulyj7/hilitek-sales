@@ -124,10 +124,16 @@ export async function fetchWebConfig() {
 }
 
 export async function lookupWarranty(serial) {
-  return delay({
-    found: false,
-    message:
-      "Tra cứu bảo hành trực tuyến đang được hoàn thiện. Vui lòng gọi hotline kèm số serial để được kiểm tra.",
-  });
-  // TODO: khi có api/web/warranty.js -> fetch(`/api/web/warranty?serial=${serial}`)
+  if (USE_MOCK || IS_LOCAL) {
+    return delay({
+      found: false,
+      message: "Tra cứu bảo hành chỉ hoạt động trên web thật (cần API server).",
+    });
+  }
+  const s = encodeURIComponent(String(serial || "").trim());
+  const res = await fetch(`/api/web/warranty?serial=${s}`, { headers: { Accept: "application/json" } });
+  if (!isJson(res)) throw new Error("Hệ thống tra cứu chưa sẵn sàng");
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Không tra cứu được (lỗi ${res.status})`);
+  return data;
 }

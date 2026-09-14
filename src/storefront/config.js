@@ -96,9 +96,8 @@ export const SUPPORT_LINKS = [
 
 /** Bật/tắt tính năng chưa hoàn thiện. */
 export const FEATURES = {
-  // Tra cứu bảo hành trực tuyến — TẠM ẨN cho tới khi nối API /api/web/warranty.
-  // Trang /bao-hanh vẫn còn (hiện nội dung chính sách), chỉ ẩn ô nhập serial + link trên menu.
-  warrantyLookup: false,
+  // Tra cứu bảo hành trực tuyến theo serial — đã nối api/web/warranty.js.
+  warrantyLookup: true,
 };
 
 /** Ngưỡng để gắn nhãn "Sắp hết" trên thẻ sản phẩm. */
