@@ -16,7 +16,7 @@ import * as cheerio from "cheerio";
 import { handler, json } from "./_supa.js";
 
 const GATE = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
-const SKIP_IMG_RE = /logo|icon|favicon|sprite|avatar|payment|thanh-toan|zalo\.(png|svg)|facebook\.(png|svg)|qr-?code|dmca/i;
+const SKIP_IMG_RE = /logo|icon|favicon|sprite|avatar|payment|thanh-toan|zalo\.(png|svg)|facebook\.(png|svg)|qr-?code|dmca|banner|\/advs?\//i;
 
 export default handler(async (req, res) => {
   if (req.method !== "GET") return json(res, 405, { error: "Chỉ hỗ trợ GET." });
@@ -95,7 +95,7 @@ function scanKeySpecs($) {
   $("li,p,dt,dd,span,div,td,th").each((_, el) => {
     const $el = $(el);
     if ($el.children().length > 2) return; // chỉ quét dòng ngắn, tránh nuốt cả khối lớn
-    const t = $el.text().replace(/\s+/g, " ").trim();
+    const t = stripBullet($el.text().replace(/\s+/g, " ").trim());
     if (!t || t.length > 150) return;
     const m = t.match(/^([^:：]{2,30})[:：]\s*(.+)$/);
     if (!m) return;
@@ -154,14 +154,26 @@ function findByHint($, re, avoidRe) {
   return best ? best.el : null;
 }
 
-// Tìm 1 tiêu đề (h1-h6/strong/b/dt/summary, ngắn) khớp `re`, rồi gom các phần tử anh em ngay
+// Tìm 1 tiêu đề (h1-h6/strong/b/dt/summary/p ngắn) khớp `re`, rồi gom các phần tử anh em ngay
 // sau nó cho tới tiêu đề tiếp theo làm nội dung. Không có gì đáng kể thì lấy cả khối cha.
+// Có "p" vì nhiều site paste nội dung từ Word/CMS cũ chỉ bọc tiêu đề bằng <span style="font-size">
+// bên trong 1 <p> riêng (không dùng thẻ heading thật) — VD "<p><span style='font-size:18px'>
+// Thông số kỹ thuật:</span></p>".
+// 1 dòng kiểu "Model: LDT95-C012UC" hay "Nhãn: Giá trị" TỰ NÓ đã là dữ liệu (nhãn NGẮN + có
+// giá trị thật ngay sau dấu ":") chứ không phải tiêu đề mở đầu 1 mục — dễ bị match nhầm vì chữ
+// "model" cũng nằm trong SPEC_HEADING_RE. Tiêu đề thật (VD "Thông số kỹ thuật:") không có gì
+// (hoặc chỉ khoảng trắng) sau dấu hai chấm.
+function isHeadingDataLine(s) {
+  return /^[^:：]{1,30}[:：]\s*\S/.test(s);
+}
+
 function findByHeading($, re) {
   let heading = null;
-  $("h1,h2,h3,h4,h5,h6,strong,b,dt,summary").each((_, el) => {
+  $("h1,h2,h3,h4,h5,h6,strong,b,dt,summary,p").each((_, el) => {
     if (heading) return;
     const t = $(el).text().trim();
     if (!t || t.length > 60) return;
+    if (isHeadingDataLine(t)) return;
     if (re.test(t)) heading = el;
   });
   if (!heading) return null;
@@ -204,6 +216,13 @@ function contentFromBlock($, block) {
     if (text) return text;
   }
   return $b.text().replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+// Nhiều site (VD gialacc.com) viết mỗi dòng thông số kiểu "- Nhãn: Giá trị" (có gạch đầu dòng
+// thủ công trong nội dung dán từ Word, không phải <li> thật) — bỏ gạch đầu dòng trước khi tách
+// nhãn/giá trị, không thì nhãn sẽ dính luôn dấu "- " ở đầu.
+function stripBullet(s) {
+  return s.replace(/^[-*•]\s*/, "");
 }
 
 // Nhiều site (VD techmall.vn) không dùng <table>/<dl> cho bảng thông số mà nhét cả bảng vào
@@ -252,14 +271,14 @@ function specsFromBlock($, block) {
       const lines = splitByBr($, p);
       if (lines.length < 2) return;
       lines.forEach((line) => {
-        const m = line.match(/^([^:：]{2,50})[:：]\s*(.+)$/);
+        const m = stripBullet(line).match(/^([^:：]{2,50})[:：]\s*(.+)$/);
         if (m) specs.push([m[1].trim(), m[2].trim()]);
       });
     });
   }
   if (!specs.length) {
     $b.find("li,p,tr").each((_, el) => {
-      const t = $(el).text().replace(/\s+/g, " ").trim();
+      const t = stripBullet($(el).text().replace(/\s+/g, " ").trim());
       const m = t.match(/^([^:：]{2,50})[:：]\s*(.+)$/);
       if (m) specs.push([m[1].trim(), m[2].trim()]);
     });
@@ -276,10 +295,17 @@ function extract(html, src) {
 
   $("script,style,nav,header,footer,noscript,form").remove();
 
+  // Vài site (VD gialacc.com) tái dùng 1 <h1> cố định là TÊN CÔNG TY cho mọi trang (SEO chung),
+  // không phải tên sản phẩm — nhận diện qua các từ khoá loại hình doanh nghiệp hay gặp và bỏ qua,
+  // rớt xuống các nguồn khác (JSON-LD, thẻ hay class hay dùng cho tên sản phẩm, og:title...).
+  const h1Text = $("h1").first().text().trim();
+  const isCompanyName = (s) => /công ty|cong ty|\btnhh\b|cổ phần|co phan|doanh nghiệp/i.test(s);
   const title =
-    $("h1").first().text().trim() ||
+    (h1Text && !isCompanyName(h1Text) ? h1Text : "") ||
     (ld && ld.name) ||
+    $('[itemprop="name"], .product-name, .product-title, .centerBoxWrapper h2, #featuredProducts h2').first().text().trim() ||
     $('meta[property="og:title"]').attr("content") ||
+    h1Text ||
     $("title").text().trim() ||
     "";
 
