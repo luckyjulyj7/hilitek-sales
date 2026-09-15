@@ -71,15 +71,6 @@ export default function ProductDetail({ slug, navigate, catalog }) {
     return () => { alive = false; };
   }, [slug]);
 
-  // Ảnh chính tự chạy qua các ảnh phía dưới — dừng khi đang rê chuột (để xem hiệu ứng phóng to)
-  // hoặc khi đang mở khung phóng to toàn màn hình.
-  useEffect(() => {
-    const count = product?.images?.length || 0;
-    if (count < 2 || imgHover || zoom) return;
-    const id = setInterval(() => setImgIdx((i) => (i + 1) % count), 3500);
-    return () => clearInterval(id);
-  }, [product, imgHover, zoom]);
-
   // SEO: đặt tiêu đề trang + thẻ mô tả theo cấu hình SEO của sản phẩm.
   useEffect(() => {
     if (!product) return;
