@@ -1,4 +1,4 @@
-import { SITE, FLASH_SALE, HOME_POSTERS, HOME_SECTIONS, PRODUCT_SIDEBAR, CHECKOUT, PAGES, MENU, LANDINGS, COUPONS, rebuildCatToGroup } from "../config.js";
+import { SITE, FLASH_SALE, HOME_POSTERS, HOME_SECTIONS, PRODUCT_SIDEBAR, CHECKOUT, PAGES, MENU, LANDINGS, COUPONS, LOYALTY, rebuildCatToGroup } from "../config.js";
 
 /**
  * Ghi đè cấu hình mặc định (config.js) bằng giá trị chủ shop chỉnh từ app quản lý
@@ -28,7 +28,7 @@ function deepMerge(target, src) {
 export function applyWebConfig(cfg) {
   if (!cfg || typeof cfg !== "object") return;
 
-  const map = { SITE, FLASH_SALE, HOME_POSTERS, PRODUCT_SIDEBAR, CHECKOUT, PAGES };
+  const map = { SITE, FLASH_SALE, HOME_POSTERS, PRODUCT_SIDEBAR, CHECKOUT, PAGES, LOYALTY };
   for (const key of Object.keys(map)) {
     if (cfg[key] && typeof cfg[key] === "object") deepMerge(map[key], cfg[key]);
   }

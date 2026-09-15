@@ -137,3 +137,15 @@ export async function lookupWarranty(serial) {
   if (!res.ok) throw new Error(data.error || `Không tra cứu được (lỗi ${res.status})`);
   return data;
 }
+
+export async function lookupPoints(phone) {
+  if (USE_MOCK || IS_LOCAL) {
+    return delay({ enabled: false });
+  }
+  const p = encodeURIComponent(String(phone || "").trim());
+  const res = await fetch(`/api/web/points?phone=${p}`, { headers: { Accept: "application/json" } });
+  if (!isJson(res)) throw new Error("Hệ thống tra cứu chưa sẵn sàng");
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Không tra cứu được (lỗi ${res.status})`);
+  return data;
+}

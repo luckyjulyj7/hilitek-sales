@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
   MapPin, Search, Phone, ShoppingCart, ChevronDown, Menu, X, Truck, PackageSearch,
-  ShieldCheck, CreditCard, Wallet, Wrench, LayoutGrid,
+  ShieldCheck, CreditCard, Wallet, Wrench, LayoutGrid, Gift,
 } from "lucide-react";
-import { SITE, MENU, FEATURES, SUPPORT_LINKS, categoryBreadcrumb } from "../config.js";
+import { SITE, MENU, FEATURES, LOYALTY, SUPPORT_LINKS, categoryBreadcrumb } from "../config.js";
 import { href } from "../router.js";
 import { useCart } from "../cart.jsx";
 import Logo from "./Logo.jsx";
@@ -74,6 +74,9 @@ export default function Header({ route, navigate, drawer, setDrawer }) {
           <span className="hidden md:flex items-center gap-4 shrink-0">
             {FEATURES.warrantyLookup && (
               <TopLink onClick={() => go("/bao-hanh")} icon={ShieldCheck}>Tra cứu bảo hành</TopLink>
+            )}
+            {LOYALTY.enabled && (
+              <TopLink onClick={() => go("/diem-tich-luy")} icon={Gift}>Điểm tích luỹ</TopLink>
             )}
             <TopLink onClick={() => go("/tra-cuu-don-hang")} icon={PackageSearch}>Tra cứu đơn hàng</TopLink>
             <TopLink onClick={() => go("/chinh-sach-giao-hang")} icon={Truck}>Vận chuyển</TopLink>

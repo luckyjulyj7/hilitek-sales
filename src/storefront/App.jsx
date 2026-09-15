@@ -16,6 +16,7 @@ import Cart from "./pages/Cart.jsx";
 import Checkout from "./pages/Checkout.jsx";
 import Warranty from "./pages/Warranty.jsx";
 import OrderLookup from "./pages/OrderLookup.jsx";
+import PointsLookup from "./pages/PointsLookup.jsx";
 import BuildPC from "./pages/BuildPC.jsx";
 import Policy from "./pages/Policy.jsx";
 import PolicyPage from "./pages/PolicyPage.jsx";
@@ -81,6 +82,8 @@ export default function App() {
     page = <Warranty />;
   } else if (route.path === "/tra-cuu-don-hang") {
     page = <OrderLookup />;
+  } else if (route.path === "/diem-tich-luy") {
+    page = <PointsLookup />;
   } else if (route.path === "/xay-dung-cau-hinh") {
     page = <BuildPC />;
   } else if (route.path === "/huong-dan-thanh-toan") {

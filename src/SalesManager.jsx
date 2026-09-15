@@ -16,6 +16,7 @@ import { PAGES as WEB_DEFAULT_PAGES, MENU as WEB_DEFAULT_MENU, flattenMenuTree a
 import { GROUP_ICON_NAMES, groupIcon as webGroupIcon } from "./storefront/components/groupIcons.js";
 import { uploadProductImage, rehostExternalImage, toDirectImageUrl } from "./lib/mediaUpload.js";
 import { SUPABASE_ANON_KEY } from "./lib/supabaseStorage.js";
+import { pointsForPhone, normalizePhone, DEFAULT_LOYALTY } from "./lib/loyalty.js";
 
 // Xuất 1 hoặc nhiều bảng dữ liệu ra 1 file Excel (.xlsx), mỗi bảng là 1 sheet riêng.
 function exportExcel(filename, sheets) {
@@ -499,6 +500,14 @@ function normalizeWarrantyTicket(t) {
     // Mã phiếu Xuất trả bảo hành — tự sinh khi chuyển sang "Đã trả khách" (định dạng XTBH-{mã phiếu bảo hành gốc}).
     xtbhCode: t.xtbhCode || "",
     stockDeducted: !!t.stockDeducted, // đã trừ kho chính cho lần đổi SP từ kho chính chưa (tránh trừ 2 lần)
+  };
+}
+
+// Điều chỉnh tay điểm tích luỹ (tặng thêm/trừ bớt ngoài điểm tự tính từ đơn hàng) — xem src/lib/loyalty.js.
+function normalizePointAdjustment(a) {
+  return {
+    id: a.id || uid(), phone: normalizePhone(a.phone || ""), amount: Number(a.amount) || 0,
+    reason: a.reason || "", createdAt: a.createdAt || new Date().toISOString(), createdBy: a.createdBy || "",
   };
 }
 
@@ -6438,7 +6447,7 @@ function WardSelect({ province, value, onChange }) {
   );
 }
 
-function Customers({ customers, setCustomers, orders, products, currentUser, addLog, goToDoc, employeeNames }) {
+function Customers({ customers, setCustomers, orders, products, currentUser, addLog, goToDoc, employeeNames, webConfig, pointAdjustments, setPointAdjustments }) {
   const isAdmin = currentUser.role === "admin";
   const [view, setView] = useState("list"); // list | debt
   const [editing, setEditing] = useState(null);
@@ -6448,6 +6457,29 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
   const [addrForm, setAddrForm] = useState(null); // null = đóng; {} = thêm mới; {...addr} = sửa
   const [query, setQuery] = useState("");
   const [debtSort, setDebtSort] = useState("amount"); // amount | due
+  const [adjustOpen, setAdjustOpen] = useState(false);
+  const [adjustAmount, setAdjustAmount] = useState("");
+  const [adjustReason, setAdjustReason] = useState("");
+
+  const loyaltyCfg = webConfig && webConfig.LOYALTY;
+  const loyaltyOn = !!(loyaltyCfg && loyaltyCfg.enabled);
+  const pointsOf = (customer) => pointsForPhone(customer.phone, { orders, customers, pointAdjustments }, loyaltyCfg);
+  const submitAdjust = (customer) => {
+    const amount = Number(adjustAmount);
+    if (!amount) { alert("Nhập số điểm cần cộng (dương) hoặc trừ (âm)."); return; }
+    if (!adjustReason.trim()) { alert("Vui lòng nhập lý do điều chỉnh."); return; }
+    setPointAdjustments((prev) => [...prev, {
+      id: uid(), phone: normalizePhone(customer.phone), amount, reason: adjustReason.trim(),
+      createdAt: new Date().toISOString(), createdBy: currentUser.fullName,
+    }]);
+    addLog("Điều chỉnh điểm tích luỹ", `${customer.name} · ${amount > 0 ? "+" : ""}${amount} điểm · ${adjustReason.trim()}`);
+    setAdjustOpen(false); setAdjustAmount(""); setAdjustReason("");
+  };
+  const removeAdjust = (a) => {
+    if (!confirm("Xoá dòng điều chỉnh điểm này?")) return;
+    setPointAdjustments((prev) => prev.filter((x) => x.id !== a.id));
+    addLog("Xoá điều chỉnh điểm tích luỹ", `${a.phone} · ${a.amount > 0 ? "+" : ""}${a.amount} điểm`);
+  };
 
   const openNew = () => { setForm({ code: nextCustomerCode(customers), name: "", phone: "", contactPerson: "", email: "", taxCode: "", province: "", ward: "", addressDetail: "", note: "", group: "retail", representativeName: "", representativeTitle: "", assignedTo: isAdmin ? "" : currentUser.fullName }); setEditing({}); };
   const openEdit = (c) => { setForm({ ...c }); setEditing(c); };
@@ -6837,7 +6869,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
               {viewingCustomer.note && <p className="sm:col-span-2"><span className="opacity-50">Ghi chú: </span>{viewingCustomer.note}</p>}
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
+            <div className={"grid grid-cols-2 gap-2 mb-5 " + (loyaltyOn ? "sm:grid-cols-5" : "sm:grid-cols-4")}>
               <div className="p-3 rounded-sm text-center" style={{ border: `1px solid ${LINE}` }}>
                 <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">Tổng chi tiêu</p>
                 <p className="text-sm font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{vnd(s.totalSpent)}</p>
@@ -6854,7 +6886,56 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
                 <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">Mua gần nhất</p>
                 <p className="text-sm font-semibold" style={{ color: INK }}>{s.lastOrderAt ? new Date(s.lastOrderAt).toLocaleDateString("vi-VN") : "—"}</p>
               </div>
+              {loyaltyOn && (() => {
+                const pts = pointsOf(viewingCustomer);
+                return (
+                  <div className="p-3 rounded-sm text-center relative" style={{ border: `1px solid ${LINE}` }}>
+                    <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">Điểm tích luỹ</p>
+                    <p className="text-sm font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: BRASS }}>{pts.points}</p>
+                    {isAdmin && (
+                      <button onClick={() => setAdjustOpen((v) => !v)} className="absolute top-1 right-1 p-1 rounded-sm hover:bg-black/5" title="Điều chỉnh điểm" style={{ opacity: 0.5 }}>
+                        <Pencil size={11} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
+
+            {loyaltyOn && isAdmin && adjustOpen && (() => {
+              const pts = pointsOf(viewingCustomer);
+              const history = (pointAdjustments || []).filter((a) => normalizePhone(a.phone) === normalizePhone(viewingCustomer.phone));
+              return (
+                <div className="mb-5 p-3 rounded-sm space-y-3" style={{ border: `1px solid ${LINE}`, background: PAPER }}>
+                  <p className="text-xs opacity-60">
+                    Điểm tự tính từ đơn hàng: <b>{pts.fromOrders}</b> · Điểm điều chỉnh tay: <b>{pts.fromAdjustments}</b>
+                  </p>
+                  <div className="flex gap-2 flex-wrap items-end">
+                    <label className="text-xs">
+                      <span className="block opacity-60 mb-1">Số điểm (+/-)</span>
+                      <input type="number" value={adjustAmount} onChange={(e) => setAdjustAmount(e.target.value)} placeholder="VD: 50 hoặc -20" className="border rounded-sm py-1.5 px-2 text-sm w-32" style={{ borderColor: LINE }} />
+                    </label>
+                    <label className="text-xs flex-1 min-w-[200px]">
+                      <span className="block opacity-60 mb-1">Lý do</span>
+                      <input value={adjustReason} onChange={(e) => setAdjustReason(e.target.value)} placeholder="VD: Tặng điểm sự kiện khai trương" className="border rounded-sm py-1.5 px-2 text-sm w-full" style={{ borderColor: LINE }} />
+                    </label>
+                    <button onClick={() => submitAdjust(viewingCustomer)} className="px-3 py-1.5 rounded-sm text-sm text-white" style={{ background: INK }}>Lưu</button>
+                  </div>
+                  {history.length > 0 && (
+                    <div className="space-y-1 pt-2" style={{ borderTop: `1px dashed ${LINE}` }}>
+                      {history.map((a) => (
+                        <div key={a.id} className="flex items-center gap-2 text-xs">
+                          <span style={{ color: a.amount > 0 ? FOREST : RUST, fontFamily: "'IBM Plex Mono', monospace" }}>{a.amount > 0 ? "+" : ""}{a.amount}</span>
+                          <span className="opacity-70">{a.reason}</span>
+                          <span className="opacity-40">· {new Date(a.createdAt).toLocaleDateString("vi-VN")} · {a.createdBy}</span>
+                          <button onClick={() => removeAdjust(a)} className="ml-auto opacity-40 hover:opacity-100" title="Xoá"><X size={12} /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             <div className="flex gap-2 mb-4" style={{ borderBottom: `1px solid ${LINE}` }}>
               <button onClick={() => setDetailTab("orders")} className="px-3 py-2 text-sm -mb-px" style={{ color: detailTab === "orders" ? BLUE : INK, opacity: detailTab === "orders" ? 1 : 0.55, borderBottom: detailTab === "orders" ? `2px solid ${BLUE}` : "2px solid transparent" }}>Lịch sử mua hàng</button>
@@ -13411,6 +13492,8 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
   }));
   const setBank = (k, v) => setWebConfig((x) => ({ ...x, SITE: { ...(x.SITE || {}), bank: { ...((x.SITE || {}).bank || {}), [k]: v } } }));
   const setFlash = (k, v) => setWebConfig((x) => ({ ...x, FLASH_SALE: { ...(x.FLASH_SALE || {}), [k]: v } }));
+  const LOY = c.LOYALTY || DEFAULT_LOYALTY;
+  const setLoyalty = (k, v) => setWebConfig((x) => ({ ...x, LOYALTY: { ...DEFAULT_LOYALTY, ...(x.LOYALTY || {}), [k]: v } }));
   const setPoster = (key, k, v) => setWebConfig((x) => {
     const hp = { ...(x.HOME_POSTERS || {}) };
     hp[key] = { ...(hp[key] || {}), [k]: v };
@@ -13487,6 +13570,30 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
           <Field label="Chủ tài khoản">{ip(bank.holder, (v) => setBank("holder", v), "CÔNG TY TNHH …")}</Field>
           <Field label="Chi nhánh">{ip(bank.branch, (v) => setBank("branch", v), "PGD Lý Thường Kiệt")}</Field>
         </div>
+      </section>
+
+      <section>
+        <h3 className="font-medium mb-3" style={{ color: INK }}>Điểm tích luỹ khách hàng</h3>
+        <label className="flex items-center gap-2 text-sm mb-3">
+          <input type="checkbox" checked={!!LOY.enabled} onChange={(e) => setLoyalty("enabled", e.target.checked)} />
+          Bật tích điểm — cộng theo số điện thoại đặt hàng, tính tự động từ đơn "Hoàn thành" (không tính đơn đang xử lý/đã huỷ)
+        </label>
+        {LOY.enabled && (
+          <div className="grid sm:grid-cols-2 gap-4">
+            <Field label="Tỷ lệ tích điểm" hint="Cứ chi số tiền này (sau chiết khấu, chưa gồm phí ship) thì được 1 điểm">
+              <div className="flex items-center gap-2">
+                <MoneyInput className={inputCls} style={{ borderColor: LINE }} value={LOY.rateVnd} onChange={(v) => setLoyalty("rateVnd", v)} />
+                <span className="text-xs opacity-60 whitespace-nowrap">đ = 1 điểm</span>
+              </div>
+            </Field>
+            <Field label="Giá trị đơn tối thiểu để tích điểm" hint="Đơn nhỏ hơn mức này sẽ không được tích điểm">
+              <MoneyInput className={inputCls} style={{ borderColor: LINE }} value={LOY.minOrderValue} onChange={(v) => setLoyalty("minOrderValue", v)} />
+            </Field>
+          </div>
+        )}
+        <p className="text-xs opacity-50 mt-2">
+          Khách xem điểm tại trang "Điểm tích luỹ" trên web (tra theo SĐT). Admin xem/điều chỉnh tay điểm của từng khách trong mục Khách hàng.
+        </p>
       </section>
 
       <section>
@@ -13749,6 +13856,9 @@ export default function SalesManager() {
   const [activityLog, setActivityLog] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [quotations, setQuotations] = useState([]);
+  // Sổ điều chỉnh tay điểm tích luỹ (tặng thêm/trừ bớt ngoài điểm tự tính từ đơn hàng) — mỗi dòng:
+  // { id, phone, amount (+/-), reason, createdAt, createdBy }. Xem src/lib/loyalty.js.
+  const [pointAdjustments, setPointAdjustments] = useState([]);
   const [webConfig, setWebConfig] = useState({}); // { SITE, FLASH_SALE, HOME_POSTERS, ... } — ghi đè cấu hình web khách
   const [navTarget, setNavTarget] = useState(null); // { type: 'order'|'po'|'product', id }
   // Điều hướng nhanh tới đúng đơn bán/đơn nhập từ mã số phiếu (dùng ở mọi nơi hiển thị mã đơn: lịch sử tồn kho, lịch sử khách hàng...).
@@ -13804,6 +13914,7 @@ export default function SalesManager() {
           setActivityLog((data.activityLog || []).map(normalizeLog));
           setNotifications((data.notifications || []).map(normalizeNotif));
           setQuotations((data.quotations || []).map(normalizeQuote));
+          setPointAdjustments((data.pointAdjustments || []).map(normalizePointAdjustment));
           setWebConfig(data.webConfig && typeof data.webConfig === "object" ? data.webConfig : {});
           setPrintSettings(normalizePrintSettings(data.printSettings));
           const rawAccs = (data.accounts && data.accounts.length > 0) ? data.accounts.map(normalizeAccount) : seedAccounts();
@@ -13850,9 +13961,9 @@ export default function SalesManager() {
 
   useEffect(() => {
     if (!loaded) return;
-    const t = setTimeout(() => { saveData({ products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, parcelLabels, plans, accounts, activityLog, notifications, printSettings, quotations, webConfig, session: { userId: currentUserId } }); }, 400);
+    const t = setTimeout(() => { saveData({ products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, parcelLabels, plans, accounts, activityLog, notifications, printSettings, quotations, pointAdjustments, webConfig, session: { userId: currentUserId } }); }, 400);
     return () => clearTimeout(t);
-  }, [products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, parcelLabels, plans, accounts, activityLog, notifications, printSettings, quotations, webConfig, currentUserId, loaded]);
+  }, [products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, parcelLabels, plans, accounts, activityLog, notifications, printSettings, quotations, pointAdjustments, webConfig, currentUserId, loaded]);
 
   // Tự kéo đơn hàng mới từ website khách về (khách đặt trên web ghi thẳng vào blob chung).
   // 30s/lần, CHỈ THÊM đơn chưa có (không đụng đơn đang sửa) — hết cảnh phải F5 mới thấy đơn web.
@@ -14016,7 +14127,7 @@ export default function SalesManager() {
     _backup: { app: "hilitek", version: STORAGE_KEY, at: new Date().toISOString(), by: currentUser?.username || "" },
     products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes,
     warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, parcelLabels, plans, accounts,
-    activityLog, notifications, printSettings, quotations, webConfig,
+    activityLog, notifications, printSettings, quotations, pointAdjustments, webConfig,
   });
   const downloadBackup = () => {
     const blob = new Blob([JSON.stringify(buildSnapshot(), null, 2)], { type: "application/json" });
@@ -14105,7 +14216,7 @@ export default function SalesManager() {
             {tab === "quotes" && <Quotations quotations={quotations} setQuotations={setQuotations} orders={orders} setOrders={setOrders} products={products} setProducts={setProducts} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} brands={brands} />}
             {tab === "orders" && <Orders orders={orders} setOrders={setOrders} products={products} setProducts={setProducts} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} focusOrderId={tab === "orders" ? navTarget?.type === "order" ? navTarget.id : null : null} initialFilterStatus={tab === "orders" && navTarget?.type === "orders-filter" ? navTarget.status : null} onFocusHandled={() => setNavTarget(null)} printSettings={printSettings} setPrintSettings={setPrintSettings} />}
             {tab === "shipping" && roleTabIds.includes("shipping") && <Shipping shippingTickets={shippingTickets} setShippingTickets={setShippingTickets} parcelLabels={parcelLabels} setParcelLabels={setParcelLabels} orders={orders} customers={customers} currentUser={currentUser} addLog={addLog} />}
-            {tab === "customers" && <Customers customers={customers} setCustomers={setCustomers} orders={orders} products={products} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} employeeNames={employeeNames} />}
+            {tab === "customers" && <Customers customers={customers} setCustomers={setCustomers} orders={orders} products={products} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} employeeNames={employeeNames} webConfig={webConfig} pointAdjustments={pointAdjustments} setPointAdjustments={setPointAdjustments} />}
             {tab === "suppliers" && <Suppliers suppliers={suppliers} setSuppliers={setSuppliers} purchaseOrders={purchaseOrders} addLog={addLog} goToDoc={goToDoc} navTarget={tab === "suppliers" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} />}
             {tab === "plans" && roleTabIds.includes("plans") && <Plans plans={plans} setPlans={setPlans} orders={orders} purchaseOrders={purchaseOrders} products={products} employeeNames={employeeNames} />}
             {tab === "reports" && roleTabIds.includes("reports") && <Reports orders={orders} products={products} customers={customers} accounts={accounts} purchaseOrders={purchaseOrders} warrantyTickets={warrantyTickets} />}

@@ -100,6 +100,9 @@ export const FEATURES = {
   warrantyLookup: true,
 };
 
+/** Điểm tích luỹ — chủ shop bật/tắt và chỉnh tỷ lệ trong "Cấu hình web" (ghi đè qua applyWebConfig). */
+export const LOYALTY = { enabled: false, rateVnd: 10000, minOrderValue: 0 };
+
 /** Ngưỡng để gắn nhãn "Sắp hết" trên thẻ sản phẩm. */
 export const LOW_STOCK_THRESHOLD = 5;
 
