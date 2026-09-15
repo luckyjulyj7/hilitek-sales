@@ -2514,10 +2514,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                         {isAdmin && !p.isService && <button onClick={() => openIO(p, "in")} title="Nhập kho" className="rounded-sm hover:bg-black/5" style={{ color: FOREST, padding: 4 }}><ArrowDownToLine size={13} /></button>}
                         {!isCtv && !p.isService && <button onClick={() => openIO(p, "out")} title="Xuất kho" className="rounded-sm hover:bg-black/5" style={{ color: RUST, padding: 4 }}><ArrowUpFromLine size={13} /></button>}
                         {isAdmin && (
-                          <>
-                            <button onClick={() => openEdit(p)} title="Sửa" className="rounded-sm hover:bg-black/5" style={{ opacity: 0.6, padding: 4 }}><Pencil size={13} /></button>
-                            <button onClick={() => removeProduct(p.id)} title="Xoá" className="rounded-sm hover:bg-black/5" style={{ color: RUST, opacity: 0.6, padding: 4 }}><Trash2 size={13} /></button>
-                          </>
+                          <button onClick={() => openEdit(p)} title="Sửa" className="rounded-sm hover:bg-black/5" style={{ opacity: 0.6, padding: 4 }}><Pencil size={13} /></button>
                         )}
                       </div>
                     </td>
@@ -2650,6 +2647,20 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
               {!isCtv && <button onClick={() => openIOFromDetail(viewingProduct, "out")} className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm text-white" style={{ background: RUST }}><ArrowUpFromLine size={14} /> Xuất kho</button>}
               {isAdmin && (
                 <button onClick={() => openEditFromDetail(viewingProduct)} className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm border" style={{ borderColor: LINE, color: INK }}><Pencil size={14} /> Sửa thông tin</button>
+              )}
+              {isAdmin && (
+                <button
+                  onClick={() => {
+                    if (confirm(`Xoá sản phẩm "${viewingProduct.name}"? Không thể hoàn tác.`)) {
+                      removeProduct(viewingProduct.id);
+                      setViewingId(null);
+                    }
+                  }}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm border"
+                  style={{ borderColor: RUST, color: RUST }}
+                >
+                  <Trash2 size={14} /> Xoá sản phẩm
+                </button>
               )}
             </div>
 
