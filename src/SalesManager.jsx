@@ -13546,7 +13546,7 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
       </div>
 
       <section className="p-4 rounded-sm" style={{ border: `2px solid ${LINE}` }}>
-        <h3 className="font-medium mb-3" style={{ color: INK }}>Liên hệ</h3>
+        <h3 className="font-bold mb-3" style={{ color: RUST }}>Liên hệ</h3>
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="Hotline (hiển thị)">{ip(SITE.phone, (v) => setSite("phone", v), "0869 196 079")}</Field>
           <Field label="Hotline (chỉ số, cho nút gọi)">{ip(SITE.phoneRaw, (v) => setSite("phoneRaw", v), "0869196079")}</Field>
@@ -13563,7 +13563,7 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
       </section>
 
       <section className="p-4 rounded-sm" style={{ border: `2px solid ${LINE}` }}>
-        <h3 className="font-medium mb-3" style={{ color: INK }}>Tài khoản ngân hàng</h3>
+        <h3 className="font-bold mb-3" style={{ color: RUST }}>Tài khoản ngân hàng</h3>
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="Ngân hàng">{ip(bank.name, (v) => setBank("name", v), "ACB (Á Châu)")}</Field>
           <Field label="Số tài khoản">{ip(bank.accountNumber, (v) => setBank("accountNumber", v), "19551097")}</Field>
@@ -13573,7 +13573,7 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
       </section>
 
       <section className="p-4 rounded-sm" style={{ border: `2px solid ${LINE}` }}>
-        <h3 className="font-medium mb-3" style={{ color: INK }}>Điểm tích luỹ khách hàng</h3>
+        <h3 className="font-bold mb-3" style={{ color: RUST }}>Điểm tích luỹ khách hàng</h3>
         <label className="flex items-center gap-2 text-sm mb-3">
           <input type="checkbox" checked={!!LOY.enabled} onChange={(e) => setLoyalty("enabled", e.target.checked)} />
           Bật tích điểm — cộng theo số điện thoại đặt hàng, tính tự động từ đơn "Hoàn thành" (không tính đơn đang xử lý/đã huỷ)
@@ -13597,17 +13597,17 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
       </section>
 
       <section className="p-4 rounded-sm" style={{ border: `2px solid ${LINE}` }}>
-        <h3 className="font-medium mb-3" style={{ color: INK }}>Mã giảm giá <span className="text-xs opacity-50">(khách nhập ở trang giỏ hàng → chiết khấu đơn)</span></h3>
+        <h3 className="font-bold mb-3" style={{ color: RUST }}>Mã giảm giá <span className="text-xs opacity-50">(khách nhập ở trang giỏ hàng → chiết khấu đơn)</span></h3>
         <CouponsEditor webConfig={webConfig} setWebConfig={setWebConfig} />
       </section>
 
       <section className="p-4 rounded-sm" style={{ border: `2px solid ${LINE}` }}>
-        <h3 className="font-medium mb-3" style={{ color: INK }}>Danh mục sản phẩm web (menu)</h3>
+        <h3 className="font-bold mb-3" style={{ color: RUST }}>Danh mục sản phẩm web (menu)</h3>
         <WebMenuEditor webConfig={webConfig} setWebConfig={setWebConfig} setProducts={setProducts} products={products} />
       </section>
 
       <section className="p-4 rounded-sm" style={{ border: `2px solid ${LINE}` }}>
-        <h3 className="font-medium mb-3" style={{ color: INK }}>Flash Sale <span className="text-xs opacity-50">(khối nổi bật dưới dải đếm ngược — viền đỏ, nhãn ⚡)</span></h3>
+        <h3 className="font-bold mb-3" style={{ color: RUST }}>Flash Sale <span className="text-xs opacity-50">(khối nổi bật dưới dải đếm ngược — viền đỏ, nhãn ⚡)</span></h3>
         <label className="flex items-center gap-2 text-sm mb-3">
           <input type="checkbox" checked={FS.enabled !== false} onChange={(e) => setFlash("enabled", e.target.checked)} /> Bật khối Flash Sale trên trang chủ
         </label>
@@ -13638,17 +13638,17 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
       </section>
 
       <section className="p-4 rounded-sm" style={{ border: `2px solid ${LINE}` }}>
-        <h3 className="font-medium mb-3" style={{ color: INK }}>Khối sản phẩm trang chủ</h3>
+        <h3 className="font-bold mb-3" style={{ color: RUST }}>Khối sản phẩm trang chủ</h3>
         <HomeSectionsEditor webConfig={webConfig} setWebConfig={setWebConfig} products={products} />
       </section>
 
       <section className="p-4 rounded-sm" style={{ border: `2px solid ${LINE}` }}>
-        <h3 className="font-medium mb-3" style={{ color: INK }}>Trang nội dung (landing)</h3>
+        <h3 className="font-bold mb-3" style={{ color: RUST }}>Trang nội dung (landing)</h3>
         <LandingsEditor webConfig={webConfig} setWebConfig={setWebConfig} />
       </section>
 
       <section className="p-4 rounded-sm" style={{ border: `2px solid ${LINE}` }}>
-        <h3 className="font-medium mb-3" style={{ color: INK }}>Poster / banner trang chủ (URL ảnh + link)</h3>
+        <h3 className="font-bold mb-3" style={{ color: RUST }}>Poster / banner trang chủ (URL ảnh + link)</h3>
         <p className="text-xs opacity-50 mb-3">
           Ảnh: tải lên host bất kỳ hoặc để trong <code>public/posters/</code> rồi điền đường dẫn (vd <code>/posters/hero.jpg</code>).<br />
           Ô "link" nhận: sản phẩm <code>/san-pham/&lt;slug&gt;</code> · danh mục <code>/danh-muc?group=…</code> · web ngoài <code>https://…</code> · hoặc trang nội dung <code>/trang/&lt;slug&gt;</code> (bấm vào ô sẽ gợi ý sẵn các trang đã tạo ở trên).
@@ -13706,7 +13706,7 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
       </section>
 
       <section className="p-4 rounded-sm" style={{ border: `2px solid ${LINE}` }}>
-        <h3 className="font-medium mb-3" style={{ color: INK }}>Trang chính sách</h3>
+        <h3 className="font-bold mb-3" style={{ color: RUST }}>Trang chính sách</h3>
         <div className="space-y-2">
           {WEB_PAGE_KEYS.map(([k, l]) => (
             <WebPageEditor key={k} pageKey={k} label={l} webConfig={webConfig} setWebConfig={setWebConfig} />
@@ -13715,7 +13715,7 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
       </section>
 
       <section className="p-4 rounded-sm" style={{ border: `2px solid ${LINE}` }}>
-        <h3 className="font-medium mb-3" style={{ color: INK }}>Kho ảnh (Supabase Storage)</h3>
+        <h3 className="font-bold mb-3" style={{ color: RUST }}>Kho ảnh (Supabase Storage)</h3>
         <MediaCleanupPanel />
       </section>
 
