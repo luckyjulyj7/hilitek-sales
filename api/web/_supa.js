@@ -196,18 +196,7 @@ export function publicProduct(p, { detail = false } = {}) {
   return out;
 }
 
-/**
- * Tên gốc của 1 phiên bản, bỏ hậu tố "- Đen"/"- Trắng, M"... mà admin tự sinh khi tạo hàng loạt
- * phiên bản (xem SalesManager.jsx: name = `${form.name} - ${label}`, label = giá trị các thuộc
- * tính nối bằng ", "). Dùng để hiện 1 tên chung cho cả nhóm phiên bản trên web.
- */
-export function baseVariantName(p) {
-  const attrs = p && p.variantAttrs;
-  const name = (p && p.name) || "";
-  if (!attrs || typeof attrs !== "object") return name;
-  const suffix = " - " + Object.values(attrs).join(", ");
-  return name.endsWith(suffix) ? name.slice(0, -suffix.length) : name;
-}
+export { baseVariantName } from "../../src/lib/variants.js";
 
 /** Danh sách sản phẩm đã bật "Đăng web" (web.published). */
 export function publishedProducts(state) {

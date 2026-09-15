@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Package, ShoppingCart, Users, BarChart3,
   Plus, Trash2, Pencil, X, Search, Store, Globe,
   TrendingUp, AlertTriangle, Loader2, ChevronDown, ChevronRight, ChevronLeft, ChevronUp,
-  ArrowDownToLine, ArrowUpFromLine, Barcode, ImagePlus, ImageOff, Check, Printer, RotateCcw, KeyRound, LogOut, Eye, EyeOff, Filter, Target, History, ShieldCheck, XCircle, Wallet, PackageCheck, Truck, Clock, Bell, FileSpreadsheet, FileText, MapPin, UserCircle, Crown, Link2 as LinkIcon, Copy, Wand2, Bold, Italic, Heading1, Heading2, Heading3, List, Sparkles, Save
+  ArrowDownToLine, ArrowUpFromLine, Barcode, ImagePlus, ImageOff, Check, Printer, RotateCcw, KeyRound, LogOut, Eye, EyeOff, Filter, Target, History, ShieldCheck, XCircle, Wallet, PackageCheck, Truck, Clock, Bell, FileSpreadsheet, FileText, MapPin, UserCircle, Crown, Link2 as LinkIcon, Copy, Wand2, Bold, Italic, Heading1, Heading2, Heading3, List, Sparkles, Save, Layers
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -17,6 +17,7 @@ import { GROUP_ICON_NAMES, groupIcon as webGroupIcon } from "./storefront/compon
 import { uploadProductImage, rehostExternalImage, toDirectImageUrl } from "./lib/mediaUpload.js";
 import { SUPABASE_ANON_KEY } from "./lib/supabaseStorage.js";
 import { pointsForPhone, normalizePhone, DEFAULT_LOYALTY } from "./lib/loyalty.js";
+import { baseVariantName } from "./lib/variants.js";
 
 // Xuất 1 hoặc nhiều bảng dữ liệu ra 1 file Excel (.xlsx), mỗi bảng là 1 sheet riêng.
 function exportExcel(filename, sheets) {
@@ -2052,6 +2053,8 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
   const [filterVat, setFilterVat] = useState("");
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState(new Set());
+  const [mergeOpen, setMergeOpen] = useState(false);
   const [zoomImage, setZoomImage] = useState(null); // { src, alt } — ảnh đang phóng to
   const [managingCategories, setManagingCategories] = useState(false);
   const [newCategoryInput, setNewCategoryInput] = useState("");
@@ -2156,6 +2159,22 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
     }));
     addLog("Sửa hàng loạt sản phẩm", `${count} sản phẩm · ${Object.entries(bulkForm).filter(([, v]) => v.on).map(([k]) => k).join(", ")}`);
     setBulkEditOpen(false);
+    setSelectedIds(new Set());
+  };
+
+  const toggleGroup = (gid) => setExpandedGroups((prev) => { const n = new Set(prev); n.has(gid) ? n.delete(gid) : n.add(gid); return n; });
+
+  // Gộp các sản phẩm đã chọn (tạo riêng lẻ trước đây, VD từng màu 1 sản phẩm) thành 1 nhóm phiên
+  // bản — gán chung variantGroupId + variantAttrs theo đúng tên attribute + giá trị admin xác nhận,
+  // để từ đây web/danh sách tự gộp lại như sản phẩm tạo qua "Nhiều phiên bản". KHÔNG đổi tên/giá/
+  // kho — chỉ gắn thông tin liên kết.
+  const applyMerge = (attrName, valuesById) => {
+    const gid = uid();
+    setProducts((prev) => prev.map((p) => (
+      valuesById[p.id] != null ? { ...p, variantGroupId: gid, variantAttrs: { [attrName]: valuesById[p.id] } } : p
+    )));
+    addLog("Gộp sản phẩm thành phiên bản", `${Object.keys(valuesById).length} sản phẩm · ${attrName}`);
+    setMergeOpen(false);
     setSelectedIds(new Set());
   };
 
@@ -2451,6 +2470,11 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
               <Pencil size={15} /> Sửa hàng loạt ({selectedIds.size})
             </button>
           )}
+          {isAdmin && selectedIds.size >= 2 && (
+            <button onClick={() => setMergeOpen(true)} title="Gộp các sản phẩm đã chọn (VD từng màu 1 sản phẩm) thành các phiên bản của 1 sản phẩm chung — web/danh sách sẽ tự gộp hiện thị" className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm border whitespace-nowrap" style={{ borderColor: PURPLE, color: PURPLE }}>
+              <Layers size={15} /> Gộp thành phiên bản ({selectedIds.size})
+            </button>
+          )}
           {isAdmin && (
             <button onClick={triggerImportFile} title="Dùng file đã tải từ nút Xuất Excel — thêm dòng mới để tạo sản phẩm, hoặc điền cột (web) của sản phẩm đã có để cập nhật thông tin web hàng loạt" className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm border whitespace-nowrap" style={{ borderColor: BLUE, color: BLUE }}>
               <ArrowUpFromLine size={15} /> Nhập từ Excel
@@ -2513,62 +2537,136 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
             </tr>
           </thead>
           <tbody>
-            {filtered.map((p) => {
-              const stats = productStats(p);
-              return (
-                <tr key={p.id} style={{ borderBottom: `1px dashed ${LINE}` }} className="hover:bg-black/[0.02]">
-                    <td className="px-3 py-3"><input type="checkbox" checked={selectedIds.has(p.id)} onChange={() => toggleSelect(p.id)} /></td>
-                    <td className="px-2 py-3">
-                      <button onClick={() => openProductDetail(p.id)} className="opacity-50 hover:opacity-100" title="Xem chi tiết"><ChevronRight size={15} /></button>
-                    </td>
-                    <td className="px-2 py-3">
-                      {p.image ? (
-                        <img src={p.image} alt={p.name} onClick={() => setZoomImage({ images: [{ src: p.image, alt: p.name }, ...(p.images || []).map((im, i) => ({ src: im, alt: `${p.name} — ảnh phụ ${i + 1}` }))], index: 0 })} className="w-9 h-9 object-cover rounded-sm cursor-zoom-in" style={{ border: `1px solid ${LINE}` }} />
-                      ) : (
-                        <div className="w-9 h-9 rounded-sm flex items-center justify-center" style={{ background: PAPER, border: `1px dashed ${LINE}` }}>
-                          <ImageOff size={13} className="opacity-30" />
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-3 py-3 font-medium">
-                      <button onClick={() => openProductDetail(p.id)} className="hover:underline" style={{ fontFamily: "'IBM Plex Mono', monospace", color: BLUE }}>{p.code}</button>
-                    </td>
-                    <td className="px-3 py-3 opacity-70 whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.sku || "—"}</td>
-                    <td className="px-3 py-3" style={{ color: INK, minWidth: 260 }}>
-                      <button onClick={() => openProductDetail(p.id)} className="text-left hover:underline">{p.name}</button>
-                      <div className="flex gap-1.5 mt-1 flex-wrap">
-                        {p.isService && <span className="inline-block text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${BLUE}1A`, color: BLUE }}>Dịch vụ</span>}
-                        {p.hasSeries && <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${BLUE}1A`, color: BLUE }}><Barcode size={10} /> Series</span>}
-                        {p.vat && <span className="inline-block text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${BRASS}1A`, color: BRASS }}>{VAT_OPTIONS.find((v) => v.id === p.vat)?.label || p.vat}</span>}
-                        {p.variantAttrs && <span className="inline-block text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${PURPLE}1A`, color: PURPLE }}>{Object.values(p.variantAttrs).join(" / ")}</span>}
-                      </div>
-                    </td>
-                    <td className="px-2 py-3 opacity-70 whitespace-nowrap">{p.unit}</td>
-                    {p.isService ? (
-                      <td colSpan={3} className="px-2 py-3 text-center opacity-40 text-xs">— không quản lý tồn kho —</td>
-                    ) : (<>
-                      <td className="px-2 py-3 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.openingQty}</td>
-                      <td className="px-2 py-3 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace", color: FOREST }}>+{stats.importedQty}</td>
-                      <td className="px-2 py-3 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace", color: RUST }}>-{stats.exportedQty}</td>
-                    </>)}
-                    <td className="px-2 py-3 text-right font-medium whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: stats.closingQty < 0 ? "#fff" : (stats.closingQty <= (p.minStockLevel ?? 5) ? RUST : INK) }}>
-                      {p.isService ? "—" : stats.closingQty < 0 ? (
-                        <span className="px-1.5 py-0.5 rounded-sm" style={{ background: RUST }}>{stats.closingQty}</span>
-                      ) : stats.closingQty}
-                    </td>
-                    {isAdmin && <td className="px-2 py-3 text-right whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.isService ? "—" : vnd(stats.avgCost)}</td>}
-                    <td className="px-2 py-3">
-                      <div style={{ display: "grid", gridTemplateColumns: "auto auto", gap: 2, justifyContent: "end", marginLeft: "auto", width: "fit-content" }}>
-                        {isAdmin && !p.isService && <button onClick={() => openIO(p, "in")} title="Nhập kho" className="rounded-sm hover:bg-black/5" style={{ color: FOREST, padding: 4 }}><ArrowDownToLine size={13} /></button>}
-                        {!isCtv && !p.isService && <button onClick={() => openIO(p, "out")} title="Xuất kho" className="rounded-sm hover:bg-black/5" style={{ color: RUST, padding: 4 }}><ArrowUpFromLine size={13} /></button>}
-                        {isAdmin && (
-                          <button onClick={() => openEdit(p)} title="Sửa" className="rounded-sm hover:bg-black/5" style={{ opacity: 0.6, padding: 4 }}><Pencil size={13} /></button>
+            {(() => {
+              // Gom các phiên bản (variantGroupId) lại thành 1 dòng đại diện — bấm mở ra mới
+              // hiện từng phiên bản riêng để thao tác (tồn kho/giá/sửa vẫn theo đúng phiên bản đó).
+              const seenGroups = new Set();
+              const rows = [];
+              filtered.forEach((p) => {
+                if (!p.variantGroupId) { rows.push({ type: "single", p }); return; }
+                if (seenGroups.has(p.variantGroupId)) {
+                  if (expandedGroups.has(p.variantGroupId)) rows.push({ type: "member", p });
+                  return;
+                }
+                seenGroups.add(p.variantGroupId);
+                const members = filtered.filter((x) => x.variantGroupId === p.variantGroupId);
+                rows.push({ type: "groupHead", gid: p.variantGroupId, members });
+                if (expandedGroups.has(p.variantGroupId)) members.forEach((m) => rows.push({ type: "member", p: m }));
+              });
+              return rows.map((r) => {
+                if (r.type === "groupHead") {
+                  const { gid, members } = r;
+                  const rep = members[0];
+                  const isService = members.every((m) => m.isService);
+                  const groupStats = members.map((m) => productStats(m));
+                  const openingSum = members.reduce((s, m) => s + (Number(m.openingQty) || 0), 0);
+                  const importedSum = groupStats.reduce((s, st) => s + st.importedQty, 0);
+                  const exportedSum = groupStats.reduce((s, st) => s + st.exportedQty, 0);
+                  const closingSum = groupStats.reduce((s, st) => s + st.closingQty, 0);
+                  const sameCost = members.every((m) => m.costPrice === rep.costPrice);
+                  const expanded = expandedGroups.has(gid);
+                  const allSelected = members.every((m) => selectedIds.has(m.id));
+                  return (
+                    <tr key={gid} style={{ borderBottom: `1px dashed ${LINE}`, background: `${PURPLE}0D` }} className="hover:bg-black/[0.02]">
+                      <td className="px-3 py-3">
+                        <input type="checkbox" checked={allSelected} onChange={() => setSelectedIds((prev) => { const n = new Set(prev); members.forEach((m) => (allSelected ? n.delete(m.id) : n.add(m.id))); return n; })} />
+                      </td>
+                      <td className="px-2 py-3">
+                        <button onClick={() => toggleGroup(gid)} title={expanded ? "Thu gọn" : "Mở rộng"} className="opacity-60 hover:opacity-100">
+                          <ChevronDown size={15} style={{ transform: expanded ? "none" : "rotate(-90deg)", transition: "transform .15s" }} />
+                        </button>
+                      </td>
+                      <td className="px-2 py-3">
+                        {rep.image ? (
+                          <img src={rep.image} alt={rep.name} className="w-9 h-9 object-cover rounded-sm" style={{ border: `1px solid ${LINE}` }} />
+                        ) : (
+                          <div className="w-9 h-9 rounded-sm flex items-center justify-center" style={{ background: PAPER, border: `1px dashed ${LINE}` }}>
+                            <ImageOff size={13} className="opacity-30" />
+                          </div>
                         )}
-                      </div>
-                    </td>
-                </tr>
-              );
-            })}
+                      </td>
+                      <td className="px-3 py-3 font-medium opacity-50" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{members.length} mã</td>
+                      <td className="px-3 py-3 opacity-30">—</td>
+                      <td className="px-3 py-3" style={{ color: INK, minWidth: 260 }}>
+                        <button onClick={() => toggleGroup(gid)} className="text-left hover:underline font-medium">{baseVariantName(rep)}</button>
+                        <div className="flex gap-1.5 mt-1 flex-wrap">
+                          <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${PURPLE}1A`, color: PURPLE }}><Layers size={10} /> {members.length} phiên bản</span>
+                        </div>
+                      </td>
+                      <td className="px-2 py-3 opacity-70 whitespace-nowrap">{rep.unit}</td>
+                      {isService ? (
+                        <td colSpan={3} className="px-2 py-3 text-center opacity-40 text-xs">— không quản lý tồn kho —</td>
+                      ) : (<>
+                        <td className="px-2 py-3 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{openingSum}</td>
+                        <td className="px-2 py-3 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace", color: FOREST }}>+{importedSum}</td>
+                        <td className="px-2 py-3 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace", color: RUST }}>-{exportedSum}</td>
+                      </>)}
+                      <td className="px-2 py-3 text-right font-medium whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: closingSum < 0 ? RUST : INK }}>
+                        {isService ? "—" : closingSum}
+                      </td>
+                      {isAdmin && <td className="px-2 py-3 text-right whitespace-nowrap opacity-70" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{isService ? "—" : (sameCost ? vnd(rep.costPrice) : "Nhiều giá")}</td>}
+                      <td className="px-2 py-3"></td>
+                    </tr>
+                  );
+                }
+
+                const p = r.p;
+                const stats = productStats(p);
+                return (
+                  <tr key={p.id} style={{ borderBottom: `1px dashed ${LINE}` }} className="hover:bg-black/[0.02]">
+                      <td className="px-3 py-3"><input type="checkbox" checked={selectedIds.has(p.id)} onChange={() => toggleSelect(p.id)} /></td>
+                      <td className="px-2 py-3">
+                        <button onClick={() => openProductDetail(p.id)} className="opacity-50 hover:opacity-100" title="Xem chi tiết"><ChevronRight size={15} /></button>
+                      </td>
+                      <td className="px-2 py-3">
+                        {p.image ? (
+                          <img src={p.image} alt={p.name} onClick={() => setZoomImage({ images: [{ src: p.image, alt: p.name }, ...(p.images || []).map((im, i) => ({ src: im, alt: `${p.name} — ảnh phụ ${i + 1}` }))], index: 0 })} className="w-9 h-9 object-cover rounded-sm cursor-zoom-in" style={{ border: `1px solid ${LINE}` }} />
+                        ) : (
+                          <div className="w-9 h-9 rounded-sm flex items-center justify-center" style={{ background: PAPER, border: `1px dashed ${LINE}` }}>
+                            <ImageOff size={13} className="opacity-30" />
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-3 py-3 font-medium">
+                        <button onClick={() => openProductDetail(p.id)} className="hover:underline" style={{ fontFamily: "'IBM Plex Mono', monospace", color: BLUE }}>{p.code}</button>
+                      </td>
+                      <td className="px-3 py-3 opacity-70 whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.sku || "—"}</td>
+                      <td className="px-3 py-3" style={{ color: INK, minWidth: 260 }}>
+                        <button onClick={() => openProductDetail(p.id)} className="text-left hover:underline">{p.name}</button>
+                        <div className="flex gap-1.5 mt-1 flex-wrap">
+                          {p.isService && <span className="inline-block text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${BLUE}1A`, color: BLUE }}>Dịch vụ</span>}
+                          {p.hasSeries && <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${BLUE}1A`, color: BLUE }}><Barcode size={10} /> Series</span>}
+                          {p.vat && <span className="inline-block text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${BRASS}1A`, color: BRASS }}>{VAT_OPTIONS.find((v) => v.id === p.vat)?.label || p.vat}</span>}
+                          {p.variantAttrs && <span className="inline-block text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${PURPLE}1A`, color: PURPLE }}>{Object.values(p.variantAttrs).join(" / ")}</span>}
+                        </div>
+                      </td>
+                      <td className="px-2 py-3 opacity-70 whitespace-nowrap">{p.unit}</td>
+                      {p.isService ? (
+                        <td colSpan={3} className="px-2 py-3 text-center opacity-40 text-xs">— không quản lý tồn kho —</td>
+                      ) : (<>
+                        <td className="px-2 py-3 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.openingQty}</td>
+                        <td className="px-2 py-3 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace", color: FOREST }}>+{stats.importedQty}</td>
+                        <td className="px-2 py-3 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace", color: RUST }}>-{stats.exportedQty}</td>
+                      </>)}
+                      <td className="px-2 py-3 text-right font-medium whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: stats.closingQty < 0 ? "#fff" : (stats.closingQty <= (p.minStockLevel ?? 5) ? RUST : INK) }}>
+                        {p.isService ? "—" : stats.closingQty < 0 ? (
+                          <span className="px-1.5 py-0.5 rounded-sm" style={{ background: RUST }}>{stats.closingQty}</span>
+                        ) : stats.closingQty}
+                      </td>
+                      {isAdmin && <td className="px-2 py-3 text-right whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.isService ? "—" : vnd(stats.avgCost)}</td>}
+                      <td className="px-2 py-3">
+                        <div style={{ display: "grid", gridTemplateColumns: "auto auto", gap: 2, justifyContent: "end", marginLeft: "auto", width: "fit-content" }}>
+                          {isAdmin && !p.isService && <button onClick={() => openIO(p, "in")} title="Nhập kho" className="rounded-sm hover:bg-black/5" style={{ color: FOREST, padding: 4 }}><ArrowDownToLine size={13} /></button>}
+                          {!isCtv && !p.isService && <button onClick={() => openIO(p, "out")} title="Xuất kho" className="rounded-sm hover:bg-black/5" style={{ color: RUST, padding: 4 }}><ArrowUpFromLine size={13} /></button>}
+                          {isAdmin && (
+                            <button onClick={() => openEdit(p)} title="Sửa" className="rounded-sm hover:bg-black/5" style={{ opacity: 0.6, padding: 4 }}><Pencil size={13} /></button>
+                          )}
+                        </div>
+                      </td>
+                  </tr>
+                );
+              });
+            })()}
             {filtered.length === 0 && <tr><td colSpan={12} className="text-center py-8 opacity-50">Không có sản phẩm nào.</td></tr>}
           </tbody>
         </table>
@@ -3374,6 +3472,14 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           onApply={applyBulkEdit}
         />
       )}
+
+      {mergeOpen && (
+        <MergeVariantsModal
+          products={products.filter((p) => selectedIds.has(p.id))}
+          onClose={() => setMergeOpen(false)}
+          onApply={applyMerge}
+        />
+      )}
     </div>
   );
 }
@@ -3450,6 +3556,59 @@ function BulkEditModal({ count, suppliers, categoryOptions, brandOptions, brandO
         <button onClick={submit} disabled={!anyOn} className="px-4 py-2 rounded-sm text-sm text-white" style={{ background: INK, opacity: anyOn ? 1 : 0.5 }}>
           Áp dụng cho {count} sản phẩm
         </button>
+        <button onClick={onClose} className="text-sm opacity-60 hover:opacity-100">Huỷ</button>
+      </div>
+    </Modal>
+  );
+}
+
+/**
+ * Gộp các sản phẩm đã tạo riêng lẻ (VD mỗi màu 1 sản phẩm, đặt tên "... - Đen"/"... - Trắng")
+ * thành các phiên bản của CÙNG 1 sản phẩm — gán variantGroupId + variantAttrs, để từ đó danh
+ * sách/web tự gộp lại 1 thẻ như sản phẩm tạo qua "Nhiều phiên bản". Không đổi tên/giá/kho.
+ */
+function MergeVariantsModal({ products, onClose, onApply }) {
+  const [attrName, setAttrName] = useState("Màu sắc");
+  const guessValue = (p) => {
+    const parts = p.name.split(" - ");
+    return parts.length > 1 ? parts[parts.length - 1].trim() : "";
+  };
+  const [values, setValues] = useState(() => Object.fromEntries(products.map((p) => [p.id, guessValue(p)])));
+  const setVal = (id, v) => setValues((s) => ({ ...s, [id]: v }));
+  const alreadyGrouped = products.filter((p) => p.variantGroupId);
+
+  const submit = () => {
+    const name = attrName.trim();
+    if (!name) { alert('Nhập tên thuộc tính (VD: "Màu sắc").'); return; }
+    if (!products.every((p) => (values[p.id] || "").trim())) { alert("Điền đủ giá trị cho từng sản phẩm."); return; }
+    const norm = Object.values(values).map((v) => v.trim().toLowerCase());
+    if (new Set(norm).size !== products.length) { alert("Giá trị bị trùng giữa 2 sản phẩm — mỗi sản phẩm cần 1 giá trị khác nhau."); return; }
+    if (alreadyGrouped.length > 0 && !confirm(`${alreadyGrouped.length} sản phẩm đã thuộc 1 nhóm phiên bản khác — gộp tiếp sẽ tách chúng khỏi nhóm cũ. Tiếp tục?`)) return;
+    const valuesById = {};
+    products.forEach((p) => { valuesById[p.id] = values[p.id].trim(); });
+    onApply(name, valuesById);
+  };
+
+  return (
+    <Modal title={`Gộp ${products.length} sản phẩm thành phiên bản`} onClose={onClose} size="lg">
+      <p className="text-xs opacity-60 mb-3">
+        Các sản phẩm này sẽ được coi là phiên bản của cùng 1 sản phẩm (như tạo qua "Nhiều phiên bản")
+        — danh sách và web sẽ tự gộp lại 1 thẻ chung, có nút chọn phiên bản. Không đổi tên/giá/tồn
+        kho hiện tại, chỉ gắn thông tin liên kết.
+      </p>
+      <Field label='Tên thuộc tính khác nhau giữa các phiên bản (VD: "Màu sắc", "Kích cỡ")'>
+        <input value={attrName} onChange={(e) => setAttrName(e.target.value)} className={inputCls} style={{ borderColor: LINE }} />
+      </Field>
+      <div className="mt-3 space-y-2 max-h-[45vh] overflow-y-auto">
+        {products.map((p) => (
+          <div key={p.id} className="flex items-center gap-3 p-2 rounded-sm" style={{ border: `1px solid ${LINE}` }}>
+            <span className="flex-1 text-sm min-w-0 truncate" style={{ color: INK }}>{p.name}</span>
+            <input value={values[p.id] || ""} onChange={(e) => setVal(p.id, e.target.value)} placeholder="Giá trị (VD: Đen)" className="w-40 border rounded-sm py-1.5 px-2 text-sm shrink-0" style={{ borderColor: LINE }} />
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-3 mt-5">
+        <button onClick={submit} className="px-4 py-2 rounded-sm text-sm text-white" style={{ background: INK }}>Gộp thành phiên bản</button>
         <button onClick={onClose} className="text-sm opacity-60 hover:opacity-100">Huỷ</button>
       </div>
     </Modal>
@@ -6483,35 +6642,33 @@ function ProductsSection({ products, setProducts, purchaseOrders, setPurchaseOrd
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navTarget]);
 
-  const tabCount = 1 + (isAdmin ? 2 : 0) + (!isCtv ? 2 : 0);
-
   return (
     <div>
-      <div className={`grid gap-2 mb-5`} style={{ gridTemplateColumns: `repeat(${tabCount}, minmax(0, 1fr))`, maxWidth: tabCount === 1 ? 220 : tabCount * 170 }}>
-        <button onClick={() => setSub("list")} className="px-3.5 py-2.5 rounded-full text-sm border text-center"
+      <div className="flex gap-1.5 mb-5 flex-wrap">
+        <button onClick={() => setSub("list")} className="px-3 py-1.5 rounded-sm text-sm border whitespace-nowrap"
           style={{ borderColor: sub === "list" ? INK : LINE, background: sub === "list" ? INK : "transparent", color: sub === "list" ? "#fff" : INK }}>
           Danh sách sản phẩm
         </button>
         {isAdmin && (
-          <button onClick={() => setSub("purchase")} className="px-3.5 py-2.5 rounded-full text-sm border text-center"
+          <button onClick={() => setSub("purchase")} className="px-3 py-1.5 rounded-sm text-sm border whitespace-nowrap"
             style={{ borderColor: sub === "purchase" ? INK : LINE, background: sub === "purchase" ? INK : "transparent", color: sub === "purchase" ? "#fff" : INK }}>
             Nhập hàng
           </button>
         )}
         {isAdmin && (
-          <button onClick={() => setSub("stocktake")} className="px-3.5 py-2.5 rounded-full text-sm border text-center"
+          <button onClick={() => setSub("stocktake")} className="px-3 py-1.5 rounded-sm text-sm border whitespace-nowrap"
             style={{ borderColor: sub === "stocktake" ? INK : LINE, background: sub === "stocktake" ? INK : "transparent", color: sub === "stocktake" ? "#fff" : INK }}>
             Kiểm kho
           </button>
         )}
         {!isCtv && (
-          <button onClick={() => setSub("warranty")} className="px-3.5 py-2.5 rounded-full text-sm border text-center"
+          <button onClick={() => setSub("warranty")} className="px-3 py-1.5 rounded-sm text-sm border whitespace-nowrap"
             style={{ borderColor: sub === "warranty" ? INK : LINE, background: sub === "warranty" ? INK : "transparent", color: sub === "warranty" ? "#fff" : INK }}>
             Phiếu bảo hành
           </button>
         )}
         {!isCtv && (
-          <button onClick={() => setSub("service")} className="px-3.5 py-2.5 rounded-full text-sm border text-center"
+          <button onClick={() => setSub("service")} className="px-3 py-1.5 rounded-sm text-sm border whitespace-nowrap"
             style={{ borderColor: sub === "service" ? INK : LINE, background: sub === "service" ? INK : "transparent", color: sub === "service" ? "#fff" : INK }}>
             Phiếu dịch vụ
           </button>
@@ -12416,6 +12573,8 @@ function WebProducts({ products, setProducts, categories, brands, addLog, webCon
   const [filterCategory, setFilterCategory] = useState("");
   const [filterBrand, setFilterBrand] = useState("");
   const [editId, setEditId] = useState(null);
+  const [expandedGroups, setExpandedGroups] = useState(new Set());
+  const toggleGroup = (gid) => setExpandedGroups((prev) => { const n = new Set(prev); n.has(gid) ? n.delete(gid) : n.add(gid); return n; });
 
   const categoryOptions = useMemo(() => [...new Set(categories || [])].sort((a, b) => a.localeCompare(b, "vi")), [categories]);
   const brandOptions = useMemo(() => {
@@ -12438,7 +12597,9 @@ function WebProducts({ products, setProducts, categories, brands, addLog, webCon
 
   const patch = (id, fn) => setProducts((prev) => prev.map((p) => (p.id === id ? fn(p) : p)));
   const setWeb = (p, wpatch) => {
-    const shareKeys = ["description", "specsText", "categories"];
+    // Các phiên bản (màu sắc/kích cỡ...) cùng 1 sản phẩm thường dùng chung mô tả, thông số,
+    // danh mục, trạng thái đăng web và giá so sánh — chỉ ảnh là khác nhau từng phiên bản.
+    const shareKeys = ["description", "specsText", "categories", "published", "compareAtPrice"];
     const shared = shareKeys.some((k) => k in wpatch);
     setProducts((prev) => prev.map((x) => {
       if (x.id === p.id) return { ...x, web: normalizeWeb({ ...normalizeWeb(x.web), ...wpatch }) };
@@ -12455,7 +12616,7 @@ function WebProducts({ products, setProducts, categories, brands, addLog, webCon
 
   const editing = editId ? products.find((x) => x.id === editId) : null;
   if (editing) {
-    return <WebProductPage product={editing} products={products} setProducts={setProducts} webCats={webCats} onBack={() => setEditId(null)} addLog={addLog} />;
+    return <WebProductPage product={editing} products={products} setProducts={setProducts} webCats={webCats} onBack={() => setEditId(null)} onSwitch={setEditId} addLog={addLog} />;
   }
 
   return (
@@ -12503,23 +12664,35 @@ function WebProducts({ products, setProducts, categories, brands, addLog, webCon
           </thead>
           <tbody>
             {rows.length === 0 && <tr><td colSpan={7} className="text-center py-8 opacity-50">Không có sản phẩm.</td></tr>}
-            {rows.map((p) => {
-              const st = productStats(p);
-              const vLabel = p.variantAttrs ? Object.values(p.variantAttrs).join(" / ") : "";
-              const on = !!p.web?.published;
-              return (
-                <React.Fragment key={p.id}>
-                  <tr style={{ borderTop: `1px solid ${LINE}`, background: on ? `${BLUE}08` : "#fff" }}>
+            {(() => {
+              // rows đã sắp theo variantGroupId nên các phiên bản luôn đứng cạnh nhau — gộp lại
+              // thành 1 dòng đại diện (mô tả/thông số/trạng thái/giá so sánh đã dùng CHUNG qua
+              // setWeb ở trên), bấm mở ra mới thấy từng phiên bản để sửa ẢNH riêng.
+              const groups = [];
+              const seenGroups = new Set();
+              rows.forEach((p) => {
+                if (!p.variantGroupId) { groups.push({ type: "single", p }); return; }
+                if (seenGroups.has(p.variantGroupId)) return;
+                seenGroups.add(p.variantGroupId);
+                groups.push({ type: "group", gid: p.variantGroupId, members: rows.filter((x) => x.variantGroupId === p.variantGroupId) });
+              });
+
+              const renderRow = (p, indent) => {
+                const st = productStats(p);
+                const vLabel = p.variantAttrs ? Object.values(p.variantAttrs).join(" / ") : "";
+                const on = !!p.web?.published;
+                return (
+                  <tr key={p.id} style={{ borderTop: `1px solid ${LINE}`, background: on ? `${BLUE}08` : "#fff" }}>
                     <td className="px-3 py-2.5">
                       <label className="inline-flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" checked={on} onChange={() => togglePublish(p)} />
                       </label>
                     </td>
-                    <td className="px-3 py-2.5">
+                    <td className="px-3 py-2.5" style={{ paddingLeft: indent ? 32 : undefined }}>
                       <div className="flex items-center gap-2">
                         {p.image && <img src={p.image} alt="" className="w-9 h-9 object-cover rounded-sm" style={{ border: `1px solid ${LINE}` }} />}
                         <div>
-                          <div className="font-medium leading-tight">{p.name}{vLabel && <span className="opacity-50"> — {vLabel}</span>}</div>
+                          <div className="font-medium leading-tight">{indent ? (vLabel || p.name) : p.name}{!indent && vLabel && <span className="opacity-50"> — {vLabel}</span>}</div>
                           <div className="text-[11px] opacity-50" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.sku}</div>
                         </div>
                       </div>
@@ -12543,9 +12716,56 @@ function WebProducts({ products, setProducts, categories, brands, addLog, webCon
                       </button>
                     </td>
                   </tr>
-                </React.Fragment>
-              );
-            })}
+                );
+              };
+
+              return groups.map((g) => {
+                if (g.type === "single") return renderRow(g.p, false);
+                const { gid, members } = g;
+                const rep = members[0];
+                const expanded = expandedGroups.has(gid);
+                const on = members.every((m) => m.web?.published);
+                const stockSum = members.reduce((s, m) => s + productStats(m).closingQty, 0);
+                return (
+                  <React.Fragment key={gid}>
+                    <tr style={{ borderTop: `1px solid ${LINE}`, background: on ? `${BLUE}08` : `${PURPLE}0D` }}>
+                      <td className="px-3 py-2.5">
+                        <label className="inline-flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" checked={on} onChange={() => togglePublish(rep)} />
+                        </label>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => toggleGroup(gid)} className="opacity-60 hover:opacity-100 shrink-0" title={expanded ? "Thu gọn" : "Mở rộng"}>
+                            <ChevronDown size={15} style={{ transform: expanded ? "none" : "rotate(-90deg)", transition: "transform .15s" }} />
+                          </button>
+                          {rep.image && <img src={rep.image} alt="" className="w-9 h-9 object-cover rounded-sm" style={{ border: `1px solid ${LINE}` }} />}
+                          <div>
+                            <div className="font-medium leading-tight">{baseVariantName(rep)}</div>
+                            <div className="text-[11px] mt-0.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${PURPLE}1A`, color: PURPLE }}><Layers size={9} /> {members.length} phiên bản</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5 opacity-70">{rep.category || "—"}</td>
+                      <td className="px-3 py-2.5 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace" }} title="= Giá bán lẻ. Sửa ở tab Sản phẩm & tồn kho.">
+                        {members.every((m) => m.retailPrice === rep.retailPrice) ? vnd(rep.retailPrice) : "Nhiều giá"}
+                      </td>
+                      <td className="px-3 py-2.5 text-right">
+                        <MoneyInput className="text-right border rounded-sm py-1 px-1.5 w-28 text-sm" style={{ borderColor: LINE }}
+                          value={rep.web?.compareAtPrice || ""} onChange={(v) => setWeb(rep, { compareAtPrice: v })} placeholder="—" />
+                      </td>
+                      <td className="px-3 py-2.5 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace", color: stockSum <= 0 ? RUST : INK }}>{stockSum}</td>
+                      <td className="px-3 py-2.5 text-right">
+                        <button onClick={() => setEditId(rep.id)} className="text-xs px-2.5 py-1 rounded-sm border" style={{ borderColor: LINE, color: INK }}>
+                          Sửa
+                        </button>
+                      </td>
+                    </tr>
+                    {expanded && members.map((m) => renderRow(m, true))}
+                  </React.Fragment>
+                );
+              });
+            })()}
           </tbody>
         </table>
       </div>
@@ -12760,9 +12980,11 @@ function FetchFromSupplierUrl({ onApply }) {
  * Trang sửa 1 sản phẩm trên web — bố cục 2 cột kiểu Sapo.
  * Sửa trên bản NHÁP tại chỗ — KHÔNG tự lưu; phải bấm "Lưu" mới ghi vào dữ liệu thật.
  */
-function WebProductPage({ product, products, setProducts, webCats, onBack, addLog }) {
+function WebProductPage({ product, products, setProducts, webCats, onBack, onSwitch, addLog }) {
   const p = product;
-  const shareKeys = ["description", "specsText", "categories", "images", "shortDesc", "promo"];
+  // Các phiên bản (màu sắc/kích cỡ...) cùng 1 sản phẩm dùng CHUNG mô tả/thông số/danh mục/trạng
+  // thái/giá so sánh — KHÔNG đồng bộ "images": mỗi phiên bản có ảnh riêng, đây là điểm khác duy nhất.
+  const shareKeys = ["description", "specsText", "categories", "shortDesc", "promo", "published", "compareAtPrice"];
   const [draft, setDraft] = useState(() => normalizeWeb(product.web));
   const [weightDraft, setWeightDraft] = useState(product.weight ?? 0);
   const [dirty, setDirty] = useState(false);
@@ -12822,10 +13044,39 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, addLo
         <CopyWebInfoButton product={p} products={products} setWeb={setWeb} />
       </div>
 
+      {p.variantGroupId && (() => {
+        const siblings = products.filter((x) => x.variantGroupId === p.variantGroupId);
+        if (siblings.length < 2) return null;
+        const switchTo = (id) => {
+          if (id === p.id) return;
+          if (dirty && !window.confirm("Có thay đổi chưa lưu. Chuyển phiên bản sẽ mất các thay đổi này — tiếp tục?")) return;
+          onSwitch && onSwitch(id);
+        };
+        return (
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
+            <span className="text-xs opacity-60">Phiên bản:</span>
+            {siblings.map((s) => {
+              const label = s.variantAttrs ? Object.values(s.variantAttrs).join(", ") : s.name;
+              const active = s.id === p.id;
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => switchTo(s.id)}
+                  className="text-xs px-3 py-1.5 rounded-sm border"
+                  style={active ? { background: BLUE, borderColor: BLUE, color: "#fff" } : { borderColor: LINE, color: INK }}
+                >
+                  {label || s.name}
+                </button>
+              );
+            })}
+          </div>
+        );
+      })()}
+
       <div className="grid lg:grid-cols-[1fr_320px] gap-5 items-start">
         {/* Cột trái */}
         <div className="space-y-4">
-          {p.variantGroupId && <p className="text-xs p-2 rounded-sm" style={{ background: `${BLUE}0D`, color: BLUE }}>Nội dung · thông số · ảnh · danh mục áp cho tất cả phiên bản cùng nhóm. Giá / SEO / slug riêng từng phiên bản.</p>}
+          {p.variantGroupId && <p className="text-xs p-2 rounded-sm" style={{ background: `${BLUE}0D`, color: BLUE }}>Mô tả · thông số · danh mục · trạng thái đăng web · giá so sánh áp dụng cho TẤT CẢ phiên bản cùng nhóm. Ảnh · giá bán · SEO · slug riêng từng phiên bản.</p>}
 
           <FetchFromSupplierUrl onApply={setWeb} />
 
