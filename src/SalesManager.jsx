@@ -2050,7 +2050,6 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
   const HISTORY_PAGE_SIZE = 20;
   const [filterCategory, setFilterCategory] = useState("");
   const [filterBrand, setFilterBrand] = useState("");
-  const [filterVat, setFilterVat] = useState("");
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState(new Set());
@@ -2087,7 +2086,6 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
     (p) => (p.name.toLowerCase().includes(query.toLowerCase()) || p.code.toLowerCase().includes(query.toLowerCase()))
       && (!filterCategory || p.category === filterCategory)
       && (!filterBrand || p.brand === filterBrand)
-      && (!filterVat || p.vat === filterVat)
   );
   const toggleSelect = (id) => setSelectedIds((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
   const toggleSelectAll = () => setSelectedIds((prev) => (prev.size === filtered.length ? new Set() : new Set(filtered.map((p) => p.id))));
@@ -2455,78 +2453,61 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           </p>
         </div>
       )}
-      <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
-        <div className="relative flex-1 max-w-xs">
+      <div className="flex items-center gap-1.5 mb-5 flex-wrap">
+        <div className="relative flex-1 min-w-[180px] max-w-xs">
           <Search size={15} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50" />
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm theo mã VT hoặc tên…"
-            className="w-full pl-7 pr-2 py-2 text-sm rounded-sm border outline-none" style={{ borderColor: LINE, background: "#fff" }} />
+            className="w-full pl-7 pr-2 py-1.5 text-sm rounded-sm border outline-none" style={{ borderColor: LINE, background: "#fff" }} />
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <button onClick={exportProducts} className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm border whitespace-nowrap" style={{ borderColor: FOREST, color: FOREST }}>
-            <FileSpreadsheet size={15} /> Xuất Excel{selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}
+        <select value={filterCategory} onChange={(e) => { setFilterCategory(e.target.value); if (filterBrand && !brandOptionsOf(e.target.value).includes(filterBrand)) setFilterBrand(""); }} className="border rounded-sm py-1.5 px-2 text-sm shrink-0" style={{ borderColor: LINE, width: 130 }}>
+          <option value="">Nhóm hàng: Tất cả</option>
+          {categoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select value={filterBrand} onChange={(e) => setFilterBrand(e.target.value)} className="border rounded-sm py-1.5 px-2 text-sm shrink-0" style={{ borderColor: LINE, width: 130 }}>
+          <option value="">Nhãn hiệu: Tất cả</option>
+          {(filterCategory ? brandOptionsOf(filterCategory) : brandOptions).map((b) => <option key={b} value={b}>{b}</option>)}
+        </select>
+        {(filterCategory || filterBrand) && (
+          <button onClick={() => { setFilterCategory(""); setFilterBrand(""); }} className="text-xs opacity-50 hover:opacity-100 underline shrink-0">Xoá lọc</button>
+        )}
+        <div className="flex-1" />
+        <button onClick={exportProducts} className="flex items-center gap-1 px-2.5 py-1.5 rounded-sm text-xs border whitespace-nowrap" style={{ borderColor: FOREST, color: FOREST }}>
+          <FileSpreadsheet size={13} /> Xuất Excel{selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}
+        </button>
+        {isAdmin && selectedIds.size > 0 && (
+          <button onClick={() => setBulkEditOpen(true)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-sm text-xs text-white whitespace-nowrap" style={{ background: INK }}>
+            <Pencil size={13} /> Sửa hàng loạt ({selectedIds.size})
           </button>
-          {isAdmin && selectedIds.size > 0 && (
-            <button onClick={() => setBulkEditOpen(true)} className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm text-white whitespace-nowrap" style={{ background: INK }}>
-              <Pencil size={15} /> Sửa hàng loạt ({selectedIds.size})
-            </button>
-          )}
-          {isAdmin && selectedIds.size >= 2 && (
-            <button onClick={() => setMergeOpen(true)} title="Gộp các sản phẩm đã chọn (VD từng màu 1 sản phẩm) thành các phiên bản của 1 sản phẩm chung — web/danh sách sẽ tự gộp hiện thị" className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm border whitespace-nowrap" style={{ borderColor: PURPLE, color: PURPLE }}>
-              <Layers size={15} /> Gộp thành phiên bản ({selectedIds.size})
-            </button>
-          )}
-          {isAdmin && (
-            <button onClick={triggerImportFile} title="Dùng file đã tải từ nút Xuất Excel — thêm dòng mới để tạo sản phẩm, hoặc điền cột (web) của sản phẩm đã có để cập nhật thông tin web hàng loạt" className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm border whitespace-nowrap" style={{ borderColor: BLUE, color: BLUE }}>
-              <ArrowUpFromLine size={15} /> Nhập từ Excel
-            </button>
-          )}
-          <input ref={importFileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleImportFile} />
-          {isAdmin && (
-            <button onClick={() => setManagingCategories(true)} className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm border whitespace-nowrap" style={{ borderColor: LINE, color: INK }}>
-              <Filter size={15} /> Quản lý nhóm hàng
-            </button>
-          )}
-          {isAdmin && (
-            <button onClick={() => setManagingBrands(true)} className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm border whitespace-nowrap" style={{ borderColor: LINE, color: INK }}>
-              <Filter size={15} /> Quản lý nhãn hiệu
-            </button>
-          )}
-          {!isCtv && (
-            <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-sm text-sm text-white whitespace-nowrap" style={{ background: INK }}>
-              <Plus size={15} /> Thêm sản phẩm
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-end gap-2 mb-5">
-        <label className="text-xs" style={{ width: 160 }}>
-          <span className="block opacity-60 mb-1">Nhóm hàng</span>
-          <select value={filterCategory} onChange={(e) => { setFilterCategory(e.target.value); if (filterBrand && !brandOptionsOf(e.target.value).includes(filterBrand)) setFilterBrand(""); }} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
-            <option value="">Tất cả</option>
-            {categoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </label>
-        <label className="text-xs" style={{ width: 160 }}>
-          <span className="block opacity-60 mb-1">Nhãn hiệu</span>
-          <select value={filterBrand} onChange={(e) => setFilterBrand(e.target.value)} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
-            <option value="">Tất cả</option>
-            {(filterCategory ? brandOptionsOf(filterCategory) : brandOptions).map((b) => <option key={b} value={b}>{b}</option>)}
-          </select>
-        </label>
-        <label className="text-xs" style={{ width: 130 }}>
-          <span className="block opacity-60 mb-1">VAT</span>
-          <select value={filterVat} onChange={(e) => setFilterVat(e.target.value)} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
-            <option value="">Tất cả</option>
-            {VAT_OPTIONS.map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}
-          </select>
-        </label>
-        {(filterCategory || filterBrand || filterVat) && (
-          <button onClick={() => { setFilterCategory(""); setFilterBrand(""); setFilterVat(""); }} className="text-xs opacity-50 hover:opacity-100 underline mb-1.5">Xoá lọc</button>
+        )}
+        {isAdmin && selectedIds.size >= 2 && (
+          <button onClick={() => setMergeOpen(true)} title="Gộp các sản phẩm đã chọn (VD từng màu 1 sản phẩm) thành các phiên bản của 1 sản phẩm chung — web/danh sách sẽ tự gộp hiện thị" className="flex items-center gap-1 px-2.5 py-1.5 rounded-sm text-xs border whitespace-nowrap" style={{ borderColor: PURPLE, color: PURPLE }}>
+            <Layers size={13} /> Gộp thành phiên bản ({selectedIds.size})
+          </button>
+        )}
+        {isAdmin && (
+          <button onClick={triggerImportFile} title="Dùng file đã tải từ nút Xuất Excel — thêm dòng mới để tạo sản phẩm, hoặc điền cột (web) của sản phẩm đã có để cập nhật thông tin web hàng loạt" className="flex items-center gap-1 px-2.5 py-1.5 rounded-sm text-xs border whitespace-nowrap" style={{ borderColor: BLUE, color: BLUE }}>
+            <ArrowUpFromLine size={13} /> Nhập từ Excel
+          </button>
+        )}
+        <input ref={importFileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleImportFile} />
+        {isAdmin && (
+          <button onClick={() => setManagingCategories(true)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-sm text-xs border whitespace-nowrap" style={{ borderColor: LINE, color: INK }}>
+            <Filter size={13} /> Quản lý nhóm hàng
+          </button>
+        )}
+        {isAdmin && (
+          <button onClick={() => setManagingBrands(true)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-sm text-xs border whitespace-nowrap" style={{ borderColor: LINE, color: INK }}>
+            <Filter size={13} /> Quản lý nhãn hiệu
+          </button>
+        )}
+        {!isCtv && (
+          <button onClick={openNew} className="flex items-center gap-1 px-3 py-1.5 rounded-sm text-xs text-white whitespace-nowrap" style={{ background: INK }}>
+            <Plus size={13} /> Thêm sản phẩm
+          </button>
         )}
       </div>
 
-      <div className="rounded-sm overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "65vh" }}>
+      <div className="rounded-sm overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 300px)" }}>
         <table className="w-full text-sm" style={{ minWidth: 940 }}>
           <thead className="sticky top-0" style={{ zIndex: 2 }}>
             <tr style={{ borderBottom: `2px solid ${INK}` }}>
@@ -6645,30 +6626,30 @@ function ProductsSection({ products, setProducts, purchaseOrders, setPurchaseOrd
   return (
     <div>
       <div className="flex gap-1.5 mb-5 flex-wrap">
-        <button onClick={() => setSub("list")} className="px-3 py-1.5 rounded-sm text-sm border whitespace-nowrap"
+        <button onClick={() => setSub("list")} className="px-3 py-1.5 rounded-full text-sm border whitespace-nowrap"
           style={{ borderColor: sub === "list" ? INK : LINE, background: sub === "list" ? INK : "transparent", color: sub === "list" ? "#fff" : INK }}>
           Danh sách sản phẩm
         </button>
         {isAdmin && (
-          <button onClick={() => setSub("purchase")} className="px-3 py-1.5 rounded-sm text-sm border whitespace-nowrap"
+          <button onClick={() => setSub("purchase")} className="px-3 py-1.5 rounded-full text-sm border whitespace-nowrap"
             style={{ borderColor: sub === "purchase" ? INK : LINE, background: sub === "purchase" ? INK : "transparent", color: sub === "purchase" ? "#fff" : INK }}>
             Nhập hàng
           </button>
         )}
         {isAdmin && (
-          <button onClick={() => setSub("stocktake")} className="px-3 py-1.5 rounded-sm text-sm border whitespace-nowrap"
+          <button onClick={() => setSub("stocktake")} className="px-3 py-1.5 rounded-full text-sm border whitespace-nowrap"
             style={{ borderColor: sub === "stocktake" ? INK : LINE, background: sub === "stocktake" ? INK : "transparent", color: sub === "stocktake" ? "#fff" : INK }}>
             Kiểm kho
           </button>
         )}
         {!isCtv && (
-          <button onClick={() => setSub("warranty")} className="px-3 py-1.5 rounded-sm text-sm border whitespace-nowrap"
+          <button onClick={() => setSub("warranty")} className="px-3 py-1.5 rounded-full text-sm border whitespace-nowrap"
             style={{ borderColor: sub === "warranty" ? INK : LINE, background: sub === "warranty" ? INK : "transparent", color: sub === "warranty" ? "#fff" : INK }}>
             Phiếu bảo hành
           </button>
         )}
         {!isCtv && (
-          <button onClick={() => setSub("service")} className="px-3 py-1.5 rounded-sm text-sm border whitespace-nowrap"
+          <button onClick={() => setSub("service")} className="px-3 py-1.5 rounded-full text-sm border whitespace-nowrap"
             style={{ borderColor: sub === "service" ? INK : LINE, background: sub === "service" ? INK : "transparent", color: sub === "service" ? "#fff" : INK }}>
             Phiếu dịch vụ
           </button>
