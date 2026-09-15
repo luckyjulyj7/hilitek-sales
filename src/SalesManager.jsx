@@ -2051,6 +2051,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
   const [filterBrand, setFilterBrand] = useState("");
   const [filterVat, setFilterVat] = useState("");
   const [selectedIds, setSelectedIds] = useState(new Set());
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [zoomImage, setZoomImage] = useState(null); // { src, alt } — ảnh đang phóng to
   const [managingCategories, setManagingCategories] = useState(false);
   const [newCategoryInput, setNewCategoryInput] = useState("");
@@ -2114,6 +2115,48 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
     });
     exportExcel(`SanPham_${todayISO()}`, [{ name: "Sản phẩm", rows }]);
     addLog("Xuất Excel sản phẩm", `${list.length} sản phẩm`);
+  };
+
+  // Sửa hàng loạt các sản phẩm đã chọn (thường là các phiên bản cùng 1 sản phẩm gốc — màu sắc/kích
+  // cỡ — vốn có chung giá/NCC/nhóm hàng/nhãn hiệu). Chỉ áp field nào admin bật công tắc "Đổi",
+  // field không bật giữ nguyên giá trị riêng của từng sản phẩm. Giá thay đổi vẫn ghi priceHistory
+  // như khi sửa từng sản phẩm.
+  const applyBulkEdit = (bulkForm) => {
+    const targetIds = new Set(selectedIds);
+    const now = new Date().toISOString();
+    let count = 0;
+    setProducts((prev) => prev.map((p) => {
+      if (!targetIds.has(p.id)) return p;
+      count++;
+      const patch = {};
+      const changes = [];
+      if (bulkForm.costPrice.on) {
+        const v = Number(bulkForm.costPrice.value) || 0;
+        if (v !== p.costPrice) changes.push({ field: "Giá nhập", oldValue: p.costPrice, newValue: v });
+        patch.costPrice = v;
+      }
+      if (bulkForm.retailPrice.on) {
+        const v = Number(bulkForm.retailPrice.value) || 0;
+        if (v !== p.retailPrice) changes.push({ field: "Giá bán lẻ", oldValue: p.retailPrice, newValue: v });
+        patch.retailPrice = v;
+      }
+      if (bulkForm.wholesalePrice.on) {
+        const v = Number(bulkForm.wholesalePrice.value) || 0;
+        if (v !== p.wholesalePrice) changes.push({ field: "Giá bán sỉ", oldValue: p.wholesalePrice, newValue: v });
+        patch.wholesalePrice = v;
+      }
+      if (bulkForm.supplierId.on) patch.supplierId = bulkForm.supplierId.value;
+      if (bulkForm.category.on) patch.category = bulkForm.category.value;
+      if (bulkForm.brand.on) patch.brand = bulkForm.brand.value;
+      if (changes.length > 0) {
+        const newHistoryEntries = changes.map((c) => ({ id: uid(), date: now, changedBy: currentUser.fullName, field: c.field, oldValue: c.oldValue, newValue: c.newValue }));
+        patch.priceHistory = [...newHistoryEntries, ...(p.priceHistory || [])];
+      }
+      return { ...p, ...patch };
+    }));
+    addLog("Sửa hàng loạt sản phẩm", `${count} sản phẩm · ${Object.entries(bulkForm).filter(([, v]) => v.on).map(([k]) => k).join(", ")}`);
+    setBulkEditOpen(false);
+    setSelectedIds(new Set());
   };
 
   // Nhập sản phẩm hàng loạt từ file Excel — dùng đúng định dạng file "Xuất Excel": tải file xuất ra, thêm dòng mới rồi tải lên lại.
@@ -2403,6 +2446,11 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           <button onClick={exportProducts} className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm border whitespace-nowrap" style={{ borderColor: FOREST, color: FOREST }}>
             <FileSpreadsheet size={15} /> Xuất Excel{selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}
           </button>
+          {isAdmin && selectedIds.size > 0 && (
+            <button onClick={() => setBulkEditOpen(true)} className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm text-white whitespace-nowrap" style={{ background: INK }}>
+              <Pencil size={15} /> Sửa hàng loạt ({selectedIds.size})
+            </button>
+          )}
           {isAdmin && (
             <button onClick={triggerImportFile} title="Dùng file đã tải từ nút Xuất Excel — thêm dòng mới để tạo sản phẩm, hoặc điền cột (web) của sản phẩm đã có để cập nhật thông tin web hàng loạt" className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm border whitespace-nowrap" style={{ borderColor: BLUE, color: BLUE }}>
               <ArrowUpFromLine size={15} /> Nhập từ Excel
@@ -3314,7 +3362,97 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
       )}
 
       {zoomImage && <ImageLightbox images={zoomImage.images} startIndex={zoomImage.index} onClose={() => setZoomImage(null)} />}
+
+      {bulkEditOpen && (
+        <BulkEditModal
+          count={selectedIds.size}
+          suppliers={suppliers}
+          categoryOptions={categoryOptions}
+          brandOptions={brandOptions}
+          brandOptionsOf={brandOptionsOf}
+          onClose={() => setBulkEditOpen(false)}
+          onApply={applyBulkEdit}
+        />
+      )}
     </div>
+  );
+}
+
+/**
+ * Sửa hàng loạt các sản phẩm đã chọn — dùng khi nhiều phiên bản (màu sắc/kích cỡ...) của cùng
+ * 1 sản phẩm gốc có chung giá/NCC/nhóm hàng/nhãn hiệu, đỡ phải sửa từng dòng. Mỗi field có công
+ * tắc "Đổi" riêng — chỉ field nào bật mới bị ghi đè, field tắt giữ nguyên giá trị cũ của từng SP.
+ */
+function BulkEditModal({ count, suppliers, categoryOptions, brandOptions, brandOptionsOf, onClose, onApply }) {
+  const [form, setForm] = useState({
+    costPrice: { on: false, value: "" },
+    retailPrice: { on: false, value: "" },
+    wholesalePrice: { on: false, value: "" },
+    supplierId: { on: false, value: "" },
+    category: { on: false, value: "" },
+    brand: { on: false, value: "" },
+  });
+  const setField = (key, patch) => setForm((f) => ({ ...f, [key]: { ...f[key], ...patch } }));
+  const anyOn = Object.values(form).some((f) => f.on);
+  const brandChoices = form.category.on && form.category.value ? brandOptionsOf(form.category.value) : brandOptions;
+
+  const submit = () => {
+    if (!anyOn) { alert("Bật ít nhất 1 mục cần đổi."); return; }
+    if (!confirm(`Áp dụng thay đổi cho ${count} sản phẩm đã chọn?`)) return;
+    onApply(form);
+  };
+
+  const Row = ({ k, label, children }) => (
+    <div className="flex items-center gap-3 py-2" style={{ borderBottom: `1px dashed ${LINE}` }}>
+      <label className="flex items-center gap-2 w-[150px] shrink-0 text-sm" style={{ color: INK }}>
+        <input type="checkbox" checked={form[k].on} onChange={(e) => setField(k, { on: e.target.checked })} />
+        {label}
+      </label>
+      <div className="flex-1 min-w-0" style={{ opacity: form[k].on ? 1 : 0.4, pointerEvents: form[k].on ? "auto" : "none" }}>
+        {children}
+      </div>
+    </div>
+  );
+
+  return (
+    <Modal title={`Sửa hàng loạt (${count} sản phẩm)`} onClose={onClose} size="lg">
+      <p className="text-xs opacity-60 mb-3">Chỉ áp dụng cho những mục bạn bật công tắc "Đổi" — mục không bật giữ nguyên giá trị riêng của từng sản phẩm.</p>
+
+      <Row k="costPrice" label="Giá nhập">
+        <MoneyInput className={inputCls} style={{ borderColor: LINE }} value={form.costPrice.value} onChange={(v) => setField("costPrice", { value: v })} />
+      </Row>
+      <Row k="retailPrice" label="Giá bán lẻ">
+        <MoneyInput className={inputCls} style={{ borderColor: LINE }} value={form.retailPrice.value} onChange={(v) => setField("retailPrice", { value: v })} />
+      </Row>
+      <Row k="wholesalePrice" label="Giá bán sỉ">
+        <MoneyInput className={inputCls} style={{ borderColor: LINE }} value={form.wholesalePrice.value} onChange={(v) => setField("wholesalePrice", { value: v })} />
+      </Row>
+      <Row k="supplierId" label="Nhà cung cấp">
+        <select value={form.supplierId.value} onChange={(e) => setField("supplierId", { value: e.target.value })} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
+          <option value="">— Chọn nhà cung cấp —</option>
+          {(suppliers || []).map((s) => <option key={s.id} value={s.id}>{s.code} - {s.name}</option>)}
+        </select>
+      </Row>
+      <Row k="category" label="Nhóm hàng">
+        <select value={form.category.value} onChange={(e) => setField("category", { value: e.target.value })} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
+          <option value="">— Chọn nhóm hàng —</option>
+          {categoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </Row>
+      <Row k="brand" label="Nhãn hiệu">
+        <select value={form.brand.value} onChange={(e) => setField("brand", { value: e.target.value })} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
+          <option value="">— Chọn nhãn hiệu —</option>
+          {brandChoices.map((b) => <option key={b} value={b}>{b}</option>)}
+        </select>
+      </Row>
+
+      <div className="flex items-center gap-3 mt-5">
+        <button onClick={submit} disabled={!anyOn} className="px-4 py-2 rounded-sm text-sm text-white" style={{ background: INK, opacity: anyOn ? 1 : 0.5 }}>
+          Áp dụng cho {count} sản phẩm
+        </button>
+        <button onClick={onClose} className="text-sm opacity-60 hover:opacity-100">Huỷ</button>
+      </div>
+    </Modal>
   );
 }
 
