@@ -144,39 +144,39 @@ export default function Catalog({ catalog, route, navigate }) {
         </ul>
       </div>
 
-      {/* Khoảng giá (tự sinh) */}
+      {/* Khoảng giá (tự sinh) — dạng xổ xuống cho gọn */}
       <div>
         <div className="text-[13px] uppercase tracking-wide text-mute mb-2">Khoảng giá</div>
-        <ul className="space-y-1 text-[14px]">
+        <select
+          value={PRICE_BUCKETS.findIndex(priceActive) > -1 ? String(PRICE_BUCKETS.findIndex(priceActive)) : ""}
+          onChange={(e) => {
+            const i = e.target.value;
+            if (i === "") setParam({ pmin: "", pmax: "" });
+            else setParam({ pmin: PRICE_BUCKETS[Number(i)].min ?? "", pmax: PRICE_BUCKETS[Number(i)].max ?? "" });
+          }}
+          className="w-full border border-line bg-white rounded-md px-2 py-2 text-[14px] text-ink"
+        >
+          <option value="">Tất cả mức giá</option>
           {PRICE_BUCKETS.map((b, i) => (
-            <li key={i}>
-              <button
-                onClick={() => setParam(priceActive(b) ? { pmin: "", pmax: "" } : { pmin: b.min ?? "", pmax: b.max ?? "" })}
-                className={priceActive(b) ? "text-navy font-semibold" : "text-ink/75 hover:text-navy"}
-              >
-                {b.label}
-              </button>
-            </li>
+            <option key={i} value={i}>{b.label}</option>
           ))}
-        </ul>
+        </select>
       </div>
 
-      {/* Thương hiệu (tự sinh) */}
-      {brandsHere.length > 1 && (
+      {/* Thương hiệu (tự sinh, chỉ gồm nhãn hiệu CÓ trong đúng danh mục/nhóm đang xem) — dạng xổ xuống */}
+      {brandsHere.length > 0 && (
         <div>
           <div className="text-[13px] uppercase tracking-wide text-mute mb-2">Thương hiệu</div>
-          <ul className="space-y-1 text-[14px]">
-            <li>
-              <button onClick={() => setParam({ brand: "" })} className={!brand ? "text-navy font-semibold" : "text-ink/75 hover:text-navy"}>Tất cả</button>
-            </li>
+          <select
+            value={brand}
+            onChange={(e) => setParam({ brand: e.target.value })}
+            className="w-full border border-line bg-white rounded-md px-2 py-2 text-[14px] text-ink"
+          >
+            <option value="">Tất cả thương hiệu</option>
             {brandsHere.map((b) => (
-              <li key={b}>
-                <button onClick={() => setParam({ brand: b === brand ? "" : b })} className={b === brand ? "text-navy font-semibold" : "text-ink/75 hover:text-navy"}>
-                  {b}
-                </button>
-              </li>
+              <option key={b} value={b}>{b}</option>
             ))}
-          </ul>
+          </select>
         </div>
       )}
 
