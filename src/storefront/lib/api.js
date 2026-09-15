@@ -5,6 +5,8 @@
  *   GET  /api/web/product/:slug     -> chi tiết 1 sản phẩm
  *   POST /api/web/orders            -> gửi đơn đặt hàng về app quản lý
  *   GET  /api/web/config            -> thông tin hiển thị chủ shop chỉnh từ app quản lý
+ *   GET  /api/web/lookup?type=...   -> gộp 3 tra cứu công khai (order/warranty/points) — đỡ tốn
+ *                                       function slot (giới hạn 12 function trên Vercel Free)
  *
  * Client KHÔNG giữ bất kỳ khoá Supabase nào — mọi thứ đi qua server.
  *
@@ -107,7 +109,7 @@ export async function lookupOrder(code, phone) {
       shipping: { carrier: "J&T Express", trackingCode: "JT000DEMO123", status: "Đang giao", statusId: "shipping", packDate: "", pickupDate: "", deliveredDate: "", cod: 1570000 },
     }, 300);
   }
-  const res = await fetch(`/api/web/order-lookup?code=${c}&phone=${p}`, { headers: { Accept: "application/json" } });
+  const res = await fetch(`/api/web/lookup?type=order&code=${c}&phone=${p}`, { headers: { Accept: "application/json" } });
   if (!isJson(res)) throw new Error("Hệ thống tra cứu chưa sẵn sàng");
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `Không tra cứu được (lỗi ${res.status})`);
@@ -131,7 +133,7 @@ export async function lookupWarranty(serial) {
     });
   }
   const s = encodeURIComponent(String(serial || "").trim());
-  const res = await fetch(`/api/web/warranty?serial=${s}`, { headers: { Accept: "application/json" } });
+  const res = await fetch(`/api/web/lookup?type=warranty&serial=${s}`, { headers: { Accept: "application/json" } });
   if (!isJson(res)) throw new Error("Hệ thống tra cứu chưa sẵn sàng");
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `Không tra cứu được (lỗi ${res.status})`);
@@ -143,7 +145,7 @@ export async function lookupPoints(phone) {
     return delay({ enabled: false });
   }
   const p = encodeURIComponent(String(phone || "").trim());
-  const res = await fetch(`/api/web/points?phone=${p}`, { headers: { Accept: "application/json" } });
+  const res = await fetch(`/api/web/lookup?type=points&phone=${p}`, { headers: { Accept: "application/json" } });
   if (!isJson(res)) throw new Error("Hệ thống tra cứu chưa sẵn sàng");
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `Không tra cứu được (lỗi ${res.status})`);
