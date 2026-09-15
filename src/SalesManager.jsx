@@ -12563,7 +12563,7 @@ function FetchFromSupplierUrl({ onApply }) {
 
   return (
     <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-      <p className="text-sm font-medium mb-1 flex items-center gap-1.5" style={{ color: INK }}>
+      <p className="text-base font-bold mb-1 flex items-center gap-1.5" style={{ color: RUST }}>
         <Globe size={15} /> Link tham khảo (lấy tự động từ trang NCC/hãng)
       </p>
       <p className="text-[11px] opacity-50 mb-2">
@@ -12681,6 +12681,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, addLo
           <FetchFromSupplierUrl onApply={setWeb} />
 
           <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+            <p className="text-base font-bold mb-2" style={{ color: RUST }}>Mô tả sản phẩm</p>
             <Field label="Nội dung mô tả" hint="Dán / kéo–thả ảnh · dán cả bài từ web khác · dán link YouTube (dòng riêng) = nhúng video">
               <WebDescEditor rows={12} bg="#fff" value={w.description} onChange={(v) => setWeb({ description: v })} />
             </Field>
@@ -12700,13 +12701,13 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, addLo
           </div>
 
           <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-            <p className="text-sm font-medium mb-2" style={{ color: INK }}>Ảnh sản phẩm trên web <span className="text-xs opacity-50">(tối đa 10, chất lượng cao — bỏ trống = dùng ảnh ở form sản phẩm chính)</span></p>
+            <p className="text-base font-bold mb-2" style={{ color: RUST }}>Ảnh sản phẩm trên web <span className="text-xs font-normal opacity-50">(tối đa 10, chất lượng cao — bỏ trống = dùng ảnh ở form sản phẩm chính)</span></p>
             <WebImageGrid images={w.images} onChange={(imgs) => setWeb({ images: imgs })} max={10} />
           </div>
 
           <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
             <div className="flex items-center justify-between gap-2 mb-1">
-              <span className="text-sm font-medium" style={{ color: INK }}>Thông số kỹ thuật (web)</span>
+              <span className="text-base font-bold" style={{ color: RUST }}>Thông số kỹ thuật (web)</span>
               <button type="button" onClick={() => setWeb({ specsText: autoFormatSpecsText(w.specsText) })}
                 className="text-xs px-2 py-1 rounded-sm border inline-flex items-center gap-1 shrink-0" style={{ borderColor: LINE, color: INK }}>
                 <Wand2 size={12} /> Chuẩn hoá "Nhãn | Giá trị"
@@ -12725,7 +12726,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, addLo
         {/* Cột phải */}
         <div className="space-y-4">
           <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-            <p className="text-sm font-medium mb-2" style={{ color: INK }}>Trạng thái</p>
+            <p className="text-base font-bold mb-2" style={{ color: RUST }}>Trạng thái</p>
             <label className="flex items-center gap-2 text-sm cursor-pointer">
               <input type="checkbox" checked={!!w.published} onChange={(e) => setWeb({ published: e.target.checked })} />
               <span>{w.published ? "Đang bán trên web" : "Ẩn khỏi web"}</span>
@@ -12766,7 +12767,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, addLo
           </div>
 
           <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-            <p className="text-sm font-medium mb-2" style={{ color: INK }}>Danh mục phụ trên web <span className="text-xs opacity-50">(mọi cấp — chọn được nhiều)</span></p>
+            <p className="text-base font-bold mb-2" style={{ color: RUST }}>Danh mục phụ trên web <span className="text-xs font-normal opacity-50">(mọi cấp — chọn được nhiều)</span></p>
             {webCats.length === 0 ? (
               <span className="text-xs" style={{ color: RUST }}>Chưa có danh mục — vào Cấu hình web → "Danh mục sản phẩm web".</span>
             ) : (
@@ -12796,7 +12797,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, addLo
           </div>
 
           <div className="p-4 rounded-sm space-y-3" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-            <p className="text-sm font-medium" style={{ color: INK }}>Giá & vận chuyển</p>
+            <p className="text-base font-bold" style={{ color: RUST }}>Giá & vận chuyển</p>
             <Field label="Giá bán web (đ)" hint="= Giá bán lẻ. Sửa ở tab Sản phẩm & tồn kho.">
               <input readOnly disabled className={inputCls} style={{ borderColor: LINE, background: PAPER }} value={p.retailPrice ? vnd(Number(p.retailPrice)) : "—"} />
             </Field>
@@ -12809,7 +12810,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, addLo
           </div>
 
           <div className="p-4 rounded-sm space-y-3" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-            <p className="text-sm font-medium" style={{ color: INK }}>SEO Google</p>
+            <p className="text-base font-bold" style={{ color: RUST }}>SEO Google</p>
             <Field label="Đường dẫn (slug)" hint="Bỏ trống = tự tạo từ tên sản phẩm">
               <input className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} value={w.slug} onChange={(e) => setWeb({ slug: webSlugify(e.target.value) })} placeholder={effSlug} />
             </Field>
