@@ -28,6 +28,11 @@ export default function ProductDetail({ slug, navigate, catalog }) {
   const [descExpanded, setDescExpanded] = useState(false);
   const [descOverflows, setDescOverflows] = useState(false);
   const descRef = useRef(null);
+  // Bấm chọn phiên bản khác (màu sắc/kích cỡ) không nên "load lại cả trang" — giữ nguyên mọi thứ
+  // đang xem, chỉ đổi ảnh lớn NGAY (đã có sẵn ảnh từng phiên bản từ variants[], không cần chờ
+  // mạng) rồi âm thầm tải chi tiết phiên bản mới, không hiện màn "Đang tải…" gây chớp/giật.
+  const switchingVariantRef = useRef(false);
+  const [previewImg, setPreviewImg] = useState(null);
 
   // Đo xem phần mô tả có dài quá DESC_MAX không -> mới hiện nút "Xem thêm".
   // Đo lại sau 500ms để bắt ảnh/video tải chậm làm nội dung cao thêm.
@@ -43,17 +48,26 @@ export default function ProductDetail({ slug, navigate, catalog }) {
 
   useEffect(() => {
     let alive = true;
-    setProduct(undefined);
-    setImgIdx(0);
-    setZoom(false);
-    setImgOrigin(null);
-    setImgHover(false);
-    setSpecOpen(false);
-    setQty(1);
-    setAdded(false);
-    setDescExpanded(false);
-    fetchProduct(slug).then((p) => alive && setProduct(p));
-    window.scrollTo(0, 0);
+    const switching = switchingVariantRef.current;
+    switchingVariantRef.current = false;
+    if (!switching) {
+      // Vào 1 sản phẩm hoàn toàn khác — reset sạch, hiện "Đang tải…", cuộn lên đầu như cũ.
+      setProduct(undefined);
+      setImgIdx(0);
+      setZoom(false);
+      setImgOrigin(null);
+      setImgHover(false);
+      setSpecOpen(false);
+      setQty(1);
+      setAdded(false);
+      setDescExpanded(false);
+      window.scrollTo(0, 0);
+    } else {
+      // Đổi phiên bản cùng nhóm — chỉ về lại ảnh đầu, KHÔNG xoá product/cuộn trang (previewImg
+      // đã hiện đúng ảnh phiên bản mới ngay khi bấm, ở đây chỉ cần chờ tải nốt phần còn lại).
+      setImgIdx(0);
+    }
+    fetchProduct(slug).then((p) => { if (alive) { setProduct(p); setPreviewImg(null); } });
     return () => { alive = false; };
   }, [slug]);
 
@@ -120,6 +134,14 @@ export default function ProductDetail({ slug, navigate, catalog }) {
   const doBuyNow = () => { add(p, qty, { preorder: out }); openOrder(p); };
   const prevImg = () => setImgIdx((i) => (i - 1 + imgs.length) % imgs.length);
   const nextImg = () => setImgIdx((i) => (i + 1) % imgs.length);
+  // Bấm chọn phiên bản khác: hiện NGAY ảnh của phiên bản đó (đã có sẵn, không cần chờ mạng),
+  // rồi mới âm thầm chuyển trang + tải chi tiết đầy đủ ở nền (xem effect [slug] phía trên).
+  const pickProductVariant = (variant) => {
+    if (!variant || !variant.slug || variant.slug === p.slug) return;
+    switchingVariantRef.current = true;
+    if (variant.image) setPreviewImg(variant.image);
+    navigate(`/san-pham/${variant.slug}`);
+  };
 
   return (
     <div className="mx-auto max-w-[1500px] px-3 sm:px-4 py-6 font-sans">
@@ -154,7 +176,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
               aria-label="Phóng to ảnh"
             >
               <img
-                src={imgs[imgIdx]}
+                src={previewImg || imgs[imgIdx]}
                 alt={p.name}
                 className="w-full h-full object-cover transition-transform duration-300 ease-out will-change-transform"
                 style={{ transform: imgOrigin ? "scale(1.8)" : "scale(1)", transformOrigin: imgOrigin || "center" }}
@@ -197,7 +219,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
             <span className="inline-flex items-center gap-1"><ShieldCheck size={14} className="text-navy" /> {warrantyLabel(p.warrantyMonths)}</span>
           </div>
 
-          {p.variants?.length > 1 && <VariantPicker product={p} navigate={navigate} />}
+          {p.variants?.length > 1 && <VariantPicker product={p} onPick={pickProductVariant} />}
 
           {p.specChips?.length > 0 && (
             <div className="mt-4 border-l-[3px] border-yellow bg-navy-050 rounded-r-md px-4 py-2.5 text-[14px] font-mono text-ink/80">
@@ -387,12 +409,13 @@ const SPEC_PREVIEW = 8;
 const DESC_MAX = 460; // px — chiều cao tối đa của mô tả khi chưa bấm "Xem thêm"
 
 /**
- * Nút chọn phiên bản (Màu sắc/Kích cỡ...) — mỗi thuộc tính 1 hàng nút, bấm sang phiên bản khác
- * sẽ chuyển trang tới đúng slug của phiên bản đó (vẫn cảm giác "1 sản phẩm, đổi option").
+ * Nút chọn phiên bản (Màu sắc/Kích cỡ...) — mỗi thuộc tính 1 hàng nút. `onPick(variant)` do
+ * trang cha xử lý: đổi ảnh lớn ngay lập tức rồi mới âm thầm chuyển trang (không "load lại"
+ * trắng trang như điều hướng thường — xem pickProductVariant() ở ProductDetail).
  * Bấm 1 thuộc tính khi sản phẩm có ≥2 thuộc tính sẽ ưu tiên tìm đúng tổ hợp còn lại đang chọn,
  * không có tổ hợp đó thì lấy phiên bản đầu tiên khớp riêng thuộc tính vừa bấm.
  */
-function VariantPicker({ product, navigate }) {
+function VariantPicker({ product, onPick }) {
   const variants = product.variants || [];
   const current = product.variantAttrs || {};
   const keys = [];
@@ -402,7 +425,7 @@ function VariantPicker({ product, navigate }) {
     const want = { ...current, [key]: value };
     const exact = variants.find((v) => keys.every((k) => (v.attrs[k] || "") === (want[k] || "")));
     const target = exact || variants.find((v) => (v.attrs[key] || "") === value);
-    if (target && target.slug && target.slug !== product.slug) navigate(`/san-pham/${target.slug}`);
+    onPick(target);
   };
 
   return (
