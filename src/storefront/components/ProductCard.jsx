@@ -44,7 +44,12 @@ export default function ProductCard({ product, onOpen }) {
 
       {/* Bố cục cố định chiều cao từng dòng → giá đỏ luôn nằm đúng một vị trí trên mọi thẻ */}
       <div className="flex flex-col flex-1 p-3">
-        <div className="text-[12px] uppercase tracking-wide text-mute font-mono line-clamp-1 min-h-[15px]">{p.brand}</div>
+        <div className="flex items-center justify-between gap-2 min-h-[15px]">
+          <span className="text-[12px] uppercase tracking-wide text-mute font-mono line-clamp-1">{p.brand}</span>
+          {p.variantCount > 1 && (
+            <span className="shrink-0 text-[11px] text-navy bg-navy-050 rounded px-1.5 py-0.5">{p.variantCount} tuỳ chọn</span>
+          )}
+        </div>
         <a
           href={`/san-pham/${p.slug}`}
           onClick={(e) => { e.preventDefault(); onOpen(p.slug); }}
@@ -56,6 +61,7 @@ export default function ProductCard({ product, onOpen }) {
         {/* Giá — vị trí cố định, không cho xuống dòng chữ "đ"; luôn chừa dòng giá gạch */}
         <div className="mt-2.5">
           <div className="font-mono font-extrabold text-[17px] sm:text-[23px] text-sale leading-none whitespace-nowrap tabular-nums">
+            {p.priceFrom && <span className="text-[12px] sm:text-[14px] font-semibold align-top mr-0.5">Từ</span>}
             {formatVND(p.price)}
           </div>
           <div className="mt-0.5 h-[15px] font-mono text-[11px] text-mute/80 line-through whitespace-nowrap">

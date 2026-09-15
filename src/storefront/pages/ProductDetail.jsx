@@ -107,7 +107,9 @@ export default function ProductDetail({ slug, navigate, catalog }) {
     productGroups(p)[0] ||
     MENU.find((g) => (g.subs || []).some((s) => s.name === p.category))?.group ||
     p.group;
-  const related = (catalog.products || []).filter((x) => x.category === p.category && x.slug !== p.slug).slice(0, 5);
+  const related = (catalog.products || [])
+    .filter((x) => x.category === p.category && x.slug !== p.slug && !(p.variantGroupId && x.variantGroupId === p.variantGroupId))
+    .slice(0, 5);
   const descText = (p.description && p.description.trim()) || p.shortDesc || "";
   const promoLines = String(p.promo || "")
     .split("\n")
@@ -194,6 +196,8 @@ export default function ProductDetail({ slug, navigate, catalog }) {
             <span className="font-mono">{p.sku}</span>
             <span className="inline-flex items-center gap-1"><ShieldCheck size={14} className="text-navy" /> {warrantyLabel(p.warrantyMonths)}</span>
           </div>
+
+          {p.variants?.length > 1 && <VariantPicker product={p} navigate={navigate} />}
 
           {p.specChips?.length > 0 && (
             <div className="mt-4 border-l-[3px] border-yellow bg-navy-050 rounded-r-md px-4 py-2.5 text-[14px] font-mono text-ink/80">
@@ -381,6 +385,60 @@ export default function ProductDetail({ slug, navigate, catalog }) {
 
 const SPEC_PREVIEW = 8;
 const DESC_MAX = 460; // px — chiều cao tối đa của mô tả khi chưa bấm "Xem thêm"
+
+/**
+ * Nút chọn phiên bản (Màu sắc/Kích cỡ...) — mỗi thuộc tính 1 hàng nút, bấm sang phiên bản khác
+ * sẽ chuyển trang tới đúng slug của phiên bản đó (vẫn cảm giác "1 sản phẩm, đổi option").
+ * Bấm 1 thuộc tính khi sản phẩm có ≥2 thuộc tính sẽ ưu tiên tìm đúng tổ hợp còn lại đang chọn,
+ * không có tổ hợp đó thì lấy phiên bản đầu tiên khớp riêng thuộc tính vừa bấm.
+ */
+function VariantPicker({ product, navigate }) {
+  const variants = product.variants || [];
+  const current = product.variantAttrs || {};
+  const keys = [];
+  variants.forEach((v) => Object.keys(v.attrs || {}).forEach((k) => { if (!keys.includes(k)) keys.push(k); }));
+
+  const pickVariant = (key, value) => {
+    const want = { ...current, [key]: value };
+    const exact = variants.find((v) => keys.every((k) => (v.attrs[k] || "") === (want[k] || "")));
+    const target = exact || variants.find((v) => (v.attrs[key] || "") === value);
+    if (target && target.slug && target.slug !== product.slug) navigate(`/san-pham/${target.slug}`);
+  };
+
+  return (
+    <div className="mt-4 space-y-3">
+      {keys.map((key) => {
+        const values = [...new Set(variants.map((v) => v.attrs[key]).filter(Boolean))];
+        return (
+          <div key={key}>
+            <div className="text-[13px] text-mute mb-1.5">{key}: <span className="text-ink font-medium">{current[key] || "—"}</span></div>
+            <div className="flex flex-wrap gap-2">
+              {values.map((val) => {
+                const active = current[key] === val;
+                const anyInStock = variants.some((v) => v.attrs[key] === val && v.stock > 0);
+                return (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => pickVariant(key, val)}
+                    title={anyInStock ? undefined : "Hết hàng"}
+                    className={
+                      "px-3 py-1.5 rounded-md border text-[14px] transition " +
+                      (active ? "border-navy bg-navy text-white font-semibold" : "border-line text-ink hover:border-navy") +
+                      (!anyInStock ? " opacity-50" : "")
+                    }
+                  >
+                    {val}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 /** Bảng thông số 2 cột: cột nhãn (nền xám) | cột giá trị. Dùng ở trang SP và trong popup. */
 function SpecTable({ rows }) {

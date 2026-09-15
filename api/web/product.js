@@ -1,8 +1,10 @@
 /**
  * GET /api/web/product?slug=<slug>  — chi tiết 1 sản phẩm đã đăng web.
  * File riêng (không đi qua catch-all [...path].js) cho chắc chắn về routing trên Vercel.
+ * Sản phẩm thuộc nhóm nhiều phiên bản (màu sắc/kích cỡ...) được trả kèm `variants[]` (các phiên
+ * bản khác cùng nhóm) để trang chi tiết hiện nút chọn option.
  */
-import { handler, json, readState, publishedProducts, publicProduct, productSlug, slugify } from "./_supa.js";
+import { handler, json, readState, publishedProducts, publicProduct, productSlug, slugify, webStockOf, baseVariantName } from "./_supa.js";
 
 export default handler(async (req, res) => {
   if (req.method !== "GET") return json(res, 405, { error: "Chỉ hỗ trợ GET." });
@@ -20,5 +22,22 @@ export default handler(async (req, res) => {
   });
 
   if (!found) return json(res, 404, { error: "Không tìm thấy sản phẩm." });
-  json(res, 200, publicProduct(found, { detail: true }));
+  const detail = publicProduct(found, { detail: true });
+
+  if (found.variantGroupId) {
+    const siblings = list.filter((p) => p.variantGroupId === found.variantGroupId);
+    if (siblings.length > 1) {
+      detail.name = baseVariantName(detail);
+      detail.variants = siblings.map((p) => ({
+        id: p.id,
+        slug: p.web && p.web.slug ? slugify(p.web.slug) : productSlug(p),
+        attrs: (p.variantAttrs && typeof p.variantAttrs === "object" ? p.variantAttrs : {}),
+        price: Number(p.retailPrice) || 0,
+        stock: webStockOf(p),
+        image: (p.web && Array.isArray(p.web.images) && p.web.images.filter(Boolean)[0]) || p.image || "",
+      }));
+    }
+  }
+
+  json(res, 200, detail);
 });

@@ -167,6 +167,11 @@ export function publicProduct(p, { detail = false } = {}) {
     sku: p.sku || "",
     slug: web.slug ? slugify(web.slug) : productSlug(p),
     name: p.name || "",
+    // Phiên bản (màu sắc/kích cỡ...) — sản phẩm tạo hàng loạt phiên bản ở admin dùng chung
+    // variantGroupId, mỗi phiên bản có variantAttrs riêng (VD {"Màu sắc":"Đen"}). Web dùng để
+    // gộp các phiên bản thành 1 sản phẩm có nút chọn option, thay vì hiện thành nhiều SP rời rạc.
+    variantGroupId: p.variantGroupId || "",
+    variantAttrs: p.variantAttrs && typeof p.variantAttrs === "object" ? p.variantAttrs : null,
     brand: p.brand || "",
     category: webCats[0] || p.category || "",
     categories: webCats,
@@ -189,6 +194,19 @@ export function publicProduct(p, { detail = false } = {}) {
     out.seoDesc = typeof web.seoDesc === "string" ? web.seoDesc.trim() : "";
   }
   return out;
+}
+
+/**
+ * Tên gốc của 1 phiên bản, bỏ hậu tố "- Đen"/"- Trắng, M"... mà admin tự sinh khi tạo hàng loạt
+ * phiên bản (xem SalesManager.jsx: name = `${form.name} - ${label}`, label = giá trị các thuộc
+ * tính nối bằng ", "). Dùng để hiện 1 tên chung cho cả nhóm phiên bản trên web.
+ */
+export function baseVariantName(p) {
+  const attrs = p && p.variantAttrs;
+  const name = (p && p.name) || "";
+  if (!attrs || typeof attrs !== "object") return name;
+  const suffix = " - " + Object.values(attrs).join(", ");
+  return name.endsWith(suffix) ? name.slice(0, -suffix.length) : name;
 }
 
 /** Danh sách sản phẩm đã bật "Đăng web" (web.published). */
