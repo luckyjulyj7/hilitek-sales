@@ -25,13 +25,11 @@ export default handler(async (req, res) => {
   const products = Array.isArray(state.products) ? state.products : [];
 
   const VALID_VAT = ["KCT", "VAT0", "VAT8", "VAT10"];
-  const preorderNames = [];
   const mapped = items.map((it) => {
     const p = products.find((x) => x.id === it.productId || x.sku === it.productId || x.sku === it.sku);
     const qty = Math.max(1, Math.floor(Number(it.qty) || 1));
     const avail = p ? webStockOf(p) : 0;
     const isPre = !!it.preorder || (p && !p.isService && avail < qty);
-    if (isPre) preorderNames.push((p ? p.name : it.name || it.sku) + (avail > 0 ? ` (còn ${avail}/${qty})` : ""));
     return {
       productId: p ? p.id : it.productId || it.sku,
       qty,
@@ -42,11 +40,20 @@ export default handler(async (req, res) => {
       // (xuất kho khi bấm "đã có hàng") — đơn web không tự trừ kho.
       fulfilled: !!(p && p.isService),
       preorder: !!isPre,
+      preorderLabel: isPre ? (p ? p.name : it.name || it.sku) + (avail > 0 ? ` (còn ${avail}/${qty})` : "") : "",
     };
   });
-  const hasPreorder = preorderNames.length > 0;
-  // VAT cấp đơn (app tính công nợ theo o.vat): dùng VAT của mặt hàng đầu tiên.
-  const orderVat = mapped[0] && mapped[0].vat ? mapped[0].vat : "VAT10";
+
+  // Đơn hàng của app chỉ có 1 mức VAT chung (dùng để tính công nợ/hoá đơn — o.vat), nên nếu giỏ
+  // hàng có sản phẩm nhiều mức VAT khác nhau (VD màn hình VAT8% + phần mềm KCT) thì KHÔNG được
+  // gộp vào 1 đơn (sẽ áp nhầm VAT của sản phẩm đầu tiên cho toàn bộ đơn) — tách thành nhiều đơn,
+  // mỗi đơn 1 mức VAT, cùng mã gốc + hậu tố "-1", "-2"... để nhân viên biết đây là 1 lần đặt hàng.
+  const vatGroups = [];
+  mapped.forEach((it) => {
+    let g = vatGroups.find((x) => x.vat === it.vat);
+    if (!g) { g = { vat: it.vat, items: [] }; vatGroups.push(g); }
+    g.items.push(it);
+  });
 
   // Mã giảm giá — server tự kiểm tra lại theo state.webConfig.COUPONS (không tin client).
   // Mã % → chiết khấu đơn theo %; mã tiền → chiết khấu số tiền cố định.
@@ -77,51 +84,72 @@ export default handler(async (req, res) => {
   }
 
   const source = body.source || "Đặt hàng website";
-  const code = body.code || "WEB" + Date.now().toString(36).toUpperCase().slice(-8);
+  const baseCode = body.code || "WEB" + Date.now().toString(36).toUpperCase().slice(-8);
   const now = new Date().toISOString();
+  const multi = vatGroups.length > 1;
+  const allCodes = vatGroups.map((_, i) => (multi ? `${baseCode}-${i + 1}` : baseCode));
 
-  const order = {
-    id: uid(),
-    code,
-    createdAt: now,
-    date: now.slice(0, 10),
-    channel: "online",
-    status: "pending",
-    approvalStatus: "approved",
-    createdByRole: "web",
-    customerId: "",
-    branch: "",
-    seller: "",
-    tags: hasPreorder ? [source, "Đặt trước"] : [source],
-    notes: [
-      "🌐 " + source,
-      hasPreorder ? "⚠ ĐƠN ĐẶT TRƯỚC (chưa đủ tồn): " + preorderNames.join("; ") : "",
-      `Khách: ${cust.name} · ${phone}` + (cust.email ? ` · ${cust.email}` : ""),
-      sh.fullAddress ? `Giao tới: ${sh.fullAddress}` : "",
-      sh.note ? `Ghi chú KH: ${sh.note}` : "",
-      couponNote,
-      `Thanh toán: ${body.payment === "bank" ? "Chuyển khoản trước" : "COD (thu khi giao)"}`,
-    ].filter(Boolean).join("\n"),
-    shippingAddress: {
-      recipientName: cust.name || "",
-      recipientPhone: phone,
-      province: sh.province || "",
-      ward: sh.ward || "",
-      addressDetail: sh.address || sh.fullAddress || "",
-    },
-    items: mapped,
-    vat: orderVat,
-    orderDiscount,
-    discountType,
-    shippingFee: 0,
-    paidAmount: 0,
-    payments: [],
-    invoiceStatus: "pending",
-    invoiceNo: "",
-    returns: [],
-  };
+  // Chiết khấu % áp y nguyên cho từng đơn con (vì %(A) + %(B) = %(A+B), không cần chia).
+  // Chiết khấu tiền cố định thì chia theo tỷ lệ doanh số mỗi đơn con, làm tròn xuống — đơn
+  // CUỐI nhận phần dư còn lại để tổng chiết khấu giữa các đơn con luôn khớp đúng số tiền gốc.
+  let discountRemaining = discountType === "amount" ? orderDiscount : 0;
 
-  state.orders.unshift(order);
+  const orders = vatGroups.map((g, i) => {
+    const groupSubtotal = g.items.reduce((s, it) => s + it.price * it.qty, 0);
+    let groupDiscount = orderDiscount;
+    if (discountType === "amount" && multi) {
+      groupDiscount = i === vatGroups.length - 1
+        ? discountRemaining
+        : (subtotal > 0 ? Math.floor((orderDiscount * groupSubtotal) / subtotal) : 0);
+      discountRemaining -= groupDiscount;
+    }
+    const groupPreorderLabels = g.items.filter((it) => it.preorderLabel).map((it) => it.preorderLabel);
+    const siblingCodes = allCodes.filter((_, j) => j !== i);
+
+    return {
+      id: uid(),
+      code: allCodes[i],
+      createdAt: now,
+      date: now.slice(0, 10),
+      channel: "online",
+      status: "pending",
+      approvalStatus: "approved",
+      createdByRole: "web",
+      customerId: "",
+      branch: "",
+      seller: "",
+      tags: groupPreorderLabels.length ? [source, "Đặt trước"] : [source],
+      notes: [
+        "🌐 " + source,
+        multi ? "🔗 Đơn tách theo mức VAT từ 1 lần đặt hàng — mã liên quan: " + siblingCodes.join(", ") : "",
+        groupPreorderLabels.length ? "⚠ ĐƠN ĐẶT TRƯỚC (chưa đủ tồn): " + groupPreorderLabels.join("; ") : "",
+        `Khách: ${cust.name} · ${phone}` + (cust.email ? ` · ${cust.email}` : ""),
+        sh.fullAddress ? `Giao tới: ${sh.fullAddress}` : "",
+        sh.note ? `Ghi chú KH: ${sh.note}` : "",
+        couponNote,
+        `Thanh toán: ${body.payment === "bank" ? "Chuyển khoản trước" : "COD (thu khi giao)"}`,
+      ].filter(Boolean).join("\n"),
+      shippingAddress: {
+        recipientName: cust.name || "",
+        recipientPhone: phone,
+        province: sh.province || "",
+        ward: sh.ward || "",
+        addressDetail: sh.address || sh.fullAddress || "",
+      },
+      items: g.items.map(({ preorderLabel, ...it }) => it),
+      vat: g.vat,
+      orderDiscount: groupDiscount,
+      discountType,
+      shippingFee: 0,
+      paidAmount: 0,
+      payments: [],
+      invoiceStatus: "pending",
+      invoiceNo: "",
+      returns: [],
+    };
+  });
+
+  state.orders.unshift(...orders);
   await writeState(state);
-  json(res, 200, { ok: true, code });
+  json(res, 200, { ok: true, code: baseCode, codes: allCodes });
 });

@@ -28,8 +28,16 @@ export default function Checkout({ navigate }) {
         <CheckCircle2 size={48} className="mx-auto text-navy" />
         <h1 className="mt-4 font-display text-2xl font-bold text-ink">Đã nhận yêu cầu đặt hàng</h1>
         <p className="mt-2 text-mute text-sm">
-          Mã đơn: <span className="font-mono font-semibold text-ink">{placed.code}</span>
+          Mã đơn:{" "}
+          {placed.codes.map((c, i) => (
+            <span key={c} className="font-mono font-semibold text-ink">{i > 0 ? ", " : ""}{c}</span>
+          ))}
         </p>
+        {placed.codes.length > 1 && (
+          <p className="mt-1 text-[13px] text-mute">
+            (Đơn được tách thành {placed.codes.length} mã do có sản phẩm thuộc nhóm thuế khác nhau — tổng tiền không đổi.)
+          </p>
+        )}
         <p className="mt-3 text-[15px] text-ink/75 leading-relaxed">
           Hilitek sẽ gọi lại số <span className="font-mono">{placed.phone}</span> trong giờ làm việc để xác nhận
           hàng, phí vận chuyển và chốt đơn. Cảm ơn Quý khách!
@@ -102,7 +110,8 @@ export default function Checkout({ navigate }) {
     try {
       const r = await placeOrder(order);
       clear();
-      setPlaced({ code: r.code || code, phone: order.customer.phone, pay: form.pay });
+      const codes = Array.isArray(r.codes) && r.codes.length ? r.codes : [r.code || code];
+      setPlaced({ code: r.code || code, codes, phone: order.customer.phone, pay: form.pay });
       window.scrollTo(0, 0);
     } catch (err) {
       setSendErr(
