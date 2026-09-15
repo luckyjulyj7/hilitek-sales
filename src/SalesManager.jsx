@@ -13545,7 +13545,7 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
         Bỏ trống 1 ô = web dùng giá trị mặc định. Web khách đọc cấu hình này mỗi lần tải trang.
       </div>
 
-      <section>
+      <section className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}` }}>
         <h3 className="font-medium mb-3" style={{ color: INK }}>Liên hệ</h3>
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="Hotline (hiển thị)">{ip(SITE.phone, (v) => setSite("phone", v), "0869 196 079")}</Field>
@@ -13562,7 +13562,7 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
         <Field label="Địa chỉ" >{ip(SITE.address, (v) => setSite("address", v), "6/27A Đường Số 3, …")}</Field>
       </section>
 
-      <section>
+      <section className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}` }}>
         <h3 className="font-medium mb-3" style={{ color: INK }}>Tài khoản ngân hàng</h3>
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="Ngân hàng">{ip(bank.name, (v) => setBank("name", v), "ACB (Á Châu)")}</Field>
@@ -13572,7 +13572,7 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
         </div>
       </section>
 
-      <section>
+      <section className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}` }}>
         <h3 className="font-medium mb-3" style={{ color: INK }}>Điểm tích luỹ khách hàng</h3>
         <label className="flex items-center gap-2 text-sm mb-3">
           <input type="checkbox" checked={!!LOY.enabled} onChange={(e) => setLoyalty("enabled", e.target.checked)} />
@@ -13596,17 +13596,17 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
         </p>
       </section>
 
-      <section>
+      <section className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}` }}>
         <h3 className="font-medium mb-3" style={{ color: INK }}>Mã giảm giá <span className="text-xs opacity-50">(khách nhập ở trang giỏ hàng → chiết khấu đơn)</span></h3>
         <CouponsEditor webConfig={webConfig} setWebConfig={setWebConfig} />
       </section>
 
-      <section>
+      <section className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}` }}>
         <h3 className="font-medium mb-3" style={{ color: INK }}>Danh mục sản phẩm web (menu)</h3>
         <WebMenuEditor webConfig={webConfig} setWebConfig={setWebConfig} setProducts={setProducts} products={products} />
       </section>
 
-      <section>
+      <section className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}` }}>
         <h3 className="font-medium mb-3" style={{ color: INK }}>Flash Sale <span className="text-xs opacity-50">(khối nổi bật dưới dải đếm ngược — viền đỏ, nhãn ⚡)</span></h3>
         <label className="flex items-center gap-2 text-sm mb-3">
           <input type="checkbox" checked={FS.enabled !== false} onChange={(e) => setFlash("enabled", e.target.checked)} /> Bật khối Flash Sale trên trang chủ
@@ -13637,17 +13637,17 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
         </div>
       </section>
 
-      <section>
+      <section className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}` }}>
         <h3 className="font-medium mb-3" style={{ color: INK }}>Khối sản phẩm trang chủ</h3>
         <HomeSectionsEditor webConfig={webConfig} setWebConfig={setWebConfig} products={products} />
       </section>
 
-      <section>
+      <section className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}` }}>
         <h3 className="font-medium mb-3" style={{ color: INK }}>Trang nội dung (landing)</h3>
         <LandingsEditor webConfig={webConfig} setWebConfig={setWebConfig} />
       </section>
 
-      <section>
+      <section className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}` }}>
         <h3 className="font-medium mb-3" style={{ color: INK }}>Poster / banner trang chủ (URL ảnh + link)</h3>
         <p className="text-xs opacity-50 mb-3">
           Ảnh: tải lên host bất kỳ hoặc để trong <code>public/posters/</code> rồi điền đường dẫn (vd <code>/posters/hero.jpg</code>).<br />
@@ -13705,7 +13705,7 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
         </div>
       </section>
 
-      <section>
+      <section className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}` }}>
         <h3 className="font-medium mb-3" style={{ color: INK }}>Trang chính sách</h3>
         <div className="space-y-2">
           {WEB_PAGE_KEYS.map(([k, l]) => (
@@ -13714,7 +13714,7 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
         </div>
       </section>
 
-      <section>
+      <section className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}` }}>
         <h3 className="font-medium mb-3" style={{ color: INK }}>Kho ảnh (Supabase Storage)</h3>
         <MediaCleanupPanel />
       </section>
@@ -13775,7 +13775,7 @@ function MediaCleanupPanel() {
   };
 
   return (
-    <div className="p-4 rounded-sm border space-y-3" style={{ borderColor: LINE }}>
+    <div className="space-y-3">
       <p className="text-xs opacity-70">
         Ảnh dán/tải về từ link NCC (mô tả, ảnh sản phẩm trên web) được lưu vào kho riêng của Hilitek trên Supabase.
         Khi bạn thay ảnh khác hoặc xoá sản phẩm, ảnh cũ không tự mất — quét để tìm và dọn bớt ảnh không còn dùng.
