@@ -13987,6 +13987,9 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
           <Field label="Số tài khoản">{ip(bank.accountNumber, (v) => setBank("accountNumber", v), "19551097")}</Field>
           <Field label="Chủ tài khoản">{ip(bank.holder, (v) => setBank("holder", v), "CÔNG TY TNHH …")}</Field>
           <Field label="Chi nhánh">{ip(bank.branch, (v) => setBank("branch", v), "PGD Lý Thường Kiệt")}</Field>
+          <Field label="Mã ngân hàng (BIN — cho QR chuyển khoản)" hint={<>Tra mã tại <a href="https://vietqr.io/danh-sach-ngan-hang" target="_blank" rel="noreferrer" className="underline" style={{ color: BLUE }}>vietqr.io/danh-sach-ngan-hang</a> — đổi ngân hàng ở trên thì nhớ đổi luôn mã này, sai sẽ tạo QR trỏ nhầm ngân hàng.</>}>
+            {ip(bank.bin, (v) => setBank("bin", v), "970416")}
+          </Field>
         </div>
       </section>
 
