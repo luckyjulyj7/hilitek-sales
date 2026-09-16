@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Package, ShoppingCart, Users, BarChart3,
   Plus, Trash2, Pencil, X, Search, Store, Globe,
   TrendingUp, AlertTriangle, Loader2, ChevronDown, ChevronRight, ChevronLeft, ChevronUp,
-  ArrowDownToLine, ArrowUpFromLine, Barcode, ImagePlus, ImageOff, Check, Printer, RotateCcw, KeyRound, LogOut, Eye, EyeOff, Filter, Target, History, ShieldCheck, XCircle, Wallet, PackageCheck, Truck, Clock, Bell, FileSpreadsheet, FileText, MapPin, UserCircle, Crown, Link2 as LinkIcon, Copy, Wand2, Bold, Italic, Heading1, Heading2, Heading3, List, Sparkles, Save, Layers
+  ArrowDownToLine, ArrowUpFromLine, Barcode, ImagePlus, ImageOff, Check, Printer, RotateCcw, KeyRound, LogOut, Eye, EyeOff, Filter, Target, History, ShieldCheck, XCircle, Wallet, PackageCheck, Truck, Clock, Bell, FileSpreadsheet, FileText, MapPin, UserCircle, Crown, Link2 as LinkIcon, Copy, Wand2, Bold, Italic, Heading1, Heading2, Heading3, List, Sparkles, Save, Layers, Star
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -743,6 +743,9 @@ function normalizeWeb(w) {
     seoDesc: typeof w.seoDesc === "string" ? w.seoDesc : "",
     virtualStock: !!w.virtualStock,               // bật tồn kho ảo bán online (dropship)
     virtualStockQty: Math.max(0, Math.floor(Number(w.virtualStockQty) || 0)),
+    // Phiên bản được CHỌN TAY làm đại diện ở danh sách/lưới sản phẩm (thay vì tự động lấy phiên
+    // bản còn hàng đầu tiên) — chỉ 1 phiên bản/nhóm được true, xem setDefaultVariant().
+    isDefaultVariant: !!w.isDefaultVariant,
   };
 }
 // Số tồn kho ảo ngẫu nhiên "trông thật" cho hàng dropship (5–29).
@@ -12993,6 +12996,9 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
       // Đồng bộ nội dung/thông số/danh mục/ảnh/mô tả ngắn/khuyến mãi sang các phiên bản cùng nhóm.
       if (p.variantGroupId && x.variantGroupId === p.variantGroupId) {
         const sh = {}; shareKeys.forEach((k) => { sh[k] = draft[k]; });
+        // Đại diện danh sách chỉ 1 phiên bản/nhóm — nếu vừa chọn phiên bản NÀY làm đại diện thì
+        // bỏ cờ đó ở mọi phiên bản khác cùng nhóm.
+        if (draft.isDefaultVariant) sh.isDefaultVariant = false;
         return { ...x, web: normalizeWeb({ ...normalizeWeb(x.web), ...sh }) };
       }
       return x;
@@ -13047,23 +13053,39 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
           if (dirty && !window.confirm("Có thay đổi chưa lưu. Chuyển phiên bản sẽ mất các thay đổi này — tiếp tục?")) return;
           onSwitch && onSwitch(id);
         };
+        // draft.isDefaultVariant phản ánh đúng cả 2 trường hợp: chưa đụng gì (draft = y hệt dữ
+        // liệu đã lưu) lẫn vừa bấm "Đặt làm đại diện" (phản hồi ngay, không cần chờ bấm Lưu).
+        const isDefault = !!draft.isDefaultVariant;
         return (
-          <div className="flex items-center gap-2 mb-4 flex-wrap">
-            <span className="text-xs opacity-60">Phiên bản:</span>
-            {siblings.map((s) => {
-              const label = s.variantAttrs ? Object.values(s.variantAttrs).join(", ") : s.name;
-              const active = s.id === p.id;
-              return (
-                <button
-                  key={s.id}
-                  onClick={() => switchTo(s.id)}
-                  className="text-xs px-3 py-1.5 rounded-sm border"
-                  style={active ? { background: BLUE, borderColor: BLUE, color: "#fff" } : { borderColor: LINE, color: INK }}
-                >
-                  {label || s.name}
+          <div className="mb-4">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs opacity-60">Phiên bản:</span>
+              {siblings.map((s) => {
+                const label = s.variantAttrs ? Object.values(s.variantAttrs).join(", ") : s.name;
+                const active = s.id === p.id;
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => switchTo(s.id)}
+                    className="text-xs px-3 py-1.5 rounded-sm border"
+                    style={active ? { background: BLUE, borderColor: BLUE, color: "#fff" } : { borderColor: LINE, color: INK }}
+                  >
+                    {label || s.name}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-2">
+              {isDefault ? (
+                <span className="text-xs inline-flex items-center gap-1.5" style={{ color: BRASS }}>
+                  <Star size={12} fill={BRASS} /> Đang là ảnh đại diện ở danh sách/lưới sản phẩm
+                </span>
+              ) : (
+                <button onClick={() => setWeb({ isDefaultVariant: true })} title="Bỏ trống = web tự chọn phiên bản còn hàng đầu tiên làm đại diện" className="text-xs inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm border" style={{ borderColor: LINE, color: INK }}>
+                  <Star size={12} /> Đặt phiên bản này làm đại diện ở danh sách/lưới sản phẩm
                 </button>
-              );
-            })}
+              )}
+            </div>
           </div>
         );
       })()}

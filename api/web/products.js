@@ -8,20 +8,24 @@ import { handler, json, readState, publishedProducts, publicProduct, baseVariant
 export default handler(async (req, res) => {
   if (req.method !== "GET") return json(res, 405, { error: "Chỉ hỗ trợ GET." });
   const state = await readState();
-  const mapped = publishedProducts(state).map((p) => publicProduct(p));
+  const raw = publishedProducts(state);
+  const mapped = raw.map((p) => publicProduct(p));
 
-  const groups = new Map(); // variantGroupId -> [product...]
+  const groups = new Map(); // variantGroupId -> [{ pub, raw }...]
   const singles = [];
-  mapped.forEach((p) => {
+  mapped.forEach((p, i) => {
     if (!p.variantGroupId) { singles.push(p); return; }
     if (!groups.has(p.variantGroupId)) groups.set(p.variantGroupId, []);
-    groups.get(p.variantGroupId).push(p);
+    groups.get(p.variantGroupId).push({ pub: p, raw: raw[i] });
   });
 
-  const merged = [...groups.values()].map((variants) => {
+  const merged = [...groups.values()].map((entries) => {
+    const variants = entries.map((e) => e.pub);
     if (variants.length === 1) return variants[0];
-    // Đại diện cả nhóm: ưu tiên phiên bản còn hàng (khách bấm vào thấy có thể mua ngay).
-    const rep = variants.find((v) => v.stock > 0) || variants[0];
+    // Đại diện cả nhóm: ưu tiên phiên bản admin CHỌN TAY (isDefaultVariant, đặt ở trang sửa từng
+    // phiên bản), không có thì mới tự động lấy phiên bản còn hàng (khách bấm vào thấy có thể mua ngay).
+    const flagged = entries.find((e) => e.raw.web && e.raw.web.isDefaultVariant);
+    const rep = (flagged && flagged.pub) || variants.find((v) => v.stock > 0) || variants[0];
     const prices = variants.map((v) => v.price);
     const minPrice = Math.min(...prices);
     const sameListPrice = variants.every((v) => v.listPrice === rep.listPrice);
