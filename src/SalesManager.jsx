@@ -2457,16 +2457,16 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         </div>
       )}
       <div className="flex items-center gap-1.5 mb-5 flex-wrap">
-        <div className="relative flex-1 min-w-[180px] max-w-xs">
+        <div className="relative flex-1 min-w-[220px] max-w-md">
           <Search size={15} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50" />
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm theo mã VT hoặc tên…"
-            className="w-full pl-7 pr-2 py-1.5 text-sm rounded-sm border outline-none" style={{ borderColor: LINE, background: "#fff" }} />
+            className="w-full pl-7 pr-2 py-1.5 text-sm rounded-sm border-2 outline-none" style={{ borderColor: INK, background: "#fff" }} />
         </div>
-        <select value={filterCategory} onChange={(e) => { setFilterCategory(e.target.value); if (filterBrand && !brandOptionsOf(e.target.value).includes(filterBrand)) setFilterBrand(""); }} className="border rounded-sm py-1.5 px-2 text-sm shrink-0" style={{ borderColor: LINE, width: 130 }}>
+        <select value={filterCategory} onChange={(e) => { setFilterCategory(e.target.value); if (filterBrand && !brandOptionsOf(e.target.value).includes(filterBrand)) setFilterBrand(""); }} className="border rounded-sm py-1.5 px-2 text-sm shrink-0" style={{ borderColor: LINE, width: 190 }}>
           <option value="">Nhóm hàng: Tất cả</option>
           {categoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
-        <select value={filterBrand} onChange={(e) => setFilterBrand(e.target.value)} className="border rounded-sm py-1.5 px-2 text-sm shrink-0" style={{ borderColor: LINE, width: 130 }}>
+        <select value={filterBrand} onChange={(e) => setFilterBrand(e.target.value)} className="border rounded-sm py-1.5 px-2 text-sm shrink-0" style={{ borderColor: LINE, width: 190 }}>
           <option value="">Nhãn hiệu: Tất cả</option>
           {(filterCategory ? brandOptionsOf(filterCategory) : brandOptions).map((b) => <option key={b} value={b}>{b}</option>)}
         </select>
@@ -2474,25 +2474,30 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           <button onClick={() => { setFilterCategory(""); setFilterBrand(""); }} className="text-xs opacity-50 hover:opacity-100 underline shrink-0">Xoá lọc</button>
         )}
         <div className="flex-1" />
-        <button onClick={exportProducts} className="flex items-center gap-1 px-2.5 py-1.5 rounded-sm text-xs border whitespace-nowrap" style={{ borderColor: FOREST, color: FOREST }}>
-          <FileSpreadsheet size={13} /> Xuất Excel{selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}
+        {selectedIds.size > 0 && (
+          <button onClick={() => setSelectedIds(new Set())} className="flex items-center gap-1 px-2.5 py-1.5 rounded-sm text-xs border whitespace-nowrap" style={{ borderColor: LINE, color: INK }}>
+            <X size={13} /> Bỏ chọn ({selectedIds.size})
+          </button>
+        )}
+        <button onClick={exportProducts} title="Xuất Excel" className="flex items-center gap-1 px-2.5 py-1.5 rounded-sm text-xs border whitespace-nowrap" style={{ borderColor: FOREST, color: FOREST }}>
+          <FileSpreadsheet size={13} /> Xuất{selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}
         </button>
-        {isAdmin && selectedIds.size > 0 && (
-          <button onClick={() => setBulkEditOpen(true)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-sm text-xs text-white whitespace-nowrap" style={{ background: INK }}>
-            <Pencil size={13} /> Sửa hàng loạt ({selectedIds.size})
-          </button>
-        )}
-        {isAdmin && selectedIds.size >= 2 && (
-          <button onClick={() => setMergeOpen(true)} title="Gộp các sản phẩm đã chọn (VD từng màu 1 sản phẩm) thành các phiên bản của 1 sản phẩm chung — web/danh sách sẽ tự gộp hiện thị" className="flex items-center gap-1 px-2.5 py-1.5 rounded-sm text-xs border whitespace-nowrap" style={{ borderColor: PURPLE, color: PURPLE }}>
-            <Layers size={13} /> Gộp thành phiên bản ({selectedIds.size})
-          </button>
-        )}
         {isAdmin && (
-          <button onClick={triggerImportFile} title="Dùng file đã tải từ nút Xuất Excel — thêm dòng mới để tạo sản phẩm, hoặc điền cột (web) của sản phẩm đã có để cập nhật thông tin web hàng loạt" className="flex items-center gap-1 px-2.5 py-1.5 rounded-sm text-xs border whitespace-nowrap" style={{ borderColor: BLUE, color: BLUE }}>
-            <ArrowUpFromLine size={13} /> Nhập từ Excel
+          <button onClick={triggerImportFile} title="Nhập từ Excel — dùng file đã tải từ nút Xuất, thêm dòng mới để tạo sản phẩm, hoặc điền cột (web) của sản phẩm đã có để cập nhật thông tin web hàng loạt" className="flex items-center gap-1 px-2.5 py-1.5 rounded-sm text-xs border whitespace-nowrap" style={{ borderColor: BLUE, color: BLUE }}>
+            <ArrowUpFromLine size={13} /> Nhập
           </button>
         )}
         <input ref={importFileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleImportFile} />
+        {isAdmin && selectedIds.size > 0 && (
+          <button onClick={() => setBulkEditOpen(true)} title="Sửa hàng loạt" className="flex items-center gap-1 px-2 py-1.5 rounded-sm text-xs text-white whitespace-nowrap" style={{ background: INK }}>
+            <Pencil size={12} /> Sửa ({selectedIds.size})
+          </button>
+        )}
+        {isAdmin && selectedIds.size >= 2 && (
+          <button onClick={() => setMergeOpen(true)} title="Gộp thành phiên bản — gộp các sản phẩm đã chọn (VD từng màu 1 sản phẩm) thành các phiên bản của 1 sản phẩm chung, web/danh sách sẽ tự gộp hiện thị" className="flex items-center gap-1 px-2 py-1.5 rounded-sm text-xs border whitespace-nowrap" style={{ borderColor: PURPLE, color: PURPLE }}>
+            <Layers size={12} /> Gộp ({selectedIds.size})
+          </button>
+        )}
         {isAdmin && (
           <button onClick={() => setManagingCategories(true)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-sm text-xs border whitespace-nowrap" style={{ borderColor: LINE, color: INK }}>
             <Filter size={13} /> Quản lý nhóm hàng
