@@ -217,7 +217,10 @@ export default function Checkout({ navigate }) {
               <span className="text-[15px] font-semibold text-ink">Thành tiền</span>
               <span className="font-price text-xl font-bold text-sale">{formatVND(total)}</span>
             </div>
-            <p className="mt-2 text-[13px] text-mute">Đã bao gồm VAT · Phí vận chuyển báo khi xác nhận đơn.</p>
+            <p className="mt-2 text-[13px] text-mute">Đã bao gồm VAT.</p>
+            <p className="mt-1 text-[13px] font-medium" style={{ color: "#E8730C" }}>
+              Giá trên <b>chưa gồm phí vận chuyển</b> — phí ship sẽ được Hilitek thông báo khi gọi điện/nhắn tin xác nhận đơn hàng.
+            </p>
             {items.some((it) => it.preorder) && (
               <p className="mt-2 text-[13px] text-[#E8730C] leading-relaxed">
                 Đơn có sản phẩm <b>đặt trước</b> (tạm hết hàng). Hilitek sẽ liên hệ báo thời gian có hàng trước khi giao.

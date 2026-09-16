@@ -1272,6 +1272,9 @@ function normalizeProduct(p) {
     openingQty: Number(p.openingQty ?? 0) || 0,
     minStockLevel: p.minStockLevel !== undefined ? Number(p.minStockLevel) || 0 : 5,
     weight: Number(p.weight) || 0, // gram — dùng tính phí ship
+    length: Number(p.length) || 0, // cm — dùng tính phí ship hàng cồng kềnh
+    width: Number(p.width) || 0,   // cm
+    height: Number(p.height) || 0, // cm
     sku: p.sku || "",
     vat: p.vat || "VAT10",
     barcode: p.barcode || "",
@@ -2297,7 +2300,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
     reader.readAsArrayBuffer(file);
   };
 
-  const openNew = () => { setForm({ code: "", name: "", unit: UNITS[0], category: "", brand: "", hasSeries: false, isService: false, retailPrice: "", wholesalePrice: "", costPrice: "", openingQty: 0, minStockLevel: 5, weight: "", sku: nextSKU(products), vat: "VAT10", barcode: "", supplierId: "", warrantyMonths: 0, image: null, images: [], web: normalizeWeb(null), hasVariants: false, variantAttr1Name: "Màu sắc", variantAttr1Values: [], variantAttr2Enabled: false, variantAttr2Name: "Kích cỡ", variantAttr2Values: [] }); setEditing({}); };
+  const openNew = () => { setForm({ code: "", name: "", unit: UNITS[0], category: "", brand: "", hasSeries: false, isService: false, retailPrice: "", wholesalePrice: "", costPrice: "", openingQty: 0, minStockLevel: 5, weight: "", length: "", width: "", height: "", sku: nextSKU(products), vat: "VAT10", barcode: "", supplierId: "", warrantyMonths: 0, image: null, images: [], web: normalizeWeb(null), hasVariants: false, variantAttr1Name: "Màu sắc", variantAttr1Values: [], variantAttr2Enabled: false, variantAttr2Name: "Kích cỡ", variantAttr2Values: [] }); setEditing({}); };
   const openEdit = (p) => { setForm({ ...p }); setEditing(p); };
   const submitInfo = () => {
     if (!form.code || !form.name) return;
@@ -2317,6 +2320,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           ...p, code: form.code.trim(), name: form.name, unit: form.unit, category: form.category || "", brand: form.brand || "", hasSeries: !!form.hasSeries, isService: !!form.isService,
           retailPrice: newRetail, wholesalePrice: newWholesale, costPrice: newCost, openingQty: Number(form.openingQty) || 0,
           minStockLevel: Number(form.minStockLevel) || 0, weight: Number(form.weight) || 0,
+          length: Number(form.length) || 0, width: Number(form.width) || 0, height: Number(form.height) || 0,
           sku: form.sku || p.sku, vat: form.vat, barcode: form.barcode || "", supplierId: form.supplierId || "", warrantyMonths: Number(form.warrantyMonths) || 0, image: form.image || null, images: Array.isArray(form.images) ? form.images.filter(Boolean).slice(0, 3) : [],
           priceHistory: newHistoryEntries.length > 0 ? [...newHistoryEntries, ...(p.priceHistory || [])] : (p.priceHistory || []),
           web: normalizeWeb(form.web),
@@ -2342,6 +2346,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           id: uid(), code: `${form.code}_${suffix}`, name: `${form.name} - ${label}`, unit: form.unit, category: form.category || "", brand: form.brand || "",
           hasSeries: !!form.hasSeries, retailPrice: Number(form.retailPrice) || 0, wholesalePrice: Number(form.wholesalePrice) || 0, costPrice: Number(form.costPrice) || 0,
           openingQty: Number(form.openingQty) || 0, minStockLevel: Number(form.minStockLevel) || 0, weight: Number(form.weight) || 0,
+          length: Number(form.length) || 0, width: Number(form.width) || 0, height: Number(form.height) || 0,
           sku: `${form.sku || nextSKU(products)}_${suffix}`, vat: form.vat || "VAT10", barcode: "", supplierId: form.supplierId || "", warrantyMonths: Number(form.warrantyMonths) || 0,
           image: form.image || null, images: Array.isArray(form.images) ? form.images.filter(Boolean).slice(0, 3) : [],
           variantGroupId: groupId, variantAttrs, movements: [], web: normalizeWeb({ ...form.web, slug: "" }),
@@ -2357,6 +2362,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         id: uid(), code: form.code, name: form.name, unit: form.unit, category: form.category || "", brand: form.brand || "",
         hasSeries: !!form.hasSeries, isService: !!form.isService, retailPrice: Number(form.retailPrice) || 0, wholesalePrice: Number(form.wholesalePrice) || 0, costPrice: Number(form.costPrice) || 0,
         openingQty: Number(form.openingQty) || 0, minStockLevel: Number(form.minStockLevel) || 0, weight: Number(form.weight) || 0,
+        length: Number(form.length) || 0, width: Number(form.width) || 0, height: Number(form.height) || 0,
         sku: form.sku || nextSKU(products), vat: form.vat || "VAT10", barcode: form.barcode || "", supplierId: form.supplierId || "", warrantyMonths: Number(form.warrantyMonths) || 0, image: form.image || null, images: Array.isArray(form.images) ? form.images.filter(Boolean).slice(0, 3) : [],
         movements: [], web: normalizeWeb(form.web),
       }]);
@@ -3002,6 +3008,14 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
 
           <Field label="Khối lượng (gram)" hint="Dùng để tính phí ship (GHN) và hiển thị trên web">
             <input type="number" min={0} className={inputCls} style={{ borderColor: LINE }} value={form.weight ?? ""} onChange={(e) => setForm({ ...form, weight: e.target.value })} placeholder="VD: 450" />
+          </Field>
+
+          <Field label="Kích thước — Dài × Rộng × Cao (cm)" hint="Dùng để tính phí ship hàng cồng kềnh">
+            <div className="grid grid-cols-3 gap-2">
+              <input type="number" min={0} className={inputCls} style={{ borderColor: LINE }} value={form.length ?? ""} onChange={(e) => setForm({ ...form, length: e.target.value })} placeholder="Dài" />
+              <input type="number" min={0} className={inputCls} style={{ borderColor: LINE }} value={form.width ?? ""} onChange={(e) => setForm({ ...form, width: e.target.value })} placeholder="Rộng" />
+              <input type="number" min={0} className={inputCls} style={{ borderColor: LINE }} value={form.height ?? ""} onChange={(e) => setForm({ ...form, height: e.target.value })} placeholder="Cao" />
+            </div>
           </Field>
 
           {isAdmin && (
