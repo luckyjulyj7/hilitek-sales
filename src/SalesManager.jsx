@@ -3473,6 +3473,23 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
  * 1 sản phẩm gốc có chung giá/NCC/nhóm hàng/nhãn hiệu, đỡ phải sửa từng dòng. Mỗi field có công
  * tắc "Đổi" riêng — chỉ field nào bật mới bị ghi đè, field tắt giữ nguyên giá trị cũ của từng SP.
  */
+// Định nghĩa ngoài BulkEditModal (không phải hàm lồng bên trong) — nếu để bên trong, mỗi lần gõ
+// phím component này bị coi là "component mới" nên React unmount/remount lại toàn bộ ô nhập bên
+// trong (kể cả input đang gõ), làm mất focus + chỉ gõ được 1 ký tự rồi phải bấm chuột lại.
+function BulkEditRow({ on, onToggle, label, children }) {
+  return (
+    <div className="flex items-center gap-3 py-2" style={{ borderBottom: `1px dashed ${LINE}` }}>
+      <label className="flex items-center gap-2 w-[150px] shrink-0 text-sm" style={{ color: INK }}>
+        <input type="checkbox" checked={on} onChange={(e) => onToggle(e.target.checked)} />
+        {label}
+      </label>
+      <div className="flex-1 min-w-0" style={{ opacity: on ? 1 : 0.4, pointerEvents: on ? "auto" : "none" }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function BulkEditModal({ count, suppliers, categoryOptions, brandOptions, brandOptionsOf, onClose, onApply }) {
   const [form, setForm] = useState({
     costPrice: { on: false, value: "" },
@@ -3492,49 +3509,37 @@ function BulkEditModal({ count, suppliers, categoryOptions, brandOptions, brandO
     onApply(form);
   };
 
-  const Row = ({ k, label, children }) => (
-    <div className="flex items-center gap-3 py-2" style={{ borderBottom: `1px dashed ${LINE}` }}>
-      <label className="flex items-center gap-2 w-[150px] shrink-0 text-sm" style={{ color: INK }}>
-        <input type="checkbox" checked={form[k].on} onChange={(e) => setField(k, { on: e.target.checked })} />
-        {label}
-      </label>
-      <div className="flex-1 min-w-0" style={{ opacity: form[k].on ? 1 : 0.4, pointerEvents: form[k].on ? "auto" : "none" }}>
-        {children}
-      </div>
-    </div>
-  );
-
   return (
     <Modal title={`Sửa hàng loạt (${count} sản phẩm)`} onClose={onClose} size="lg">
       <p className="text-xs opacity-60 mb-3">Chỉ áp dụng cho những mục bạn bật công tắc "Đổi" — mục không bật giữ nguyên giá trị riêng của từng sản phẩm.</p>
 
-      <Row k="costPrice" label="Giá nhập">
+      <BulkEditRow on={form.costPrice.on} onToggle={(v) => setField("costPrice", { on: v })} label="Giá nhập">
         <MoneyInput className={inputCls} style={{ borderColor: LINE }} value={form.costPrice.value} onChange={(v) => setField("costPrice", { value: v })} />
-      </Row>
-      <Row k="retailPrice" label="Giá bán lẻ">
+      </BulkEditRow>
+      <BulkEditRow on={form.retailPrice.on} onToggle={(v) => setField("retailPrice", { on: v })} label="Giá bán lẻ">
         <MoneyInput className={inputCls} style={{ borderColor: LINE }} value={form.retailPrice.value} onChange={(v) => setField("retailPrice", { value: v })} />
-      </Row>
-      <Row k="wholesalePrice" label="Giá bán sỉ">
+      </BulkEditRow>
+      <BulkEditRow on={form.wholesalePrice.on} onToggle={(v) => setField("wholesalePrice", { on: v })} label="Giá bán sỉ">
         <MoneyInput className={inputCls} style={{ borderColor: LINE }} value={form.wholesalePrice.value} onChange={(v) => setField("wholesalePrice", { value: v })} />
-      </Row>
-      <Row k="supplierId" label="Nhà cung cấp">
+      </BulkEditRow>
+      <BulkEditRow on={form.supplierId.on} onToggle={(v) => setField("supplierId", { on: v })} label="Nhà cung cấp">
         <select value={form.supplierId.value} onChange={(e) => setField("supplierId", { value: e.target.value })} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
           <option value="">— Chọn nhà cung cấp —</option>
           {(suppliers || []).map((s) => <option key={s.id} value={s.id}>{s.code} - {s.name}</option>)}
         </select>
-      </Row>
-      <Row k="category" label="Nhóm hàng">
+      </BulkEditRow>
+      <BulkEditRow on={form.category.on} onToggle={(v) => setField("category", { on: v })} label="Nhóm hàng">
         <select value={form.category.value} onChange={(e) => setField("category", { value: e.target.value })} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
           <option value="">— Chọn nhóm hàng —</option>
           {categoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
-      </Row>
-      <Row k="brand" label="Nhãn hiệu">
+      </BulkEditRow>
+      <BulkEditRow on={form.brand.on} onToggle={(v) => setField("brand", { on: v })} label="Nhãn hiệu">
         <select value={form.brand.value} onChange={(e) => setField("brand", { value: e.target.value })} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
           <option value="">— Chọn nhãn hiệu —</option>
           {brandChoices.map((b) => <option key={b} value={b}>{b}</option>)}
         </select>
-      </Row>
+      </BulkEditRow>
 
       <div className="flex items-center gap-3 mt-5">
         <button onClick={submit} disabled={!anyOn} className="px-4 py-2 rounded-sm text-sm text-white" style={{ background: INK, opacity: anyOn ? 1 : 0.5 }}>
@@ -13708,8 +13713,17 @@ function HomeSectionsEditor({ webConfig, setWebConfig, products }) {
               </select>
             </label>
             <label className="text-xs block">Số sản phẩm
-              <input type="number" min={2} max={40} value={s.limit ?? 12}
-                onChange={(e) => setAt(i, { limit: Math.max(2, Math.min(40, Number(e.target.value) || 12)) })} className={inputCls} style={{ borderColor: LINE }} />
+              <input type="number" min={2} max={40} value={s.limit ?? ""}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  // Cho phép xoá trống khi đang gõ lại số mới — chỉ ép về khoảng 2-40 lúc rời khỏi
+                  // ô (onBlur). Ép ngay trong onChange sẽ "kéo" số cũ về mỗi lần xoá, không xoá được.
+                  if (raw === "") { setAt(i, { limit: "" }); return; }
+                  const n = Number(raw);
+                  if (Number.isFinite(n)) setAt(i, { limit: n });
+                }}
+                onBlur={(e) => setAt(i, { limit: Math.max(2, Math.min(40, Number(e.target.value) || 12)) })}
+                className={inputCls} style={{ borderColor: LINE }} />
             </label>
           </div>
 
