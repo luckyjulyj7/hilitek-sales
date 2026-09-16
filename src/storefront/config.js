@@ -33,6 +33,9 @@ export const SITE = {
     accountNumber: "19551097",
     branch: "Phòng giao dịch Lý Thường Kiệt",
     holder: "CÔNG TY TNHH TM DV HILI",
+    // Mã ngân hàng (BIN) theo chuẩn VietQR — dùng để tạo mã QR chuyển khoản tự động điền số tiền.
+    // Đổi ngân hàng thì nhớ đổi luôn mã này (tra cứu tại vietqr.io/danh-sach-ngan-hang) — sai mã QR sẽ trỏ nhầm ngân hàng.
+    bin: "970416",
   },
 
   // --- Liên hệ ---
