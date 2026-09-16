@@ -33,6 +33,11 @@ export default function ProductDetail({ slug, navigate, catalog }) {
   // mạng) rồi âm thầm tải chi tiết phiên bản mới, không hiện màn "Đang tải…" gây chớp/giật.
   const switchingVariantRef = useRef(false);
   const [previewImg, setPreviewImg] = useState(null);
+  // Nút chọn phiên bản (màu xanh dương) + nhãn "Màu sắc: ..." đọc theo `product.variantAttrs` —
+  // nếu chỉ dựa vào đó thì phải chờ tải xong chi tiết phiên bản mới mới đổi màu (chậm hơn hẳn ảnh
+  // lớn vốn đổi ngay). previewAttrs giữ lựa chọn vừa bấm để tô xanh + đổi nhãn NGAY, đồng bộ tốc
+  // độ với ảnh — xoá khi tải xong (cùng lúc với previewImg, xem effect [slug] phía trên).
+  const [previewAttrs, setPreviewAttrs] = useState(null);
 
   // Đo xem phần mô tả có dài quá DESC_MAX không -> mới hiện nút "Xem thêm".
   // Đo lại sau 500ms để bắt ảnh/video tải chậm làm nội dung cao thêm.
@@ -67,7 +72,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
       // đã hiện đúng ảnh phiên bản mới ngay khi bấm, ở đây chỉ cần chờ tải nốt phần còn lại).
       setImgIdx(0);
     }
-    fetchProduct(slug).then((p) => { if (alive) { setProduct(p); setPreviewImg(null); } });
+    fetchProduct(slug).then((p) => { if (alive) { setProduct(p); setPreviewImg(null); setPreviewAttrs(null); } });
     return () => { alive = false; };
   }, [slug]);
 
@@ -138,6 +143,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
     if (!variant || !variant.slug || variant.slug === p.slug) return;
     switchingVariantRef.current = true;
     if (variant.image) setPreviewImg(variant.image);
+    if (variant.attrs) setPreviewAttrs(variant.attrs);
     navigate(`/san-pham/${variant.slug}`);
   };
 
@@ -217,7 +223,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
             <span className="inline-flex items-center gap-1"><ShieldCheck size={14} className="text-navy" /> {warrantyLabel(p.warrantyMonths)}</span>
           </div>
 
-          {p.variants?.length > 1 && <VariantPicker product={p} onPick={pickProductVariant} />}
+          {p.variants?.length > 1 && <VariantPicker product={p} onPick={pickProductVariant} attrsOverride={previewAttrs} />}
 
           {p.specChips?.length > 0 && (
             <div className="mt-4 border-l-[3px] border-yellow bg-navy-050 rounded-r-md px-4 py-2.5 text-[14px] font-mono text-ink/80">
@@ -413,9 +419,9 @@ const DESC_MAX = 460; // px — chiều cao tối đa của mô tả khi chưa b
  * Bấm 1 thuộc tính khi sản phẩm có ≥2 thuộc tính sẽ ưu tiên tìm đúng tổ hợp còn lại đang chọn,
  * không có tổ hợp đó thì lấy phiên bản đầu tiên khớp riêng thuộc tính vừa bấm.
  */
-function VariantPicker({ product, onPick }) {
+function VariantPicker({ product, onPick, attrsOverride }) {
   const variants = product.variants || [];
-  const current = product.variantAttrs || {};
+  const current = attrsOverride || product.variantAttrs || {};
   const keys = [];
   variants.forEach((v) => Object.keys(v.attrs || {}).forEach((k) => { if (!keys.includes(k)) keys.push(k); }));
 
