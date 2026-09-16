@@ -4,6 +4,7 @@ import { SITE, MENU, FEATURES, POLICY_LINKS } from "../config.js";
 import { href } from "../router.js";
 import Logo from "./Logo.jsx";
 import SocialLinks from "./SocialLinks.jsx";
+import NewsletterSignup from "./NewsletterSignup.jsx";
 
 export default function Footer({ navigate }) {
   const go = (to) => (e) => {
@@ -13,6 +14,7 @@ export default function Footer({ navigate }) {
 
   return (
     <footer className="mt-16 bg-ink text-white/70 font-sans">
+      <NewsletterSignup />
       <div className="mx-auto max-w-[1500px] px-4 py-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.3fr_0.9fr_0.9fr_1.2fr_1.1fr_1.3fr]">
         <div>
           <Logo size={34} textClass="text-xl text-white" className="text-white" />

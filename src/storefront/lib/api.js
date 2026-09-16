@@ -96,6 +96,22 @@ export async function placeOrder(order) {
   return data;
 }
 
+/** Đăng ký nhận ưu đãi (form chân trang) — chỉ tên + SĐT, tự thêm vào "Khách hàng" ở app quản lý. */
+export async function submitLead(name, phone) {
+  if (USE_MOCK || IS_LOCAL) {
+    return delay({ ok: true, demo: true }, 300);
+  }
+  const res = await fetch("/api/web/orders", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ leadOnly: true, customer: { name, phone } }),
+  });
+  if (!isJson(res)) throw new Error("Hệ thống chưa sẵn sàng");
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) throw new Error(data.error || `Không gửi được (lỗi ${res.status})`);
+  return data;
+}
+
 /** Tra cứu tình trạng 1 đơn (mã đơn + sđt). Trả object trạng thái hoặc ném lỗi tiếng Việt. */
 export async function lookupOrder(code, phone) {
   const c = encodeURIComponent(String(code || "").trim());

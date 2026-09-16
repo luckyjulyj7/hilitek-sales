@@ -3,7 +3,7 @@
  * body: { source, code?, customer:{name,phone,email}, shipping:{province,ward,address,fullAddress,note},
  *         payment:'cod'|'bank', items:[{productId|sku, qty, price, name?, preorder?}], subtotal? }
  */
-import { handler, json, readState, writeState, webStockOf } from "./_supa.js";
+import { handler, json, readState, writeState, webStockOf, upsertWebCustomer } from "./_supa.js";
 
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 
@@ -11,6 +11,19 @@ export default handler(async (req, res) => {
   if (req.method !== "POST") return json(res, 405, { error: "Chỉ hỗ trợ POST." });
 
   const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
+
+  // Đăng ký nhận ưu đãi (form ở chân trang) — CHỈ ghi nhận khách hàng tiềm năng, không tạo đơn.
+  // Gộp chung endpoint /api/web/orders để khỏi tốn thêm 1 function slot (giới hạn 12 trên Vercel Free).
+  if (body.leadOnly) {
+    const lc = body.customer || {};
+    const leadPhone = String(lc.phone || "").replace(/\s/g, "");
+    if (!lc.name || !/^0\d{8,10}$/.test(leadPhone)) return json(res, 400, { error: "Thiếu họ tên hoặc số điện thoại hợp lệ." });
+    const state = await readState();
+    const customerId = upsertWebCustomer(state, { name: lc.name, phone: leadPhone, note: "Đăng ký nhận ưu đãi trên website" });
+    await writeState(state);
+    return json(res, 200, { ok: true, customerId });
+  }
+
   const cust = body.customer || {};
   const sh = body.shipping || {};
   const phone = String(cust.phone || "").replace(/\s/g, "");
@@ -23,6 +36,13 @@ export default handler(async (req, res) => {
   const state = await readState();
   state.orders = Array.isArray(state.orders) ? state.orders : [];
   const products = Array.isArray(state.products) ? state.products : [];
+
+  // Tự thêm/gắn khách hàng theo SĐT — trước đây đơn web không gắn customerId nên khách đặt hàng
+  // trên web không hề xuất hiện trong danh sách "Khách hàng" ở app quản lý.
+  const customerId = upsertWebCustomer(state, {
+    name: cust.name, phone, note: "Khách đặt hàng qua website",
+    province: sh.province, ward: sh.ward, addressDetail: sh.address || sh.fullAddress,
+  });
 
   const VALID_VAT = ["KCT", "VAT0", "VAT8", "VAT10"];
   const mapped = items.map((it) => {
@@ -115,7 +135,7 @@ export default handler(async (req, res) => {
       status: "pending",
       approvalStatus: "approved",
       createdByRole: "web",
-      customerId: "",
+      customerId,
       branch: "",
       seller: "",
       tags: groupPreorderLabels.length ? [source, "Đặt trước"] : [source],

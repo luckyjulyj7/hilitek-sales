@@ -203,3 +203,32 @@ export function publishedProducts(state) {
   const list = Array.isArray(state.products) ? state.products : [];
   return list.filter((p) => p && p.web && p.web.published);
 }
+
+function nextCustomerCode(customers) {
+  let max = 0;
+  customers.forEach((c) => { const m = /^KH(\d+)$/.exec(c.code || ""); if (m) max = Math.max(max, parseInt(m[1], 10)); });
+  return "KH" + String(max + 1).padStart(3, "0");
+}
+
+/**
+ * Tìm/tạo khách hàng theo SĐT (chuẩn hoá chỉ giữ số) — dùng khi khách đặt hàng hoặc đăng ký nhận
+ * ưu đãi trên web, để họ TỰ hiện trong danh sách "Khách hàng" ở app quản lý (trước đây đơn/đăng ký
+ * từ web không gắn customerId nên khách web không hiện trong danh sách này).
+ * Mutate `state.customers` (thêm mới nếu SĐT chưa từng có, không đụng khách đã tồn tại). Trả về customerId,
+ * hoặc "" nếu SĐT rỗng.
+ */
+export function upsertWebCustomer(state, { name, phone, note, province, ward, addressDetail } = {}) {
+  const cleanPhone = String(phone || "").replace(/\D/g, "");
+  if (!cleanPhone) return "";
+  state.customers = Array.isArray(state.customers) ? state.customers : [];
+  const existing = state.customers.find((c) => String(c.phone || "").replace(/\D/g, "") === cleanPhone);
+  if (existing) return existing.id;
+  const id = "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  state.customers.push({
+    id, code: nextCustomerCode(state.customers), name: (name || "").trim() || "Khách website", phone: cleanPhone,
+    contactPerson: "", email: "", taxCode: "", province: province || "", ward: ward || "", addressDetail: addressDetail || "",
+    group: "retail", representativeName: "", representativeTitle: "", assignedTo: "",
+    note: note || "", addresses: [],
+  });
+  return id;
+}
