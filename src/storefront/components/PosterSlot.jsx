@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { ImagePlus } from "lucide-react";
+import { resolveLink } from "../router.js";
 
 /**
  * Khung poster/banner. Chưa có ảnh -> khung trống kèm gợi ý kích thước.
@@ -16,13 +17,12 @@ export default function PosterSlot({ slot, fill = false, className = "", navigat
 
   const [origin, setOrigin] = useState(null); // null = đang không rê chuột
 
-  // Chấp nhận link kiểu cũ "#/..." lẫn kiểu mới "/..."
-  const cleanLink = link ? link.replace(/^#/, "") : "";
+  const { internalPath, external, cleanLink } = resolveLink(link);
   const go = (e) => {
     if (!link) return;
-    if (link.startsWith("#") || link.startsWith("/")) {
+    if (internalPath != null) {
       e.preventDefault();
-      navigate?.(cleanLink);
+      navigate?.(internalPath);
     }
   };
 
@@ -33,8 +33,6 @@ export default function PosterSlot({ slot, fill = false, className = "", navigat
     const y = ((e.clientY - r.top) / r.height) * 100;
     setOrigin(`${x}% ${y}%`);
   };
-
-  const external = !!link && /^https?:\/\//i.test(link);
 
   if (image) {
     return (

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import PosterSlot from "./PosterSlot.jsx";
+import { resolveLink } from "../router.js";
 
 /**
  * Poster chính có thể chạy slide nhiều ảnh.
@@ -33,10 +34,11 @@ export default function PosterSlider({ slot, navigate, interval = 5000, classNam
 
   const style = w && h ? { aspectRatio: `${w} / ${h}` } : undefined;
   const openLink = (link) => (e) => {
+    const { internalPath } = resolveLink(link);
     if (!link) return;
-    if (link.startsWith("#") || link.startsWith("/")) {
+    if (internalPath != null) {
       e.preventDefault();
-      navigate?.(link.replace(/^#/, ""));
+      navigate?.(internalPath);
     }
   };
   const prev = (e) => { e.preventDefault(); setIdx((i) => (i - 1 + list.length) % list.length); };
@@ -49,21 +51,24 @@ export default function PosterSlider({ slot, navigate, interval = 5000, classNam
       onMouseEnter={() => { paused.current = true; }}
       onMouseLeave={() => { paused.current = false; }}
     >
-      {list.map((s, i) => (
-        <a
-          key={i}
-          href={(s.href ? s.href.replace(/^#/, "") : "") || "#"}
-          onClick={openLink(s.href)}
-          target={s.href && /^https?:\/\//i.test(s.href) ? "_blank" : undefined}
-          rel={s.href && /^https?:\/\//i.test(s.href) ? "noreferrer" : undefined}
-          className="absolute inset-0 transition-opacity duration-700 ease-in-out"
-          style={{ opacity: i === idx ? 1 : 0, pointerEvents: i === idx ? "auto" : "none" }}
-          aria-hidden={i === idx ? undefined : true}
-          tabIndex={i === idx ? undefined : -1}
-        >
-          <img src={s.image} alt={"Poster " + (i + 1)} className="w-full h-full object-cover" loading={i === 0 ? "eager" : "lazy"} />
-        </a>
-      ))}
+      {list.map((s, i) => {
+        const { external, cleanLink } = resolveLink(s.href);
+        return (
+          <a
+            key={i}
+            href={cleanLink || "#"}
+            onClick={openLink(s.href)}
+            target={external ? "_blank" : undefined}
+            rel={external ? "noreferrer" : undefined}
+            className="absolute inset-0 transition-opacity duration-700 ease-in-out"
+            style={{ opacity: i === idx ? 1 : 0, pointerEvents: i === idx ? "auto" : "none" }}
+            aria-hidden={i === idx ? undefined : true}
+            tabIndex={i === idx ? undefined : -1}
+          >
+            <img src={s.image} alt={"Poster " + (i + 1)} className="w-full h-full object-cover" loading={i === 0 ? "eager" : "lazy"} />
+          </a>
+        );
+      })}
 
       {list.length > 1 && (
         <>

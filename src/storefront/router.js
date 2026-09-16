@@ -46,6 +46,31 @@ export function useRoute() {
   return { ...route, navigate };
 }
 
+/**
+ * Chuẩn hoá link admin dán vào poster/banner: chấp nhận đường dẫn nội bộ ("/danh-muc?...",
+ * "#/danh-muc?...") lẫn link ngoài ("https://facebook.com/..."). Admin cũng hay dán CẢ ĐƯỜNG DẪN
+ * ĐẦY ĐỦ vào trang trong chính web mình (VD "https://hilipc.vn/danh-muc?cat=...") — nếu link đó
+ * cùng domain với web đang chạy thì coi là link NỘI BỘ (điều hướng nhanh trong SPA, không mở tab
+ * mới); domain khác mới thật sự là link ngoài (mở tab mới).
+ * Trả về { internalPath, external, cleanLink }.
+ */
+export function resolveLink(link) {
+  let internalPath = null;
+  if (link) {
+    if (link.startsWith("#") || link.startsWith("/")) {
+      internalPath = link.replace(/^#/, "");
+    } else if (/^https?:\/\//i.test(link)) {
+      try {
+        const u = new URL(link);
+        if (u.origin === window.location.origin) internalPath = u.pathname + u.search + u.hash;
+      } catch { /* link không hợp lệ — coi như link ngoài, để trình duyệt tự báo lỗi */ }
+    }
+  }
+  const external = !!link && internalPath == null && /^https?:\/\//i.test(link);
+  const cleanLink = internalPath != null ? internalPath : (link || "");
+  return { internalPath, external, cleanLink };
+}
+
 /** Ghép path + query thành href sạch (không dấu #). */
 export function href(path, query) {
   const qs = query ? new URLSearchParams(query).toString() : "";
