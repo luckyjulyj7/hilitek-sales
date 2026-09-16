@@ -217,7 +217,7 @@ function nextCustomerCode(customers) {
  * Mutate `state.customers` (thêm mới nếu SĐT chưa từng có, không đụng khách đã tồn tại). Trả về customerId,
  * hoặc "" nếu SĐT rỗng.
  */
-export function upsertWebCustomer(state, { name, phone, note, province, ward, addressDetail } = {}) {
+export function upsertWebCustomer(state, { name, phone, email, note, province, ward, addressDetail } = {}) {
   const cleanPhone = String(phone || "").replace(/\D/g, "");
   if (!cleanPhone) return "";
   state.customers = Array.isArray(state.customers) ? state.customers : [];
@@ -226,7 +226,7 @@ export function upsertWebCustomer(state, { name, phone, note, province, ward, ad
   const id = "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   state.customers.push({
     id, code: nextCustomerCode(state.customers), name: (name || "").trim() || "Khách website", phone: cleanPhone,
-    contactPerson: "", email: "", taxCode: "", province: province || "", ward: ward || "", addressDetail: addressDetail || "",
+    contactPerson: "", email: (email || "").trim(), taxCode: "", province: province || "", ward: ward || "", addressDetail: addressDetail || "",
     group: "retail", representativeName: "", representativeTitle: "", assignedTo: "",
     note: note || "", addresses: [],
   });

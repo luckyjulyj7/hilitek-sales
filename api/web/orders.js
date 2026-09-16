@@ -19,7 +19,7 @@ export default handler(async (req, res) => {
     const leadPhone = String(lc.phone || "").replace(/\s/g, "");
     if (!lc.name || !/^0\d{8,10}$/.test(leadPhone)) return json(res, 400, { error: "Thiếu họ tên hoặc số điện thoại hợp lệ." });
     const state = await readState();
-    const customerId = upsertWebCustomer(state, { name: lc.name, phone: leadPhone, note: "Đăng ký nhận ưu đãi trên website" });
+    const customerId = upsertWebCustomer(state, { name: lc.name, phone: leadPhone, email: lc.email, note: "Đăng ký nhận ưu đãi trên website" });
     await writeState(state);
     return json(res, 200, { ok: true, customerId });
   }
@@ -40,7 +40,7 @@ export default handler(async (req, res) => {
   // Tự thêm/gắn khách hàng theo SĐT — trước đây đơn web không gắn customerId nên khách đặt hàng
   // trên web không hề xuất hiện trong danh sách "Khách hàng" ở app quản lý.
   const customerId = upsertWebCustomer(state, {
-    name: cust.name, phone, note: "Khách đặt hàng qua website",
+    name: cust.name, phone, email: cust.email, note: "Khách đặt hàng qua website",
     province: sh.province, ward: sh.ward, addressDetail: sh.address || sh.fullAddress,
   });
 

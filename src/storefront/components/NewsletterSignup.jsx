@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { submitLead } from "../lib/api.js";
 
 /**
- * Băng "Đăng ký để nhận ưu đãi" — chỉ Họ tên + SĐT (giữ tối giản để khách chịu điền), hiện ở
+ * Băng "Đăng ký để nhận ưu đãi" — Họ tên + SĐT (bắt buộc) + Email (không bắt buộc), hiện ở
  * chân trang (mọi trang, xem Footer.jsx). Khách gửi form này chỉ là khách TIỀM NĂNG (chưa mua gì)
  * nên vẫn được tự thêm vào danh sách "Khách hàng" ở app quản lý — xem upsertWebCustomer() ở
  * api/web/_supa.js, gọi qua submitLead() (dùng chung endpoint /api/web/orders, cờ leadOnly).
@@ -10,6 +10,7 @@ import { submitLead } from "../lib/api.js";
 export default function NewsletterSignup() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -20,11 +21,12 @@ export default function NewsletterSignup() {
     setErr(""); setMsg("");
     if (!name.trim()) { setErr("Vui lòng nhập họ và tên."); return; }
     if (!/^0\d{8,10}$/.test(phone.replace(/\s/g, ""))) { setErr("Số điện thoại chưa đúng."); return; }
+    if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) { setErr("Email chưa đúng định dạng."); return; }
     setSending(true);
     try {
-      await submitLead(name.trim(), phone.replace(/\s/g, ""));
+      await submitLead(name.trim(), phone.replace(/\s/g, ""), email.trim());
       setMsg("Cảm ơn bạn đã đăng ký! Hilitek sẽ liên hệ khi có ưu đãi mới.");
-      setName(""); setPhone("");
+      setName(""); setPhone(""); setEmail("");
     } catch (e2) {
       setErr(e2.message || "Không gửi được, vui lòng thử lại.");
     } finally {
@@ -35,13 +37,14 @@ export default function NewsletterSignup() {
   return (
     <div className="bg-navy-050">
       <div className="mx-auto max-w-[1500px] px-4 py-8 font-sans">
-        <div className="flex items-center gap-4 mb-5">
+        <div className="flex items-center gap-4 mb-1.5">
           <div className="flex-1 h-px bg-line" />
           <h3 className="font-display text-lg sm:text-xl font-semibold text-ink text-center whitespace-nowrap">
             Đăng ký để nhận ưu đãi
           </h3>
           <div className="flex-1 h-px bg-line" />
         </div>
+        <p className="text-center text-[13px] text-ink/60 mb-5">Chỉ mất 3s đăng ký nhận ngay mã ưu đãi</p>
         <form onSubmit={submit} className="flex flex-wrap items-end justify-center gap-3">
           <label className="text-[13px] text-ink/70 flex-1 min-w-[180px] max-w-xs">
             Họ và tên
@@ -59,6 +62,16 @@ export default function NewsletterSignup() {
               onChange={(e) => setPhone(e.target.value)}
               placeholder="09xx xxx xxx"
               inputMode="tel"
+              className="mt-1 w-full border border-line rounded-md px-3 py-2 text-[14px] bg-white text-ink outline-none focus:border-navy"
+            />
+          </label>
+          <label className="text-[13px] text-ink/70 flex-1 min-w-[180px] max-w-xs">
+            Địa chỉ email
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="exam@gmail.com"
+              inputMode="email"
               className="mt-1 w-full border border-line rounded-md px-3 py-2 text-[14px] bg-white text-ink outline-none focus:border-navy"
             />
           </label>

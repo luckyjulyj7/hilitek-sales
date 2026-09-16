@@ -96,15 +96,15 @@ export async function placeOrder(order) {
   return data;
 }
 
-/** Đăng ký nhận ưu đãi (form chân trang) — chỉ tên + SĐT, tự thêm vào "Khách hàng" ở app quản lý. */
-export async function submitLead(name, phone) {
+/** Đăng ký nhận ưu đãi (form chân trang) — tên + SĐT bắt buộc, email không bắt buộc — tự thêm vào "Khách hàng" ở app quản lý. */
+export async function submitLead(name, phone, email) {
   if (USE_MOCK || IS_LOCAL) {
     return delay({ ok: true, demo: true }, 300);
   }
   const res = await fetch("/api/web/orders", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ leadOnly: true, customer: { name, phone } }),
+    body: JSON.stringify({ leadOnly: true, customer: { name, phone, email } }),
   });
   if (!isJson(res)) throw new Error("Hệ thống chưa sẵn sàng");
   const data = await res.json().catch(() => ({}));
