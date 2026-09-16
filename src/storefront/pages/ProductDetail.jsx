@@ -38,6 +38,10 @@ export default function ProductDetail({ slug, navigate, catalog }) {
   // lớn vốn đổi ngay). previewAttrs giữ lựa chọn vừa bấm để tô xanh + đổi nhãn NGAY, đồng bộ tốc
   // độ với ảnh — xoá khi tải xong (cùng lúc với previewImg, xem effect [slug] phía trên).
   const [previewAttrs, setPreviewAttrs] = useState(null);
+  // Giá/tồn kho cũng đổi theo phiên bản — đã có sẵn trong variants[] (không cần chờ mạng) nên
+  // hiện NGAY như ảnh/nhãn màu, tránh giá đỏ "đứng hình" vài trăm ms chờ tải xong.
+  const [previewPrice, setPreviewPrice] = useState(null);
+  const [previewStock, setPreviewStock] = useState(null);
 
   // Đo xem phần mô tả có dài quá DESC_MAX không -> mới hiện nút "Xem thêm".
   // Đo lại sau 500ms để bắt ảnh/video tải chậm làm nội dung cao thêm.
@@ -72,7 +76,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
       // đã hiện đúng ảnh phiên bản mới ngay khi bấm, ở đây chỉ cần chờ tải nốt phần còn lại).
       setImgIdx(0);
     }
-    fetchProduct(slug).then((p) => { if (alive) { setProduct(p); setPreviewImg(null); setPreviewAttrs(null); } });
+    fetchProduct(slug).then((p) => { if (alive) { setProduct(p); setPreviewImg(null); setPreviewAttrs(null); setPreviewPrice(null); setPreviewStock(null); } });
     return () => { alive = false; };
   }, [slug]);
 
@@ -109,7 +113,9 @@ export default function ProductDetail({ slug, navigate, catalog }) {
     );
 
   const p = product;
-  const off = discountPercent(p.price, p.listPrice);
+  const price = previewPrice != null ? previewPrice : p.price;
+  const stock = previewStock != null ? previewStock : p.stock;
+  const off = discountPercent(price, p.listPrice);
   const ownImgs = p.images?.length ? p.images.map((im) => im.src || im) : [placeholderImage(p.brand, p.category)];
   // Ảnh nhỏ hiện đủ ảnh của MỌI phiên bản (giống Shopee) để khách lướt xem thoải mái — lướt qua
   // lại (mũi tên/ảnh nhỏ) CHỈ đổi ảnh lớn, KHÔNG đổi phiên bản đang chọn. Chỉ khi bấm đúng nút
@@ -118,8 +124,8 @@ export default function ProductDetail({ slug, navigate, catalog }) {
     .filter((v) => v.slug !== p.slug && v.image)
     .map((v) => v.image);
   const imgs = [...ownImgs, ...otherVariantImgs];
-  const low = p.stock > 0 && p.stock <= LOW_STOCK_THRESHOLD;
-  const out = !p.stock;
+  const low = stock > 0 && stock <= LOW_STOCK_THRESHOLD;
+  const out = !stock;
   const groupName =
     productGroups(p)[0] ||
     MENU.find((g) => (g.subs || []).some((s) => s.name === p.category))?.group ||
@@ -144,6 +150,8 @@ export default function ProductDetail({ slug, navigate, catalog }) {
     switchingVariantRef.current = true;
     if (variant.image) setPreviewImg(variant.image);
     if (variant.attrs) setPreviewAttrs(variant.attrs);
+    if (variant.price != null) setPreviewPrice(variant.price);
+    if (variant.stock != null) setPreviewStock(variant.stock);
     navigate(`/san-pham/${variant.slug}`);
   };
 
@@ -237,10 +245,10 @@ export default function ProductDetail({ slug, navigate, catalog }) {
               {off > 0 && (
                 <div className="flex items-center gap-2 text-[14px]">
                   <span className="text-mute line-through">{formatVND(p.listPrice)}</span>
-                  <span className="font-semibold text-[#D0021B]">Tiết kiệm {formatVND(p.listPrice - p.price)}</span>
+                  <span className="font-semibold text-[#D0021B]">Tiết kiệm {formatVND(p.listPrice - price)}</span>
                 </div>
               )}
-              <div className="text-[32px] sm:text-[38px] font-bold text-sale leading-none mt-0.5">{formatVND(p.price)}</div>
+              <div className="text-[32px] sm:text-[38px] font-bold text-sale leading-none mt-0.5">{formatVND(price)}</div>
             </div>
             <div className="mt-1 text-[13px] text-mute">Đã bao gồm VAT</div>
 
