@@ -2030,7 +2030,7 @@ function StatCard({ label, value, icon: Icon, accent }) {
 
 /* ---------------- Products & Inventory (Sản phẩm & Tồn kho) ---------------- */
 
-function ProductsInventory({ products, setProducts, addLog, currentUser, focusProductId, onFocusHandled, goToDoc, suppliers, goToSupplier, categories, setCategories, brands, setBrands, webConfig }) {
+function ProductsInventory({ products, setProducts, addLog, currentUser, focusProductId, focusEdit, onFocusHandled, goToDoc, suppliers, goToSupplier, goToWebProduct, categories, setCategories, brands, setBrands, webConfig }) {
   // Cây danh mục web đầy đủ (mọi cấp), gom lại theo nhóm chính — cho ô chọn "Danh mục phụ trên web".
   const webSubGroups = useMemo(() => {
     const flat = webFlattenMenuTree(webConfig && Array.isArray(webConfig.MENU) && webConfig.MENU.length ? webConfig.MENU : WEB_DEFAULT_MENU);
@@ -2440,7 +2440,14 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
 
   useEffect(() => {
     if (focusProductId) {
-      openProductDetail(focusProductId);
+      // navTarget kèm cờ "edit" (bấm từ "Sản phẩm web" quay lại) -> vào thẳng form sửa, khỏi
+      // qua bước xem chi tiết trước.
+      if (focusEdit) {
+        const p = products.find((x) => x.id === focusProductId);
+        if (p) openEdit(p);
+      } else {
+        openProductDetail(focusProductId);
+      }
       onFocusHandled && onFocusHandled();
     }
   }, [focusProductId]);
@@ -2782,6 +2789,9 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
               {!isCtv && <button onClick={() => openIOFromDetail(viewingProduct, "out")} className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm text-white" style={{ background: RUST }}><ArrowUpFromLine size={14} /> Xuất kho</button>}
               {isAdmin && (
                 <button onClick={() => openEditFromDetail(viewingProduct)} className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm border" style={{ borderColor: LINE, color: INK }}><Pencil size={14} /> Sửa thông tin</button>
+              )}
+              {isAdmin && goToWebProduct && (
+                <button onClick={() => goToWebProduct(viewingProduct.id)} title="Sửa mô tả, ảnh, giá so sánh... của sản phẩm này trên website" className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm border" style={{ borderColor: BLUE, color: BLUE }}><Globe size={14} /> Sửa trên Website</button>
               )}
               {isAdmin && (
                 <button
@@ -6625,7 +6635,7 @@ function ServiceTickets({ repairTickets, setRepairTickets, helpdeskTickets, setH
   );
 }
 
-function ProductsSection({ products, setProducts, purchaseOrders, setPurchaseOrders, suppliers, setSuppliers, categories, setCategories, brands, setBrands, stocktakes, setStocktakes, warrantyTickets, setWarrantyTickets, repairTickets, setRepairTickets, helpdeskTickets, setHelpdeskTickets, orders, customers, employeeNames, currentUser, addLog, navTarget, onFocusHandled, goToDoc, goToSupplier, webConfig }) {
+function ProductsSection({ products, setProducts, purchaseOrders, setPurchaseOrders, suppliers, setSuppliers, categories, setCategories, brands, setBrands, stocktakes, setStocktakes, warrantyTickets, setWarrantyTickets, repairTickets, setRepairTickets, helpdeskTickets, setHelpdeskTickets, orders, customers, employeeNames, currentUser, addLog, navTarget, onFocusHandled, goToDoc, goToSupplier, goToWebProduct, webConfig }) {
   const [sub, setSub] = useState("list");
   const isAdmin = currentUser.role === "admin";
   const isCtv = currentUser.role === "ctv";
@@ -6668,7 +6678,7 @@ function ProductsSection({ products, setProducts, purchaseOrders, setPurchaseOrd
           </button>
         )}
       </div>
-      {sub === "list" && <ProductsInventory products={products} setProducts={setProducts} addLog={addLog} currentUser={currentUser} focusProductId={navTarget?.type === "product" ? navTarget.id : null} onFocusHandled={onFocusHandled} goToDoc={goToDoc} suppliers={suppliers} goToSupplier={goToSupplier} categories={categories} setCategories={setCategories} brands={brands} setBrands={setBrands} webConfig={webConfig} />}
+      {sub === "list" && <ProductsInventory products={products} setProducts={setProducts} addLog={addLog} currentUser={currentUser} focusProductId={navTarget?.type === "product" ? navTarget.id : null} focusEdit={navTarget?.type === "product" && !!navTarget.edit} onFocusHandled={onFocusHandled} goToDoc={goToDoc} suppliers={suppliers} goToSupplier={goToSupplier} goToWebProduct={goToWebProduct} categories={categories} setCategories={setCategories} brands={brands} setBrands={setBrands} webConfig={webConfig} />}
       {isAdmin && sub === "purchase" && <PurchaseOrders purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} products={products} setProducts={setProducts} suppliers={suppliers} setSuppliers={setSuppliers} employeeNames={employeeNames} addLog={addLog} focusPOId={navTarget?.type === "po" ? navTarget.id : null} onFocusHandled={onFocusHandled} />}
       {isAdmin && sub === "stocktake" && <Stocktake products={products} setProducts={setProducts} stocktakes={stocktakes} setStocktakes={setStocktakes} currentUser={currentUser} addLog={addLog} />}
       {!isCtv && sub === "warranty" && <WarrantyTickets products={products} setProducts={setProducts} orders={orders} customers={customers} warrantyTickets={warrantyTickets} setWarrantyTickets={setWarrantyTickets} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} />}
@@ -12530,8 +12540,11 @@ function webOrderTotal(o) {
   return (o.items || []).reduce((s, it) => s + (Number(it.qty) || 0) * (Number(it.price) || 0), 0);
 }
 
-function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig, categories, brands, addLog, onOpenOrder }) {
+function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig, categories, brands, addLog, onOpenOrder, navTarget, onFocusHandled, goToInventoryProductEdit }) {
   const [sub, setSub] = useState("products");
+  useEffect(() => {
+    if (navTarget?.type === "webproduct") setSub("products");
+  }, [navTarget]);
   const subs = [
     { id: "products", label: "Sản phẩm web" },
     { id: "orders", label: "Đơn hàng web" },
@@ -12548,14 +12561,14 @@ function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig
           </button>
         ))}
       </div>
-      {sub === "products" && <WebProducts products={products} setProducts={setProducts} categories={categories} brands={brands} addLog={addLog} webConfig={webConfig} />}
+      {sub === "products" && <WebProducts products={products} setProducts={setProducts} categories={categories} brands={brands} addLog={addLog} webConfig={webConfig} focusProductId={navTarget?.type === "webproduct" ? navTarget.id : null} onFocusHandled={onFocusHandled} goToInventoryProductEdit={goToInventoryProductEdit} />}
       {sub === "orders" && <WebOrders orders={orders} onOpenOrder={onOpenOrder} />}
       {sub === "config" && <WebConfigForm webConfig={webConfig} setWebConfig={setWebConfig} setProducts={setProducts} addLog={addLog} products={products} categories={categories} />}
     </div>
   );
 }
 
-function WebProducts({ products, setProducts, categories, brands, addLog, webConfig }) {
+function WebProducts({ products, setProducts, categories, brands, addLog, webConfig, focusProductId, onFocusHandled, goToInventoryProductEdit }) {
   // Danh mục web khả dụng = toàn bộ cây danh mục (mọi cấp) trong menu ở "Cấu hình web" (hoặc menu mặc định),
   // kèm cấp (depth) để hiện thụt lề đúng thứ bậc khi chọn cho sản phẩm.
   const webCats = useMemo(() => {
@@ -12569,6 +12582,14 @@ function WebProducts({ products, setProducts, categories, brands, addLog, webCon
   const [editId, setEditId] = useState(null);
   const [expandedGroups, setExpandedGroups] = useState(new Set());
   const toggleGroup = (gid) => setExpandedGroups((prev) => { const n = new Set(prev); n.has(gid) ? n.delete(gid) : n.add(gid); return n; });
+
+  // Bấm "Sửa trên Website" từ bên "Sản phẩm & Tồn kho" -> vào thẳng trang sửa đúng sản phẩm đó.
+  useEffect(() => {
+    if (focusProductId) {
+      setEditId(focusProductId);
+      onFocusHandled && onFocusHandled();
+    }
+  }, [focusProductId]);
 
   const categoryOptions = useMemo(() => [...new Set(categories || [])].sort((a, b) => a.localeCompare(b, "vi")), [categories]);
   const brandOptions = useMemo(() => {
@@ -12622,6 +12643,7 @@ function WebProducts({ products, setProducts, categories, brands, addLog, webCon
         webCats={webCats}
         onBack={() => setEditId(null)}
         onSwitch={setEditId}
+        goToInventoryProductEdit={goToInventoryProductEdit}
         addLog={addLog}
       />
     );
@@ -12988,7 +13010,7 @@ function FetchFromSupplierUrl({ onApply }) {
  * Trang sửa 1 sản phẩm trên web — bố cục 2 cột kiểu Sapo.
  * Sửa trên bản NHÁP tại chỗ — KHÔNG tự lưu; phải bấm "Lưu" mới ghi vào dữ liệu thật.
  */
-function WebProductPage({ product, products, setProducts, webCats, onBack, onSwitch, addLog }) {
+function WebProductPage({ product, products, setProducts, webCats, onBack, onSwitch, goToInventoryProductEdit, addLog }) {
   const p = product;
   // Các phiên bản (màu sắc/kích cỡ...) cùng 1 sản phẩm dùng CHUNG mô tả/thông số/danh mục/trạng
   // thái/giá so sánh — KHÔNG đồng bộ "images": mỗi phiên bản có ảnh riêng, đây là điểm khác duy nhất.
@@ -13037,6 +13059,18 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
         <button onClick={handleBack} className="text-sm inline-flex items-center gap-1" style={{ color: BLUE }}>
           <ChevronLeft size={16} /> Danh sách sản phẩm web
         </button>
+        {goToInventoryProductEdit && (
+          <button
+            onClick={() => {
+              if (dirty && !window.confirm("Có thay đổi chưa lưu. Rời khỏi trang sẽ mất các thay đổi này — tiếp tục?")) return;
+              goToInventoryProductEdit(p.id);
+            }}
+            title="Sửa mã VT, giá nhập/bán, tồn kho... của sản phẩm này"
+            className="text-xs inline-flex items-center gap-1 px-2.5 py-1 rounded-sm border" style={{ borderColor: LINE, color: INK }}
+          >
+            <Package size={13} /> Sửa trong Sản phẩm & Tồn kho
+          </button>
+        )}
         <div className="flex-1" />
         {dirty && <span className="text-xs font-medium" style={{ color: BRASS }}>● Có thay đổi chưa lưu</span>}
         <button onClick={doDiscard} disabled={!dirty} className="text-xs px-3 py-1.5 rounded-sm border disabled:opacity-40" style={{ borderColor: LINE, color: INK }}>
@@ -14317,6 +14351,15 @@ export default function SalesManager() {
     if (!supplierId || currentUser.role !== "admin") return;
     setTab("suppliers"); setNavTarget({ type: "supplier", id: supplierId });
   };
+  // Điều hướng qua lại giữa "Sản phẩm & Tồn kho" và "Website → Sản phẩm web" cho ĐÚNG 1 sản phẩm.
+  const goToWebProduct = (productId) => {
+    if (!productId || currentUser.role !== "admin") return;
+    setTab("website"); setNavTarget({ type: "webproduct", id: productId });
+  };
+  const goToInventoryProductEdit = (productId) => {
+    if (!productId) return;
+    setTab("products"); setNavTarget({ type: "product", id: productId, edit: true });
+  };
   // status: "approval_pending" | "return_request" | id trong STATUSES (pending/shipping/delivered/done/cancelled)
   const goToOrdersFilter = (status) => {
     setTab("orders"); setNavTarget({ type: "orders-filter", status });
@@ -14652,7 +14695,7 @@ export default function SalesManager() {
           </div>
           <AppErrorBoundary key={tab}>
             {tab === "dashboard" && <Dashboard products={products} orders={orders} goToOrdersFilter={goToOrdersFilter} />}
-            {tab === "products" && roleTabIds.includes("products") && <ProductsSection products={products} setProducts={setProducts} purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} suppliers={suppliers} setSuppliers={setSuppliers} categories={categories} setCategories={setCategories} brands={brands} setBrands={setBrands} stocktakes={stocktakes} setStocktakes={setStocktakes} warrantyTickets={warrantyTickets} setWarrantyTickets={setWarrantyTickets} repairTickets={repairTickets} setRepairTickets={setRepairTickets} helpdeskTickets={helpdeskTickets} setHelpdeskTickets={setHelpdeskTickets} orders={orders} customers={customers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} navTarget={tab === "products" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} goToDoc={goToDoc} goToSupplier={goToSupplier} webConfig={webConfig} />}
+            {tab === "products" && roleTabIds.includes("products") && <ProductsSection products={products} setProducts={setProducts} purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} suppliers={suppliers} setSuppliers={setSuppliers} categories={categories} setCategories={setCategories} brands={brands} setBrands={setBrands} stocktakes={stocktakes} setStocktakes={setStocktakes} warrantyTickets={warrantyTickets} setWarrantyTickets={setWarrantyTickets} repairTickets={repairTickets} setRepairTickets={setRepairTickets} helpdeskTickets={helpdeskTickets} setHelpdeskTickets={setHelpdeskTickets} orders={orders} customers={customers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} navTarget={tab === "products" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} goToDoc={goToDoc} goToSupplier={goToSupplier} goToWebProduct={goToWebProduct} webConfig={webConfig} />}
             {tab === "quotes" && <Quotations quotations={quotations} setQuotations={setQuotations} orders={orders} setOrders={setOrders} products={products} setProducts={setProducts} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} brands={brands} />}
             {tab === "orders" && <Orders orders={orders} setOrders={setOrders} products={products} setProducts={setProducts} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} focusOrderId={tab === "orders" ? navTarget?.type === "order" ? navTarget.id : null : null} initialFilterStatus={tab === "orders" && navTarget?.type === "orders-filter" ? navTarget.status : null} onFocusHandled={() => setNavTarget(null)} printSettings={printSettings} setPrintSettings={setPrintSettings} />}
             {tab === "shipping" && roleTabIds.includes("shipping") && <Shipping shippingTickets={shippingTickets} setShippingTickets={setShippingTickets} parcelLabels={parcelLabels} setParcelLabels={setParcelLabels} orders={orders} customers={customers} currentUser={currentUser} addLog={addLog} />}
@@ -14660,7 +14703,7 @@ export default function SalesManager() {
             {tab === "suppliers" && <Suppliers suppliers={suppliers} setSuppliers={setSuppliers} purchaseOrders={purchaseOrders} addLog={addLog} goToDoc={goToDoc} navTarget={tab === "suppliers" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} />}
             {tab === "plans" && roleTabIds.includes("plans") && <Plans plans={plans} setPlans={setPlans} orders={orders} purchaseOrders={purchaseOrders} products={products} employeeNames={employeeNames} />}
             {tab === "reports" && roleTabIds.includes("reports") && <Reports orders={orders} products={products} customers={customers} accounts={accounts} purchaseOrders={purchaseOrders} warrantyTickets={warrantyTickets} />}
-            {tab === "website" && currentUser.role === "admin" && <WebsiteSection products={products} setProducts={setProducts} orders={orders} webConfig={webConfig} setWebConfig={setWebConfig} categories={categories} brands={brands} currentUser={currentUser} addLog={addLog} onOpenOrder={(id) => { setTab("orders"); setNavTarget({ type: "order", id }); }} />}
+            {tab === "website" && currentUser.role === "admin" && <WebsiteSection products={products} setProducts={setProducts} orders={orders} webConfig={webConfig} setWebConfig={setWebConfig} categories={categories} brands={brands} currentUser={currentUser} addLog={addLog} onOpenOrder={(id) => { setTab("orders"); setNavTarget({ type: "order", id }); }} navTarget={tab === "website" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} goToInventoryProductEdit={goToInventoryProductEdit} />}
             {tab === "activity" && currentUser.role === "admin" && <ActivityLog log={activityLog} accounts={accounts} />}
             {tab === "accounts" && currentUser.isOwner && <Accounts accounts={accounts} setAccounts={setAccounts} currentUser={currentUser} addLog={addLog} onResetTestData={resetTestData} onDownloadBackup={downloadBackup} onRestoreBackup={restoreBackup} />}
             {tab === "profile" && <MyProfile currentUser={currentUser} setAccounts={setAccounts} addLog={addLog} />}
