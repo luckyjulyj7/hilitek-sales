@@ -61,7 +61,6 @@ export default function ProductCard({ product, onOpen }) {
         {/* Giá — vị trí cố định, không cho xuống dòng chữ "đ"; luôn chừa dòng giá gạch */}
         <div className="mt-2.5">
           <div className="font-mono font-extrabold text-[17px] sm:text-[23px] text-sale leading-none whitespace-nowrap tabular-nums">
-            {p.priceFrom && <span className="text-[12px] sm:text-[14px] font-semibold align-top mr-0.5">Từ</span>}
             {formatVND(p.price)}
           </div>
           <div className="mt-0.5 h-[15px] font-mono text-[11px] text-mute/80 line-through whitespace-nowrap">

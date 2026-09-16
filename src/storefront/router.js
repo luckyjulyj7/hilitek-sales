@@ -54,6 +54,11 @@ export function useRoute() {
  * mới); domain khác mới thật sự là link ngoài (mở tab mới).
  * Trả về { internalPath, external, cleanLink }.
  */
+// Domain chính thức của web — so khớp thêm domain này (không chỉ window.location) để link nội bộ
+// vẫn nhận đúng dù đang xem qua domain phụ/preview (Vercel) khác với domain khách hay gõ.
+const KNOWN_HOSTS = ["hilipc.vn"];
+const stripWww = (h) => String(h || "").replace(/^www\./i, "").toLowerCase();
+
 export function resolveLink(link) {
   let internalPath = null;
   if (link) {
@@ -62,7 +67,9 @@ export function resolveLink(link) {
     } else if (/^https?:\/\//i.test(link)) {
       try {
         const u = new URL(link);
-        if (u.origin === window.location.origin) internalPath = u.pathname + u.search + u.hash;
+        const host = stripWww(u.hostname);
+        const sameAsCurrent = host === stripWww(window.location.hostname);
+        if (sameAsCurrent || KNOWN_HOSTS.includes(host)) internalPath = u.pathname + u.search + u.hash;
       } catch { /* link không hợp lệ — coi như link ngoài, để trình duyệt tự báo lỗi */ }
     }
   }
