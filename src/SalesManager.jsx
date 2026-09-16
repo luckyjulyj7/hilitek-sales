@@ -12554,6 +12554,11 @@ function WebProducts({ products, setProducts, categories, brands, addLog, webCon
   const [filterCategory, setFilterCategory] = useState("");
   const [filterBrand, setFilterBrand] = useState("");
   const [editId, setEditId] = useState(null);
+  // true = vào sửa từ dòng ĐẠI DIỆN cả nhóm (bấm "Sửa" ở dòng gộp) — lúc này khoá phần "Ảnh" (mỗi
+  // phiên bản có ảnh riêng, sửa từ đây dễ nhầm) và hiện thanh chuyển nhanh qua từng phiên bản.
+  // false = vào sửa đúng 1 phiên bản cụ thể (dòng phiên bản riêng, hoặc bấm chuyển từ thanh trên) —
+  // lúc này mở khoá "Ảnh" và ẩn thanh chuyển phiên bản đi (đã đang ở đúng phiên bản rồi).
+  const [editViaGroup, setEditViaGroup] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState(new Set());
   const toggleGroup = (gid) => setExpandedGroups((prev) => { const n = new Set(prev); n.has(gid) ? n.delete(gid) : n.add(gid); return n; });
 
@@ -12597,7 +12602,18 @@ function WebProducts({ products, setProducts, categories, brands, addLog, webCon
 
   const editing = editId ? products.find((x) => x.id === editId) : null;
   if (editing) {
-    return <WebProductPage product={editing} products={products} setProducts={setProducts} webCats={webCats} onBack={() => setEditId(null)} onSwitch={setEditId} addLog={addLog} />;
+    return (
+      <WebProductPage
+        product={editing}
+        products={products}
+        setProducts={setProducts}
+        webCats={webCats}
+        onBack={() => setEditId(null)}
+        onSwitch={(id) => { setEditId(id); setEditViaGroup(false); }}
+        isGroupEntry={editViaGroup}
+        addLog={addLog}
+      />
+    );
   }
 
   return (
@@ -12692,7 +12708,7 @@ function WebProducts({ products, setProducts, categories, brands, addLog, webCon
                         : <span style={{ color: st.closingQty <= 0 ? RUST : INK }}>{st.closingQty}</span>}
                     </td>
                     <td className="px-3 py-2.5 text-right">
-                      <button onClick={() => setEditId(p.id)} className="text-xs px-2.5 py-1 rounded-sm border" style={{ borderColor: LINE, color: INK }}>
+                      <button onClick={() => { setEditId(p.id); setEditViaGroup(false); }} className="text-xs px-2.5 py-1 rounded-sm border" style={{ borderColor: LINE, color: INK }}>
                         Sửa
                       </button>
                     </td>
@@ -12737,7 +12753,7 @@ function WebProducts({ products, setProducts, categories, brands, addLog, webCon
                       </td>
                       <td className="px-3 py-2.5 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace", color: stockSum <= 0 ? RUST : INK }}>{stockSum}</td>
                       <td className="px-3 py-2.5 text-right">
-                        <button onClick={() => setEditId(rep.id)} className="text-xs px-2.5 py-1 rounded-sm border" style={{ borderColor: LINE, color: INK }}>
+                        <button onClick={() => { setEditId(rep.id); setEditViaGroup(true); }} className="text-xs px-2.5 py-1 rounded-sm border" style={{ borderColor: LINE, color: INK }}>
                           Sửa
                         </button>
                       </td>
@@ -12759,7 +12775,7 @@ function WebProducts({ products, setProducts, categories, brands, addLog, webCon
  * Sao chép nhanh thông tin web từ 1 sản phẩm khác đã có sẵn — đỡ gõ lại từ đầu
  * khi thêm sản phẩm cùng dòng hàng (chọn phần cần sao chép, phần còn lại tự chỉnh riêng).
  */
-function CopyWebInfoButton({ product, products, setWeb }) {
+function CopyWebInfoButton({ product, products, setWeb, lockImages }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [picked, setPicked] = useState(null);
@@ -12786,7 +12802,7 @@ function CopyWebInfoButton({ product, products, setWeb }) {
     if (fields.specsText) patch.specsText = src.specsText;
     if (fields.description) patch.description = src.description;
     if (fields.shortDesc) patch.shortDesc = src.shortDesc;
-    if (fields.images) patch.images = src.images;
+    if (fields.images && !lockImages) patch.images = src.images;
     if (fields.promo) patch.promo = src.promo;
     if (fields.seo) { patch.seoTitle = src.seoTitle; patch.seoDesc = src.seoDesc; }
     setWeb(patch);
@@ -12798,7 +12814,7 @@ function CopyWebInfoButton({ product, products, setWeb }) {
     ["specsText", "Thông số kỹ thuật"],
     ["description", "Nội dung mô tả"],
     ["shortDesc", "Mô tả ngắn"],
-    ["images", "Ảnh sản phẩm trên web"],
+    ...(lockImages ? [] : [["images", "Ảnh sản phẩm trên web"]]),
     ["promo", "Khuyến mãi / quà tặng"],
     ["seo", "Tiêu đề & mô tả SEO"],
   ];
@@ -12961,11 +12977,15 @@ function FetchFromSupplierUrl({ onApply }) {
  * Trang sửa 1 sản phẩm trên web — bố cục 2 cột kiểu Sapo.
  * Sửa trên bản NHÁP tại chỗ — KHÔNG tự lưu; phải bấm "Lưu" mới ghi vào dữ liệu thật.
  */
-function WebProductPage({ product, products, setProducts, webCats, onBack, onSwitch, addLog }) {
+function WebProductPage({ product, products, setProducts, webCats, onBack, onSwitch, isGroupEntry, addLog }) {
   const p = product;
   // Các phiên bản (màu sắc/kích cỡ...) cùng 1 sản phẩm dùng CHUNG mô tả/thông số/danh mục/trạng
   // thái/giá so sánh — KHÔNG đồng bộ "images": mỗi phiên bản có ảnh riêng, đây là điểm khác duy nhất.
   const shareKeys = ["description", "specsText", "categories", "shortDesc", "promo", "published", "compareAtPrice"];
+  // Vào sửa từ dòng ĐẠI DIỆN cả nhóm (danh sách gộp) không biết chắc đang thao tác đúng phiên bản
+  // nào -> khoá hẳn phần Ảnh ở đây, bắt phải bấm qua đúng phiên bản (thanh "Phiên bản" bên dưới)
+  // rồi mới sửa ảnh của phiên bản đó.
+  const imagesLocked = isGroupEntry && !!p.variantGroupId;
   const [draft, setDraft] = useState(() => normalizeWeb(product.web));
   const [weightDraft, setWeightDraft] = useState(product.weight ?? 0);
   const [dirty, setDirty] = useState(false);
@@ -13022,10 +13042,10 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
           <h3 className="text-lg font-semibold mb-1" style={{ color: INK }}>{p.name}</h3>
           <div className="text-[11px] opacity-50" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.sku} · {p.category || "—"}</div>
         </div>
-        <CopyWebInfoButton product={p} products={products} setWeb={setWeb} />
+        <CopyWebInfoButton product={p} products={products} setWeb={setWeb} lockImages={imagesLocked} />
       </div>
 
-      {p.variantGroupId && (() => {
+      {isGroupEntry && p.variantGroupId && (() => {
         const siblings = products.filter((x) => x.variantGroupId === p.variantGroupId);
         if (siblings.length < 2) return null;
         const switchTo = (id) => {
@@ -13083,7 +13103,18 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
 
           <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
             <p className="text-base font-bold mb-2" style={{ color: RUST }}>Ảnh sản phẩm trên web <span className="text-xs font-normal opacity-50">(tối đa 10, chất lượng cao — bỏ trống = dùng ảnh ở form sản phẩm chính)</span></p>
-            <WebImageGrid images={w.images} onChange={(imgs) => setWeb({ images: imgs })} max={10} />
+            {imagesLocked ? (
+              <div>
+                <p className="text-sm font-bold mb-3" style={{ color: RUST }}>
+                  Sản phẩm này có nhiều phiên bản — vui lòng thêm ảnh ở từng phiên bản ở trang riêng (bấm chọn đúng phiên bản ở thanh "Phiên bản" phía trên).
+                </p>
+                <div className="opacity-40 pointer-events-none select-none">
+                  <WebImageGrid images={w.images} onChange={() => {}} max={10} />
+                </div>
+              </div>
+            ) : (
+              <WebImageGrid images={w.images} onChange={(imgs) => setWeb({ images: imgs })} max={10} />
+            )}
           </div>
 
           <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>

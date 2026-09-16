@@ -105,12 +105,14 @@ export default function ProductDetail({ slug, navigate, catalog }) {
 
   const p = product;
   const off = discountPercent(p.price, p.listPrice);
-  const imgs = p.images?.length ? p.images.map((im) => im.src || im) : [placeholderImage(p.brand, p.category)];
-  // Ảnh nhỏ hiện đủ mọi phiên bản (giống Shopee): thêm 1 ảnh đại diện của TỪNG phiên bản khác
-  // vào cuối dải ảnh nhỏ — bấm vào đó sẽ chuyển sang đúng phiên bản đó (dùng lại pickProductVariant).
-  const otherVariantThumbs = (p.variants || [])
+  const ownImgs = p.images?.length ? p.images.map((im) => im.src || im) : [placeholderImage(p.brand, p.category)];
+  // Ảnh nhỏ hiện đủ ảnh của MỌI phiên bản (giống Shopee) để khách lướt xem thoải mái — lướt qua
+  // lại (mũi tên/ảnh nhỏ) CHỈ đổi ảnh lớn, KHÔNG đổi phiên bản đang chọn. Chỉ khi bấm đúng nút
+  // chọn phiên bản (VariantPicker) mới thật sự chuyển sang phiên bản đó (xem pickProductVariant).
+  const otherVariantImgs = (p.variants || [])
     .filter((v) => v.slug !== p.slug && v.image)
-    .map((v) => ({ src: v.image, variant: v }));
+    .map((v) => v.image);
+  const imgs = [...ownImgs, ...otherVariantImgs];
   const low = p.stock > 0 && p.stock <= LOW_STOCK_THRESHOLD;
   const out = !p.stock;
   const groupName =
@@ -194,17 +196,10 @@ export default function ProductDetail({ slug, navigate, catalog }) {
               </>
             )}
           </div>
-          {(imgs.length > 1 || otherVariantThumbs.length > 0) && (
-            <div className="mt-3 flex gap-2 flex-wrap">
+          {imgs.length > 1 && (
+            <div className="mt-3 grid grid-cols-6 gap-2">
               {imgs.map((src, i) => (
-                <button key={`own-${i}`} onClick={() => setImgIdx(i)} className={"w-16 h-16 border rounded-md overflow-hidden shrink-0 " + (!previewImg && i === imgIdx ? "border-navy" : "border-line")}>
-                  <img src={src} alt="" className="w-full h-full object-cover" />
-                </button>
-              ))}
-              {otherVariantThumbs.map(({ src, variant }) => (
-                <button key={`variant-${variant.id}`} type="button" onClick={() => pickProductVariant(variant)}
-                  title={Object.values(variant.attrs || {}).join(", ") || undefined}
-                  className="w-16 h-16 border border-line rounded-md overflow-hidden shrink-0 hover:border-navy">
+                <button key={i} onClick={() => setImgIdx(i)} className={"aspect-square w-full border rounded-md overflow-hidden " + (!previewImg && i === imgIdx ? "border-navy" : "border-line")}>
                   <img src={src} alt="" className="w-full h-full object-cover" />
                 </button>
               ))}
