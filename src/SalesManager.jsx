@@ -2088,11 +2088,13 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
   const brandOptions = [...new Set((brands || []).map((b) => b.name))].sort();
   const brandOptionsOf = (cat) => [...(brands || [])].filter((b) => b.category === cat).map((b) => b.name).sort();
 
+  // Sản phẩm mới thêm luôn nằm CUỐI mảng products (thêm bằng cách nối vào cuối) — đảo ngược lại
+  // để sản phẩm mới tạo hiện lên ĐẦU danh sách, dễ thấy ngay sau khi thêm/tạo phiên bản.
   const filtered = products.filter(
     (p) => (p.name.toLowerCase().includes(query.toLowerCase()) || p.code.toLowerCase().includes(query.toLowerCase()))
       && (!filterCategory || p.category === filterCategory)
       && (!filterBrand || p.brand === filterBrand)
-  );
+  ).reverse();
   const toggleSelect = (id) => setSelectedIds((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
   const toggleSelectAll = () => setSelectedIds((prev) => (prev.size === filtered.length ? new Set() : new Set(filtered.map((p) => p.id))));
 
@@ -12629,15 +12631,20 @@ function WebProducts({ products, setProducts, categories, brands, addLog, webCon
     return [...new Set(source)].sort((a, b) => a.localeCompare(b, "vi"));
   }, [brands, products, filterCategory]);
 
+  // Sản phẩm mới thêm luôn nằm CUỐI mảng products (thêm bằng cách nối vào cuối) — sắp theo vị trí
+  // gốc GIẢM DẦN để sản phẩm mới tạo hiện lên ĐẦU danh sách. Nhóm phiên bản vẫn gộp đúng vì phần
+  // gộp bên dưới tự lọc theo variantGroupId trên toàn mảng, không phụ thuộc thứ tự đứng cạnh nhau.
   const rows = useMemo(() => {
     const kw = webSlugify(q);
     return products
-      .filter((p) => !p.isService)
-      .filter((p) => (filter === "on" ? p.web?.published : filter === "off" ? !p.web?.published : true))
-      .filter((p) => !filterCategory || p.category === filterCategory)
-      .filter((p) => !filterBrand || p.brand === filterBrand)
-      .filter((p) => !kw || webSlugify(`${p.name} ${p.sku} ${p.code}`).includes(kw))
-      .sort((a, b) => (a.variantGroupId || a.id).localeCompare(b.variantGroupId || b.id) || a.name.localeCompare(b.name));
+      .map((p, i) => ({ p, i }))
+      .filter(({ p }) => !p.isService)
+      .filter(({ p }) => (filter === "on" ? p.web?.published : filter === "off" ? !p.web?.published : true))
+      .filter(({ p }) => !filterCategory || p.category === filterCategory)
+      .filter(({ p }) => !filterBrand || p.brand === filterBrand)
+      .filter(({ p }) => !kw || webSlugify(`${p.name} ${p.sku} ${p.code}`).includes(kw))
+      .sort((a, b) => b.i - a.i)
+      .map(({ p }) => p);
   }, [products, q, filter, filterCategory, filterBrand]);
 
   const patch = (id, fn) => setProducts((prev) => prev.map((p) => (p.id === id ? fn(p) : p)));
@@ -12725,9 +12732,9 @@ function WebProducts({ products, setProducts, categories, brands, addLog, webCon
           <tbody>
             {rows.length === 0 && <tr><td colSpan={7} className="text-center py-8 opacity-50">Không có sản phẩm.</td></tr>}
             {(() => {
-              // rows đã sắp theo variantGroupId nên các phiên bản luôn đứng cạnh nhau — gộp lại
-              // thành 1 dòng đại diện (mô tả/thông số/trạng thái/giá so sánh đã dùng CHUNG qua
-              // setWeb ở trên), bấm mở ra mới thấy từng phiên bản để sửa ẢNH riêng.
+              // Gộp các phiên bản (cùng variantGroupId, dù không đứng cạnh nhau trong rows) thành 1
+              // dòng đại diện (mô tả/thông số/trạng thái/giá so sánh đã dùng CHUNG qua setWeb ở
+              // trên), bấm mở ra mới thấy từng phiên bản để sửa ẢNH riêng.
               const groups = [];
               const seenGroups = new Set();
               rows.forEach((p) => {
