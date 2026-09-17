@@ -2043,6 +2043,10 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
   }, [webConfig]);
   const isAdmin = currentUser.role === "admin";
   const isCtv = currentUser.role === "ctv";
+  // Chưa có "Ảnh chính" riêng (p.image) thì tạm dùng ảnh đầu tiên đã đăng ở "Sản phẩm web"
+  // (p.web.images[0]) để khỏi hiện icon vỡ ảnh — chỉ để HIỂN THỊ, chưa lưu vào p.image (chỉ lưu
+  // thật khi mở sửa rồi bấm Lưu, xem openEdit()).
+  const displayImage = (p) => p?.image || (Array.isArray(p?.web?.images) && p.web.images[0]) || null;
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState(null); // sản phẩm đang thêm/sửa thông tin
   const [form, setForm] = useState({});
@@ -2306,7 +2310,14 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
   };
 
   const openNew = () => { setForm({ code: "", name: "", unit: UNITS[0], category: "", brand: "", hasSeries: false, isService: false, retailPrice: "", wholesalePrice: "", costPrice: "", openingQty: 0, minStockLevel: 5, weight: "", length: "", width: "", height: "", sku: nextSKU(products), vat: "VAT10", barcode: "", supplierId: "", warrantyMonths: 0, image: null, images: [], web: normalizeWeb(null), hasVariants: false, variantAttr1Name: "Màu sắc", variantAttr1Values: [], variantAttr2Enabled: false, variantAttr2Name: "Kích cỡ", variantAttr2Values: [] }); setEditing({}); };
-  const openEdit = (p) => { setForm({ ...p }); setEditing(p); };
+  // Chưa có "Ảnh chính" riêng thì tự điền tạm ảnh đầu tiên đã đăng ở "Sản phẩm web" vào bản nháp —
+  // chỉ là điền sẵn, vẫn phải bấm Lưu mới thật sự ghi vào sản phẩm (giữ đúng nguyên tắc "sửa nháp,
+  // Lưu mới ghi thật" của form này).
+  const openEdit = (p) => {
+    const autoImage = !p.image && Array.isArray(p.web?.images) && p.web.images[0] ? p.web.images[0] : p.image;
+    setForm({ ...p, image: autoImage });
+    setEditing(p);
+  };
   const submitInfo = () => {
     if (!form.code || !form.name) return;
     if (editing.id) {
@@ -2601,8 +2612,8 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                         <button onClick={() => openProductDetail(p.id)} className="opacity-50 hover:opacity-100" title="Xem chi tiết"><ChevronRight size={15} /></button>
                       </td>
                       <td className="px-2 py-3">
-                        {p.image ? (
-                          <img src={p.image} alt={p.name} onClick={() => setZoomImage({ images: [{ src: p.image, alt: p.name }, ...(p.images || []).map((im, i) => ({ src: im, alt: `${p.name} — ảnh phụ ${i + 1}` }))], index: 0 })} className="w-9 h-9 object-cover rounded-sm cursor-zoom-in" style={{ border: `1px solid ${LINE}` }} />
+                        {displayImage(p) ? (
+                          <img src={displayImage(p)} alt={p.name} onClick={() => setZoomImage({ images: [{ src: displayImage(p), alt: p.name }, ...(p.images || []).map((im, i) => ({ src: im, alt: `${p.name} — ảnh phụ ${i + 1}` }))], index: 0 })} className="w-9 h-9 object-cover rounded-sm cursor-zoom-in" style={{ border: `1px solid ${LINE}` }} />
                         ) : (
                           <div className="w-9 h-9 rounded-sm flex items-center justify-center" style={{ background: PAPER, border: `1px dashed ${LINE}` }}>
                             <ImageOff size={13} className="opacity-30" />
@@ -2690,8 +2701,8 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                         </button>
                       </td>
                       <td className="px-2 py-3">
-                        {rep.image ? (
-                          <img src={rep.image} alt={rep.name} className="w-9 h-9 object-cover rounded-sm" style={{ border: `1px solid ${LINE}` }} />
+                        {displayImage(rep) ? (
+                          <img src={displayImage(rep)} alt={rep.name} className="w-9 h-9 object-cover rounded-sm" style={{ border: `1px solid ${LINE}` }} />
                         ) : (
                           <div className="w-9 h-9 rounded-sm flex items-center justify-center" style={{ background: PAPER, border: `1px dashed ${LINE}` }}>
                             <ImageOff size={13} className="opacity-30" />
