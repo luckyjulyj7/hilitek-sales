@@ -703,11 +703,11 @@ const VARIANT_CODE_MAP = {
 function stripDiacriticsVN(str) {
   return String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/gi, (m) => (m === "đ" ? "d" : "D"));
 }
-function variantValueCode(value) {
+function variantValueCode(value, len = 3) {
   const key = String(value).trim().toLowerCase();
   if (VARIANT_CODE_MAP[key]) return VARIANT_CODE_MAP[key];
   const clean = stripDiacriticsVN(value).toUpperCase().replace(/[^A-Z0-9]/g, "");
-  return clean.slice(0, 3) || "XX";
+  return clean.slice(0, len) || "XX";
 }
 // Tích Descartes giữa các danh sách giá trị thuộc tính — vd [["Đen","Trắng"],["S","M"]] -> [["Đen","S"],["Đen","M"],["Trắng","S"],["Trắng","M"]]
 function cartesianProduct(arrays) {
@@ -2337,8 +2337,21 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
       if (attr1Values.length === 0) { alert(`Vui lòng nhập ít nhất 1 giá trị cho "${attr1Name}".`); return; }
       const combos = cartesianProduct(attr2Values.length > 0 ? [attr1Values, attr2Values] : [attr1Values]);
       const groupId = uid();
-      const newProducts = combos.map((combo) => {
-        const suffix = combo.map((v) => variantValueCode(v)).join("_");
+      // Hậu tố mã/SKU cho từng tổ hợp — variantValueCode() mặc định chỉ lấy 3 ký tự đầu nên các giá
+      // trị dài trùng chữ cái đầu (VD "DARK - CLOUDLY SWITCH" và "DARK - TONE SWITCH" đều ra "DAR")
+      // có thể bị TRÙNG hậu tố dù 2 phiên bản là khác nhau — tạo ra sản phẩm trùng y hệt mã/SKU.
+      // Nếu trùng thì lấy dài hơn (6 ký tự), còn trùng nữa mới đánh số phân biệt.
+      const usedSuffixes = new Set();
+      const suffixes = combos.map((combo) => {
+        let suffix = combo.map((v) => variantValueCode(v)).join("_");
+        if (usedSuffixes.has(suffix)) suffix = combo.map((v) => variantValueCode(v, 6)).join("_");
+        let finalSuffix = suffix, i = 2;
+        while (usedSuffixes.has(finalSuffix)) { finalSuffix = `${suffix}${i}`; i++; }
+        usedSuffixes.add(finalSuffix);
+        return finalSuffix;
+      });
+      const newProducts = combos.map((combo, comboIdx) => {
+        const suffix = suffixes[comboIdx];
         const label = combo.join(", ");
         const variantAttrs = { [attr1Name]: combo[0] };
         if (combo[1] !== undefined) variantAttrs[attr2Name] = combo[1];
@@ -2542,77 +2555,20 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
             {(() => {
               // Gom các phiên bản (variantGroupId) lại thành 1 dòng đại diện — bấm mở ra mới
               // hiện từng phiên bản riêng để thao tác (tồn kho/giá/sửa vẫn theo đúng phiên bản đó).
+              // Lưu ý: chỉ nhóm 1 LẦN mỗi variantGroupId ở đây (không tự đẩy dòng phiên bản nào cả) —
+              // các dòng phiên bản khi mở rộng được render riêng ở .map(members) bên dưới, tránh bị
+              // đẩy trùng 2 lần (từng gây key trùng khiến tick chọn/xoá bị đơ ở dòng phiên bản).
               const seenGroups = new Set();
-              const rows = [];
+              const groups = [];
               filtered.forEach((p) => {
-                if (!p.variantGroupId) { rows.push({ type: "single", p }); return; }
-                if (seenGroups.has(p.variantGroupId)) {
-                  if (expandedGroups.has(p.variantGroupId)) rows.push({ type: "member", p });
-                  return;
-                }
+                if (!p.variantGroupId) { groups.push({ type: "single", p }); return; }
+                if (seenGroups.has(p.variantGroupId)) return;
                 seenGroups.add(p.variantGroupId);
                 const members = filtered.filter((x) => x.variantGroupId === p.variantGroupId);
-                rows.push({ type: "groupHead", gid: p.variantGroupId, members });
-                if (expandedGroups.has(p.variantGroupId)) members.forEach((m) => rows.push({ type: "member", p: m }));
+                groups.push({ type: "group", gid: p.variantGroupId, members });
               });
-              return rows.map((r) => {
-                if (r.type === "groupHead") {
-                  const { gid, members } = r;
-                  const rep = members[0];
-                  const isService = members.every((m) => m.isService);
-                  const groupStats = members.map((m) => productStats(m));
-                  const openingSum = members.reduce((s, m) => s + (Number(m.openingQty) || 0), 0);
-                  const importedSum = groupStats.reduce((s, st) => s + st.importedQty, 0);
-                  const exportedSum = groupStats.reduce((s, st) => s + st.exportedQty, 0);
-                  const closingSum = groupStats.reduce((s, st) => s + st.closingQty, 0);
-                  const sameCost = members.every((m) => m.costPrice === rep.costPrice);
-                  const expanded = expandedGroups.has(gid);
-                  const allSelected = members.every((m) => selectedIds.has(m.id));
-                  return (
-                    <tr key={gid} style={{ borderBottom: `1px dashed ${LINE}`, background: `${PURPLE}0D` }} className="hover:bg-black/[0.02]">
-                      <td className="px-3 py-3">
-                        <input type="checkbox" checked={allSelected} onChange={() => setSelectedIds((prev) => { const n = new Set(prev); members.forEach((m) => (allSelected ? n.delete(m.id) : n.add(m.id))); return n; })} />
-                      </td>
-                      <td className="px-2 py-3">
-                        <button onClick={() => toggleGroup(gid)} title={expanded ? "Thu gọn" : "Mở rộng"} className="opacity-60 hover:opacity-100">
-                          <ChevronDown size={15} style={{ transform: expanded ? "none" : "rotate(-90deg)", transition: "transform .15s" }} />
-                        </button>
-                      </td>
-                      <td className="px-2 py-3">
-                        {rep.image ? (
-                          <img src={rep.image} alt={rep.name} className="w-9 h-9 object-cover rounded-sm" style={{ border: `1px solid ${LINE}` }} />
-                        ) : (
-                          <div className="w-9 h-9 rounded-sm flex items-center justify-center" style={{ background: PAPER, border: `1px dashed ${LINE}` }}>
-                            <ImageOff size={13} className="opacity-30" />
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-3 py-3 font-medium opacity-50" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{members.length} mã</td>
-                      <td className="px-3 py-3 opacity-30">—</td>
-                      <td className="px-3 py-3" style={{ color: INK, minWidth: 260 }}>
-                        <button onClick={() => toggleGroup(gid)} className="text-left hover:underline font-medium">{baseVariantName(rep)}</button>
-                        <div className="flex gap-1.5 mt-1 flex-wrap">
-                          <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${PURPLE}1A`, color: PURPLE }}><Layers size={10} /> {members.length} phiên bản</span>
-                        </div>
-                      </td>
-                      <td className="px-2 py-3 opacity-70 whitespace-nowrap">{rep.unit}</td>
-                      {isService ? (
-                        <td colSpan={3} className="px-2 py-3 text-center opacity-40 text-xs">— không quản lý tồn kho —</td>
-                      ) : (<>
-                        <td className="px-2 py-3 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{openingSum}</td>
-                        <td className="px-2 py-3 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace", color: FOREST }}>+{importedSum}</td>
-                        <td className="px-2 py-3 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace", color: RUST }}>-{exportedSum}</td>
-                      </>)}
-                      <td className="px-2 py-3 text-right font-medium whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: closingSum < 0 ? RUST : INK }}>
-                        {isService ? "—" : closingSum}
-                      </td>
-                      {isAdmin && <td className="px-2 py-3 text-right whitespace-nowrap opacity-70" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{isService ? "—" : (sameCost ? vnd(rep.costPrice) : "Nhiều giá")}</td>}
-                      <td className="px-2 py-3"></td>
-                    </tr>
-                  );
-                }
 
-                const p = r.p;
+              const renderMemberRow = (p) => {
                 const stats = productStats(p);
                 return (
                   <tr key={p.id} style={{ borderBottom: `1px dashed ${LINE}` }} className="hover:bg-black/[0.02]">
@@ -2666,6 +2622,66 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                         </div>
                       </td>
                   </tr>
+                );
+              };
+
+              return groups.map((g) => {
+                if (g.type === "single") return renderMemberRow(g.p);
+                const { gid, members } = g;
+                const rep = members[0];
+                const isService = members.every((m) => m.isService);
+                const groupStats = members.map((m) => productStats(m));
+                const openingSum = members.reduce((s, m) => s + (Number(m.openingQty) || 0), 0);
+                const importedSum = groupStats.reduce((s, st) => s + st.importedQty, 0);
+                const exportedSum = groupStats.reduce((s, st) => s + st.exportedQty, 0);
+                const closingSum = groupStats.reduce((s, st) => s + st.closingQty, 0);
+                const sameCost = members.every((m) => m.costPrice === rep.costPrice);
+                const expanded = expandedGroups.has(gid);
+                const allSelected = members.every((m) => selectedIds.has(m.id));
+                return (
+                  <React.Fragment key={gid}>
+                    <tr style={{ borderBottom: `1px dashed ${LINE}`, background: `${PURPLE}0D` }} className="hover:bg-black/[0.02]">
+                      <td className="px-3 py-3">
+                        <input type="checkbox" checked={allSelected} onChange={() => setSelectedIds((prev) => { const n = new Set(prev); members.forEach((m) => (allSelected ? n.delete(m.id) : n.add(m.id))); return n; })} />
+                      </td>
+                      <td className="px-2 py-3">
+                        <button onClick={() => toggleGroup(gid)} title={expanded ? "Thu gọn" : "Mở rộng"} className="opacity-60 hover:opacity-100">
+                          <ChevronDown size={15} style={{ transform: expanded ? "none" : "rotate(-90deg)", transition: "transform .15s" }} />
+                        </button>
+                      </td>
+                      <td className="px-2 py-3">
+                        {rep.image ? (
+                          <img src={rep.image} alt={rep.name} className="w-9 h-9 object-cover rounded-sm" style={{ border: `1px solid ${LINE}` }} />
+                        ) : (
+                          <div className="w-9 h-9 rounded-sm flex items-center justify-center" style={{ background: PAPER, border: `1px dashed ${LINE}` }}>
+                            <ImageOff size={13} className="opacity-30" />
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-3 py-3 font-medium opacity-50" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{members.length} mã</td>
+                      <td className="px-3 py-3 opacity-30">—</td>
+                      <td className="px-3 py-3" style={{ color: INK, minWidth: 260 }}>
+                        <button onClick={() => toggleGroup(gid)} className="text-left hover:underline font-medium">{baseVariantName(rep)}</button>
+                        <div className="flex gap-1.5 mt-1 flex-wrap">
+                          <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${PURPLE}1A`, color: PURPLE }}><Layers size={10} /> {members.length} phiên bản</span>
+                        </div>
+                      </td>
+                      <td className="px-2 py-3 opacity-70 whitespace-nowrap">{rep.unit}</td>
+                      {isService ? (
+                        <td colSpan={3} className="px-2 py-3 text-center opacity-40 text-xs">— không quản lý tồn kho —</td>
+                      ) : (<>
+                        <td className="px-2 py-3 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{openingSum}</td>
+                        <td className="px-2 py-3 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace", color: FOREST }}>+{importedSum}</td>
+                        <td className="px-2 py-3 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace", color: RUST }}>-{exportedSum}</td>
+                      </>)}
+                      <td className="px-2 py-3 text-right font-medium whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: closingSum < 0 ? RUST : INK }}>
+                        {isService ? "—" : closingSum}
+                      </td>
+                      {isAdmin && <td className="px-2 py-3 text-right whitespace-nowrap opacity-70" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{isService ? "—" : (sameCost ? vnd(rep.costPrice) : "Nhiều giá")}</td>}
+                      <td className="px-2 py-3"></td>
+                    </tr>
+                    {expanded && members.map((m) => renderMemberRow(m))}
+                  </React.Fragment>
                 );
               });
             })()}
