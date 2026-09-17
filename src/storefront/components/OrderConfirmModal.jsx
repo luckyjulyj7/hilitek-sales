@@ -159,10 +159,11 @@ export default function OrderConfirmModal({ navigate }) {
               </div>
             </div>
 
-            <div className="flex items-center justify-between py-3 text-[15px]">
+            <div className="flex items-center justify-between pt-3 text-[15px]">
               <span className="text-white/80">Tổng</span>
               <span className="font-mono font-bold text-yellow text-[18px]">{formatVND(total)}</span>
             </div>
+            <p className="pb-3 text-[12px] text-white/60">(Chưa gồm phí vận chuyển — báo khi shop xác nhận đơn)</p>
 
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -211,6 +212,7 @@ export default function OrderConfirmModal({ navigate }) {
                 <div className="mt-1 font-mono font-bold text-[14px] text-sale">{formatVND(total)}</div>
               </div>
             </div>
+            <p className="-mt-2 mb-3 text-[12px] text-white/60">Chưa gồm phí vận chuyển — shop sẽ báo khi gọi/nhắn tin xác nhận đơn.</p>
 
             <div className="space-y-2.5">
               <div>
@@ -265,14 +267,15 @@ export default function OrderConfirmModal({ navigate }) {
               <div className="mt-2 text-ink text-[13px] text-left space-y-0.5">
                 <div>{SITE.bank.name} — <b className="font-mono">{SITE.bank.accountNumber}</b></div>
                 <div>{SITE.bank.holder}</div>
-                <div className="text-mute">Số tiền: <b className="text-ink">{formatVND(placed.total)}</b></div>
+                <div className="text-mute">Số tiền: <b className="text-ink">{formatVND(placed.total)}</b> <span className="opacity-70">(chưa gồm phí ship)</span></div>
                 <div className="text-mute">Nội dung CK: {placed.code} {placed.phone}</div>
               </div>
             </div>
 
             <p className="mt-3 text-[12.5px] text-white/70 leading-relaxed">
-              Quét mã QR bằng app ngân hàng bất kỳ để chuyển khoản đúng số tiền. Hilitek sẽ gọi lại số{" "}
-              <span className="font-mono">{placed.phone}</span> để xác nhận và giao hàng sau khi nhận được tiền.
+              Quét mã QR bằng app ngân hàng bất kỳ để chuyển khoản đúng số tiền trên (số tiền này{" "}
+              <b>chưa gồm phí vận chuyển</b>). Hilitek sẽ gọi lại số{" "}
+              <span className="font-mono">{placed.phone}</span> để báo phí ship, xác nhận và giao hàng sau khi nhận được tiền.
             </p>
 
             <button onClick={closeOrder} className="mt-4 w-full bg-white text-navy font-bold py-2.5 rounded-md text-[13px]">
