@@ -13174,7 +13174,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs opacity-60">Phiên bản:</span>
               {siblings.map((s) => {
-                const label = s.variantAttrs ? Object.values(s.variantAttrs).join(", ") : s.name;
+                const label = s.variantAttrs ? Object.values(s.variantAttrs).join(" - ") : s.name;
                 const active = s.id === p.id;
                 return (
                   <button
