@@ -2562,7 +2562,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         )}
       </div>
 
-      <div className="rounded-sm overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 300px)" }}>
+      <div className="rounded-sm overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 220px)" }}>
         <table className="w-full text-sm" style={{ minWidth: 940 }}>
           <thead className="sticky top-0" style={{ zIndex: 2 }}>
             <tr style={{ borderBottom: `2px solid ${INK}` }}>
@@ -2595,7 +2595,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                 // diện (PURPLE...) + thụt lề mã/tên, để thấy rõ các dòng này thuộc cùng 1 sản phẩm
                 // chính, không lẫn với sản phẩm đơn lẻ khác.
                 return (
-                  <tr key={p.id} style={{ borderBottom: `1px dashed ${LINE}`, background: inGroup ? `${PURPLE}08` : undefined }} className="hover:bg-black/[0.02]">
+                  <tr key={p.id} style={{ borderBottom: `1px dashed ${LINE}`, background: inGroup ? `${PURPLE}14` : undefined }} className="hover:bg-black/[0.02]">
                       <td className="px-3 py-3"><input type="checkbox" checked={selectedIds.has(p.id)} onChange={() => toggleSelect(p.id)} /></td>
                       <td className="px-2 py-3">
                         <button onClick={() => openProductDetail(p.id)} className="opacity-50 hover:opacity-100" title="Xem chi tiết"><ChevronRight size={15} /></button>
@@ -2678,7 +2678,9 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                 })();
                 return (
                   <React.Fragment key={gid}>
-                    <tr style={{ borderBottom: `1px dashed ${LINE}`, background: `${PURPLE}0D` }} className="hover:bg-black/[0.02]">
+                    {/* Chưa mở rộng: nền bình thường như sản phẩm khác, chỉ badge "N phiên bản" tô đậm.
+                        Đã mở rộng: tô nền tím rõ hơn hẳn để thấy ngay đang xem đúng nhóm nào. */}
+                    <tr style={{ borderBottom: `1px dashed ${LINE}`, background: expanded ? `${PURPLE}1F` : undefined }} className="hover:bg-black/[0.02]">
                       <td className="px-3 py-3">
                         <input type="checkbox" checked={allSelected} onChange={() => setSelectedIds((prev) => { const n = new Set(prev); members.forEach((m) => (allSelected ? n.delete(m.id) : n.add(m.id))); return n; })} />
                       </td>
@@ -2701,7 +2703,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                       <td className="px-3 py-3" style={{ color: INK, minWidth: 260 }}>
                         <button onClick={() => toggleGroup(gid)} className="text-left hover:underline font-medium">{baseVariantName(rep)}</button>
                         <div className="flex gap-1.5 mt-1 flex-wrap">
-                          <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${PURPLE}1A`, color: PURPLE }}><Layers size={10} /> {members.length} phiên bản</span>
+                          <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider font-bold" style={{ background: `${PURPLE}1A`, color: PURPLE }}><Layers size={10} /> {members.length} phiên bản</span>
                         </div>
                       </td>
                       <td className="px-2 py-3 opacity-70 whitespace-nowrap">{rep.unit}</td>
