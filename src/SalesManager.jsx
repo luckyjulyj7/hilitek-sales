@@ -2060,6 +2060,9 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState(new Set());
   const [mergeOpen, setMergeOpen] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [deletePasswordInput, setDeletePasswordInput] = useState("");
+  const [deletePasswordError, setDeletePasswordError] = useState("");
   const [zoomImage, setZoomImage] = useState(null); // { src, alt } — ảnh đang phóng to
   const [managingCategories, setManagingCategories] = useState(false);
   const [newCategoryInput, setNewCategoryInput] = useState("");
@@ -2406,6 +2409,17 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
   };
   const removeGalleryImage = (idx) => setForm((f) => ({ ...f, images: (Array.isArray(f.images) ? f.images : []).filter((_, i) => i !== idx) }));
   const removeProduct = (id) => setProducts((prev) => prev.filter((p) => p.id !== id));
+  // Xoá hàng loạt sản phẩm đã chọn — chỉ admin, bắt buộc nhập lại mật khẩu để xác nhận (giống hệt
+  // cơ chế xoá đơn hàng) vì đây là thao tác xoá nhiều sản phẩm cùng lúc, không thể hoàn tác.
+  const confirmBulkDelete = async () => {
+    const { ok } = await verifyAccountPassword(currentUser, deletePasswordInput);
+    if (!ok) { setDeletePasswordError("Sai mật khẩu."); return; }
+    const ids = new Set(selectedIds);
+    setProducts((prev) => prev.filter((p) => !ids.has(p.id)));
+    addLog("Xoá hàng loạt sản phẩm", `${ids.size} sản phẩm`);
+    setSelectedIds(new Set());
+    setBulkDeleteOpen(false); setDeletePasswordInput(""); setDeletePasswordError("");
+  };
 
   const openIO = (product, type) => {
     setIoForm({ docNo: "", date: todayISO(), qty: "", price: type === "out" ? product.retailPrice : product.costPrice || "", priceLevel: "retail", series: [], selectedSeries: [] });
@@ -2524,6 +2538,11 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         {isAdmin && selectedIds.size >= 2 && (
           <button onClick={() => setMergeOpen(true)} title="Gộp thành phiên bản — gộp các sản phẩm đã chọn (VD từng màu 1 sản phẩm) thành các phiên bản của 1 sản phẩm chung, web/danh sách sẽ tự gộp hiện thị" className="flex items-center gap-1 px-2 py-1.5 rounded-sm text-xs border whitespace-nowrap" style={{ borderColor: PURPLE, color: PURPLE }}>
             <Layers size={12} /> Gộp ({selectedIds.size})
+          </button>
+        )}
+        {isAdmin && selectedIds.size > 0 && (
+          <button onClick={() => setBulkDeleteOpen(true)} title="Xoá hàng loạt sản phẩm đã chọn" className="flex items-center gap-1 px-2 py-1.5 rounded-sm text-xs border whitespace-nowrap" style={{ borderColor: RUST, color: RUST }}>
+            <Trash2 size={12} /> Xoá ({selectedIds.size})
           </button>
         )}
         {isAdmin && (
@@ -3510,6 +3529,19 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           onClose={() => setMergeOpen(false)}
           onApply={applyMerge}
         />
+      )}
+
+      {bulkDeleteOpen && (
+        <Modal title={`Xoá ${selectedIds.size} sản phẩm đã chọn`} onClose={() => { setBulkDeleteOpen(false); setDeletePasswordInput(""); setDeletePasswordError(""); }}>
+          <p className="text-sm mb-3" style={{ color: INK }}>Hành động này không thể hoàn tác. Nhập mật khẩu quản trị viên để xác nhận xoá vĩnh viễn <b>{selectedIds.size}</b> sản phẩm đã chọn.</p>
+          <Field label="Mật khẩu">
+            <input type="password" className={inputCls} style={{ borderColor: LINE }} value={deletePasswordInput}
+              onChange={(e) => { setDeletePasswordInput(e.target.value); setDeletePasswordError(""); }}
+              onKeyDown={(e) => { if (e.key === "Enter") confirmBulkDelete(); }} autoFocus />
+          </Field>
+          {deletePasswordError && <p className="text-sm mb-2" style={{ color: RUST }}>{deletePasswordError}</p>}
+          <button onClick={confirmBulkDelete} className="w-full py-2.5 rounded-sm text-white text-sm mt-2" style={{ background: RUST }}>Xác nhận xoá</button>
+        </Modal>
       )}
     </div>
   );
