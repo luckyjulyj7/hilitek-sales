@@ -2589,10 +2589,13 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                 groups.push({ type: "group", gid: p.variantGroupId, members });
               });
 
-              const renderMemberRow = (p) => {
+              const renderMemberRow = (p, inGroup) => {
                 const stats = productStats(p);
+                // inGroup: dòng phiên bản đang mở ra từ 1 nhóm — tô cùng tông tím nhạt hơn dòng đại
+                // diện (PURPLE...) + thụt lề mã/tên, để thấy rõ các dòng này thuộc cùng 1 sản phẩm
+                // chính, không lẫn với sản phẩm đơn lẻ khác.
                 return (
-                  <tr key={p.id} style={{ borderBottom: `1px dashed ${LINE}` }} className="hover:bg-black/[0.02]">
+                  <tr key={p.id} style={{ borderBottom: `1px dashed ${LINE}`, background: inGroup ? `${PURPLE}08` : undefined }} className="hover:bg-black/[0.02]">
                       <td className="px-3 py-3"><input type="checkbox" checked={selectedIds.has(p.id)} onChange={() => toggleSelect(p.id)} /></td>
                       <td className="px-2 py-3">
                         <button onClick={() => openProductDetail(p.id)} className="opacity-50 hover:opacity-100" title="Xem chi tiết"><ChevronRight size={15} /></button>
@@ -2606,7 +2609,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                           </div>
                         )}
                       </td>
-                      <td className="px-3 py-3 font-medium">
+                      <td className="px-3 py-3 font-medium" style={{ paddingLeft: inGroup ? 28 : undefined }}>
                         <button onClick={() => openProductDetail(p.id)} className="hover:underline" style={{ fontFamily: "'IBM Plex Mono', monospace", color: BLUE }}>{p.code}</button>
                       </td>
                       <td className="px-3 py-3 opacity-70 whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.sku || "—"}</td>
@@ -2659,6 +2662,20 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                 const sameCost = members.every((m) => m.costPrice === rep.costPrice);
                 const expanded = expandedGroups.has(gid);
                 const allSelected = members.every((m) => selectedIds.has(m.id));
+                // Mã sản phẩm chính = phần chung đứng đầu mã của TẤT CẢ phiên bản (mã phiên bản luôn
+                // là "<mã chính>_<hậu tố>") — không cần lưu riêng, tự suy ra bằng tiền tố chung dài
+                // nhất, cắt bỏ dấu "_" thừa ở cuối. Không tìm được (VD dữ liệu cũ lỗi) thì hiện số mã.
+                const baseCode = (() => {
+                  let prefix = members[0]?.code || "";
+                  for (let i = 1; i < members.length && prefix; i++) {
+                    const c = members[i].code || "";
+                    let j = 0;
+                    while (j < prefix.length && j < c.length && prefix[j] === c[j]) j++;
+                    prefix = prefix.slice(0, j);
+                  }
+                  prefix = prefix.replace(/_+$/, "");
+                  return prefix && prefix !== members[0]?.code ? prefix : "";
+                })();
                 return (
                   <React.Fragment key={gid}>
                     <tr style={{ borderBottom: `1px dashed ${LINE}`, background: `${PURPLE}0D` }} className="hover:bg-black/[0.02]">
@@ -2679,7 +2696,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                           </div>
                         )}
                       </td>
-                      <td className="px-3 py-3 font-medium opacity-50" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{members.length} mã</td>
+                      <td className="px-3 py-3 font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: baseCode ? BLUE : INK, opacity: baseCode ? 1 : 0.5 }}>{baseCode || `${members.length} mã`}</td>
                       <td className="px-3 py-3 opacity-30">—</td>
                       <td className="px-3 py-3" style={{ color: INK, minWidth: 260 }}>
                         <button onClick={() => toggleGroup(gid)} className="text-left hover:underline font-medium">{baseVariantName(rep)}</button>
@@ -2701,7 +2718,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                       {isAdmin && <td className="px-2 py-3 text-right whitespace-nowrap opacity-70" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{isService ? "—" : (sameCost ? vnd(rep.costPrice) : "Nhiều giá")}</td>}
                       <td className="px-2 py-3"></td>
                     </tr>
-                    {expanded && members.map((m) => renderMemberRow(m))}
+                    {expanded && members.map((m) => renderMemberRow(m, true))}
                   </React.Fragment>
                 );
               });
