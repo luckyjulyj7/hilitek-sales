@@ -8,6 +8,7 @@
     { "source": "/quanlybanhang/(.*)", "destination": "/admin.html" },
     { "source": "/shop", "destination": "/shop.html" },
     { "source": "/shop/(.*)", "destination": "/shop.html" },
+    { "source": "/sitemap.xml", "destination": "/api/web/sitemap" },
     { "source": "/media/(.*)", "destination": "https://wddfjbcrkwkzshibghdi.supabase.co/storage/v1/object/public/product-media/$1" },
     { "source": "/((?!api/).*)", "destination": "/shop.html" }
   ],

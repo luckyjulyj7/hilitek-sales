@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /quanlybanhang
+Disallow: /api/
+
+Sitemap: https://hilipc.vn/sitemap.xml
