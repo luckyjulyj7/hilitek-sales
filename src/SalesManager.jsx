@@ -14969,7 +14969,7 @@ export default function SalesManager() {
         select { appearance: none; }
       `}</style>
       <div id="app-shell" className="flex flex-col md:flex-row">
-        <div className="md:w-72 shrink-0 p-5 md:min-h-screen flex flex-col" style={{ background: INK }}>
+        <div className="md:w-72 shrink-0 p-5 flex flex-col md:sticky md:top-0 md:h-screen md:self-start md:overflow-y-auto" style={{ background: INK }}>
           <div className="mb-8 flex items-center gap-2.5">
             <HiliLogo size={34} />
             <div>
