@@ -13519,6 +13519,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
 
   return (
     <div>
+      <div className="sticky top-0 z-10 pt-1 pb-2 -mt-1" style={{ background: PAPER }}>
       <div className="flex items-center gap-3 mb-4 flex-wrap">
         <button onClick={handleBack} className="text-sm inline-flex items-center gap-1" style={{ color: BLUE }}>
           <ChevronLeft size={16} /> Danh sách sản phẩm web
@@ -13597,6 +13598,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
           </div>
         );
       })()}
+      </div>
 
       <div className="grid lg:grid-cols-[1fr_320px] gap-5 items-start">
         {/* Cột trái */}
