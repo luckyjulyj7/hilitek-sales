@@ -874,6 +874,11 @@ function beautifyDescriptionHtml(raw) {
 // Header/size dùng dạng NÚT riêng từng cái ({header: 2} — 1 giá trị) thay vì dạng menu xổ xuống
 // ({header: [2,3,false]} — mảng giá trị) — menu xổ xuống của Quill bị lỗi hiện sai (mở nhầm hộp
 // thoại chọn file ảnh) trong môi trường app này; dạng nút hoạt động y hệt đậm/nghiêng (đang chạy tốt).
+// Quill không có sẵn icon cho nút "size" riêng lẻ (chỉ có cho dạng menu xổ) nên phải tự đặt chữ
+// S/L/XL, không thì nút hiện trống rỗng (nhìn như "biến mất").
+const SizeIcons = Quill.import("ui/icons");
+SizeIcons.size = { small: "S", large: "L", huge: "XL" };
+
 const DESC_TOOLBAR = [
   [{ header: 2 }, { header: 3 }],
   [{ size: "small" }, { size: "large" }, { size: "huge" }],
