@@ -3920,6 +3920,24 @@ function WebCategoryMultiSelect({ webCats, value, onChange }) {
   );
 }
 
+// Đo chiều cao thật của 1 thanh cố định (header/subtabs...) để thanh SAU nó biết đặt "top" bao
+// nhiêu cho khớp (xếp chồng nhiều thanh cố định mà không đè lên nhau), và để chừa đúng khoảng
+// trống cho nội dung bên dưới — tự cập nhật lại nếu nội dung đổi chiều cao (vd xuống dòng).
+function useMeasuredHeight() {
+  const ref = useRef(null);
+  const [height, setHeight] = useState(0);
+  useEffect(() => {
+    if (!ref.current) return;
+    const el = ref.current;
+    const update = () => setHeight(el.offsetHeight);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, height];
+}
+
 function ProductPicker({ products, onPick, onQuickCreate, brands }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -12918,7 +12936,7 @@ function webOrderTotal(o) {
   return (o.items || []).reduce((s, it) => s + (Number(it.qty) || 0) * (Number(it.price) || 0), 0);
 }
 
-function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig, categories, brands, currentUser, addLog, onOpenOrder, navTarget, onFocusHandled, goToInventoryProductEdit }) {
+function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig, categories, brands, currentUser, addLog, onOpenOrder, navTarget, onFocusHandled, goToInventoryProductEdit, topOffset }) {
   const [sub, setSub] = useState("products");
   useEffect(() => {
     if (navTarget?.type === "webproduct") setSub("products");
@@ -12928,9 +12946,13 @@ function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig
     { id: "orders", label: "Đơn hàng web" },
     { id: "config", label: "Cấu hình web" },
   ];
+  const [subtabsRef, subtabsH] = useMeasuredHeight();
+  // Cố định (đóng băng) đúng NGAY DƯỚI thanh tiêu đề của App (topOffset = chiều cao thanh đó) —
+  // truyền tiếp offset cộng dồn xuống WebProducts/WebProductPage để thanh sửa sản phẩm biết đặt tiếp theo.
+  const belowSubtabs = topOffset + subtabsH + 20;
   return (
     <div>
-      <div className="flex gap-1 mb-5 flex-wrap sticky z-10 py-2 -mt-2" style={{ top: 48, background: PAPER }}>
+      <div ref={subtabsRef} className="flex gap-1 mb-5 flex-wrap md:fixed md:z-20 md:left-72 md:right-0 md:px-8 md:py-3" style={{ top: topOffset, background: PAPER }}>
         {subs.map((s) => (
           <button key={s.id} onClick={() => setSub(s.id)}
             className="px-4 py-2 rounded-sm text-sm font-medium border"
@@ -12939,14 +12961,15 @@ function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig
           </button>
         ))}
       </div>
-      {sub === "products" && <WebProducts products={products} setProducts={setProducts} categories={categories} brands={brands} currentUser={currentUser} addLog={addLog} webConfig={webConfig} focusProductId={navTarget?.type === "webproduct" ? navTarget.id : null} onFocusHandled={onFocusHandled} goToInventoryProductEdit={goToInventoryProductEdit} />}
+      <div className="hidden md:block" style={{ height: subtabsH ? subtabsH + 20 : 0 }} />
+      {sub === "products" && <WebProducts products={products} setProducts={setProducts} categories={categories} brands={brands} currentUser={currentUser} addLog={addLog} webConfig={webConfig} focusProductId={navTarget?.type === "webproduct" ? navTarget.id : null} onFocusHandled={onFocusHandled} goToInventoryProductEdit={goToInventoryProductEdit} topOffset={belowSubtabs} />}
       {sub === "orders" && <WebOrders orders={orders} onOpenOrder={onOpenOrder} />}
       {sub === "config" && <WebConfigForm webConfig={webConfig} setWebConfig={setWebConfig} setProducts={setProducts} addLog={addLog} products={products} categories={categories} />}
     </div>
   );
 }
 
-function WebProducts({ products, setProducts, categories, brands, currentUser, addLog, webConfig, focusProductId, onFocusHandled, goToInventoryProductEdit }) {
+function WebProducts({ products, setProducts, categories, brands, currentUser, addLog, webConfig, focusProductId, onFocusHandled, goToInventoryProductEdit, topOffset }) {
   // Danh mục web khả dụng = toàn bộ cây danh mục (mọi cấp) trong menu ở "Cấu hình web" (hoặc menu mặc định),
   // kèm cấp (depth) để hiện thụt lề đúng thứ bậc khi chọn cho sản phẩm.
   const webCats = useMemo(() => {
@@ -13032,6 +13055,7 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
         goToInventoryProductEdit={goToInventoryProductEdit}
         currentUser={currentUser}
         addLog={addLog}
+        topOffset={topOffset}
       />
     );
   }
@@ -13436,7 +13460,7 @@ function AIWriteFromUrl({ onApply }) {
  * Trang sửa 1 sản phẩm trên web — bố cục 2 cột kiểu Sapo.
  * Sửa trên bản NHÁP tại chỗ — KHÔNG tự lưu; phải bấm "Lưu" mới ghi vào dữ liệu thật.
  */
-function WebProductPage({ product, products, setProducts, webCats, onBack, onSwitch, goToInventoryProductEdit, currentUser, addLog }) {
+function WebProductPage({ product, products, setProducts, webCats, onBack, onSwitch, goToInventoryProductEdit, currentUser, addLog, topOffset }) {
   const p = product;
   // Các phiên bản (màu sắc/kích cỡ...) cùng 1 sản phẩm dùng CHUNG mô tả/thông số/danh mục/trạng
   // thái/giá so sánh — KHÔNG đồng bộ "images": mỗi phiên bản có ảnh riêng, đây là điểm khác duy nhất.
@@ -13475,6 +13499,23 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
     onBack();
   };
 
+  // Backspace quay lại danh sách sản phẩm web — chỉ khi KHÔNG đang gõ trong 1 ô nhập (input/
+  // textarea/select), tránh nuốt mất backspace bình thường khi đang sửa chữ trong form.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== "Backspace") return;
+      const el = document.activeElement;
+      const tag = el && el.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (el && el.isContentEditable)) return;
+      e.preventDefault();
+      if (dirty && !window.confirm("Có thay đổi chưa lưu. Rời khỏi trang sẽ mất các thay đổi này — tiếp tục?")) return;
+      onBack();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [dirty, onBack]);
+
+  const [editHeaderRef, editHeaderH] = useMeasuredHeight();
   const w = draft;
   const effSlug = w.slug || webSlugify(p.name) || webSlugify(p.sku || "");
   const seoTitle = w.seoTitle || p.name;
@@ -13482,6 +13523,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
 
   return (
     <div>
+      <div ref={editHeaderRef} className="md:fixed md:z-10 md:left-72 md:right-0 md:px-8 md:pt-3 md:pb-3" style={{ top: topOffset, background: PAPER }}>
       <div className="flex items-center gap-3 mb-4 flex-wrap">
         <button onClick={handleBack} className="text-sm inline-flex items-center gap-1" style={{ color: BLUE }}>
           <ChevronLeft size={16} /> Danh sách sản phẩm web
@@ -13560,6 +13602,8 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
           </div>
         );
       })()}
+      </div>
+      <div className="hidden md:block" style={{ height: editHeaderH ? editHeaderH + 16 : 0 }} />
 
       <div className="grid lg:grid-cols-[1fr_320px] gap-5 items-start">
         {/* Cột trái */}
@@ -14999,6 +15043,10 @@ export default function SalesManager() {
     });
   }, [loaded, purchaseOrders]);
 
+  // Đo chiều cao thanh tiêu đề (cố định khi cuộn ở màn desktop) để biết chừa khoảng trống bên dưới
+  // và để các thanh phụ (subtabs...) trong từng tab biết đặt "top" ngay sát dưới nó.
+  const [headerRef, headerH] = useMeasuredHeight();
+
   if (!loaded) {
     return <div className="flex items-center justify-center h-96" style={{ color: INK }}><Loader2 className="animate-spin mr-2" size={18} /> Đang tải dữ liệu…</div>;
   }
@@ -15110,10 +15158,11 @@ export default function SalesManager() {
           </div>
         </div>
         <div className="flex-1 p-5 md:p-8 min-w-0 md:ml-72">
-          <div className="flex items-center justify-between mb-6 sticky top-0 z-20 py-2 -mt-2" style={{ background: PAPER }}>
+          <div ref={headerRef} className="flex items-center justify-between mb-6 md:mb-0 md:fixed md:top-0 md:left-72 md:right-0 md:z-30 md:px-8 md:py-4" style={{ background: PAPER }}>
             <h2 style={{ fontFamily: "'Fraunces', serif", color: INK }} className="text-2xl">{visibleTabs.find((t) => t.id === tab)?.label || "Bán hàng"}</h2>
             <span className="text-xs opacity-40" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{todayISO()}</span>
           </div>
+          <div className="hidden md:block" style={{ height: headerH ? headerH + 24 : 0 }} />
           <AppErrorBoundary key={tab}>
             {tab === "dashboard" && <Dashboard products={products} orders={orders} goToOrdersFilter={goToOrdersFilter} />}
             {tab === "products" && roleTabIds.includes("products") && <ProductsSection products={products} setProducts={setProducts} purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} suppliers={suppliers} setSuppliers={setSuppliers} categories={categories} setCategories={setCategories} brands={brands} setBrands={setBrands} stocktakes={stocktakes} setStocktakes={setStocktakes} warrantyTickets={warrantyTickets} setWarrantyTickets={setWarrantyTickets} repairTickets={repairTickets} setRepairTickets={setRepairTickets} helpdeskTickets={helpdeskTickets} setHelpdeskTickets={setHelpdeskTickets} orders={orders} customers={customers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} navTarget={tab === "products" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} goToDoc={goToDoc} goToSupplier={goToSupplier} goToWebProduct={goToWebProduct} webConfig={webConfig} />}
@@ -15124,7 +15173,7 @@ export default function SalesManager() {
             {tab === "suppliers" && <Suppliers suppliers={suppliers} setSuppliers={setSuppliers} purchaseOrders={purchaseOrders} addLog={addLog} goToDoc={goToDoc} navTarget={tab === "suppliers" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} />}
             {tab === "plans" && roleTabIds.includes("plans") && <Plans plans={plans} setPlans={setPlans} orders={orders} purchaseOrders={purchaseOrders} products={products} employeeNames={employeeNames} />}
             {tab === "reports" && roleTabIds.includes("reports") && <Reports orders={orders} products={products} customers={customers} accounts={accounts} purchaseOrders={purchaseOrders} warrantyTickets={warrantyTickets} employeeNames={employeeNames} />}
-            {tab === "website" && currentUser.role === "admin" && <WebsiteSection products={products} setProducts={setProducts} orders={orders} webConfig={webConfig} setWebConfig={setWebConfig} categories={categories} brands={brands} currentUser={currentUser} addLog={addLog} onOpenOrder={(id) => { setTab("orders"); setNavTarget({ type: "order", id }); }} navTarget={tab === "website" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} goToInventoryProductEdit={goToInventoryProductEdit} />}
+            {tab === "website" && currentUser.role === "admin" && <WebsiteSection products={products} setProducts={setProducts} orders={orders} webConfig={webConfig} setWebConfig={setWebConfig} categories={categories} brands={brands} currentUser={currentUser} addLog={addLog} onOpenOrder={(id) => { setTab("orders"); setNavTarget({ type: "order", id }); }} navTarget={tab === "website" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} goToInventoryProductEdit={goToInventoryProductEdit} topOffset={headerH} />}
             {tab === "activity" && currentUser.role === "admin" && <ActivityLog log={activityLog} accounts={accounts} />}
             {tab === "accounts" && currentUser.isOwner && <Accounts accounts={accounts} setAccounts={setAccounts} currentUser={currentUser} addLog={addLog} onResetTestData={resetTestData} onDownloadBackup={downloadBackup} onRestoreBackup={restoreBackup} />}
             {tab === "profile" && <MyProfile currentUser={currentUser} setAccounts={setAccounts} addLog={addLog} />}
