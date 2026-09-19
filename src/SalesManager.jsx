@@ -3063,10 +3063,14 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
             </button>
           ) : undefined}>
           {editingSiblings.length > 1 && (
-            <div className="flex items-center justify-between gap-2 mb-4 p-1.5 rounded-sm" style={{ background: PAPER }}>
-              <button type="button" onClick={() => gotoSibling(-1)} title="Phiên bản trước" className="p-1.5 rounded-sm hover:bg-black/5 shrink-0"><ChevronLeft size={16} /></button>
-              <span className="text-xs opacity-60 text-center truncate">Phiên bản {editingSiblingIndex + 1}/{editingSiblings.length} — {baseVariantName(editing)}</span>
-              <button type="button" onClick={() => gotoSibling(1)} title="Phiên bản sau" className="p-1.5 rounded-sm hover:bg-black/5 shrink-0"><ChevronRight size={16} /></button>
+            <div className="flex items-center justify-between gap-2 mb-4 p-2 rounded-sm border-2" style={{ background: `${PURPLE}0D`, borderColor: PURPLE }}>
+              <button type="button" onClick={() => gotoSibling(-1)} title="Phiên bản trước" className="p-2 rounded-sm shrink-0 border-2 hover:text-white transition-colors" style={{ borderColor: PURPLE, color: PURPLE }} onMouseEnter={(e) => (e.currentTarget.style.background = PURPLE)} onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                <ChevronLeft size={20} strokeWidth={2.5} />
+              </button>
+              <span className="text-sm font-bold text-center truncate" style={{ color: PURPLE }}>Phiên bản {editingSiblingIndex + 1}/{editingSiblings.length} — {baseVariantName(editing)}</span>
+              <button type="button" onClick={() => gotoSibling(1)} title="Phiên bản sau" className="p-2 rounded-sm shrink-0 border-2 hover:text-white transition-colors" style={{ borderColor: PURPLE, color: PURPLE }} onMouseEnter={(e) => (e.currentTarget.style.background = PURPLE)} onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                <ChevronRight size={20} strokeWidth={2.5} />
+              </button>
             </div>
           )}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
