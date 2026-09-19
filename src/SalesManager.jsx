@@ -1123,15 +1123,19 @@ function WebDescEditor({ value, onChange, rows = 6, bg }) {
           <div className="text-[11px] opacity-55 mt-1">Ảnh giữ nguyên link gốc, không tải về kho. Google Drive: chia sẻ ở chế độ “Bất kỳ ai có đường liên kết”.</div>
         </div>
       )}
-      <div className="relative rounded-sm overflow-hidden" style={{ border: `1px solid ${drag ? BLUE : LINE}` }}
+      <div className="relative rounded-sm" style={{ border: `1px solid ${drag ? BLUE : LINE}` }}
         onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={onDrop}>
         <div ref={containerRef} className="hilitek-ql" />
         <style>{`
-          .hilitek-ql .ql-toolbar.ql-snow { border: none; border-bottom: 1px solid ${LINE}; background: ${PAPER}; font-family: 'Inter', sans-serif; }
-          .hilitek-ql .ql-container.ql-snow { border: none; font-family: 'Inter', sans-serif; font-size: 14px; background: ${bg || "#fff"}; }
+          /* KHÔNG dùng overflow:hidden ở khung ngoài để bo góc — sẽ cắt mất khung xổ xuống của
+             Quill (tiêu đề/cỡ chữ/màu...), khiến bấm vào không thấy hiện gì. Bo góc trực tiếp
+             lên toolbar/editor thay vì cắt viền ngoài. */
+          .hilitek-ql .ql-toolbar.ql-snow { border: none; border-bottom: 1px solid ${LINE}; background: ${PAPER}; font-family: 'Inter', sans-serif; border-radius: 4px 4px 0 0; }
+          .hilitek-ql .ql-container.ql-snow { border: none; font-family: 'Inter', sans-serif; font-size: 14px; background: ${bg || "#fff"}; border-radius: 0 0 4px 4px; }
           .hilitek-ql .ql-editor { min-height: ${Math.max(3, rows) * 24}px; }
           .hilitek-ql .ql-editor img { max-width: 100%; border-radius: 4px; }
           .hilitek-ql .ql-editor.ql-blank::before { color: ${INK}66; font-style: normal; }
+          .hilitek-ql .ql-picker-options { z-index: 20; }
         `}</style>
         {drag && (
           <div className="absolute inset-0 grid place-items-center text-sm font-medium pointer-events-none"
