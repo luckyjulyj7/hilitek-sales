@@ -14969,7 +14969,7 @@ export default function SalesManager() {
         select { appearance: none; }
       `}</style>
       <div id="app-shell" className="flex flex-col md:flex-row">
-        <div className="md:w-72 shrink-0 p-5 md:min-h-screen flex flex-col md:sticky md:top-0" style={{ background: INK }}>
+        <div className="md:w-72 shrink-0 p-5 flex flex-col md:fixed md:top-0 md:left-0 md:h-screen md:overflow-y-auto md:z-10" style={{ background: INK }}>
           <div className="mb-8 flex items-center gap-2.5">
             <HiliLogo size={34} />
             <div>
@@ -15007,7 +15007,7 @@ export default function SalesManager() {
             <button onClick={() => setCurrentUserId(null)} title="Đăng xuất" className="pt-4 opacity-60 hover:opacity-100 shrink-0" style={{ color: "#fff" }}><LogOut size={16} /></button>
           </div>
         </div>
-        <div className="flex-1 p-5 md:p-8 min-w-0">
+        <div className="flex-1 p-5 md:p-8 min-w-0 md:ml-72">
           <div className="flex items-center justify-between mb-6">
             <h2 style={{ fontFamily: "'Fraunces', serif", color: INK }} className="text-2xl">{visibleTabs.find((t) => t.id === tab)?.label || "Bán hàng"}</h2>
             <span className="text-xs opacity-40" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{todayISO()}</span>
