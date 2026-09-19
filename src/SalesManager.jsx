@@ -2059,6 +2059,10 @@ function StatCard({ label, value, icon: Icon, accent }) {
 
 /* ---------------- Products & Inventory (Sản phẩm & Tồn kho) ---------------- */
 
+// Chưa có "Ảnh chính" riêng (p.image) thì lấy tạm ảnh đầu tiên đã đăng ở "Sản phẩm web" (p.web.images[0])
+// để hiện thumbnail — dùng chung giữa "Sản phẩm & Tồn kho" và "Sản phẩm web" cho nhất quán.
+function displayImage(p) { return p?.image || (Array.isArray(p?.web?.images) && p.web.images[0]) || null; }
+
 function ProductsInventory({ products, setProducts, addLog, currentUser, focusProductId, focusEdit, onFocusHandled, goToDoc, suppliers, goToSupplier, goToWebProduct, categories, setCategories, brands, setBrands, webConfig }) {
   // Cây danh mục web đầy đủ (mọi cấp), dạng phẳng — cho ô chọn "Danh mục phụ trên web".
   const webCatsFlat = useMemo(() => {
@@ -2066,10 +2070,6 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
   }, [webConfig]);
   const isAdmin = currentUser.role === "admin";
   const isCtv = currentUser.role === "ctv";
-  // Chưa có "Ảnh chính" riêng (p.image) thì tạm dùng ảnh đầu tiên đã đăng ở "Sản phẩm web"
-  // (p.web.images[0]) để khỏi hiện icon vỡ ảnh — chỉ để HIỂN THỊ, chưa lưu vào p.image (chỉ lưu
-  // thật khi mở sửa rồi bấm Lưu, xem openEdit()).
-  const displayImage = (p) => p?.image || (Array.isArray(p?.web?.images) && p.web.images[0]) || null;
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState(null); // sản phẩm đang thêm/sửa thông tin
   const [form, setForm] = useState({});
@@ -12925,7 +12925,7 @@ function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig
   ];
   return (
     <div>
-      <div className="flex gap-1 mb-5 flex-wrap">
+      <div className="flex gap-1 mb-5 flex-wrap sticky z-10 py-2 -mt-2" style={{ top: 48, background: PAPER }}>
         {subs.map((s) => (
           <button key={s.id} onClick={() => setSub(s.id)}
             className="px-4 py-2 rounded-sm text-sm font-medium border"
@@ -13105,15 +13105,18 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
                         {/* Khoảng trống thay chỗ mũi tên xổ nhóm (chỉ dòng có nhiều phiên bản mới có) —
                             giữ để ảnh/tên mọi dòng thẳng hàng nhau, không lệch qua lại. */}
                         {!indent && <span className="shrink-0" style={{ width: 15 }} />}
-                        {p.image ? (
-                          <img src={p.image} alt="" className="w-9 h-9 object-cover rounded-sm shrink-0" style={{ border: `1px solid ${LINE}` }} />
+                        {displayImage(p) ? (
+                          <img src={displayImage(p)} alt="" className="w-9 h-9 object-cover rounded-sm shrink-0" style={{ border: `1px solid ${LINE}` }} />
                         ) : (
                           <div className="w-9 h-9 rounded-sm flex items-center justify-center shrink-0" style={{ background: PAPER, border: `1px dashed ${LINE}` }}>
                             <ImageOff size={13} className="opacity-30" />
                           </div>
                         )}
                         <div>
-                          <div className="font-medium leading-tight">{indent ? (vLabel || p.name) : p.name}{!indent && vLabel && <span className="opacity-50"> — {vLabel}</span>}</div>
+                          <a href={`/quanlybanhang?webproduct=${p.id}`} onClick={(e) => { if (e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); setEditId(p.id); }}
+                            className="font-medium leading-tight hover:underline" style={{ color: INK }}>
+                            {indent ? (vLabel || p.name) : p.name}{!indent && vLabel && <span className="opacity-50"> — {vLabel}</span>}
+                          </a>
                           <div className="text-[11px] opacity-50" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.sku}</div>
                         </div>
                       </div>
@@ -13160,15 +13163,18 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
                           <button onClick={() => toggleGroup(gid)} className="opacity-60 hover:opacity-100 shrink-0" style={{ width: 15 }} title={expanded ? "Thu gọn" : "Mở rộng"}>
                             <ChevronDown size={15} style={{ transform: expanded ? "none" : "rotate(-90deg)", transition: "transform .15s" }} />
                           </button>
-                          {rep.image ? (
-                            <img src={rep.image} alt="" className="w-9 h-9 object-cover rounded-sm shrink-0" style={{ border: `1px solid ${LINE}` }} />
+                          {displayImage(rep) ? (
+                            <img src={displayImage(rep)} alt="" className="w-9 h-9 object-cover rounded-sm shrink-0" style={{ border: `1px solid ${LINE}` }} />
                           ) : (
                             <div className="w-9 h-9 rounded-sm flex items-center justify-center shrink-0" style={{ background: PAPER, border: `1px dashed ${LINE}` }}>
                               <ImageOff size={13} className="opacity-30" />
                             </div>
                           )}
                           <div>
-                            <div className="font-medium leading-tight">{baseVariantName(rep)}</div>
+                            <a href={`/quanlybanhang?webproduct=${rep.id}`} onClick={(e) => { if (e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); setEditId(rep.id); }}
+                              className="font-medium leading-tight hover:underline" style={{ color: INK }}>
+                              {baseVariantName(rep)}
+                            </a>
                             <div className="text-[11px] mt-0.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${PURPLE}1A`, color: PURPLE }}><Layers size={9} /> {members.length} phiên bản</div>
                           </div>
                         </div>
@@ -14815,6 +14821,23 @@ export default function SalesManager() {
     })();
   }, []);
 
+  // Mở link "?webproduct=<id>" (bấm giữa chuột/Ctrl+bấm vào tên sản phẩm ở "Sản phẩm web" để mở tab
+  // mới) — đọc URL lúc tải xong dữ liệu, tự điều hướng thẳng tới đúng sản phẩm đó rồi dọn sạch URL.
+  useEffect(() => {
+    if (!loaded) return;
+    const params = new URLSearchParams(window.location.search);
+    const wpId = params.get("webproduct");
+    if (!wpId) return;
+    const cu = accounts.find((a) => a.id === currentUserId);
+    if (!cu || cu.role !== "admin") return;
+    setTab("website");
+    setNavTarget({ type: "webproduct", id: wpId });
+    const url = new URL(window.location.href);
+    url.searchParams.delete("webproduct");
+    window.history.replaceState({}, "", url);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded, currentUserId]);
+
   useEffect(() => {
     if (!loaded) return;
     const t = setTimeout(() => { saveData({ products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, parcelLabels, plans, accounts, activityLog, notifications, printSettings, quotations, pointAdjustments, webConfig, session: { userId: currentUserId } }); }, 400);
@@ -15064,7 +15087,7 @@ export default function SalesManager() {
           </div>
         </div>
         <div className="flex-1 p-5 md:p-8 min-w-0 md:ml-72">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-6 sticky top-0 z-20 py-2 -mt-2" style={{ background: PAPER }}>
             <h2 style={{ fontFamily: "'Fraunces', serif", color: INK }} className="text-2xl">{visibleTabs.find((t) => t.id === tab)?.label || "Bán hàng"}</h2>
             <span className="text-xs opacity-40" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{todayISO()}</span>
           </div>
