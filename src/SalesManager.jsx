@@ -13102,7 +13102,16 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
                     </td>
                     <td className="px-3 py-2.5" style={{ paddingLeft: indent ? 32 : undefined }}>
                       <div className="flex items-center gap-2">
-                        {p.image && <img src={p.image} alt="" className="w-9 h-9 object-cover rounded-sm" style={{ border: `1px solid ${LINE}` }} />}
+                        {/* Khoảng trống thay chỗ mũi tên xổ nhóm (chỉ dòng có nhiều phiên bản mới có) —
+                            giữ để ảnh/tên mọi dòng thẳng hàng nhau, không lệch qua lại. */}
+                        {!indent && <span className="shrink-0" style={{ width: 15 }} />}
+                        {p.image ? (
+                          <img src={p.image} alt="" className="w-9 h-9 object-cover rounded-sm shrink-0" style={{ border: `1px solid ${LINE}` }} />
+                        ) : (
+                          <div className="w-9 h-9 rounded-sm flex items-center justify-center shrink-0" style={{ background: PAPER, border: `1px dashed ${LINE}` }}>
+                            <ImageOff size={13} className="opacity-30" />
+                          </div>
+                        )}
                         <div>
                           <div className="font-medium leading-tight">{indent ? (vLabel || p.name) : p.name}{!indent && vLabel && <span className="opacity-50"> — {vLabel}</span>}</div>
                           <div className="text-[11px] opacity-50" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.sku}</div>
@@ -13148,10 +13157,16 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
                       </td>
                       <td className="px-3 py-2.5">
                         <div className="flex items-center gap-2">
-                          <button onClick={() => toggleGroup(gid)} className="opacity-60 hover:opacity-100 shrink-0" title={expanded ? "Thu gọn" : "Mở rộng"}>
+                          <button onClick={() => toggleGroup(gid)} className="opacity-60 hover:opacity-100 shrink-0" style={{ width: 15 }} title={expanded ? "Thu gọn" : "Mở rộng"}>
                             <ChevronDown size={15} style={{ transform: expanded ? "none" : "rotate(-90deg)", transition: "transform .15s" }} />
                           </button>
-                          {rep.image && <img src={rep.image} alt="" className="w-9 h-9 object-cover rounded-sm" style={{ border: `1px solid ${LINE}` }} />}
+                          {rep.image ? (
+                            <img src={rep.image} alt="" className="w-9 h-9 object-cover rounded-sm shrink-0" style={{ border: `1px solid ${LINE}` }} />
+                          ) : (
+                            <div className="w-9 h-9 rounded-sm flex items-center justify-center shrink-0" style={{ background: PAPER, border: `1px dashed ${LINE}` }}>
+                              <ImageOff size={13} className="opacity-30" />
+                            </div>
+                          )}
                           <div>
                             <div className="font-medium leading-tight">{baseVariantName(rep)}</div>
                             <div className="text-[11px] mt-0.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${PURPLE}1A`, color: PURPLE }}><Layers size={9} /> {members.length} phiên bản</div>
