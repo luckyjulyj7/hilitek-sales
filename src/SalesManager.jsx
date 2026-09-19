@@ -871,9 +871,12 @@ function beautifyDescriptionHtml(raw) {
   return parts.join("") || "<p><br></p>";
 }
 
+// Header/size dùng dạng NÚT riêng từng cái ({header: 2} — 1 giá trị) thay vì dạng menu xổ xuống
+// ({header: [2,3,false]} — mảng giá trị) — menu xổ xuống của Quill bị lỗi hiện sai (mở nhầm hộp
+// thoại chọn file ảnh) trong môi trường app này; dạng nút hoạt động y hệt đậm/nghiêng (đang chạy tốt).
 const DESC_TOOLBAR = [
-  [{ header: [2, 3, false] }],
-  [{ size: ["small", false, "large", "huge"] }],
+  [{ header: 2 }, { header: 3 }],
+  [{ size: "small" }, { size: "large" }, { size: "huge" }],
   ["bold", "italic", "underline", "strike"],
   [{ color: [] }, { background: [] }],
   [{ align: [] }],
