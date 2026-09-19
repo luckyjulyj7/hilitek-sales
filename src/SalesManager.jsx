@@ -2352,6 +2352,15 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
     setForm({ ...p, image: autoImage });
     setEditing(p);
   };
+  // Sản phẩm có nhiều phiên bản (màu sắc/kích cỡ...) — cho phép bấm < > trong khung sửa để chuyển
+  // sang sửa phiên bản khác cùng nhóm mà không cần đóng khung rồi mở lại từ danh sách.
+  const editingSiblings = editing?.id && editing.variantGroupId ? products.filter((x) => x.variantGroupId === editing.variantGroupId) : [];
+  const editingSiblingIndex = editingSiblings.findIndex((x) => x.id === editing?.id);
+  const gotoSibling = (dir) => {
+    if (editingSiblings.length < 2) return;
+    const next = editingSiblings[(editingSiblingIndex + dir + editingSiblings.length) % editingSiblings.length];
+    openEdit(next);
+  };
   const submitInfo = () => {
     if (!form.code || !form.name) return;
     if (editing.id) {
@@ -2777,7 +2786,15 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                         {isService ? "—" : closingSum}
                       </td>
                       {isAdmin && <td className="px-2 py-3 text-right whitespace-nowrap opacity-70" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{isService ? "—" : (sameCost ? vnd(rep.costPrice) : "Nhiều giá")}</td>}
-                      <td className="px-2 py-3"></td>
+                      <td className="px-2 py-3">
+                        <div style={{ display: "grid", gridTemplateColumns: "auto auto", gap: 2, justifyContent: "end", marginLeft: "auto", width: "fit-content" }}>
+                          {isAdmin && !isService && <button onClick={() => openIO(rep, "in")} title="Nhập kho (phiên bản đại diện — mở rộng nhóm để chọn đúng phiên bản khác)" className="rounded-sm hover:bg-black/5" style={{ color: FOREST, padding: 4 }}><ArrowDownToLine size={13} /></button>}
+                          {!isCtv && !isService && <button onClick={() => openIO(rep, "out")} title="Xuất kho (phiên bản đại diện — mở rộng nhóm để chọn đúng phiên bản khác)" className="rounded-sm hover:bg-black/5" style={{ color: RUST, padding: 4 }}><ArrowUpFromLine size={13} /></button>}
+                          {isAdmin && (
+                            <button onClick={() => openEdit(rep)} title="Sửa" className="rounded-sm hover:bg-black/5" style={{ opacity: 0.6, padding: 4 }}><Pencil size={13} /></button>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                     {expanded && members.map((m) => renderMemberRow(m, true))}
                   </React.Fragment>
@@ -3045,6 +3062,13 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
               <Save size={12} /> Lưu thay đổi
             </button>
           ) : undefined}>
+          {editingSiblings.length > 1 && (
+            <div className="flex items-center justify-between gap-2 mb-4 p-1.5 rounded-sm" style={{ background: PAPER }}>
+              <button type="button" onClick={() => gotoSibling(-1)} title="Phiên bản trước" className="p-1.5 rounded-sm hover:bg-black/5 shrink-0"><ChevronLeft size={16} /></button>
+              <span className="text-xs opacity-60 text-center truncate">Phiên bản {editingSiblingIndex + 1}/{editingSiblings.length} — {baseVariantName(editing)}</span>
+              <button type="button" onClick={() => gotoSibling(1)} title="Phiên bản sau" className="p-1.5 rounded-sm hover:bg-black/5 shrink-0"><ChevronRight size={16} /></button>
+            </div>
+          )}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <Field label="Mã VT" hint={editing.id && !isAdmin ? "Chỉ admin được đổi Mã VT của sản phẩm đã tạo." : (editing.id ? "Đổi Mã VT không ảnh hưởng đơn hàng/phiếu cũ (đã ghi lại mã lúc đó) — chỉ áp dụng từ giờ về sau." : undefined)}>
               <input className={inputCls} style={{ borderColor: LINE }} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} disabled={!!editing.id && !isAdmin} />
