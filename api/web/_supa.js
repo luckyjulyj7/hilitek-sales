@@ -158,9 +158,12 @@ export function publicProduct(p, { detail = false } = {}) {
     ? webImgs.slice(0, 10)
     : [p.image, ...(Array.isArray(p.images) ? p.images : [])].filter(Boolean);
 
+  // Mô tả lưu dạng HTML (soạn thảo Quill) — bỏ thẻ HTML để lấy đoạn preview thuần chữ khi chủ shop
+  // chưa tự nhập "Mô tả ngắn". Dữ liệu cũ (trước khi đổi sang Quill) là văn bản Markdown — bỏ thẻ
+  // không ảnh hưởng gì (không có thẻ để bỏ), vẫn ra kết quả hợp lý.
   const shortDesc = (typeof web.shortDesc === "string" && web.shortDesc.trim())
     ? web.shortDesc.trim().slice(0, 300)
-    : (desc.split(/\n{2,}/)[0] || "").replace(/!\[[^\]]*\]\([^)]*\)/g, "").replace(/https?:\/\/\S+/g, "").trim().slice(0, 180);
+    : desc.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/!\[[^\]]*\]\([^)]*\)/g, "").replace(/https?:\/\/\S+/g, "").replace(/\s+/g, " ").trim().slice(0, 180);
 
   const out = {
     id: p.id,

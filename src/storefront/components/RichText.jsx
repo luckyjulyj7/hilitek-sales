@@ -31,7 +31,13 @@ function parseInline(text) {
  * Dùng chung cho mô tả sản phẩm + trang nội dung / landing.
  */
 export default function RichText({ text, className = "" }) {
-  const lines = String(text || "").replace(/\r/g, "").split("\n");
+  const raw = String(text || "");
+  // Mô tả tạo bằng trình soạn thảo mới (Quill) lưu dạng HTML — nhận diện qua thẻ mở đầu, hiện
+  // trực tiếp. Mô tả cũ (trước khi đổi sang Quill) là văn bản kiểu Markdown tự chế — parse như cũ.
+  if (/^\s*</.test(raw)) {
+    return <div className={"ql-content space-y-3 text-[15px] text-ink/80 leading-relaxed " + className} dangerouslySetInnerHTML={{ __html: raw }} />;
+  }
+  const lines = raw.replace(/\r/g, "").split("\n");
   const blocks = [];
   let para = [];
   let list = [];

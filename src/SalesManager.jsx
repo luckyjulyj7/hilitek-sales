@@ -10,6 +10,8 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell, ComposedChart, Line, Legend
 } from "recharts";
 import * as XLSX from "xlsx";
+import Quill from "quill";
+import "quill/dist/quill.snow.css";
 import { ghn as ghnApi } from "./lib/ghn.js";
 // Nội dung mặc định cho web (dùng làm điểm khởi đầu khi chưa chỉnh trong "Cấu hình web").
 import { PAGES as WEB_DEFAULT_PAGES, MENU as WEB_DEFAULT_MENU, flattenMenuTree as webFlattenMenuTree, MAX_CATEGORY_DEPTH as WEB_MAX_CATEGORY_DEPTH, HOME_SECTIONS as WEB_DEFAULT_HOME_SECTIONS, HOME_SECTION_SORTS, HOME_SECTION_LAYOUTS, LANDINGS as WEB_DEFAULT_LANDINGS, FLASH_SALE_CATEGORY as WEB_FLASH_CAT } from "./storefront/config.js";
@@ -823,83 +825,95 @@ function webTextToSpecs(text) {
   return rows.filter((r) => r[0] || r[1]);
 }
 
+// Đổi 1 đoạn Markdown đơn giản (#/##/###  tiêu đề · "- " danh sách · **đậm**/*nghiêng*/__gạch chân__)
+// sang HTML — dùng để nạp mô tả do AI viết (Gemini trả Markdown, xem ai-product-info.js) vào ô
+// mô tả sản phẩm nay đã đổi sang lưu HTML (soạn thảo Quill).
+function simpleMarkdownToHtml(md) {
+  const inline = (s) => escapeHtml(s)
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/__(.+?)__/g, "<u>$1</u>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>");
+  const lines = String(md || "").replace(/\r/g, "").split("\n");
+  const parts = [];
+  let listBuf = [];
+  const flushList = () => { if (listBuf.length) { parts.push("<ul>" + listBuf.map((li) => `<li>${li}</li>`).join("") + "</ul>"); listBuf = []; } };
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) { flushList(); continue; }
+    if (line.startsWith("### ")) { flushList(); parts.push(`<h3>${inline(line.slice(4))}</h3>`); }
+    else if (line.startsWith("## ")) { flushList(); parts.push(`<h2>${inline(line.slice(3))}</h2>`); }
+    else if (line.startsWith("# ")) { flushList(); parts.push(`<h2>${inline(line.slice(2))}</h2>`); }
+    else if (line.startsWith("- ")) { listBuf.push(inline(line.slice(2))); }
+    else { flushList(); parts.push(`<p>${inline(line)}</p>`); }
+  }
+  flushList();
+  return parts.join("") || "<p><br></p>";
+}
+
+// Tách các dòng "Nhãn: Giá trị" thành gạch đầu dòng in đậm nhãn, còn lại giữ nguyên từng đoạn —
+// dùng cho nút "Làm đẹp mô tả". Nhận văn bản thô (Quill getText()), trả về HTML để nạp lại editor.
+function beautifyDescriptionHtml(raw) {
+  const lines = String(raw || "").split("\n");
+  const parts = [];
+  let listBuf = [];
+  let firstContentSeen = false;
+  const flushList = () => { if (listBuf.length) { parts.push("<ul>" + listBuf.map((li) => `<li>${li}</li>`).join("") + "</ul>"); listBuf = []; } };
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) { flushList(); continue; }
+    const m = line.match(/^([^:：]{3,40})[:：]\s+(.+)$/);
+    if (m) { listBuf.push(`<strong>${escapeHtml(m[1].trim())}:</strong> ${escapeHtml(m[2].trim())}`); firstContentSeen = true; continue; }
+    flushList();
+    parts.push(firstContentSeen ? `<p>${escapeHtml(line)}</p>` : `<p><strong>${escapeHtml(line)}</strong></p>`); // dòng mở đầu thường là tên SP
+    firstContentSeen = true;
+  }
+  flushList();
+  return parts.join("") || "<p><br></p>";
+}
+
+const DESC_TOOLBAR = [
+  [{ header: [2, 3, false] }],
+  [{ size: ["small", false, "large", "huge"] }],
+  ["bold", "italic", "underline", "strike"],
+  [{ color: [] }, { background: [] }],
+  [{ align: [] }],
+  ["blockquote"],
+  [{ list: "ordered" }, { list: "bullet" }],
+  ["link", "image", "video"],
+  ["clean"],
+];
+
 /**
- * Ô nhập "Mô tả sản phẩm (web)" — textarea + chèn ảnh:
- *   • Dán ảnh (Ctrl+V) · Kéo–thả file ảnh · Nút "Chèn ảnh"
- *   • Dán cả bài từ web khác: giữ chữ, tải từng ảnh về kho Hilitek (link /media/...)
- * Ảnh chèn dưới dạng markdown  ![](url)  — web khách tự render.
+ * Ô nhập "Mô tả sản phẩm (web)" — trình soạn thảo WYSIWYG (Quill), lưu nội dung dạng HTML:
+ *   • Định dạng đầy đủ: tiêu đề, cỡ chữ, đậm/nghiêng/gạch chân/gạch ngang, màu chữ/nền, căn lề, danh sách, trích dẫn...
+ *   • Dán ảnh (Ctrl+V) · Kéo–thả file ảnh · nút "Chèn ảnh" hoặc nút ảnh trên thanh công cụ — tự tải lên kho Hilitek.
+ *   • Dán cả bài từ web khác: giữ chữ, tải từng ảnh về kho Hilitek.
+ *   • Nút video trên thanh công cụ: dán link YouTube... để nhúng khung phát.
  */
 function WebDescEditor({ value, onChange, rows = 6, bg }) {
-  const taRef = useRef(null);
+  const containerRef = useRef(null);
+  const quillRef = useRef(null);
   const fileRef = useRef(null);
+  const pendingRangeRef = useRef(null);
+  const lastEmitted = useRef(value);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [drag, setDrag] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkVal, setLinkVal] = useState("");
 
-  const insert = (snippet) => {
-    const ta = taRef.current;
-    const v = value || "";
-    const s = ta && ta.selectionStart != null ? ta.selectionStart : v.length;
-    const e = ta && ta.selectionEnd != null ? ta.selectionEnd : s;
-    const before = v.slice(0, s), after = v.slice(e);
-    const pre = before && !before.endsWith("\n") ? "\n\n" : "";
-    const post = after && !after.startsWith("\n") ? "\n\n" : "";
-    const next = before + pre + snippet + post + after;
-    onChange(next);
-    requestAnimationFrame(() => {
-      if (!ta) return;
-      const pos = (before + pre + snippet).length;
-      ta.focus(); ta.selectionStart = ta.selectionEnd = pos;
-    });
-  };
-
-  // Chèn văn bản NGAY tại vị trí con trỏ, không tự thêm dòng trống — dùng cho icon/ký tự đặc biệt.
-  const insertInline = (text) => {
-    const ta = taRef.current;
-    const v = value || "";
-    const s = ta && ta.selectionStart != null ? ta.selectionStart : v.length;
-    const e = ta && ta.selectionEnd != null ? ta.selectionEnd : s;
-    const next = v.slice(0, s) + text + v.slice(e);
-    onChange(next);
-    requestAnimationFrame(() => {
-      if (!ta) return;
-      const pos = s + text.length;
-      ta.focus(); ta.selectionStart = ta.selectionEnd = pos;
-    });
-  };
-  // Bọc đoạn đang bôi đen bằng dấu markdown (in đậm/in nghiêng) — chưa chọn gì thì chèn chữ mẫu.
-  const wrapSelection = (mark, placeholder) => {
-    const ta = taRef.current;
-    const v = value || "";
-    const s = ta && ta.selectionStart != null ? ta.selectionStart : v.length;
-    const e = ta && ta.selectionEnd != null ? ta.selectionEnd : s;
-    const sel = v.slice(s, e) || placeholder;
-    const next = v.slice(0, s) + mark + sel + mark + v.slice(e);
-    onChange(next);
-    requestAnimationFrame(() => {
-      if (!ta) return;
-      const start = s + mark.length;
-      ta.focus(); ta.selectionStart = start; ta.selectionEnd = start + sel.length;
-    });
-  };
-  // Đặt tiêu đề (##/###) hoặc gạch đầu dòng (-) cho DÒNG con trỏ đang đứng.
-  const prefixLine = (prefix) => {
-    const ta = taRef.current;
-    const v = value || "";
-    const s = ta && ta.selectionStart != null ? ta.selectionStart : v.length;
-    const lineStart = v.lastIndexOf("\n", s - 1) + 1;
-    let lineEnd = v.indexOf("\n", lineStart);
-    if (lineEnd === -1) lineEnd = v.length;
-    const lineText = v.slice(lineStart, lineEnd).replace(/^(#{1,3}\s+|-\s+)/, "");
-    const next = v.slice(0, lineStart) + prefix + lineText + v.slice(lineEnd);
-    onChange(next);
-    requestAnimationFrame(() => {
-      if (!ta) return;
-      const pos = lineStart + prefix.length + lineText.length;
-      ta.focus(); ta.selectionStart = ta.selectionEnd = pos;
-    });
+  // Chèn 1 loạt ảnh (url) vào đúng vị trí con trỏ đã lưu (bấm nút ngoài toolbar làm mất focus/con trỏ
+  // nên phải lưu lại TRƯỚC khi mở hộp thoại chọn file), mặc định chèn cuối bài nếu chưa có vị trí nào.
+  const insertImagesAt = (urls) => {
+    const quill = quillRef.current;
+    if (!quill) return;
+    const range = pendingRangeRef.current || quill.getSelection(true);
+    let idx = range ? range.index : quill.getLength();
+    urls.forEach((u) => { quill.insertEmbed(idx, "image", u, "user"); idx += 1; });
+    quill.setSelection(idx, 0, "user");
+    pendingRangeRef.current = null;
   };
 
   const addFiles = async (files) => {
@@ -907,14 +921,15 @@ function WebDescEditor({ value, onChange, rows = 6, bg }) {
     if (!imgs.length) return;
     setBusy(true); setMsg(`Đang tải ${imgs.length} ảnh…`);
     try {
-      const out = [];
-      for (const f of imgs) { const { url } = await uploadProductImage(f); out.push(`![](${url})`); }
-      insert(out.join("\n\n"));
+      const urls = [];
+      for (const f of imgs) urls.push((await uploadProductImage(f)).url);
+      insertImagesAt(urls);
       setMsg(`Đã chèn ${imgs.length} ảnh.`);
     } catch (err) { setMsg("Lỗi: " + (err.message || err)); }
     finally { setBusy(false); }
   };
 
+  // Dán cả bài viết (kèm ảnh) từ trang khác — giữ chữ, tải từng ảnh về kho Hilitek rồi chèn vào đúng vị trí con trỏ.
   const pasteArticle = async (html, plain) => {
     let srcs = [];
     try {
@@ -938,17 +953,22 @@ function WebDescEditor({ value, onChange, rows = 6, bg }) {
     const worker = async () => {
       while (next < srcs.length) {
         const k = next++;
-        try { results[k] = `![](${await rehostExternalImage(srcs[k])})`; }
-        catch { fail++; results[k] = `![](${srcs[k]})`; }
+        try { results[k] = await rehostExternalImage(srcs[k]); }
+        catch { fail++; results[k] = srcs[k]; }
         done++;
         setMsg(`Đang tải ảnh ${done}/${srcs.length} về kho…`);
       }
     };
     await Promise.all(Array.from({ length: Math.min(3, srcs.length) }, worker));
 
-    const parts = [];
-    if ((plain || "").trim()) parts.push(plain.trim());
-    parts.push(...results.filter(Boolean));
+    const quill = quillRef.current;
+    const range = quill.getSelection(true);
+    const idx = range ? range.index : quill.getLength();
+    const textHtml = (plain || "").trim()
+      ? "<p>" + escapeHtml(plain.trim()).replace(/\n{2,}/g, "</p><p>").replace(/\n/g, "<br>") + "</p>"
+      : "";
+    const imgsHtml = results.filter(Boolean).map((u) => `<p><img src="${u}"></p>`).join("");
+    quill.clipboard.dangerouslyPasteHTML(idx, textHtml + imgsHtml, "user");
     setBusy(false);
     setMsg(
       srcs.length
@@ -957,24 +977,76 @@ function WebDescEditor({ value, onChange, rows = 6, bg }) {
           (capped ? " (Chỉ xử lý 20 ảnh đầu.)" : "")
         : ""
     );
-    insert(parts.join("\n\n"));
   };
 
-  const onPaste = async (ev) => {
-    const dt = ev.clipboardData;
-    if (!dt) return;
-    const fileImgs = [...(dt.items || [])].filter((it) => it.kind === "file" && it.type.startsWith("image/"));
-    if (fileImgs.length) {
-      ev.preventDefault();
-      await addFiles(fileImgs.map((it) => it.getAsFile()).filter(Boolean));
-      return;
+  // Khởi tạo Quill 1 lần khi mount — addFiles/pasteArticle chỉ dùng ref/setter ổn định (không phụ
+  // thuộc value/onChange đổi theo từng lần render) nên an toàn khi đóng trong effect chỉ chạy 1 lần.
+  useEffect(() => {
+    if (!containerRef.current || quillRef.current) return;
+    const editorEl = document.createElement("div");
+    containerRef.current.appendChild(editorEl);
+
+    function imageHandler() {
+      pendingRangeRef.current = this.quill.getSelection(true);
+      fileRef.current && fileRef.current.click();
     }
-    const html = dt.getData("text/html");
-    if (html && /<img\s/i.test(html)) {
-      ev.preventDefault();
-      await pasteArticle(html, dt.getData("text/plain"));
+
+    const quill = new Quill(editorEl, {
+      theme: "snow",
+      placeholder: "Nội dung mô tả…",
+      modules: { toolbar: { container: DESC_TOOLBAR, handlers: { image: imageHandler } } },
+    });
+
+    // Dán nội dung từ trang khác thường mang theo màu chữ/nền riêng của trang đó — bỏ 2 định dạng
+    // này khi dán để chữ dán vào không bị lem màu lạ từ nguồn copy.
+    quill.clipboard.addMatcher(Node.ELEMENT_NODE, (_node, delta) => {
+      delta.ops.forEach((op) => { if (op.attributes) { delete op.attributes.background; delete op.attributes.color; } });
+      return delta;
+    });
+
+    quill.root.innerHTML = value || "";
+    quill.on("text-change", () => {
+      const html = quill.root.innerHTML;
+      lastEmitted.current = html;
+      onChangeRef.current(html);
+    });
+
+    const onPaste = async (ev) => {
+      const dt = ev.clipboardData;
+      if (!dt) return;
+      const fileImgs = [...(dt.items || [])].filter((it) => it.kind === "file" && it.type.startsWith("image/"));
+      if (fileImgs.length) {
+        ev.preventDefault();
+        await addFiles(fileImgs.map((it) => it.getAsFile()).filter(Boolean));
+        return;
+      }
+      const html = dt.getData("text/html");
+      if (html && /<img\s/i.test(html)) {
+        ev.preventDefault();
+        await pasteArticle(html, dt.getData("text/plain"));
+      }
+    };
+    quill.root.addEventListener("paste", onPaste);
+
+    quillRef.current = quill;
+    return () => {
+      quill.root.removeEventListener("paste", onPaste);
+      quillRef.current = null;
+      if (containerRef.current) containerRef.current.innerHTML = "";
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Đồng bộ khi `value` đổi từ BÊN NGOÀI (vd bấm "Sao chép từ sản phẩm khác", chuyển phiên bản) —
+  // lastEmitted dùng để phân biệt với thay đổi do chính editor này phát ra, tránh vòng lặp/giật con trỏ.
+  useEffect(() => {
+    const quill = quillRef.current;
+    if (!quill) return;
+    if (value !== lastEmitted.current) {
+      quill.root.innerHTML = value || "";
+      lastEmitted.current = value;
     }
-  };
+  }, [value]);
 
   const onDrop = async (ev) => {
     if (!ev.dataTransfer || !ev.dataTransfer.files || !ev.dataTransfer.files.length) return;
@@ -986,15 +1058,35 @@ function WebDescEditor({ value, onChange, rows = 6, bg }) {
   const addExternalLink = () => {
     const u = toDirectImageUrl(linkVal);
     if (!u) { setMsg("Link phải bắt đầu bằng https://"); return; }
-    insert(`![](${u})`);
+    insertImagesAt([u]);
     setLinkVal(""); setLinkOpen(false);
     setMsg(/drive\.google\.com/.test(u) ? "Đã chèn link Google Drive (ảnh phải ở chế độ 'Bất kỳ ai có link')." : "Đã chèn link ảnh ngoài.");
+  };
+
+  const insertEmoji = (emo) => {
+    const quill = quillRef.current;
+    if (!quill) return;
+    const range = quill.getSelection(true);
+    const idx = range ? range.index : quill.getLength();
+    quill.insertText(idx, emo + " ", "user");
+    quill.setSelection(idx + emo.length + 1, 0, "user");
+  };
+
+  const doBeautify = () => {
+    const quill = quillRef.current;
+    if (!quill) return;
+    const html = beautifyDescriptionHtml(quill.getText());
+    quill.setText("");
+    quill.clipboard.dangerouslyPasteHTML(0, html, "user");
+    setMsg("Đã làm đẹp — tách gạch đầu dòng + in đậm ý chính. Kiểm tra lại rồi sửa thêm nếu cần.");
   };
 
   return (
     <div>
       <div className="flex items-center gap-2 mb-1 flex-wrap">
-        <button type="button" onClick={() => fileRef.current && fileRef.current.click()} disabled={busy}
+        <button type="button"
+          onClick={() => { pendingRangeRef.current = quillRef.current && quillRef.current.getSelection(true); fileRef.current && fileRef.current.click(); }}
+          disabled={busy}
           className="text-xs px-2 py-1 rounded-sm border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy ? 0.5 : 1 }}>
           <ImagePlus size={13} /> Chèn ảnh
         </button>
@@ -1002,7 +1094,7 @@ function WebDescEditor({ value, onChange, rows = 6, bg }) {
           className="text-xs px-2 py-1 rounded-sm border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy ? 0.5 : 1 }}>
           <LinkIcon size={13} /> Link ảnh ngoài
         </button>
-        <button type="button" onClick={() => { onChange(beautifyDescription(value)); setMsg("Đã làm đẹp — tách gạch đầu dòng + in đậm ý chính. Kiểm tra lại rồi sửa thêm nếu cần."); }} disabled={busy}
+        <button type="button" onClick={doBeautify} disabled={busy}
           className="text-xs px-2 py-1 rounded-sm border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy ? 0.5 : 1 }}>
           <Sparkles size={13} /> Làm đẹp mô tả
         </button>
@@ -1013,24 +1105,11 @@ function WebDescEditor({ value, onChange, rows = 6, bg }) {
           onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
       </div>
       <div className="flex items-center gap-1 mb-1.5 flex-wrap">
-        <button type="button" onClick={() => wrapSelection("**", "chữ đậm")} title="In đậm (**chữ**)"
-          className="w-7 h-7 grid place-items-center rounded-sm border" style={{ borderColor: LINE, color: INK }}><Bold size={13} /></button>
-        <button type="button" onClick={() => wrapSelection("*", "chữ nghiêng")} title="In nghiêng (*chữ*)"
-          className="w-7 h-7 grid place-items-center rounded-sm border" style={{ borderColor: LINE, color: INK }}><Italic size={13} /></button>
-        <button type="button" onClick={() => prefixLine("# ")} title="Tiêu đề LỚN nhất — to, in đậm"
-          className="w-7 h-7 grid place-items-center rounded-sm border" style={{ borderColor: LINE, color: INK }}><Heading1 size={14} /></button>
-        <button type="button" onClick={() => prefixLine("## ")} title="Tiêu đề VỪA — in đậm"
-          className="w-7 h-7 grid place-items-center rounded-sm border" style={{ borderColor: LINE, color: INK }}><Heading2 size={14} /></button>
-        <button type="button" onClick={() => prefixLine("### ")} title="Tiêu đề NHỎ — in đậm"
-          className="w-7 h-7 grid place-items-center rounded-sm border" style={{ borderColor: LINE, color: INK }}><Heading3 size={14} /></button>
-        <button type="button" onClick={() => prefixLine("- ")} title="Gạch đầu dòng"
-          className="w-7 h-7 grid place-items-center rounded-sm border" style={{ borderColor: LINE, color: INK }}><List size={14} /></button>
-        <span className="w-px h-5 mx-0.5" style={{ background: LINE }} />
         {["📦", "🎁", "⚡", "✅", "⭐", "🔥", "🚚", "🛡️", "📞"].map((emo) => (
-          <button key={emo} type="button" onClick={() => insertInline(emo + " ")}
+          <button key={emo} type="button" onClick={() => insertEmoji(emo)}
             className="w-7 h-7 grid place-items-center rounded-sm border text-[13px]" style={{ borderColor: LINE }}>{emo}</button>
         ))}
-        <span className="text-[11px] opacity-45 ml-1">**đậm** · *nghiêng* · # / ## / ### tiêu đề (to→nhỏ, đều đậm) · - danh sách</span>
+        <span className="text-[11px] opacity-45 ml-1">Chèn nhanh biểu tượng — đậm/nghiêng/tiêu đề/danh sách... dùng thanh công cụ bên dưới</span>
       </div>
       {linkOpen && (
         <div className="mb-1">
@@ -1044,17 +1123,18 @@ function WebDescEditor({ value, onChange, rows = 6, bg }) {
           <div className="text-[11px] opacity-55 mt-1">Ảnh giữ nguyên link gốc, không tải về kho. Google Drive: chia sẻ ở chế độ “Bất kỳ ai có đường liên kết”.</div>
         </div>
       )}
-      <div className="relative" onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={onDrop}>
-        <textarea
-          ref={taRef} rows={rows} className={inputCls}
-          style={{ borderColor: drag ? BLUE : LINE, background: bg || undefined }}
-          value={value || ""}
-          onChange={(e) => onChange(e.target.value)}
-          onPaste={onPaste}
-          placeholder={"Nội dung mô tả…\n\nChèn ảnh: dán / kéo–thả / nút 'Chèn ảnh'.\nChèn video: dán link YouTube trên 1 dòng riêng."}
-        />
+      <div className="relative rounded-sm overflow-hidden" style={{ border: `1px solid ${drag ? BLUE : LINE}` }}
+        onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={onDrop}>
+        <div ref={containerRef} className="hilitek-ql" />
+        <style>{`
+          .hilitek-ql .ql-toolbar.ql-snow { border: none; border-bottom: 1px solid ${LINE}; background: ${PAPER}; font-family: 'Inter', sans-serif; }
+          .hilitek-ql .ql-container.ql-snow { border: none; font-family: 'Inter', sans-serif; font-size: 14px; background: ${bg || "#fff"}; }
+          .hilitek-ql .ql-editor { min-height: ${Math.max(3, rows) * 24}px; }
+          .hilitek-ql .ql-editor img { max-width: 100%; border-radius: 4px; }
+          .hilitek-ql .ql-editor.ql-blank::before { color: ${INK}66; font-style: normal; }
+        `}</style>
         {drag && (
-          <div className="absolute inset-0 rounded-sm grid place-items-center text-sm font-medium pointer-events-none"
+          <div className="absolute inset-0 grid place-items-center text-sm font-medium pointer-events-none"
             style={{ background: `${BLUE}12`, border: `2px dashed ${BLUE}`, color: BLUE }}>
             Thả ảnh vào đây
           </div>
@@ -7900,6 +7980,10 @@ function OrderProgressStepper({ order }) {
 function escapeHtml(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
+// Mô tả sản phẩm lưu dạng HTML (soạn thảo Quill) — dùng để rút ra đoạn preview thuần chữ (VD mô tả SEO dự phòng).
+function stripHtmlToText(html) {
+  return String(html || "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+}
 
 // Mở hoá đơn ra 1 TAB TRÌNH DUYỆT MỚI (thoát khỏi khung sandbox của artifact) và tự gọi lệnh in
 // ngay trong chính tab đó — cách này không bị giới hạn bởi việc app đang chạy trong iframe cách ly.
@@ -13353,7 +13437,7 @@ function AIWriteFromUrl({ onApply }) {
     if (!preview) return;
     setBusy(true);
     const patch = {};
-    if (pick.description && preview.description) patch.description = preview.description;
+    if (pick.description && preview.description) patch.description = simpleMarkdownToHtml(preview.description);
     if (pick.specsText && (preview.specs || []).length) patch.specsText = preview.specs.map(([k, v]) => `${k} | ${v}`).join("\n");
     if (pick.slug && preview.slug) patch.slug = preview.slug;
     if (pick.seoTitle && preview.seoTitle) patch.seoTitle = preview.seoTitle;
@@ -13537,7 +13621,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
   const w = draft;
   const effSlug = w.slug || webSlugify(p.name) || webSlugify(p.sku || "");
   const seoTitle = w.seoTitle || p.name;
-  const seoDesc = w.seoDesc || w.shortDesc || (w.description.split(/\n{2,}/)[0] || "").replace(/!\[[^\]]*\]\([^)]*\)/g, "").slice(0, 160);
+  const seoDesc = w.seoDesc || w.shortDesc || stripHtmlToText(w.description).slice(0, 160);
 
   return (
     <div>

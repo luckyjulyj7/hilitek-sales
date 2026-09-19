@@ -13,3 +13,42 @@ body {
   font-family: "Inter", system-ui, sans-serif;
   background: #f1f0ea;
 }
+
+/* Nội dung mô tả sản phẩm / trang landing lưu dạng HTML (soạn thảo Quill ở app quản lý) — hiển thị
+   thẳng trên web khách qua RichText.jsx. Không nạp CSS mặc định của Quill ở đây (chỉ dùng ở app
+   quản lý) nên phải tự map lại các class định dạng (size/align) Quill sinh ra khi lưu HTML. */
+.ql-content h1, .ql-content h2, .ql-content h3 {
+  font-family: "Chakra Petch", system-ui, sans-serif;
+  font-weight: 700;
+  color: inherit;
+}
+.ql-content h2 { font-size: 1.4em; margin: 0.6em 0 0.3em; }
+.ql-content h3 { font-size: 1.15em; margin: 0.5em 0 0.25em; }
+.ql-content p { margin: 0 0 0.75em; }
+.ql-content ul, .ql-content ol { padding-left: 1.4em; margin: 0 0 0.75em; }
+.ql-content ul { list-style: disc; }
+.ql-content ol { list-style: decimal; }
+.ql-content li { margin: 0.15em 0; }
+.ql-content blockquote {
+  margin: 0.75em 0;
+  padding: 0.4em 1em;
+  border-left: 3px solid currentColor;
+  opacity: 0.85;
+}
+.ql-content a { color: #1E2A8A; text-decoration: underline; }
+.ql-content img {
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 0.5em auto;
+  display: block;
+}
+.ql-content iframe { max-width: 100%; border-radius: 8px; }
+.ql-content .ql-align-center { text-align: center; }
+.ql-content .ql-align-right { text-align: right; }
+.ql-content .ql-align-justify { text-align: justify; }
+.ql-content .ql-size-small { font-size: 0.75em; }
+.ql-content .ql-size-large { font-size: 1.5em; }
+.ql-content .ql-size-huge { font-size: 2.5em; }
+.ql-content .ql-indent-1 { padding-left: 3em; }
+.ql-content .ql-indent-2 { padding-left: 6em; }
+.ql-content .ql-indent-3 { padding-left: 9em; }
