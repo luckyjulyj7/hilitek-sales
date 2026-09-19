@@ -898,7 +898,7 @@ const DESC_TOOLBAR = [
  *   • Dán cả bài từ web khác: giữ chữ, tải từng ảnh về kho Hilitek.
  *   • Nút video trên thanh công cụ: dán link YouTube... để nhúng khung phát.
  */
-function WebDescEditor({ value, onChange, rows = 6, bg }) {
+export function WebDescEditor({ value, onChange, rows = 6, bg }) {
   const containerRef = useRef(null);
   const quillRef = useRef(null);
   const fileRef = useRef(null);
