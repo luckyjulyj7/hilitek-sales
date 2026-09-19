@@ -727,6 +727,10 @@ function normalizeWeb(w) {
   const specsText = typeof w.specsText === "string" ? w.specsText : webSpecsToText(arrSpecs);
   return {
     published: !!w.published,
+    // Lần đầu tiên được đăng lên web + ai đăng — dùng cho báo cáo "sản phẩm mới đăng web mỗi ngày/tuần/tháng".
+    // Chỉ ghi 1 lần (giữ nguyên khi gỡ rồi đăng lại) để không mất mốc thời gian đăng gốc.
+    publishedAt: w.publishedAt || null,
+    publishedBy: w.publishedBy || "",
     description: typeof w.description === "string" ? w.description : "",
     specsText,
     specs: webTextToSpecs(specsText),
@@ -1261,6 +1265,9 @@ function normalizeProduct(p) {
   return {
     id: p.id || uid(),
     code: p.code || "",
+    // Ngày thêm vào kho + ai thêm — dùng cho báo cáo "sản phẩm mới thêm vào kho mỗi ngày/tuần/tháng".
+    createdAt: p.createdAt || new Date().toISOString(),
+    createdBy: p.createdBy || "",
     name: p.name || "",
     unit: p.unit || UNITS[0],
     category: p.category || "",
@@ -1453,6 +1460,12 @@ function quoteExpiryInfo(q) {
 // Tính giá trị thực tế đạt được của 1 kế hoạch — dùng chung cho màn Kế hoạch, cảnh báo KPI, và liên kết với Xếp hạng bán hàng.
 // scope: company (toàn công ty) | category (theo nhóm hàng) | product (theo sản phẩm cụ thể); metric: revenue (giá trị) | qty (số lượng)
 function planActual(plan, orders, purchaseOrders, products) {
+  if (plan.type === "stock") {
+    return products.filter((p) => p.createdAt && p.createdAt.slice(0, 7) === plan.month && (!plan.sellerName || p.createdBy === plan.sellerName)).length;
+  }
+  if (plan.type === "webpublish") {
+    return products.filter((p) => p.web?.publishedAt && p.web.publishedAt.slice(0, 7) === plan.month && (!plan.sellerName || p.web.publishedBy === plan.sellerName)).length;
+  }
   if (plan.type === "sales") {
     const relevant = orders.filter((o) => o.status !== "cancelled" && o.createdAt.slice(0, 7) === plan.month && (!plan.sellerName || o.seller === plan.sellerName));
     if (plan.scope === "company") {
@@ -1485,6 +1498,16 @@ function planActual(plan, orders, purchaseOrders, products) {
     });
   });
   return total;
+}
+// Số ngày của tháng "YYYY-MM".
+function daysInMonthOf(month) {
+  const [y, mo] = String(month || "").split("-").map(Number);
+  return (y && mo) ? new Date(y, mo, 0).getDate() : 30;
+}
+// Mục tiêu thực áp dụng cho cả tháng — với kế hoạch "mỗi ngày" (thêm mã kho / đăng web), targetValue
+// lưu là mục tiêu/ngày nên phải nhân số ngày trong tháng mới ra mục tiêu để so với thực tế cả tháng.
+function planEffectiveTarget(plan) {
+  return plan.metric === "qty_per_day" ? plan.targetValue * daysInMonthOf(plan.month) : plan.targetValue;
 }
 const CUSTOMER_GROUPS = [
   { id: "retail", label: "KH Lẻ" },
@@ -2276,8 +2299,11 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           const brand = String(row["Nhãn hiệu"] ?? "").trim();
           if (category && !newCatsSet.has(category)) newCatsSet.add(category);
           if (brand && !newBrandsList.some((b) => b.name === brand && b.category === category)) newBrandsList.push({ id: uid(), name: brand, category });
+          const importedWeb = parseWebColumns(row);
+          if (importedWeb.published) { importedWeb.publishedAt = new Date().toISOString(); importedWeb.publishedBy = currentUser.fullName; }
           newProducts.push(normalizeProduct({
             id: uid(), code, name, sku: sku || nextSKU([...products, ...newProducts]),
+            createdBy: currentUser.fullName,
             category, brand, unit: String(row["ĐVT"] ?? "").trim() || UNITS[0],
             hasSeries: /^(có|co|yes|true|1|x)$/i.test(String(row["Quản lý series"] ?? "").trim()),
             vat: parseVatCell(row["VAT"]), warrantyMonths: parseWarrantyCell(row["Bảo hành"]),
@@ -2285,13 +2311,18 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
             openingQty: Number(row["Tồn đầu kỳ"]) || 0,
             minStockLevel: row["Định mức tồn tối thiểu"] !== undefined && row["Định mức tồn tối thiểu"] !== "" ? Number(row["Định mức tồn tối thiểu"]) : 5,
             barcode: String(row["Mã vạch"] ?? "").trim(), movements: [],
-            web: parseWebColumns(row),
+            web: importedWeb,
           }));
         });
         if (newProducts.length > 0 || webUpdates.size > 0) {
           setProducts((prev) =>
             prev
-              .map((p) => (webUpdates.has(p.id) ? { ...p, web: normalizeWeb({ ...normalizeWeb(p.web), ...webUpdates.get(p.id) }) } : p))
+              .map((p) => {
+                if (!webUpdates.has(p.id)) return p;
+                const newWeb = normalizeWeb({ ...normalizeWeb(p.web), ...webUpdates.get(p.id) });
+                if (newWeb.published && !p.web?.publishedAt) { newWeb.publishedAt = new Date().toISOString(); newWeb.publishedBy = currentUser.fullName; }
+                return { ...p, web: newWeb };
+              })
               .concat(newProducts)
           );
         }
@@ -2335,6 +2366,8 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         if (newCost !== p.costPrice) changes.push({ field: "Giá nhập", oldValue: p.costPrice, newValue: newCost });
         const now = new Date().toISOString();
         const newHistoryEntries = changes.map((c) => ({ id: uid(), date: now, changedBy: currentUser.fullName, field: c.field, oldValue: c.oldValue, newValue: c.newValue }));
+        const newWeb = normalizeWeb(form.web);
+        if (newWeb.published && !p.web?.publishedAt) { newWeb.publishedAt = now; newWeb.publishedBy = currentUser.fullName; }
         return {
           ...p, code: form.code.trim(), name: form.name, unit: form.unit, category: form.category || "", brand: form.brand || "", hasSeries: !!form.hasSeries, isService: !!form.isService,
           retailPrice: newRetail, wholesalePrice: newWholesale, costPrice: newCost, openingQty: Number(form.openingQty) || 0,
@@ -2342,7 +2375,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           length: Number(form.length) || 0, width: Number(form.width) || 0, height: Number(form.height) || 0,
           sku: form.sku || p.sku, vat: form.vat, barcode: form.barcode || "", supplierId: form.supplierId || "", warrantyMonths: Number(form.warrantyMonths) || 0, image: form.image || null, images: Array.isArray(form.images) ? form.images.filter(Boolean).slice(0, 3) : [],
           priceHistory: newHistoryEntries.length > 0 ? [...newHistoryEntries, ...(p.priceHistory || [])] : (p.priceHistory || []),
-          web: normalizeWeb(form.web),
+          web: newWeb,
         };
       }));
       addLog("Sửa sản phẩm", `${form.code} · ${form.name}`);
@@ -2369,19 +2402,23 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         usedSuffixes.add(finalSuffix);
         return finalSuffix;
       });
+      const now = new Date().toISOString();
       const newProducts = combos.map((combo, comboIdx) => {
         const suffix = suffixes[comboIdx];
         const label = combo.join(", ");
         const variantAttrs = { [attr1Name]: combo[0] };
         if (combo[1] !== undefined) variantAttrs[attr2Name] = combo[1];
+        const newWeb = normalizeWeb({ ...form.web, slug: "" });
+        if (newWeb.published) { newWeb.publishedAt = now; newWeb.publishedBy = currentUser.fullName; }
         return {
           id: uid(), code: `${form.code}_${suffix}`, name: `${form.name} - ${label}`, unit: form.unit, category: form.category || "", brand: form.brand || "",
+          createdAt: now, createdBy: currentUser.fullName,
           hasSeries: !!form.hasSeries, retailPrice: Number(form.retailPrice) || 0, wholesalePrice: Number(form.wholesalePrice) || 0, costPrice: Number(form.costPrice) || 0,
           openingQty: Number(form.openingQty) || 0, minStockLevel: Number(form.minStockLevel) || 0, weight: Number(form.weight) || 0,
           length: Number(form.length) || 0, width: Number(form.width) || 0, height: Number(form.height) || 0,
           sku: `${form.sku || nextSKU(products)}_${suffix}`, vat: form.vat || "VAT10", barcode: "", supplierId: form.supplierId || "", warrantyMonths: Number(form.warrantyMonths) || 0,
           image: form.image || null, images: Array.isArray(form.images) ? form.images.filter(Boolean).slice(0, 3) : [],
-          variantGroupId: groupId, variantAttrs, movements: [], web: normalizeWeb({ ...form.web, slug: "" }),
+          variantGroupId: groupId, variantAttrs, movements: [], web: newWeb,
         };
       });
       // Tránh trùng mã VT nếu vô tình bấm tạo 2 lần hoặc trùng với sản phẩm có sẵn.
@@ -2390,13 +2427,17 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
       setProducts((prev) => [...prev, ...newProducts]);
       addLog("Tạo sản phẩm có phiên bản", `${form.name} · ${newProducts.length} phiên bản`);
     } else {
+      const now = new Date().toISOString();
+      const newWeb = normalizeWeb(form.web);
+      if (newWeb.published) { newWeb.publishedAt = now; newWeb.publishedBy = currentUser.fullName; }
       setProducts((prev) => [...prev, {
         id: uid(), code: form.code, name: form.name, unit: form.unit, category: form.category || "", brand: form.brand || "",
+        createdAt: now, createdBy: currentUser.fullName,
         hasSeries: !!form.hasSeries, isService: !!form.isService, retailPrice: Number(form.retailPrice) || 0, wholesalePrice: Number(form.wholesalePrice) || 0, costPrice: Number(form.costPrice) || 0,
         openingQty: Number(form.openingQty) || 0, minStockLevel: Number(form.minStockLevel) || 0, weight: Number(form.weight) || 0,
         length: Number(form.length) || 0, width: Number(form.width) || 0, height: Number(form.height) || 0,
         sku: form.sku || nextSKU(products), vat: form.vat || "VAT10", barcode: form.barcode || "", supplierId: form.supplierId || "", warrantyMonths: Number(form.warrantyMonths) || 0, image: form.image || null, images: Array.isArray(form.images) ? form.images.filter(Boolean).slice(0, 3) : [],
-        movements: [], web: normalizeWeb(form.web),
+        movements: [], web: newWeb,
       }]);
       addLog("Thêm sản phẩm", `${form.code} · ${form.name}`);
     }
@@ -10808,17 +10849,25 @@ function Plans({ plans, setPlans, orders, purchaseOrders, products, employeeName
 
   const categories = [...new Set(products.map((p) => p.category).filter(Boolean))].sort();
 
-  const openNew = () => { setForm({ month: todayISO().slice(0, 7), targetValue: "", note: "", sellerName: "", scope: "company", targetCategory: "", targetProductId: "", metric: "revenue" }); setEditing({}); };
+  // "stock"/"webpublish": kế hoạch giao chỉ tiêu MỖI NGÀY cho nhân viên (VD 3 mã/ngày) — không có phạm vi
+  // theo nhóm hàng/sản phẩm, không chọn đơn vị giá trị/số lượng (luôn tính theo số mã sản phẩm).
+  const isDailyType = sub === "stock" || sub === "webpublish";
+
+  const openNew = () => { setForm({ month: todayISO().slice(0, 7), targetValue: "", note: "", sellerName: "", scope: "company", targetCategory: "", targetProductId: "", metric: isDailyType ? "qty_per_day" : "revenue" }); setEditing({}); };
   const openEdit = (p) => { setForm({ ...p }); setEditing(p); };
   const submit = () => {
     if (!form.month || !form.targetValue) return;
-    if (form.scope === "category" && !form.targetCategory) { alert("Vui lòng chọn nhóm hàng."); return; }
-    if (form.scope === "product" && !form.targetProductId) { alert("Vui lòng chọn sản phẩm."); return; }
-    const payload = {
-      month: form.month, targetValue: Number(form.targetValue), note: form.note, sellerName: sub === "sales" ? (form.sellerName || "") : "",
-      scope: form.scope || "company", targetCategory: form.scope === "category" ? form.targetCategory : "", targetProductId: form.scope === "product" ? form.targetProductId : "",
-      metric: form.metric === "qty" ? "qty" : "revenue",
-    };
+    if (!isDailyType) {
+      if (form.scope === "category" && !form.targetCategory) { alert("Vui lòng chọn nhóm hàng."); return; }
+      if (form.scope === "product" && !form.targetProductId) { alert("Vui lòng chọn sản phẩm."); return; }
+    }
+    const payload = isDailyType
+      ? { month: form.month, targetValue: Number(form.targetValue), note: form.note, sellerName: form.sellerName || "", scope: "company", targetCategory: "", targetProductId: "", metric: "qty_per_day" }
+      : {
+          month: form.month, targetValue: Number(form.targetValue), note: form.note, sellerName: sub === "sales" ? (form.sellerName || "") : "",
+          scope: form.scope || "company", targetCategory: form.scope === "category" ? form.targetCategory : "", targetProductId: form.scope === "product" ? form.targetProductId : "",
+          metric: form.metric === "qty" ? "qty" : "revenue",
+        };
     if (editing.id) setPlans((prev) => prev.map((p) => (p.id === editing.id ? { ...p, ...payload } : p)));
     else setPlans((prev) => [...prev, { id: uid(), type: sub, ...payload }]);
     setEditing(null);
@@ -10827,15 +10876,16 @@ function Plans({ plans, setPlans, orders, purchaseOrders, products, employeeName
 
   const list = plans.filter((p) => p.type === sub).sort((a, b) => (a.month < b.month ? 1 : -1));
 
-  // Xu hướng 6 tháng gần nhất — chỉ tính các kế hoạch chung toàn công ty, theo giá trị (không giao riêng, không theo SP/nhóm hàng) để biểu đồ có ý nghĩa tổng thể.
+  // Xu hướng 6 tháng gần nhất — chỉ tính các kế hoạch chung toàn công ty (không giao riêng, không theo SP/nhóm hàng)
+  // để biểu đồ có ý nghĩa tổng thể. Với kế hoạch/ngày thì target quy đổi ra cả tháng qua planEffectiveTarget().
   const trend = useMemo(() => {
     const now = new Date();
     const months = [];
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      const companyPlans = plans.filter((p) => p.type === sub && p.month === key && !p.sellerName && p.scope === "company" && p.metric !== "qty");
-      const target = companyPlans.reduce((s, p) => s + p.targetValue, 0);
+      const companyPlans = plans.filter((p) => p.type === sub && p.month === key && !p.sellerName && p.scope === "company" && (isDailyType || p.metric !== "qty"));
+      const target = companyPlans.reduce((s, p) => s + planEffectiveTarget(p), 0);
       const actual = companyPlans.length > 0 ? planActual(companyPlans[0], orders, purchaseOrders, products) : 0;
       months.push({ label: `T${d.getMonth() + 1}/${String(d.getFullYear()).slice(2)}`, target, actual });
     }
@@ -10846,13 +10896,13 @@ function Plans({ plans, setPlans, orders, purchaseOrders, products, employeeName
   const tooltipStyle = { fontFamily: "'Inter', sans-serif", fontSize: 13, border: `1px solid ${LINE}`, borderRadius: 8, boxShadow: "0 8px 24px rgba(31,42,68,0.12)", padding: "8px 12px" };
   const axisTick = { fontSize: 12, fill: INK, fontFamily: "'Inter', sans-serif" };
 
-  const scopeLabel = (p) => p.scope === "product" ? (products.find((x) => x.id === p.targetProductId)?.name || "Sản phẩm đã xoá")
+  const scopeLabel = (p) => p.metric === "qty_per_day" ? "Toàn công ty" : p.scope === "product" ? (products.find((x) => x.id === p.targetProductId)?.name || "Sản phẩm đã xoá")
     : p.scope === "category" ? `Nhóm: ${p.targetCategory}` : "Toàn công ty";
-  const fmtValue = (p, n) => p.metric === "qty" ? `${(n || 0).toLocaleString("vi-VN")} sản phẩm` : vnd(n);
+  const fmtValue = (p, n) => p.metric === "qty" ? `${(n || 0).toLocaleString("vi-VN")} sản phẩm` : p.metric === "qty_per_day" ? `${(n || 0).toLocaleString("vi-VN")} mã` : vnd(n);
 
   return (
     <div>
-      <div className="grid grid-cols-2 gap-2 mb-5 max-w-md">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5 max-w-2xl">
         <button onClick={() => setSub("sales")} className="px-3.5 py-2.5 rounded-full text-sm border text-center"
           style={{ borderColor: sub === "sales" ? INK : LINE, background: sub === "sales" ? INK : "transparent", color: sub === "sales" ? "#fff" : INK }}>
           Kế hoạch bán hàng
@@ -10861,26 +10911,39 @@ function Plans({ plans, setPlans, orders, purchaseOrders, products, employeeName
           style={{ borderColor: sub === "purchase" ? INK : LINE, background: sub === "purchase" ? INK : "transparent", color: sub === "purchase" ? "#fff" : INK }}>
           Kế hoạch nhập hàng
         </button>
+        <button onClick={() => setSub("stock")} className="px-3.5 py-2.5 rounded-full text-sm border text-center"
+          style={{ borderColor: sub === "stock" ? INK : LINE, background: sub === "stock" ? INK : "transparent", color: sub === "stock" ? "#fff" : INK }}>
+          Thêm mã vào kho
+        </button>
+        <button onClick={() => setSub("webpublish")} className="px-3.5 py-2.5 rounded-full text-sm border text-center"
+          style={{ borderColor: sub === "webpublish" ? INK : LINE, background: sub === "webpublish" ? INK : "transparent", color: sub === "webpublish" ? "#fff" : INK }}>
+          Đăng lên website
+        </button>
       </div>
 
       <div className="p-5 rounded-sm mb-6" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
         <h4 className="text-sm uppercase tracking-wider mb-4" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>
-          Xu hướng 6 tháng — mục tiêu so với thực tế {sub === "sales" ? "(toàn công ty, theo giá trị)" : "(theo giá trị)"}
+          Xu hướng 6 tháng — mục tiêu so với thực tế {sub === "sales" ? "(toàn công ty, theo giá trị)" : sub === "purchase" ? "(theo giá trị)" : sub === "stock" ? "(số mã mới thêm vào kho)" : "(số mã đăng lên website)"}
         </h4>
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={trend} barCategoryGap="28%">
             <CartesianGrid vertical={false} strokeDasharray="3 3" stroke={LINE} />
             <XAxis dataKey="label" tick={axisTick} axisLine={{ stroke: LINE }} tickLine={false} />
-            <YAxis tick={axisTick} axisLine={false} tickLine={false} width={52} tickFormatter={(v) => (v >= 1000000 ? `${(v / 1000000).toFixed(0)}tr` : `${v / 1000}k`)} />
-            <Tooltip formatter={(v) => vnd(v)} contentStyle={tooltipStyle} cursor={{ fill: PAPER }} />
+            <YAxis tick={axisTick} axisLine={false} tickLine={false} width={52} tickFormatter={(v) => (isDailyType ? v.toLocaleString("vi-VN") : v >= 1000000 ? `${(v / 1000000).toFixed(0)}tr` : `${v / 1000}k`)} />
+            <Tooltip formatter={(v) => (isDailyType ? `${v.toLocaleString("vi-VN")} mã` : vnd(v))} contentStyle={tooltipStyle} cursor={{ fill: PAPER }} />
             <Bar dataKey="target" name="Mục tiêu" fill={LINE} radius={[6, 6, 0, 0]} maxBarSize={26} />
-            <Bar dataKey="actual" name="Thực tế" fill={sub === "sales" ? FOREST : BLUE} radius={[6, 6, 0, 0]} maxBarSize={26} />
+            <Bar dataKey="actual" name="Thực tế" fill={sub === "sales" || sub === "stock" ? FOREST : BLUE} radius={[6, 6, 0, 0]} maxBarSize={26} />
           </BarChart>
         </ResponsiveContainer>
       </div>
 
       <div className="flex items-center justify-between mb-5">
-        <p className="text-sm opacity-60">{list.length} kế hoạch — mục tiêu {sub === "sales" ? "bán hàng" : "nhập hàng"} theo tháng, có thể theo giá trị hoặc số lượng, toàn công ty hoặc theo nhóm hàng/sản phẩm</p>
+        <p className="text-sm opacity-60">
+          {list.length} kế hoạch — {sub === "sales" ? "mục tiêu bán hàng theo tháng, có thể theo giá trị hoặc số lượng, toàn công ty hoặc theo nhóm hàng/sản phẩm"
+            : sub === "purchase" ? "mục tiêu nhập hàng theo tháng, có thể theo giá trị hoặc số lượng, toàn công ty hoặc theo nhóm hàng/sản phẩm"
+            : sub === "stock" ? "chỉ tiêu thêm mã sản phẩm mới vào kho mỗi ngày, có thể giao riêng cho từng nhân viên"
+            : "chỉ tiêu đăng sản phẩm lên website mỗi ngày, có thể giao riêng cho từng nhân viên"}
+        </p>
         <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-sm text-sm text-white shrink-0" style={{ background: INK }}><Plus size={15} /> Thêm kế hoạch</button>
       </div>
 
@@ -10890,8 +10953,9 @@ function Plans({ plans, setPlans, orders, purchaseOrders, products, employeeName
         <div className="space-y-4">
           {list.map((p) => {
             const actual = planActual(p, orders, purchaseOrders, products);
-            const pct = p.targetValue > 0 ? Math.round((actual / p.targetValue) * 100) : 0;
-            const over = actual >= p.targetValue;
+            const effTarget = planEffectiveTarget(p);
+            const pct = effTarget > 0 ? Math.round((actual / effTarget) * 100) : 0;
+            const over = actual >= effTarget;
             const isCurrentMonth = p.month === todayISO().slice(0, 7);
             const statusLabel = over ? "Đạt mục tiêu" : pct >= 80 ? "Sắp đạt" : isCurrentMonth ? "Đang trong tháng" : "Chưa đạt";
             const statusColor = over ? FOREST : pct >= 80 ? BRASS : isCurrentMonth ? BLUE : RUST;
@@ -10918,7 +10982,11 @@ function Plans({ plans, setPlans, orders, purchaseOrders, products, employeeName
                 </div>
                 <div className="flex justify-between items-baseline text-sm mb-1.5">
                   <span className="opacity-60">Thực tế: <span style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK, fontWeight: 600 }}>{fmtValue(p, actual)}</span></span>
-                  <span className="opacity-60">Mục tiêu: <span style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{fmtValue(p, p.targetValue)}</span></span>
+                  <span className="opacity-60">
+                    Mục tiêu: <span style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>
+                      {p.metric === "qty_per_day" ? `${p.targetValue.toLocaleString("vi-VN")} mã/ngày (~${effTarget.toLocaleString("vi-VN")} mã/tháng)` : fmtValue(p, p.targetValue)}
+                    </span>
+                  </span>
                 </div>
                 <div className="h-2.5 rounded-full overflow-hidden" style={{ background: PAPER }}>
                   <div className="h-2.5 rounded-full transition-all" style={{ width: `${Math.min(100, pct)}%`, background: over ? FOREST : BRASS }} />
@@ -10931,24 +10999,26 @@ function Plans({ plans, setPlans, orders, purchaseOrders, products, employeeName
       )}
 
       {editing !== null && (
-        <Modal title={editing.id ? "Sửa kế hoạch" : `Thêm ${sub === "sales" ? "kế hoạch bán hàng" : "kế hoạch nhập hàng"}`} onClose={() => setEditing(null)}>
+        <Modal title={editing.id ? "Sửa kế hoạch" : `Thêm ${sub === "sales" ? "kế hoạch bán hàng" : sub === "purchase" ? "kế hoạch nhập hàng" : sub === "stock" ? "chỉ tiêu thêm mã kho" : "chỉ tiêu đăng web"}`} onClose={() => setEditing(null)}>
           <Field label="Tháng">
             <input type="month" className={inputCls} style={{ borderColor: LINE }} value={form.month} onChange={(e) => setForm({ ...form, month: e.target.value })} />
           </Field>
 
-          <Field label="Phạm vi mục tiêu">
-            <div className="grid grid-cols-3 gap-2">
-              {[["company", "Toàn công ty"], ["category", "Theo nhóm hàng"], ["product", "Theo sản phẩm"]].map(([id, label]) => (
-                <button key={id} type="button" onClick={() => setForm({ ...form, scope: id })}
-                  className="px-2 py-2 rounded-sm text-xs border text-center"
-                  style={{ borderColor: form.scope === id ? INK : LINE, background: form.scope === id ? INK : "transparent", color: form.scope === id ? "#fff" : INK }}>
-                  {label}
-                </button>
-              ))}
-            </div>
-          </Field>
+          {!isDailyType && (
+            <Field label="Phạm vi mục tiêu">
+              <div className="grid grid-cols-3 gap-2">
+                {[["company", "Toàn công ty"], ["category", "Theo nhóm hàng"], ["product", "Theo sản phẩm"]].map(([id, label]) => (
+                  <button key={id} type="button" onClick={() => setForm({ ...form, scope: id })}
+                    className="px-2 py-2 rounded-sm text-xs border text-center"
+                    style={{ borderColor: form.scope === id ? INK : LINE, background: form.scope === id ? INK : "transparent", color: form.scope === id ? "#fff" : INK }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </Field>
+          )}
 
-          {form.scope === "category" && (
+          {!isDailyType && form.scope === "category" && (
             <Field label="Nhóm hàng">
               <select className={inputCls} style={{ borderColor: LINE }} value={form.targetCategory || ""} onChange={(e) => setForm({ ...form, targetCategory: e.target.value })}>
                 <option value="">— Chọn nhóm hàng —</option>
@@ -10956,34 +11026,39 @@ function Plans({ plans, setPlans, orders, purchaseOrders, products, employeeName
               </select>
             </Field>
           )}
-          {form.scope === "product" && (
+          {!isDailyType && form.scope === "product" && (
             <Field label="Sản phẩm">
               <FilterSearchSelect options={products.map((pr) => ({ id: pr.id, label: `${pr.name} (${pr.code})` }))} value={form.targetProductId} onChange={(v) => setForm({ ...form, targetProductId: v })} placeholder="Gõ tên hoặc mã sản phẩm…" />
             </Field>
           )}
 
-          <Field label="Đơn vị mục tiêu">
-            <div className="grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => setForm({ ...form, metric: "revenue" })} className="px-3 py-2 rounded-sm text-sm border text-center"
-                style={{ borderColor: (form.metric || "revenue") === "revenue" ? INK : LINE, background: (form.metric || "revenue") === "revenue" ? INK : "transparent", color: (form.metric || "revenue") === "revenue" ? "#fff" : INK }}>
-                Giá trị (đ)
-              </button>
-              <button type="button" onClick={() => setForm({ ...form, metric: "qty" })} className="px-3 py-2 rounded-sm text-sm border text-center"
-                style={{ borderColor: form.metric === "qty" ? INK : LINE, background: form.metric === "qty" ? INK : "transparent", color: form.metric === "qty" ? "#fff" : INK }}>
-                Số lượng (SL)
-              </button>
-            </div>
-          </Field>
+          {!isDailyType && (
+            <Field label="Đơn vị mục tiêu">
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" onClick={() => setForm({ ...form, metric: "revenue" })} className="px-3 py-2 rounded-sm text-sm border text-center"
+                  style={{ borderColor: (form.metric || "revenue") === "revenue" ? INK : LINE, background: (form.metric || "revenue") === "revenue" ? INK : "transparent", color: (form.metric || "revenue") === "revenue" ? "#fff" : INK }}>
+                  Giá trị (đ)
+                </button>
+                <button type="button" onClick={() => setForm({ ...form, metric: "qty" })} className="px-3 py-2 rounded-sm text-sm border text-center"
+                  style={{ borderColor: form.metric === "qty" ? INK : LINE, background: form.metric === "qty" ? INK : "transparent", color: form.metric === "qty" ? "#fff" : INK }}>
+                  Số lượng (SL)
+                </button>
+              </div>
+            </Field>
+          )}
 
-          <Field label={form.metric === "qty" ? "Mục tiêu số lượng (SL)" : sub === "sales" ? "Mục tiêu doanh thu (đ)" : "Mục tiêu giá trị nhập (đ)"}>
-            {form.metric === "qty" ? (
+          <Field
+            label={isDailyType ? (sub === "stock" ? "Chỉ tiêu mỗi ngày — số mã mới thêm vào kho" : "Chỉ tiêu mỗi ngày — số mã đăng lên website") : form.metric === "qty" ? "Mục tiêu số lượng (SL)" : sub === "sales" ? "Mục tiêu doanh thu (đ)" : "Mục tiêu giá trị nhập (đ)"}
+            hint={isDailyType ? "VD: 3 = mỗi ngày thêm 3 mã sản phẩm mới. Hệ thống tự nhân số ngày trong tháng để ra chỉ tiêu cả tháng." : undefined}
+          >
+            {isDailyType || form.metric === "qty" ? (
               <input type="number" min={0} className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} value={form.targetValue} onChange={(e) => setForm({ ...form, targetValue: e.target.value })} />
             ) : (
               <MoneyInput className={inputCls} style={{ borderColor: LINE }} value={form.targetValue} onChange={(v) => setForm({ ...form, targetValue: v })} />
             )}
           </Field>
-          {sub === "sales" && (
-            <Field label="Giao cho nhân viên/CTV (không bắt buộc)" hint="Để trống nếu đây là mục tiêu chung toàn công ty">
+          {(sub === "sales" || isDailyType) && (
+            <Field label="Giao cho nhân viên (không bắt buộc)" hint="Để trống nếu đây là chỉ tiêu chung, không giao riêng ai">
               <select className={inputCls} style={{ borderColor: LINE }} value={form.sellerName || ""} onChange={(e) => setForm({ ...form, sellerName: e.target.value })}>
                 <option value="">— Toàn công ty —</option>
                 {employeeNames.map((n) => <option key={n} value={n}>{n}</option>)}
@@ -11997,7 +12072,135 @@ function BusinessActivityChart({ orders, products }) {
   );
 }
 
-function Reports({ orders, products, customers, accounts, purchaseOrders, warrantyTickets }) {
+// Điểm đầu tuần (thứ 2) của 1 ngày — dùng gộp báo cáo theo tuần.
+function weekStartOf(d) {
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const dow = (x.getDay() + 6) % 7; // 0 = Thứ 2
+  x.setDate(x.getDate() - dow);
+  return x;
+}
+
+// Báo cáo tốc độ thêm mã sản phẩm mới vào kho + đăng lên website — theo dõi năng suất nhân viên so
+// với chỉ tiêu đặt ở màn "Kế hoạch". Đếm theo createdAt (sản phẩm) / web.publishedAt (đăng web),
+// nên chỉ tính được từ ngày các mốc này bắt đầu được ghi lại — sản phẩm cũ tạo trước đó sẽ không có.
+function ProductAdditionReport({ products, employeeNames }) {
+  const [granularity, setGranularity] = useState("day"); // day | week | month
+
+  const keyOf = (d) => {
+    if (granularity === "day") return d.toISOString().slice(0, 10);
+    if (granularity === "week") return weekStartOf(d).toISOString().slice(0, 10);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  };
+
+  const { buckets, totalAdded, totalPublished } = useMemo(() => {
+    const now = new Date();
+    const list = [];
+    if (granularity === "day") {
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+        list.push({ key: keyOf(d), label: `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`, "Mã mới vào kho": 0, "Mã đăng web": 0 });
+      }
+    } else if (granularity === "week") {
+      for (let i = 11; i >= 0; i--) {
+        const ws = weekStartOf(new Date(now.getFullYear(), now.getMonth(), now.getDate() - i * 7));
+        list.push({ key: ws.toISOString().slice(0, 10), label: `${String(ws.getDate()).padStart(2, "0")}/${String(ws.getMonth() + 1).padStart(2, "0")}`, "Mã mới vào kho": 0, "Mã đăng web": 0 });
+      }
+    } else {
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        list.push({ key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`, label: `T${d.getMonth() + 1}/${String(d.getFullYear()).slice(2)}`, "Mã mới vào kho": 0, "Mã đăng web": 0 });
+      }
+    }
+    const map = {}; list.forEach((b) => { map[b.key] = b; });
+    products.forEach((p) => {
+      if (p.createdAt) { const b = map[keyOf(new Date(p.createdAt))]; if (b) b["Mã mới vào kho"] += 1; }
+      if (p.web?.publishedAt) { const b = map[keyOf(new Date(p.web.publishedAt))]; if (b) b["Mã đăng web"] += 1; }
+    });
+    return { buckets: list, totalAdded: list.reduce((s, b) => s + b["Mã mới vào kho"], 0), totalPublished: list.reduce((s, b) => s + b["Mã đăng web"], 0) };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products, granularity]);
+
+  // Xếp hạng nhân viên trong tháng hiện tại — so sánh trực tiếp với chỉ tiêu đã giao ở màn Kế hoạch.
+  const monthKey = todayISO().slice(0, 7);
+  const employeeBreakdown = useMemo(() => {
+    const map = {};
+    (employeeNames || []).forEach((n) => { map[n] = { name: n, added: 0, published: 0 }; });
+    products.forEach((p) => {
+      if (p.createdAt && p.createdAt.slice(0, 7) === monthKey && p.createdBy) {
+        if (!map[p.createdBy]) map[p.createdBy] = { name: p.createdBy, added: 0, published: 0 };
+        map[p.createdBy].added += 1;
+      }
+      if (p.web?.publishedAt && p.web.publishedAt.slice(0, 7) === monthKey && p.web.publishedBy) {
+        if (!map[p.web.publishedBy]) map[p.web.publishedBy] = { name: p.web.publishedBy, added: 0, published: 0 };
+        map[p.web.publishedBy].published += 1;
+      }
+    });
+    return Object.values(map).filter((r) => r.added > 0 || r.published > 0).sort((a, b) => (b.added + b.published) - (a.added + a.published));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products, employeeNames, monthKey]);
+
+  const tooltipStyle = { fontFamily: "'Inter', sans-serif", fontSize: 13, border: `1px solid ${LINE}`, borderRadius: 8, boxShadow: "0 8px 24px rgba(31,42,68,0.12)", padding: "8px 12px" };
+  const axisTick = { fontSize: 12, fill: INK, fontFamily: "'Inter', sans-serif" };
+  const GRANULARITIES = [["day", "Theo ngày (30 ngày)"], ["week", "Theo tuần (12 tuần)"], ["month", "Theo tháng (12 tháng)"]];
+
+  return (
+    <div className="p-5 sm:p-6 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+      <h4 className="text-sm uppercase tracking-wider mb-1" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Tốc độ thêm mã sản phẩm mới</h4>
+      <p className="text-xs opacity-50 mb-4">Số mã sản phẩm mới thêm vào kho và số mã đăng lên website — so với chỉ tiêu ở màn "Kế hoạch"</p>
+
+      <div className="flex flex-wrap gap-1.5 mb-4">
+        {GRANULARITIES.map(([id, label]) => (
+          <button key={id} onClick={() => setGranularity(id)} className="text-xs px-3 py-1.5 rounded-full border whitespace-nowrap"
+            style={{ borderColor: granularity === id ? INK : LINE, background: granularity === id ? INK : "transparent", color: granularity === id ? "#fff" : INK }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 mb-5 max-w-md">
+        <div>
+          <p className="text-xs opacity-50 mb-1">Tổng mã mới vào kho</p>
+          <p className="text-xl font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: FOREST }}>{totalAdded.toLocaleString("vi-VN")}</p>
+        </div>
+        <div>
+          <p className="text-xs opacity-50 mb-1">Tổng mã đăng web</p>
+          <p className="text-xl font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: BLUE }}>{totalPublished.toLocaleString("vi-VN")}</p>
+        </div>
+      </div>
+
+      <ResponsiveContainer width="100%" height={280}>
+        <BarChart data={buckets} barCategoryGap="30%">
+          <CartesianGrid vertical={false} strokeDasharray="3 3" stroke={LINE} />
+          <XAxis dataKey="label" tick={axisTick} axisLine={{ stroke: LINE }} tickLine={false} interval={buckets.length > 20 ? Math.ceil(buckets.length / 15) : 0} />
+          <YAxis tick={axisTick} axisLine={false} tickLine={false} width={40} allowDecimals={false} />
+          <Tooltip contentStyle={tooltipStyle} cursor={{ fill: PAPER }} />
+          <Legend wrapperStyle={{ fontSize: 13, fontFamily: "'Inter', sans-serif" }} />
+          <Bar dataKey="Mã mới vào kho" fill={FOREST} radius={[6, 6, 0, 0]} maxBarSize={30} />
+          <Bar dataKey="Mã đăng web" fill={BLUE} radius={[6, 6, 0, 0]} maxBarSize={30} />
+        </BarChart>
+      </ResponsiveContainer>
+
+      {employeeBreakdown.length > 0 && (
+        <div className="mt-6 pt-5" style={{ borderTop: `1px solid ${LINE}` }}>
+          <h5 className="text-xs uppercase tracking-wider mb-3" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Theo nhân viên — tháng {monthLabel(monthKey)}</h5>
+          <div className="space-y-2">
+            {employeeBreakdown.map((r) => (
+              <div key={r.name} className="flex items-center justify-between text-sm py-1.5" style={{ borderBottom: `1px dashed ${LINE}` }}>
+                <span style={{ color: INK }}>{r.name}</span>
+                <span className="flex gap-4">
+                  <span style={{ color: FOREST }}>{r.added} mã kho</span>
+                  <span style={{ color: BLUE }}>{r.published} mã web</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Reports({ orders, products, customers, accounts, purchaseOrders, warrantyTickets, employeeNames }) {
   const [sub, setSub] = useState("overview"); // overview | ranking
   const byCategory = useMemo(() => {
     const map = {};
@@ -12061,6 +12264,8 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
 
       {sub === "ranking" ? <SalesRanking orders={orders} products={products} accounts={accounts} /> : (<>
       <BusinessActivityChart orders={orders} products={products} />
+
+      <ProductAdditionReport products={products} employeeNames={employeeNames} />
 
       <PeriodComparisonReport orders={orders} products={products} />
       <ProfitMarginReport orders={orders} products={products} />
@@ -12642,7 +12847,7 @@ function webOrderTotal(o) {
   return (o.items || []).reduce((s, it) => s + (Number(it.qty) || 0) * (Number(it.price) || 0), 0);
 }
 
-function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig, categories, brands, addLog, onOpenOrder, navTarget, onFocusHandled, goToInventoryProductEdit }) {
+function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig, categories, brands, currentUser, addLog, onOpenOrder, navTarget, onFocusHandled, goToInventoryProductEdit }) {
   const [sub, setSub] = useState("products");
   useEffect(() => {
     if (navTarget?.type === "webproduct") setSub("products");
@@ -12663,14 +12868,14 @@ function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig
           </button>
         ))}
       </div>
-      {sub === "products" && <WebProducts products={products} setProducts={setProducts} categories={categories} brands={brands} addLog={addLog} webConfig={webConfig} focusProductId={navTarget?.type === "webproduct" ? navTarget.id : null} onFocusHandled={onFocusHandled} goToInventoryProductEdit={goToInventoryProductEdit} />}
+      {sub === "products" && <WebProducts products={products} setProducts={setProducts} categories={categories} brands={brands} currentUser={currentUser} addLog={addLog} webConfig={webConfig} focusProductId={navTarget?.type === "webproduct" ? navTarget.id : null} onFocusHandled={onFocusHandled} goToInventoryProductEdit={goToInventoryProductEdit} />}
       {sub === "orders" && <WebOrders orders={orders} onOpenOrder={onOpenOrder} />}
       {sub === "config" && <WebConfigForm webConfig={webConfig} setWebConfig={setWebConfig} setProducts={setProducts} addLog={addLog} products={products} categories={categories} />}
     </div>
   );
 }
 
-function WebProducts({ products, setProducts, categories, brands, addLog, webConfig, focusProductId, onFocusHandled, goToInventoryProductEdit }) {
+function WebProducts({ products, setProducts, categories, brands, currentUser, addLog, webConfig, focusProductId, onFocusHandled, goToInventoryProductEdit }) {
   // Danh mục web khả dụng = toàn bộ cây danh mục (mọi cấp) trong menu ở "Cấu hình web" (hoặc menu mặc định),
   // kèm cấp (depth) để hiện thụt lề đúng thứ bậc khi chọn cho sản phẩm.
   const webCats = useMemo(() => {
@@ -12718,16 +12923,19 @@ function WebProducts({ products, setProducts, categories, brands, addLog, webCon
   }, [products, q, filter, filterCategory, filterBrand]);
 
   const patch = (id, fn) => setProducts((prev) => prev.map((p) => (p.id === id ? fn(p) : p)));
+  // Đóng dấu ngày đăng web lần đầu (publishedAt/publishedBy) khi 1 sản phẩm chuyển từ chưa đăng -> đăng —
+  // giữ nguyên nếu đã có mốc trước đó (gỡ rồi đăng lại không tính là "đăng mới").
+  const stampPublish = (x, nw) => { if (nw.published && !x.web?.publishedAt) { nw.publishedAt = new Date().toISOString(); nw.publishedBy = currentUser.fullName; } return nw; };
   const setWeb = (p, wpatch) => {
     // Các phiên bản (màu sắc/kích cỡ...) cùng 1 sản phẩm thường dùng chung mô tả, thông số,
     // danh mục, trạng thái đăng web và giá so sánh — chỉ ảnh là khác nhau từng phiên bản.
     const shareKeys = ["description", "specsText", "categories", "published", "compareAtPrice"];
     const shared = shareKeys.some((k) => k in wpatch);
     setProducts((prev) => prev.map((x) => {
-      if (x.id === p.id) return { ...x, web: normalizeWeb({ ...normalizeWeb(x.web), ...wpatch }) };
+      if (x.id === p.id) return { ...x, web: stampPublish(x, normalizeWeb({ ...normalizeWeb(x.web), ...wpatch })) };
       if (shared && p.variantGroupId && x.variantGroupId === p.variantGroupId) {
         const sh = {}; shareKeys.forEach((k) => { if (k in wpatch) sh[k] = wpatch[k]; });
-        return { ...x, web: normalizeWeb({ ...normalizeWeb(x.web), ...sh }) };
+        return { ...x, web: stampPublish(x, normalizeWeb({ ...normalizeWeb(x.web), ...sh })) };
       }
       return x;
     }));
@@ -12751,6 +12959,7 @@ function WebProducts({ products, setProducts, categories, brands, addLog, webCon
         onBack={() => setEditId(null)}
         onSwitch={setEditId}
         goToInventoryProductEdit={goToInventoryProductEdit}
+        currentUser={currentUser}
         addLog={addLog}
       />
     );
@@ -13117,7 +13326,7 @@ function FetchFromSupplierUrl({ onApply }) {
  * Trang sửa 1 sản phẩm trên web — bố cục 2 cột kiểu Sapo.
  * Sửa trên bản NHÁP tại chỗ — KHÔNG tự lưu; phải bấm "Lưu" mới ghi vào dữ liệu thật.
  */
-function WebProductPage({ product, products, setProducts, webCats, onBack, onSwitch, goToInventoryProductEdit, addLog }) {
+function WebProductPage({ product, products, setProducts, webCats, onBack, onSwitch, goToInventoryProductEdit, currentUser, addLog }) {
   const p = product;
   // Các phiên bản (màu sắc/kích cỡ...) cùng 1 sản phẩm dùng CHUNG mô tả/thông số/danh mục/trạng
   // thái/giá so sánh — KHÔNG đồng bộ "images": mỗi phiên bản có ảnh riêng, đây là điểm khác duy nhất.
@@ -13130,15 +13339,16 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
   const setWeightField = (v) => { setWeightDraft(v); setDirty(true); };
 
   const doSave = () => {
+    const stampPublish = (x, nw) => { if (nw.published && !x.web?.publishedAt) { nw.publishedAt = new Date().toISOString(); nw.publishedBy = currentUser.fullName; } return nw; };
     setProducts((prev) => prev.map((x) => {
-      if (x.id === p.id) return { ...x, weight: Number(weightDraft) || 0, web: normalizeWeb(draft) };
+      if (x.id === p.id) return { ...x, weight: Number(weightDraft) || 0, web: stampPublish(x, normalizeWeb(draft)) };
       // Đồng bộ nội dung/thông số/danh mục/ảnh/mô tả ngắn/khuyến mãi sang các phiên bản cùng nhóm.
       if (p.variantGroupId && x.variantGroupId === p.variantGroupId) {
         const sh = {}; shareKeys.forEach((k) => { sh[k] = draft[k]; });
         // Đại diện danh sách chỉ 1 phiên bản/nhóm — nếu vừa chọn phiên bản NÀY làm đại diện thì
         // bỏ cờ đó ở mọi phiên bản khác cùng nhóm.
         if (draft.isDefaultVariant) sh.isDefaultVariant = false;
-        return { ...x, web: normalizeWeb({ ...normalizeWeb(x.web), ...sh }) };
+        return { ...x, web: stampPublish(x, normalizeWeb({ ...normalizeWeb(x.web), ...sh })) };
       }
       return x;
     }));
@@ -14634,12 +14844,14 @@ export default function SalesManager() {
       plans.forEach((pl) => {
         if (pl.month !== curMonth || !pl.targetValue) return;
         const actual = planActual(pl, orders, purchaseOrders, products);
-        const pct = pl.targetValue > 0 ? (actual / pl.targetValue) * 100 : 0;
+        const effTarget = planEffectiveTarget(pl);
+        const pct = effTarget > 0 ? (actual / effTarget) * 100 : 0;
         const behindSchedule = pct < expectedPct - 15;
         const nearEndLow = daysLeftInMonth <= 5 && pct < 90;
         if (!behindSchedule && !nearEndLow) return;
         const scope = pl.scope === "product" ? (products.find((x) => x.id === pl.targetProductId)?.name || "Sản phẩm đã xoá")
-          : pl.scope === "category" ? `Nhóm ${pl.targetCategory}` : (pl.type === "sales" ? "Bán hàng" : "Nhập hàng");
+          : pl.scope === "category" ? `Nhóm ${pl.targetCategory}`
+          : pl.type === "sales" ? "Bán hàng" : pl.type === "purchase" ? "Nhập hàng" : pl.type === "stock" ? "Thêm mã vào kho" : "Đăng web";
         const who = pl.sellerName ? ` · ${pl.sellerName}` : "";
         push(`kpi:${pl.id}`, "plan_kpi", `${monthLabel(pl.month)} — ${scope}${who}: đạt ${Math.round(pct)}% mục tiêu${daysLeftInMonth <= 5 ? ` (còn ${daysLeftInMonth} ngày)` : ""}`);
       });
@@ -14809,7 +15021,7 @@ export default function SalesManager() {
             {tab === "customers" && <Customers customers={customers} setCustomers={setCustomers} orders={orders} products={products} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} employeeNames={employeeNames} webConfig={webConfig} pointAdjustments={pointAdjustments} setPointAdjustments={setPointAdjustments} />}
             {tab === "suppliers" && <Suppliers suppliers={suppliers} setSuppliers={setSuppliers} purchaseOrders={purchaseOrders} addLog={addLog} goToDoc={goToDoc} navTarget={tab === "suppliers" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} />}
             {tab === "plans" && roleTabIds.includes("plans") && <Plans plans={plans} setPlans={setPlans} orders={orders} purchaseOrders={purchaseOrders} products={products} employeeNames={employeeNames} />}
-            {tab === "reports" && roleTabIds.includes("reports") && <Reports orders={orders} products={products} customers={customers} accounts={accounts} purchaseOrders={purchaseOrders} warrantyTickets={warrantyTickets} />}
+            {tab === "reports" && roleTabIds.includes("reports") && <Reports orders={orders} products={products} customers={customers} accounts={accounts} purchaseOrders={purchaseOrders} warrantyTickets={warrantyTickets} employeeNames={employeeNames} />}
             {tab === "website" && currentUser.role === "admin" && <WebsiteSection products={products} setProducts={setProducts} orders={orders} webConfig={webConfig} setWebConfig={setWebConfig} categories={categories} brands={brands} currentUser={currentUser} addLog={addLog} onOpenOrder={(id) => { setTab("orders"); setNavTarget({ type: "order", id }); }} navTarget={tab === "website" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} goToInventoryProductEdit={goToInventoryProductEdit} />}
             {tab === "activity" && currentUser.role === "admin" && <ActivityLog log={activityLog} accounts={accounts} />}
             {tab === "accounts" && currentUser.isOwner && <Accounts accounts={accounts} setAccounts={setAccounts} currentUser={currentUser} addLog={addLog} onResetTestData={resetTestData} onDownloadBackup={downloadBackup} onRestoreBackup={restoreBackup} />}
