@@ -138,15 +138,32 @@ ${pageText}
     },
   };
 
-  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(reqBody),
-    signal: AbortSignal.timeout(45000),
-  });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.error?.message || `Gemini lỗi ${r.status}`);
-  const raw = j.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!raw) throw new Error("AI không trả về nội dung — thử lại hoặc đổi trang khác.");
-  return JSON.parse(raw);
+  // Gemini thỉnh thoảng báo "quá tải/high demand" (503/429) — lỗi TẠM THỜI, thử lại sau vài giây
+  // thường sẽ qua ngay — nên tự thử lại tối đa 2 lần trước khi báo lỗi thật cho người dùng.
+  const isOverloaded = (status, msg) => status === 429 || status === 503 || /overload|high demand|quá tải/i.test(msg || "");
+  let lastErr;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) await new Promise((res) => setTimeout(res, 2000 * attempt));
+    let r, j;
+    try {
+      r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(reqBody),
+        signal: AbortSignal.timeout(45000),
+      });
+      j = await r.json().catch(() => ({}));
+    } catch (e) {
+      lastErr = new Error(e.message || String(e));
+      continue;
+    }
+    if (r.ok) {
+      const raw = j.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!raw) throw new Error("AI không trả về nội dung — thử lại hoặc đổi trang khác.");
+      return JSON.parse(raw);
+    }
+    lastErr = new Error(j.error?.message || `Gemini lỗi ${r.status}`);
+    if (!isOverloaded(r.status, j.error?.message)) throw lastErr;
+  }
+  throw new Error((lastErr && lastErr.message) + " — AI đang quá tải, vui lòng thử lại sau ít phút.");
 }

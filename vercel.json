@@ -14,5 +14,8 @@
   ],
   "crons": [
     { "path": "/api/cron/backup", "schedule": "0 17 * * *" }
-  ]
+  ],
+  "functions": {
+    "api/web/ai-product-info.js": { "maxDuration": 60 }
+  }
 }
