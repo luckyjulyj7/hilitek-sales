@@ -13491,6 +13491,27 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
     return () => window.removeEventListener("keydown", onKey);
   }, [dirty, onBack]);
 
+  // Nút "back" của chuột (hoặc Alt+Trái) cũng quay lại danh sách — đẩy 1 mốc lịch sử khi vào trang
+  // sửa để trình duyệt có chỗ "lùi về". Nếu history.state đã đánh dấu sẵn (do vừa chuyển phiên bản
+  // — component này remount nhưng vẫn đang trong CÙNG 1 phiên sửa) thì không đẩy thêm mốc mới,
+  // tránh phải bấm back nhiều lần mới thoát ra được sau khi đã chuyển qua lại vài phiên bản.
+  const dirtyRef = useRef(dirty);
+  useEffect(() => { dirtyRef.current = dirty; }, [dirty]);
+  useEffect(() => {
+    if (!(window.history.state && window.history.state.webProductEdit)) {
+      window.history.pushState({ webProductEdit: true }, "");
+    }
+    const onPop = () => {
+      if (dirtyRef.current && !window.confirm("Có thay đổi chưa lưu. Rời khỏi trang sẽ mất các thay đổi này — tiếp tục?")) {
+        window.history.pushState({ webProductEdit: true }, "");
+        return;
+      }
+      onBack();
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
   const w = draft;
   const effSlug = w.slug || webSlugify(p.name) || webSlugify(p.sku || "");
   const seoTitle = w.seoTitle || p.name;
