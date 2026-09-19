@@ -1,9 +1,10 @@
 /**
- * POST /api/web/ai-product-info  { url }
- * Đọc 1 trang sản phẩm của NCC/hãng, dùng Gemini VIẾT LẠI (không chỉ cào nguyên văn) mô tả đã làm
- * đẹp, bảng thông số kỹ thuật, và các trường SEO (slug, tiêu đề, mô tả) cho đúng sản phẩm — thay
- * cho "Link tham khảo" cũ. Ảnh vẫn lấy trực tiếp từ trang bằng heuristic (không qua AI, đỡ tốn phí
- * và ảnh thật không cần "viết lại").
+ * POST /api/web/ai-product-info  { urls: [1-3 link] }  (hoặc { url } — vẫn nhận cho tương thích cũ)
+ * Đọc tối đa 3 trang sản phẩm của NCC/hãng, dùng Gemini VIẾT LẠI (không chỉ cào nguyên văn) mô tả đã
+ * làm đẹp, bảng thông số kỹ thuật, và các trường SEO (slug, tiêu đề, mô tả) cho đúng sản phẩm — thay
+ * cho "Link tham khảo" cũ. Cho nhiều link để AI đối chiếu chéo, viết đủ hơn khi 1 trang thiếu dữ
+ * liệu. Ảnh vẫn lấy trực tiếp từ các trang bằng heuristic (không qua AI, đỡ tốn phí và ảnh thật
+ * không cần "viết lại").
  * Cần biến môi trường GEMINI_API_KEY (tạo tại aistudio.google.com/apikey, cấu hình trong Vercel →
  * Settings → Environment Variables). Chặn lạm dụng: header x-media-key phải khớp
  * VITE_SUPABASE_ANON_KEY (giống fetch-image.js).
@@ -15,6 +16,7 @@ const GATE = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
 const GEMINI_KEY = process.env.GEMINI_API_KEY || "";
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
 const SKIP_IMG_RE = /logo|icon|favicon|sprite|avatar|payment|thanh-toan|zalo\.(png|svg)|facebook\.(png|svg)|qr-?code|dmca|banner|\/advs?\//i;
+const MAX_URLS = 3;
 
 export default handler(async (req, res) => {
   if (req.method !== "POST") return json(res, 405, { error: "Chỉ hỗ trợ POST." });
@@ -22,37 +24,48 @@ export default handler(async (req, res) => {
   if (!GEMINI_KEY) return json(res, 503, { error: "Server chưa cấu hình GEMINI_API_KEY." });
 
   const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
-  const src = body.url;
-  if (!src || !/^https?:\/\//i.test(src)) return json(res, 400, { error: "Nhập link sản phẩm hợp lệ (bắt đầu https://)." });
+  const rawUrls = Array.isArray(body.urls) ? body.urls : body.url ? [body.url] : [];
+  const srcs = [...new Set(rawUrls.map((u) => String(u || "").trim()).filter((u) => /^https?:\/\//i.test(u)))].slice(0, MAX_URLS);
+  if (!srcs.length) return json(res, 400, { error: "Nhập ít nhất 1 link sản phẩm hợp lệ (bắt đầu https://)." });
 
-  let html;
-  try {
-    const r = await fetch(src, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
-        Accept: "text/html,application/xhtml+xml",
-      },
-      redirect: "follow",
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!r.ok) return json(res, 502, { error: `Trang nguồn trả mã ${r.status}.` });
-    html = await r.text();
-  } catch {
-    return json(res, 504, { error: "Không tải được trang nguồn (quá lâu hoặc bị chặn truy cập)." });
+  const pages = await Promise.all(srcs.map(async (src) => {
+    try {
+      const r = await fetch(src, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+          Accept: "text/html,application/xhtml+xml",
+        },
+        redirect: "follow",
+        signal: AbortSignal.timeout(15000),
+      });
+      if (!r.ok) return { src, error: `Trang trả mã ${r.status}` };
+      const html = await r.text();
+      return { src, ...extractPage(html, src) };
+    } catch {
+      return { src, error: "Không tải được (quá lâu hoặc bị chặn truy cập)" };
+    }
+  }));
+
+  const ok = pages.filter((p) => !p.error && p.text && p.text.length >= 60);
+  if (!ok.length) {
+    const firstErr = pages.find((p) => p.error)?.error || "Không đọc được nội dung nào từ (các) trang này.";
+    return json(res, 422, { error: firstErr });
   }
 
-  const { title, text, images } = extractPage(html, src);
-  if (!text || text.length < 60) return json(res, 422, { error: "Không đọc được nội dung nào từ trang này." });
+  const title = ok[0].title;
+  const combinedText = ok.map((p, i) => `--- Nguồn ${i + 1}: ${p.src} ---\n${p.text}`).join("\n\n");
+  const seenImg = new Set();
+  const images = ok.flatMap((p) => p.images).filter((u) => (seenImg.has(u) ? false : (seenImg.add(u), true))).slice(0, 12);
 
   let ai;
   try {
-    ai = await askGemini(title, text);
+    ai = await askGemini(title, combinedText);
   } catch (e) {
     return json(res, 502, { error: "Lỗi gọi AI: " + (e.message || e) });
   }
 
   json(res, 200, {
-    sourceUrl: src,
+    sourceUrl: srcs[0],
     title,
     description: ai.description || "",
     specs: Array.isArray(ai.specs)
@@ -61,7 +74,7 @@ export default handler(async (req, res) => {
     slug: slugify(ai.slug || title),
     seoTitle: (ai.seoTitle || "").slice(0, 70),
     seoDesc: (ai.seoDesc || "").slice(0, 320),
-    images: images.slice(0, 12),
+    images,
   });
 });
 
@@ -102,13 +115,17 @@ function extractPage(html, src) {
 
 // Gọi Gemini, ép trả về đúng JSON schema (responseSchema) để khỏi phải tự dò/parse chuỗi thô.
 async function askGemini(title, pageText) {
-  const prompt = `Bạn là biên tập viên nội dung cho website bán linh kiện máy tính Hilitek (hilipc.vn). Dưới đây là nội dung thô lấy từ trang sản phẩm của nhà cung cấp/hãng. Dựa vào đó, hãy viết lại bằng tiếng Việt, chuẩn SEO, KHÔNG bịa thêm thông tin không có trong nội dung gốc:
+  const prompt = `Bạn là biên tập viên nội dung cho website bán linh kiện máy tính Hilitek (hilipc.vn). Dưới đây là nội dung thô lấy từ 1-3 trang sản phẩm của nhà cung cấp/hãng (mỗi trang đánh dấu "--- Nguồn N ---"), có thể là trang của hãng lẫn trang của SHOP KHÁC đang bán sản phẩm này. Dựa vào đó (và hiểu biết sẵn có của bạn về đúng sản phẩm này, nếu là sản phẩm/model đã phổ biến), hãy viết bằng tiếng Việt, chuẩn SEO:
 
-1. "description": Mô tả sản phẩm hấp dẫn, mạch lạc, định dạng Markdown đơn giản (đoạn văn ngắn + gạch đầu dòng "- " cho các ý chính, có thể **in đậm** từ khoá quan trọng). Không chèn ảnh.
-2. "specs": Bảng thông số kỹ thuật dạng danh sách {label, value} — lấy đúng thông số có trong nội dung gốc, KHÔNG bịa số liệu.
+QUAN TRỌNG — KHÔNG được đưa vào bài viết bất kỳ thông tin nào thuộc về SHOP/NHÀ BÁN HÀNG KHÁC (không phải Hilitek) xuất hiện trong nội dung thô: tên công ty, địa chỉ cửa hàng, số hotline/Zalo, tên miền/website khác, chương trình khuyến mãi hay chính sách bảo hành riêng của shop đó, banner quảng cáo... Chỉ lấy thông tin THUỘC VỀ SẢN PHẨM (mô tả, thông số kỹ thuật) — bỏ qua hoàn toàn phần nội dung mang tính giới thiệu/liên hệ của người bán.
+
+1. "description": Mô tả sản phẩm ĐẦY ĐỦ, chuẩn mức e-commerce/công nghệ/gaming — khoảng 500-800 TỪ. Mạch lạc, hấp dẫn, định dạng Markdown đơn giản (đoạn mở đầu giới thiệu chung, sau đó các mục nổi bật theo nhóm chủ đề với tiêu đề **in đậm**, mỗi mục có vài gạch đầu dòng "- " giải thích lợi ích thực tế cho người dùng chứ không chỉ liệt kê thông số khô khan). Không chèn ảnh.
+2. "specs": Bảng thông số kỹ thuật ĐẦY ĐỦ VÀ CHUẨN NHẤT có thể cho đúng loại sản phẩm này (VD ổ cứng SSD cần đủ: giao tiếp, chuẩn NVMe/SATA, dung lượng, tốc độ đọc/ghi tuần tự, TBW/độ bền, cache, bảo hành...; bàn phím/chuột/màn hình... thì đủ các mục tương ứng chuẩn ngành). Dạng danh sách {label, value}.
 3. "slug": Đường dẫn URL thân thiện SEO cho sản phẩm (không dấu, chữ thường, cách nhau bằng dấu gạch ngang), dựa theo tên sản phẩm.
 4. "seoTitle": Tiêu đề SEO (thẻ title), khoảng 55-65 ký tự, chứa tên sản phẩm.
 5. "seoDesc": Mô tả SEO (meta description), khoảng 300 ký tự, hấp dẫn, chứa từ khoá chính.
+
+Ưu tiên số liệu có trong nội dung gốc bên dưới. Nếu nội dung gốc THIẾU thông số hoặc quá sơ sài để viết đủ 500-800 từ, hãy CHỦ ĐỘNG bổ sung bằng thông tin bạn đã biết về đúng sản phẩm/model này (thường thấy trên các trang thông số chính hãng/review phổ biến) để mô tả và bảng thông số đầy đủ nhất có thể — không để trống hay viết sơ sài chỉ vì trang nguồn thiếu dữ liệu. Chỉ tránh bịa số liệu KHÔNG THỂ xác định được (VD sản phẩm quá mới/hiếm) — trường hợp đó ghi rõ trong description là thông số tham khảo, cần shop kiểm tra lại.
 
 Tên sản phẩm (nếu nhận diện được từ trang): ${title || "(không rõ, tự suy ra từ nội dung)"}
 

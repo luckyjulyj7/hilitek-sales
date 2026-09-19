@@ -13312,22 +13312,27 @@ function CopyWebInfoButton({ product, products, setWeb }) {
  * VIẾT LẠI mô tả đã làm đẹp + bảng thông số + slug/tiêu đề/mô tả SEO. Ảnh vẫn lấy trực tiếp từ
  * trang (không qua AI). Điền vào bản NHÁP (chưa lưu) — luôn xem & sửa lại trước khi bấm Lưu.
  */
+const AI_WRITE_MAX_URLS = 3;
 function AIWriteFromUrl({ onApply }) {
-  const [url, setUrl] = useState("");
+  const [urls, setUrls] = useState([""]);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [preview, setPreview] = useState(null);
   const [pick, setPick] = useState({ description: true, specsText: true, slug: true, seoTitle: true, seoDesc: true, images: true });
 
+  const setUrlAt = (i, v) => setUrls((prev) => prev.map((u, idx) => (idx === i ? v : u)));
+  const addUrl = () => setUrls((prev) => (prev.length < AI_WRITE_MAX_URLS ? [...prev, ""] : prev));
+  const removeUrl = (i) => setUrls((prev) => prev.filter((_, idx) => idx !== i));
+
   const fetchInfo = async () => {
-    const u = url.trim();
-    if (!/^https?:\/\//i.test(u)) { setMsg("Nhập link sản phẩm hợp lệ (bắt đầu https://)."); return; }
+    const list = urls.map((u) => u.trim()).filter(Boolean);
+    if (!list.length || list.some((u) => !/^https?:\/\//i.test(u))) { setMsg("Nhập link sản phẩm hợp lệ (bắt đầu https://)."); return; }
     setBusy(true); setMsg("AI đang đọc trang & viết lại nội dung… (có thể mất 10-20 giây)"); setPreview(null);
     try {
       const r = await fetch(`/api/web/ai-product-info`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-media-key": SUPABASE_ANON_KEY },
-        body: JSON.stringify({ url: u }),
+        body: JSON.stringify({ urls: list }),
       });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j.error || `Lỗi ${r.status}`);
@@ -13371,7 +13376,7 @@ function AIWriteFromUrl({ onApply }) {
     onApply(patch);
     setBusy(false);
     setMsg("Đã điền vào bản nháp — kiểm tra lại rồi bấm Lưu.");
-    setPreview(null); setUrl("");
+    setPreview(null); setUrls([""]);
   };
 
   return (
@@ -13380,18 +13385,35 @@ function AIWriteFromUrl({ onApply }) {
         <Sparkles size={15} /> Viết bằng AI từ link hãng
       </p>
       <p className="text-[11px] opacity-50 mb-2">
-        Dán link trang sản phẩm của hãng/NCC — AI đọc nội dung rồi tự viết lại mô tả, thông số kỹ thuật và
-        các trường SEO (slug, tiêu đề, mô tả) điền vào bản nháp bên dưới. Luôn xem & sửa lại trước khi bấm <b>Lưu</b>.
+        Dán link trang sản phẩm của hãng/NCC (tối đa {AI_WRITE_MAX_URLS} link để AI đối chiếu chéo, viết đủ hơn) — AI đọc nội dung
+        rồi tự viết lại mô tả, thông số kỹ thuật và các trường SEO (slug, tiêu đề, mô tả) điền vào bản nháp bên dưới.
+        Tự bỏ qua tên/địa chỉ/hotline của các shop khác nếu có trong trang. Luôn xem & sửa lại trước khi bấm <b>Lưu</b>.
       </p>
-      <div className="flex gap-2 flex-wrap">
-        <input value={url} onChange={(e) => setUrl(e.target.value)} disabled={busy}
-          placeholder="https://vsp.vn/man-hinh-..."
-          className="flex-1 min-w-[220px] border rounded-sm px-2 py-1.5 text-sm" style={{ borderColor: LINE }}
-          onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), fetchInfo())} />
-        <button type="button" onClick={fetchInfo} disabled={busy}
-          className="px-3 py-1.5 rounded-sm text-white text-sm inline-flex items-center gap-1.5 disabled:opacity-50 shrink-0" style={{ background: INK }}>
-          {busy ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} Viết bằng AI
-        </button>
+      <div className="space-y-1.5">
+        {urls.map((u, i) => (
+          <div key={i} className="flex gap-2 flex-wrap">
+            <input value={u} onChange={(e) => setUrlAt(i, e.target.value)} disabled={busy}
+              placeholder={i === 0 ? "https://vsp.vn/man-hinh-..." : "Link tham khảo thêm (không bắt buộc)"}
+              className="flex-1 min-w-[220px] border rounded-sm px-2 py-1.5 text-sm" style={{ borderColor: LINE }}
+              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), fetchInfo())} />
+            {urls.length > 1 && (
+              <button type="button" onClick={() => removeUrl(i)} disabled={busy} title="Bỏ link này" className="px-2 rounded-sm border shrink-0" style={{ borderColor: LINE, color: INK }}>
+                <X size={13} />
+              </button>
+            )}
+            {i === urls.length - 1 && urls.length < AI_WRITE_MAX_URLS && (
+              <button type="button" onClick={addUrl} disabled={busy} className="text-xs px-2.5 py-1.5 rounded-sm border shrink-0 inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK }}>
+                <Plus size={13} /> Thêm link
+              </button>
+            )}
+            {i === urls.length - 1 && (
+              <button type="button" onClick={fetchInfo} disabled={busy}
+                className="px-3 py-1.5 rounded-sm text-white text-sm inline-flex items-center gap-1.5 disabled:opacity-50 shrink-0" style={{ background: INK }}>
+                {busy ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} Viết bằng AI
+              </button>
+            )}
+          </div>
+        ))}
       </div>
       {msg && <p className="text-[12px] mt-1.5" style={{ color: /Lỗi|không/i.test(msg) ? RUST : BLUE }}>{msg}</p>}
 
