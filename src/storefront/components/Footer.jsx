@@ -24,6 +24,9 @@ export default function Footer({ navigate }) {
             {SITE.legalName}
             {SITE.taxCode && <> — MST: {SITE.taxCode}</>}
           </p>
+          <p className="mt-1 text-[13px] leading-relaxed text-white/45">
+            Website đang đợi thông báo Bộ Công Thương, chưa chính thức bán hàng.
+          </p>
         </div>
 
         <div>
