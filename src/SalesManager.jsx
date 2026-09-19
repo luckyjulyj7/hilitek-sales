@@ -3858,7 +3858,7 @@ function useClickAway(active, onAway) {
 function WebCategoryMultiSelect({ webCats, value, onChange }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
-  const boxRef = useClickAway(open, () => setOpen(false));
+  const boxRef = useClickAway(open, () => { setOpen(false); setQ(""); });
   const sel = value || [];
   const toggle = (name) => onChange(sel.includes(name) ? sel.filter((x) => x !== name) : [...sel, name]);
   const kw = q.trim().toLowerCase();
@@ -3876,10 +3876,16 @@ function WebCategoryMultiSelect({ webCats, value, onChange }) {
 
   return (
     <div className="relative" ref={boxRef}>
-      <button type="button" onClick={() => setOpen((o) => !o)} className="w-full flex items-center justify-between gap-2 border rounded-sm py-1.5 px-2.5 text-sm text-left" style={{ borderColor: LINE, background: "#fff" }}>
-        <span className={sel.length ? "" : "opacity-40"}>{sel.length ? `${sel.length} danh mục đã chọn` : "— Chọn danh mục phụ —"}</span>
-        <ChevronDown size={14} className="opacity-50 shrink-0" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }} />
-      </button>
+      <div className="relative">
+        <input
+          value={q}
+          onChange={(e) => { setQ(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+          placeholder={sel.length ? `${sel.length} danh mục đã chọn — gõ để tìm thêm…` : "Gõ để tìm danh mục…"}
+          className="w-full border rounded-sm py-1.5 pl-2.5 pr-7 text-sm" style={{ borderColor: LINE }}
+        />
+        <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none" style={{ transform: `translateY(-50%) ${open ? "rotate(180deg)" : ""}`, transition: "transform .15s" }} />
+      </div>
       {sel.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-1.5">
           {sel.map((name) => (
@@ -3892,7 +3898,6 @@ function WebCategoryMultiSelect({ webCats, value, onChange }) {
       )}
       {open && (
         <div className="absolute z-50 mt-1 w-full max-h-72 overflow-y-auto rounded-sm shadow-lg p-2" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-          <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm danh mục…" className="w-full border rounded-sm py-1 px-2 text-xs mb-2" style={{ borderColor: LINE }} />
           {groups.length === 0 ? (
             <div className="px-1 py-2 text-xs opacity-50">Không tìm thấy</div>
           ) : groups.map(([group, subs]) => (
@@ -13303,30 +13308,33 @@ function CopyWebInfoButton({ product, products, setWeb }) {
 }
 
 /**
- * "Link tham khảo" — dán link trang sản phẩm của NCC/hãng, tự lấy mô tả + thông số + ảnh về
- * điền sẵn vào bản NHÁP (chưa lưu). Kết quả chỉ mang tính tham khảo — mỗi trang cấu trúc khác
- * nhau nên luôn cần xem & sửa lại trước khi bấm Lưu. Ảnh được tải hẳn về kho Hilitek.
+ * "Viết bằng AI từ link hãng" — dán link trang sản phẩm của NCC/hãng, AI (Gemini) đọc nội dung rồi
+ * VIẾT LẠI mô tả đã làm đẹp + bảng thông số + slug/tiêu đề/mô tả SEO. Ảnh vẫn lấy trực tiếp từ
+ * trang (không qua AI). Điền vào bản NHÁP (chưa lưu) — luôn xem & sửa lại trước khi bấm Lưu.
  */
-function FetchFromSupplierUrl({ onApply }) {
+function AIWriteFromUrl({ onApply }) {
   const [url, setUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [preview, setPreview] = useState(null);
-  const [pick, setPick] = useState({ description: true, specsText: true, images: true });
+  const [pick, setPick] = useState({ description: true, specsText: true, slug: true, seoTitle: true, seoDesc: true, images: true });
 
   const fetchInfo = async () => {
     const u = url.trim();
     if (!/^https?:\/\//i.test(u)) { setMsg("Nhập link sản phẩm hợp lệ (bắt đầu https://)."); return; }
-    setBusy(true); setMsg("Đang lấy thông tin từ trang nguồn…"); setPreview(null);
+    setBusy(true); setMsg("AI đang đọc trang & viết lại nội dung… (có thể mất 10-20 giây)"); setPreview(null);
     try {
-      const r = await fetch(`/api/web/fetch-product-info?url=${encodeURIComponent(u)}`, {
-        headers: { "x-media-key": SUPABASE_ANON_KEY },
+      const r = await fetch(`/api/web/ai-product-info`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-media-key": SUPABASE_ANON_KEY },
+        body: JSON.stringify({ url: u }),
       });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j.error || `Lỗi ${r.status}`);
-      if (!j.description && !(j.specs || []).length && !(j.images || []).length)
-        throw new Error("Không lấy được nội dung nào từ trang này — thử dán/kéo–thả trực tiếp.");
-      setPick({ description: !!j.description, specsText: !!(j.specs || []).length, images: !!(j.images || []).length });
+      setPick({
+        description: !!j.description, specsText: !!(j.specs || []).length, slug: !!j.slug,
+        seoTitle: !!j.seoTitle, seoDesc: !!j.seoDesc, images: !!(j.images || []).length,
+      });
       setPreview(j);
       setMsg("");
     } catch (e) {
@@ -13342,6 +13350,9 @@ function FetchFromSupplierUrl({ onApply }) {
     const patch = {};
     if (pick.description && preview.description) patch.description = preview.description;
     if (pick.specsText && (preview.specs || []).length) patch.specsText = preview.specs.map(([k, v]) => `${k} | ${v}`).join("\n");
+    if (pick.slug && preview.slug) patch.slug = preview.slug;
+    if (pick.seoTitle && preview.seoTitle) patch.seoTitle = preview.seoTitle;
+    if (pick.seoDesc && preview.seoDesc) patch.seoDesc = preview.seoDesc;
     if (pick.images && (preview.images || []).length) {
       const srcs = preview.images.slice(0, 10);
       setMsg(`Đang tải ${srcs.length} ảnh về kho…`);
@@ -13366,11 +13377,11 @@ function FetchFromSupplierUrl({ onApply }) {
   return (
     <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
       <p className="text-base font-bold mb-1 flex items-center gap-1.5" style={{ color: RUST }}>
-        <Globe size={15} /> Link tham khảo (lấy tự động từ trang NCC/hãng)
+        <Sparkles size={15} /> Viết bằng AI từ link hãng
       </p>
       <p className="text-[11px] opacity-50 mb-2">
-        Dán link trang sản phẩm — hệ thống tự lấy mô tả, thông số kỹ thuật và ảnh về điền vào bản nháp bên dưới.
-        Chỉ mang tính tham khảo, luôn xem & sửa lại trước khi bấm <b>Lưu</b>.
+        Dán link trang sản phẩm của hãng/NCC — AI đọc nội dung rồi tự viết lại mô tả, thông số kỹ thuật và
+        các trường SEO (slug, tiêu đề, mô tả) điền vào bản nháp bên dưới. Luôn xem & sửa lại trước khi bấm <b>Lưu</b>.
       </p>
       <div className="flex gap-2 flex-wrap">
         <input value={url} onChange={(e) => setUrl(e.target.value)} disabled={busy}
@@ -13379,25 +13390,37 @@ function FetchFromSupplierUrl({ onApply }) {
           onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), fetchInfo())} />
         <button type="button" onClick={fetchInfo} disabled={busy}
           className="px-3 py-1.5 rounded-sm text-white text-sm inline-flex items-center gap-1.5 disabled:opacity-50 shrink-0" style={{ background: INK }}>
-          {busy ? <Loader2 size={14} className="animate-spin" /> : <Globe size={14} />} Lấy thông tin
+          {busy ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} Viết bằng AI
         </button>
       </div>
       {msg && <p className="text-[12px] mt-1.5" style={{ color: /Lỗi|không/i.test(msg) ? RUST : BLUE }}>{msg}</p>}
 
       {preview && (
         <div className="mt-3 p-3 rounded-sm space-y-2" style={{ background: PAPER, border: `1px dashed ${LINE}` }}>
-          <p className="text-xs font-medium truncate" style={{ color: INK }}>Đã lấy được từ: <span className="opacity-60 font-normal">{preview.title || preview.sourceUrl}</span></p>
+          <p className="text-xs font-medium truncate" style={{ color: INK }}>Đã viết từ: <span className="opacity-60 font-normal">{preview.title || preview.sourceUrl}</span></p>
           <label className="flex items-start gap-2 text-xs cursor-pointer">
             <input type="checkbox" checked={pick.description} disabled={!preview.description} onChange={(e) => setPick((v) => ({ ...v, description: e.target.checked }))} />
-            <span>Nội dung mô tả {preview.description ? `(${preview.description.length} ký tự)` : "— không tìm thấy"}</span>
+            <span>Nội dung mô tả {preview.description ? `(${preview.description.length} ký tự)` : "— AI không viết được"}</span>
           </label>
           <label className="flex items-start gap-2 text-xs cursor-pointer">
             <input type="checkbox" checked={pick.specsText} disabled={!(preview.specs || []).length} onChange={(e) => setPick((v) => ({ ...v, specsText: e.target.checked }))} />
-            <span>Thông số kỹ thuật {(preview.specs || []).length ? `(${preview.specs.length} dòng)` : "— không tìm thấy"}</span>
+            <span>Thông số kỹ thuật {(preview.specs || []).length ? `(${preview.specs.length} dòng)` : "— AI không viết được"}</span>
+          </label>
+          <label className="flex items-start gap-2 text-xs cursor-pointer">
+            <input type="checkbox" checked={pick.slug} disabled={!preview.slug} onChange={(e) => setPick((v) => ({ ...v, slug: e.target.checked }))} />
+            <span>Đường dẫn SEO (slug) {preview.slug ? <span className="font-mono opacity-70">— {preview.slug}</span> : "— AI không viết được"}</span>
+          </label>
+          <label className="flex items-start gap-2 text-xs cursor-pointer">
+            <input type="checkbox" checked={pick.seoTitle} disabled={!preview.seoTitle} onChange={(e) => setPick((v) => ({ ...v, seoTitle: e.target.checked }))} />
+            <span>Tiêu đề SEO {preview.seoTitle ? `— "${preview.seoTitle}"` : "— AI không viết được"}</span>
+          </label>
+          <label className="flex items-start gap-2 text-xs cursor-pointer">
+            <input type="checkbox" checked={pick.seoDesc} disabled={!preview.seoDesc} onChange={(e) => setPick((v) => ({ ...v, seoDesc: e.target.checked }))} />
+            <span>Mô tả SEO {preview.seoDesc ? `(${preview.seoDesc.length} ký tự)` : "— AI không viết được"}</span>
           </label>
           <label className="flex items-start gap-2 text-xs cursor-pointer">
             <input type="checkbox" checked={pick.images} disabled={!(preview.images || []).length} onChange={(e) => setPick((v) => ({ ...v, images: e.target.checked }))} />
-            <span>Ảnh sản phẩm {(preview.images || []).length ? `(${preview.images.length} ảnh — sẽ tải về kho Hilitek)` : "— không tìm thấy, trang có thể nạp ảnh bằng JS (thử dán ảnh thủ công)"}</span>
+            <span>Ảnh sản phẩm {(preview.images || []).length ? `(${preview.images.length} ảnh — sẽ tải về kho Hilitek)` : "— không tìm thấy, thử dán ảnh thủ công"}</span>
           </label>
           <div className="flex gap-2 pt-1">
             <button type="button" onClick={apply} disabled={busy} className="px-3 py-1.5 rounded-sm text-white text-xs disabled:opacity-50" style={{ background: INK }}>Điền vào bản nháp</button>
@@ -13543,7 +13566,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
         <div className="space-y-4">
           {p.variantGroupId && <p className="text-xs p-2 rounded-sm" style={{ background: `${BLUE}0D`, color: BLUE }}>Mô tả · thông số · danh mục · trạng thái đăng web · giá so sánh áp dụng cho TẤT CẢ phiên bản cùng nhóm. Ảnh · giá bán · SEO · slug riêng từng phiên bản.</p>}
 
-          <FetchFromSupplierUrl onApply={setWeb} />
+          <AIWriteFromUrl onApply={setWeb} />
 
           <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
             <p className="text-base font-bold mb-2" style={{ color: RUST }}>Mô tả sản phẩm</p>
