@@ -2060,12 +2060,9 @@ function StatCard({ label, value, icon: Icon, accent }) {
 /* ---------------- Products & Inventory (Sản phẩm & Tồn kho) ---------------- */
 
 function ProductsInventory({ products, setProducts, addLog, currentUser, focusProductId, focusEdit, onFocusHandled, goToDoc, suppliers, goToSupplier, goToWebProduct, categories, setCategories, brands, setBrands, webConfig }) {
-  // Cây danh mục web đầy đủ (mọi cấp), gom lại theo nhóm chính — cho ô chọn "Danh mục phụ trên web".
-  const webSubGroups = useMemo(() => {
-    const flat = webFlattenMenuTree(webConfig && Array.isArray(webConfig.MENU) && webConfig.MENU.length ? webConfig.MENU : WEB_DEFAULT_MENU);
-    const byGroup = new Map();
-    flat.forEach((n) => { if (!byGroup.has(n.group)) byGroup.set(n.group, []); byGroup.get(n.group).push(n); });
-    return [...byGroup.entries()].map(([group, subs]) => ({ group, subs }));
+  // Cây danh mục web đầy đủ (mọi cấp), dạng phẳng — cho ô chọn "Danh mục phụ trên web".
+  const webCatsFlat = useMemo(() => {
+    return webFlattenMenuTree(webConfig && Array.isArray(webConfig.MENU) && webConfig.MENU.length ? webConfig.MENU : WEB_DEFAULT_MENU);
   }, [webConfig]);
   const isAdmin = currentUser.role === "admin";
   const isCtv = currentUser.role === "ctv";
@@ -3284,37 +3281,11 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
             {form.web?.published && (
               <div className="mt-3 space-y-3">
                 <Field label="Danh mục phụ trên web (chọn nhiều)" hint="Sản phẩm sẽ hiện khi khách bấm các danh mục phụ này. Sửa danh sách ở Website → Cấu hình web.">
-                  {(() => {
-                    const sel = (form.web?.categories) || [];
-                    const toggle = (name) => {
-                      const cur = (form.web?.categories) || [];
-                      const next = cur.includes(name) ? cur.filter((x) => x !== name) : [...cur, name];
-                      setForm({ ...form, web: { ...normalizeWeb(form.web), categories: next } });
-                    };
-                    const hasAny = webSubGroups.some((g) => g.subs.length);
-                    if (!hasAny) return <span className="text-xs" style={{ color: RUST }}>Chưa có danh mục phụ nào — vào Website → Cấu hình web để thêm.</span>;
-                    return (
-                      <div className="space-y-2">
-                        {webSubGroups.filter((g) => g.subs.length).map((g) => (
-                          <div key={g.group}>
-                            <div className="text-[11px] uppercase tracking-wider opacity-45 mb-1">{g.group}</div>
-                            <div className="flex flex-wrap gap-1.5">
-                              {g.subs.map((s) => {
-                                const on = sel.includes(s.name);
-                                return (
-                                  <button key={s.name} type="button" onClick={() => toggle(s.name)}
-                                    className="px-2.5 py-1 rounded-sm text-xs border"
-                                    style={{ borderColor: on ? INK : LINE, background: on ? INK : "#fff", color: on ? "#fff" : INK, marginLeft: (s.depth - 1) * 10 }}>
-                                    {s.depth > 1 ? "› " : ""}{s.name}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })()}
+                  <WebCategoryMultiSelect
+                    webCats={webCatsFlat}
+                    value={form.web?.categories}
+                    onChange={(next) => setForm({ ...form, web: { ...normalizeWeb(form.web), categories: next } })}
+                  />
                 </Field>
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Giá bán trên web (đ)" hint="Luôn = Giá bán lẻ ở trên. Sửa giá bán lẻ để đổi giá web.">
@@ -3879,6 +3850,69 @@ function useClickAway(active, onAway) {
     };
   }, [active]);
   return ref;
+}
+
+// Multi-select dạng xổ xuống cho "Danh mục phụ trên web" — đóng mặc định + có ô tìm nhanh, tránh
+// liệt kê hết mọi danh mục ra làm form dài khi danh mục phát sinh nhiều theo thời gian.
+// webCats: mảng phẳng [{group, name, depth}] (xem webFlattenMenuTree). value/onChange: mảng tên đã chọn.
+function WebCategoryMultiSelect({ webCats, value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const boxRef = useClickAway(open, () => setOpen(false));
+  const sel = value || [];
+  const toggle = (name) => onChange(sel.includes(name) ? sel.filter((x) => x !== name) : [...sel, name]);
+  const kw = q.trim().toLowerCase();
+  const groups = useMemo(() => {
+    const byGroup = new Map();
+    (webCats || []).forEach((c) => {
+      if (kw && !c.name.toLowerCase().includes(kw)) return;
+      if (!byGroup.has(c.group)) byGroup.set(c.group, []);
+      byGroup.get(c.group).push(c);
+    });
+    return [...byGroup.entries()];
+  }, [webCats, kw]);
+
+  if (!webCats || webCats.length === 0) return <span className="text-xs" style={{ color: RUST }}>Chưa có danh mục — vào Website → Cấu hình web để thêm.</span>;
+
+  return (
+    <div className="relative" ref={boxRef}>
+      <button type="button" onClick={() => setOpen((o) => !o)} className="w-full flex items-center justify-between gap-2 border rounded-sm py-1.5 px-2.5 text-sm text-left" style={{ borderColor: LINE, background: "#fff" }}>
+        <span className={sel.length ? "" : "opacity-40"}>{sel.length ? `${sel.length} danh mục đã chọn` : "— Chọn danh mục phụ —"}</span>
+        <ChevronDown size={14} className="opacity-50 shrink-0" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }} />
+      </button>
+      {sel.length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-1.5">
+          {sel.map((name) => (
+            <span key={name} className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full" style={{ background: `${BLUE}1A`, color: BLUE }}>
+              {name}
+              <button type="button" onClick={() => toggle(name)} className="hover:opacity-70"><X size={10} /></button>
+            </span>
+          ))}
+        </div>
+      )}
+      {open && (
+        <div className="absolute z-50 mt-1 w-full max-h-72 overflow-y-auto rounded-sm shadow-lg p-2" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+          <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm danh mục…" className="w-full border rounded-sm py-1 px-2 text-xs mb-2" style={{ borderColor: LINE }} />
+          {groups.length === 0 ? (
+            <div className="px-1 py-2 text-xs opacity-50">Không tìm thấy</div>
+          ) : groups.map(([group, subs]) => (
+            <div key={group} className="mb-2 last:mb-0">
+              <div className="text-[11px] uppercase tracking-wider opacity-45 mb-1">{group}</div>
+              {subs.map((c) => {
+                const on = sel.includes(c.name);
+                return (
+                  <label key={c.name} className="flex items-center gap-2 py-1 px-1 rounded-sm hover:bg-black/5 cursor-pointer text-sm" style={{ paddingLeft: 4 + (c.depth - 1) * 14 }}>
+                    <input type="checkbox" checked={on} onChange={() => toggle(c.name)} />
+                    <span>{c.depth > 1 ? "› " : ""}{c.name}</span>
+                  </label>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function ProductPicker({ products, onPick, onQuickCreate, brands }) {
@@ -13578,32 +13612,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
 
           <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
             <p className="text-base font-bold mb-2" style={{ color: RUST }}>Danh mục phụ trên web <span className="text-xs font-normal opacity-50">(mọi cấp — chọn được nhiều)</span></p>
-            {webCats.length === 0 ? (
-              <span className="text-xs" style={{ color: RUST }}>Chưa có danh mục — vào Cấu hình web → "Danh mục sản phẩm web".</span>
-            ) : (
-              <div className="space-y-2">
-                {Object.entries(
-                  webCats.reduce((acc, c) => { (acc[c.group] = acc[c.group] || []).push(c); return acc; }, {})
-                ).map(([group, subs]) => (
-                  <div key={group}>
-                    <div className="text-[11px] uppercase tracking-wider opacity-45 mb-1">{group}</div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {subs.map((c) => {
-                        const on = (w.categories || []).includes(c.name);
-                        return (
-                          <button key={c.name} type="button"
-                            onClick={() => setWeb({ categories: on ? w.categories.filter((x) => x !== c.name) : [...w.categories, c.name] })}
-                            className="px-2.5 py-1 rounded-sm text-xs border"
-                            style={{ borderColor: on ? INK : LINE, background: on ? INK : "#fff", color: on ? "#fff" : INK, marginLeft: (c.depth - 1) * 10 }}>
-                            {c.depth > 1 ? "› " : ""}{c.name}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <WebCategoryMultiSelect webCats={webCats} value={w.categories} onChange={(next) => setWeb({ categories: next })} />
           </div>
 
           <div className="p-4 rounded-sm space-y-3" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
