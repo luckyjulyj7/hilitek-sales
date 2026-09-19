@@ -2753,7 +2753,11 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                           </div>
                         )}
                       </td>
-                      <td className="px-3 py-3 font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: baseCode ? BLUE : INK, opacity: baseCode ? 1 : 0.5 }}>{baseCode || `${members.length} mã`}</td>
+                      <td className="px-3 py-3 font-medium">
+                        <button onClick={() => toggleGroup(gid)} title={expanded ? "Thu gọn" : "Mở rộng"} className="hover:underline" style={{ fontFamily: "'IBM Plex Mono', monospace", color: baseCode ? BLUE : INK, opacity: baseCode ? 1 : 0.5 }}>
+                          {baseCode || `${members.length} mã`}
+                        </button>
+                      </td>
                       <td className="px-3 py-3 opacity-30">—</td>
                       <td className="px-3 py-3" style={{ color: INK, minWidth: 260 }}>
                         <button onClick={() => toggleGroup(gid)} className="text-left hover:underline font-medium">{baseVariantName(rep)}</button>
