@@ -1785,7 +1785,7 @@ function ImageLightbox({ images, startIndex, onClose }) {
 }
 
 const __modalStack = [];
-function Modal({ title, onClose, children, wide, size }) {
+function Modal({ title, onClose, children, wide, size, headerAction }) {
   const sizeClass = { md: "max-w-md", lg: "max-w-lg", xl: "max-w-3xl", "2xl": "max-w-6xl", "3xl": "max-w-[92rem]" }[size] || (wide ? "max-w-lg" : "max-w-md");
   // Bấm ESC để đóng — chỉ popup trên cùng phản hồi (tránh đóng luôn popup nền).
   useEffect(() => {
@@ -1806,9 +1806,12 @@ function Modal({ title, onClose, children, wide, size }) {
       <div onClick={(e) => e.stopPropagation()}
         className={`w-full ${sizeClass} rounded-sm shadow-2xl relative flex flex-col`}
         style={{ background: PAPER, border: `1px solid ${LINE}`, maxHeight: "88vh" }}>
-        <div className="flex items-center justify-between px-4 sm:px-6 pt-4 sm:pt-5 pb-3 shrink-0">
-          <h3 className="text-lg sm:text-xl pr-6" style={{ fontFamily: "'Fraunces', serif", color: INK }}>{title}</h3>
-          <button onClick={onClose} className="absolute top-4 right-4 opacity-60 hover:opacity-100" style={{ color: INK }}><X size={18} /></button>
+        <div className="flex items-center justify-between gap-3 px-4 sm:px-6 pt-4 sm:pt-5 pb-3 shrink-0">
+          <h3 className="text-lg sm:text-xl flex-1 min-w-0" style={{ fontFamily: "'Fraunces', serif", color: INK }}>{title}</h3>
+          <div className="flex items-center gap-2 shrink-0">
+            {headerAction}
+            <button onClick={onClose} className="opacity-60 hover:opacity-100" style={{ color: INK }}><X size={18} /></button>
+          </div>
         </div>
         <div className="px-4 sm:px-6 pb-4 sm:pb-6 overflow-y-auto min-w-0" style={{ flex: "1 1 auto" }}>
           {children}
@@ -2991,7 +2994,12 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         );
       })()}
       {editing !== null && (
-        <Modal title={editing.id ? "Sửa thông tin sản phẩm" : "Thêm sản phẩm"} onClose={() => setEditing(null)} size="xl">
+        <Modal title={editing.id ? "Sửa thông tin sản phẩm" : "Thêm sản phẩm"} onClose={() => setEditing(null)} size="xl"
+          headerAction={editing.id ? (
+            <button onClick={submitInfo} className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-sm text-white" style={{ background: INK }}>
+              <Save size={12} /> Lưu thay đổi
+            </button>
+          ) : undefined}>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <Field label="Mã VT" hint={editing.id && !isAdmin ? "Chỉ admin được đổi Mã VT của sản phẩm đã tạo." : (editing.id ? "Đổi Mã VT không ảnh hưởng đơn hàng/phiếu cũ (đã ghi lại mã lúc đó) — chỉ áp dụng từ giờ về sau." : undefined)}>
               <input className={inputCls} style={{ borderColor: LINE }} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} disabled={!!editing.id && !isAdmin} />
