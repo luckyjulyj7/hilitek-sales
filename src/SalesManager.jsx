@@ -4295,8 +4295,9 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
     const newSupplier = { ...quickSupplierForm, id: uid(), code: quickSupplierForm.code || nextSupplierCode(suppliers), creditDays: Number(quickSupplierForm.creditDays) || 0 };
     setSuppliers((prev) => [...prev, newSupplier]);
     addLog("Thêm nhà cung cấp", newSupplier.name);
-    // Nếu đang mở form tạo đơn nhập hàng, tự chọn luôn NCC vừa thêm cho tiện.
+    // Nếu đang mở form tạo/sửa đơn nhập hàng, tự chọn luôn NCC vừa thêm cho tiện.
     setForm((f) => (f && f.supplierId !== undefined ? { ...f, supplierId: newSupplier.id, supplier: `${newSupplier.code} - ${newSupplier.name}` } : f));
+    setEditForm((f) => (f && f.supplierId !== undefined ? { ...f, supplierId: newSupplier.id, supplier: `${newSupplier.code} - ${newSupplier.name}` } : f));
     setQuickAddingSupplier(false);
   };
 
@@ -4617,11 +4618,16 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
       {creating && (
         <Modal title="Tạo đơn nhập hàng" onClose={() => setCreating(false)} size="2xl">
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Nhà cung cấp" hint={suppliers.length === 0 ? "Chưa có nhà cung cấp nào — vào mục Nhà cung cấp để thêm trước" : "Chỉ chọn được NCC đã có trong danh sách"}>
+            <Field label="Nhà cung cấp" hint="Chọn “+ Tạo nhà cung cấp mới…” để thêm nhanh ngay tại đây">
               <select className={inputCls} style={{ borderColor: LINE }} value={form.supplierId || ""}
-                onChange={(e) => { const sup = suppliers.find((s) => s.id === e.target.value); setForm({ ...form, supplierId: e.target.value, supplier: sup ? `${sup.code} - ${sup.name}` : "" }); }}>
+                onChange={(e) => {
+                  if (e.target.value === "__new__") { openQuickAddSupplier(); return; }
+                  const sup = suppliers.find((s) => s.id === e.target.value);
+                  setForm({ ...form, supplierId: e.target.value, supplier: sup ? `${sup.code} - ${sup.name}` : "" });
+                }}>
                 <option value="">— Chọn nhà cung cấp —</option>
                 {suppliers.map((s) => <option key={s.id} value={s.id}>{s.code} - {s.name}</option>)}
+                <option value="__new__">+ Tạo nhà cung cấp mới…</option>
               </select>
             </Field>
             <Field label="Chi nhánh nhập">
@@ -4733,11 +4739,16 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
           <div className="my-4" style={{ borderTop: `1px dashed ${LINE}` }} />
 
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Nhà cung cấp">
+            <Field label="Nhà cung cấp" hint="Chọn “+ Tạo nhà cung cấp mới…” để thêm nhanh ngay tại đây">
               <select className={inputCls} style={{ borderColor: LINE }} value={editForm.supplierId || ""}
-                onChange={(e) => { const sup = suppliers.find((s) => s.id === e.target.value); setEditForm({ ...editForm, supplierId: e.target.value, supplier: sup ? `${sup.code} - ${sup.name}` : "" }); }}>
+                onChange={(e) => {
+                  if (e.target.value === "__new__") { openQuickAddSupplier(); return; }
+                  const sup = suppliers.find((s) => s.id === e.target.value);
+                  setEditForm({ ...editForm, supplierId: e.target.value, supplier: sup ? `${sup.code} - ${sup.name}` : "" });
+                }}>
                 <option value="">— Chọn nhà cung cấp —</option>
                 {suppliers.map((s) => <option key={s.id} value={s.id}>{s.code} - {s.name}</option>)}
+                <option value="__new__">+ Tạo nhà cung cấp mới…</option>
               </select>
             </Field>
             <Field label="Chi nhánh nhập">
