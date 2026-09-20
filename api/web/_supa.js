@@ -74,9 +74,13 @@ export async function pruneBackups(keep = 60) {
   return { pruned: count || 0 };
 }
 
-export function json(res, status, payload) {
+// cacheControl: mặc định "no-store" (dữ liệu riêng tư/ghi — orders, ai-product-info...). Các API
+// đọc công khai (products/product/config) truyền 1 chuỗi Cache-Control ngắn để Vercel Edge trả
+// thẳng bản đã cache cho các lượt xem gần nhau (VD xem sản phẩm, đổi phiên bản) thay vì phải đọc
+// + parse lại toàn bộ blob Supabase mỗi lần — đây là phần chậm nhất khi duyệt web.
+export function json(res, status, payload, cacheControl) {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
-  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("Cache-Control", cacheControl || "no-store");
   res.status(status).json(payload);
 }
 

@@ -39,5 +39,7 @@ export default handler(async (req, res) => {
     }
   }
 
-  json(res, 200, detail);
+  // Cache ngắn ở Vercel Edge — xem sản phẩm/đổi phiên bản gọi API này liên tục, cache giúp các
+  // lượt xem gần nhau (kể cả của người khác) trả về gần như tức thì thay vì đọc lại cả blob.
+  json(res, 200, detail, "public, max-age=20, stale-while-revalidate=120");
 });
