@@ -24,7 +24,7 @@ export default function ProductCard({ product, onOpen }) {
         onClick={(e) => { e.preventDefault(); onOpen(p.slug); }}
         className="block relative aspect-square bg-navy-050"
       >
-        <img src={img} alt={p.name} loading="lazy" className="w-full h-full object-cover" />
+        <img src={img} alt={p.name} loading="lazy" className="w-full h-full object-contain p-3" />
         {off > 0 && (
           <span className="absolute top-2 left-2 bg-yellow text-ink text-[13px] font-bold px-1.5 py-0.5 rounded font-mono">
             −{off}%
