@@ -2573,7 +2573,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           length: Number(form.length) || 0, width: Number(form.width) || 0, height: Number(form.height) || 0,
           sku: `${form.sku || nextSKU(products)}_${suffix}`, vat: form.vat || "VAT10", barcode: "", supplierId: form.supplierId || "", warrantyMonths: Number(form.warrantyMonths) || 0,
           image: form.image || null, images: Array.isArray(form.images) ? form.images.filter(Boolean).slice(0, 3) : [],
-          variantGroupId: groupId, variantAttrs, movements: [], web: newWeb,
+          variantGroupId: groupId, variantAttrs, movements: [], priceHistory: [], web: newWeb,
         };
       });
       // Tránh trùng mã VT nếu vô tình bấm tạo 2 lần hoặc trùng với sản phẩm có sẵn.
@@ -2592,7 +2592,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         openingQty: Number(form.openingQty) || 0, minStockLevel: Number(form.minStockLevel) || 0, weight: Number(form.weight) || 0,
         length: Number(form.length) || 0, width: Number(form.width) || 0, height: Number(form.height) || 0,
         sku: form.sku || nextSKU(products), vat: form.vat || "VAT10", barcode: form.barcode || "", supplierId: form.supplierId || "", warrantyMonths: Number(form.warrantyMonths) || 0, image: form.image || null, images: Array.isArray(form.images) ? form.images.filter(Boolean).slice(0, 3) : [],
-        movements: [], web: newWeb,
+        movements: [], priceHistory: [], web: newWeb,
       }]);
       addLog("Thêm sản phẩm", `${form.code} · ${form.name}`);
     }
@@ -2956,6 +2956,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
       {viewingProduct && (() => {
         const stats = productStats(viewingProduct);
         const rows = viewingProduct.hasSeries ? seriesList(viewingProduct) : [];
+        const priceHistory = viewingProduct.priceHistory || [];
         const galleryImgs = [
           ...(viewingProduct.image ? [{ src: viewingProduct.image, alt: viewingProduct.name }] : []),
           ...(viewingProduct.images || []).map((im, i) => ({ src: im, alt: `${viewingProduct.name} — ảnh phụ ${i + 1}` })),
@@ -3048,14 +3049,14 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
               ))}
             </div>
 
-            {isAdmin && viewingProduct.priceHistory.length > 0 && (
+            {isAdmin && priceHistory.length > 0 && (
               <div className="mb-5">
                 <button onClick={() => setShowPriceHistory((v) => !v)} className="text-xs underline opacity-60 hover:opacity-100 mb-2" style={{ color: INK }}>
-                  {showPriceHistory ? "Ẩn" : "Xem"} lịch sử thay đổi giá ({viewingProduct.priceHistory.length})
+                  {showPriceHistory ? "Ẩn" : "Xem"} lịch sử thay đổi giá ({priceHistory.length})
                 </button>
                 {showPriceHistory && (
                   <div className="rounded-sm overflow-hidden" style={{ border: `1px solid ${LINE}` }}>
-                    {viewingProduct.priceHistory.map((h) => (
+                    {priceHistory.map((h) => (
                       <div key={h.id} className="flex items-center justify-between gap-3 px-3 py-2 text-xs flex-wrap" style={{ borderBottom: `1px dashed ${LINE}` }}>
                         <span style={{ color: INK }}>
                           <b>{h.field}</b>: {vnd(h.oldValue)} → <b style={{ color: h.newValue > h.oldValue ? RUST : FOREST }}>{vnd(h.newValue)}</b>
