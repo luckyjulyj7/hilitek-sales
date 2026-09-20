@@ -11493,15 +11493,19 @@ function DebtOverviewReport({ orders, customers }) {
   const top10Debt = debtByCustomer.slice(0, 10);
 
   // Công nợ theo ngày phát sinh đơn (30 ngày gần nhất) — số dư còn lại tính tại thời điểm hiện tại, gộp theo ngày đơn được tạo.
+  // Dùng ngày ĐỊA PHƯƠNG (không dùng toISOString(), quy về UTC) — múi giờ VN là UTC+7 nên
+  // toISOString() lùi ngày lại gần hết cả ngày, khiến đơn phát sinh trong giờ hành chính hôm nay
+  // không khớp bucket nào và biến mất khỏi biểu đồ.
+  const localYmd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const debtByOriginDate = useMemo(() => {
     const days = [];
     for (let i = 29; i >= 0; i--) {
       const d = new Date(); d.setDate(d.getDate() - i); d.setHours(0, 0, 0, 0);
-      days.push({ key: d.toISOString().slice(0, 10), label: `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`, debt: 0 });
+      days.push({ key: localYmd(d), label: `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`, debt: 0 });
     }
     const map = {}; days.forEach((d) => { map[d.key] = d; });
     orders.filter((o) => o.status !== "cancelled").forEach((o) => {
-      const b = map[o.createdAt.slice(0, 10)];
+      const b = map[localYmd(new Date(o.createdAt))];
       if (!b) return;
       b.debt += Math.max(0, orderCalc(o).remaining);
     });
@@ -12311,9 +12315,14 @@ function weekStartOf(d) {
 function ProductAdditionReport({ products, employeeNames }) {
   const [granularity, setGranularity] = useState("day"); // day | week | month
 
+  // Dùng giờ ĐỊA PHƯƠNG (getFullYear/getMonth/getDate) để tạo khoá ngày — KHÔNG dùng
+  // toISOString() (quy về UTC): múi giờ VN là UTC+7 nên toISOString() lùi ngày lại gần hết cả
+  // ngày (mọi mốc thời gian từ 7h sáng trở đi bị đẩy sang ngày hôm SAU), khiến các mã vừa
+  // thêm/đăng web trong giờ hành chính không khớp bucket nào và biến mất khỏi biểu đồ.
+  const localYmd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const keyOf = (d) => {
-    if (granularity === "day") return d.toISOString().slice(0, 10);
-    if (granularity === "week") return weekStartOf(d).toISOString().slice(0, 10);
+    if (granularity === "day") return localYmd(d);
+    if (granularity === "week") return localYmd(weekStartOf(d));
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   };
 
@@ -12328,7 +12337,7 @@ function ProductAdditionReport({ products, employeeNames }) {
     } else if (granularity === "week") {
       for (let i = 11; i >= 0; i--) {
         const ws = weekStartOf(new Date(now.getFullYear(), now.getMonth(), now.getDate() - i * 7));
-        list.push({ key: ws.toISOString().slice(0, 10), label: `${String(ws.getDate()).padStart(2, "0")}/${String(ws.getMonth() + 1).padStart(2, "0")}`, "Mã mới vào kho": 0, "Mã đăng web": 0 });
+        list.push({ key: localYmd(ws), label: `${String(ws.getDate()).padStart(2, "0")}/${String(ws.getMonth() + 1).padStart(2, "0")}`, "Mã mới vào kho": 0, "Mã đăng web": 0 });
       }
     } else {
       for (let i = 11; i >= 0; i--) {
