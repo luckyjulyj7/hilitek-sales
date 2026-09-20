@@ -72,8 +72,8 @@ export default handler(async (req, res) => {
       ? ai.specs.map((s) => [String(s.label || "").trim(), String(s.value || "").trim()]).filter((s) => s[0] && s[1])
       : [],
     slug: slugify(ai.slug || title),
-    seoTitle: (ai.seoTitle || "").slice(0, 70),
-    seoDesc: (ai.seoDesc || "").slice(0, 320),
+    seoTitle: (ai.seoTitle || "").slice(0, 65),
+    seoDesc: (ai.seoDesc || "").slice(0, 160),
     images,
   });
 });
@@ -119,11 +119,14 @@ async function askGemini(title, pageText) {
 
 QUAN TRỌNG — KHÔNG được đưa vào bài viết bất kỳ thông tin nào thuộc về SHOP/NHÀ BÁN HÀNG KHÁC (không phải Hilitek) xuất hiện trong nội dung thô: tên công ty, địa chỉ cửa hàng, số hotline/Zalo, tên miền/website khác, chương trình khuyến mãi hay chính sách bảo hành riêng của shop đó, banner quảng cáo... Chỉ lấy thông tin THUỘC VỀ SẢN PHẨM (mô tả, thông số kỹ thuật) — bỏ qua hoàn toàn phần nội dung mang tính giới thiệu/liên hệ của người bán.
 
+Trước khi viết, tự xác định "từ khoá chính" (primary keyword) mà khách sẽ gõ trên Google để tìm đúng sản phẩm này — dạng "<loại sản phẩm> <thương hiệu> <model>" (VD "bàn phím cơ không dây Voicsky Pulse 75"). Dùng ĐÚNG cụm này (hoặc biến thể tự nhiên gần giống) xuyên suốt các mục bên dưới — đây là yêu cầu SEO quan trọng nhất.
+
 1. "description": Mô tả sản phẩm ĐẦY ĐỦ, chuẩn mức e-commerce/công nghệ/gaming — khoảng 500-800 TỪ. Mạch lạc, hấp dẫn, định dạng Markdown đơn giản (đoạn mở đầu giới thiệu chung, sau đó các mục nổi bật theo nhóm chủ đề với tiêu đề **in đậm**, mỗi mục có vài gạch đầu dòng "- " giải thích lợi ích thực tế cho người dùng chứ không chỉ liệt kê thông số khô khan). Không chèn ảnh.
+   - SEO: câu đầu tiên của đoạn mở đầu PHẢI chứa từ khoá chính một cách tự nhiên (không gượng ép). Diễn đạt lại hoàn toàn bằng văn phong riêng — TUYỆT ĐỐI không chép nguyên câu/cụm câu dài từ nội dung thô nguồn (Google hạ hạng nội dung trùng lặp giữa các website); có thể giữ số liệu/thông số chính xác nhưng phải viết lại câu văn. Nhắc lại từ khoá chính hoặc biến thể gần giống (đồng nghĩa, đảo vị trí từ) thêm 2-3 lần rải rác trong bài một cách tự nhiên — KHÔNG nhồi nhét lặp y hệt liên tục (nhồi nhét từ khoá cũng bị Google hạ hạng).
 2. "specs": Bảng thông số kỹ thuật ĐẦY ĐỦ VÀ CHUẨN NHẤT có thể cho đúng loại sản phẩm này (VD ổ cứng SSD cần đủ: giao tiếp, chuẩn NVMe/SATA, dung lượng, tốc độ đọc/ghi tuần tự, TBW/độ bền, cache, bảo hành...; bàn phím/chuột/màn hình... thì đủ các mục tương ứng chuẩn ngành). Dạng danh sách {label, value}.
-3. "slug": Đường dẫn URL thân thiện SEO cho sản phẩm (không dấu, chữ thường, cách nhau bằng dấu gạch ngang), dựa theo tên sản phẩm.
-4. "seoTitle": Tiêu đề SEO (thẻ title), khoảng 55-65 ký tự, chứa tên sản phẩm.
-5. "seoDesc": Mô tả SEO (meta description), khoảng 300 ký tự, hấp dẫn, chứa từ khoá chính.
+3. "slug": Đường dẫn URL thân thiện SEO cho sản phẩm — chứa từ khoá chính (không dấu, chữ thường, cách nhau bằng dấu gạch ngang), dựa theo tên sản phẩm, ngắn gọn (bỏ từ thừa như "chính hãng", "giá rẻ").
+4. "seoTitle": Thẻ tiêu đề SEO — ĐẶT từ khoá chính lên ĐẦU câu (Google ưu tiên từ khoá ở đầu title), sau đó có thể thêm 1 điểm nổi bật hoặc "| Hilitek". Giới hạn NGHIÊM NGẶT 50-60 ký tự (kể cả khoảng trắng) — quá 60 ký tự sẽ bị Google cắt cụt giữa chừng trên kết quả tìm kiếm, rất xấu.
+5. "seoDesc": Thẻ mô tả SEO (meta description) — mục tiêu là câu khiến người thấy trên Google MUỐN bấm vào. Chứa từ khoá chính GẦN ĐẦU câu, kèm 1 điểm bán hàng cụ thể (thông số nổi bật/ưu đãi/tình trạng hàng) + lời kêu gọi hành động ngắn (VD "mua ngay tại Hilitek", "chính hãng, bảo hành đầy đủ"). Giới hạn NGHIÊM NGẶT 140-155 ký tự (kể cả khoảng trắng) — đây là ngưỡng Google thường hiển thị đủ không bị cắt, không viết dài hơn. KHÔNG dùng chung 1 công thức/câu chữ y hệt cho mọi sản phẩm — mỗi sản phẩm phải có mô tả SEO riêng biệt, cụ thể theo đúng sản phẩm đó.
 
 Ưu tiên số liệu có trong nội dung gốc bên dưới. Nếu nội dung gốc THIẾU thông số hoặc quá sơ sài để viết đủ 500-800 từ, hãy CHỦ ĐỘNG bổ sung bằng thông tin bạn đã biết về đúng sản phẩm/model này (thường thấy trên các trang thông số chính hãng/review phổ biến) để mô tả và bảng thông số đầy đủ nhất có thể — không để trống hay viết sơ sài chỉ vì trang nguồn thiếu dữ liệu. Chỉ tránh bịa số liệu KHÔNG THỂ xác định được (VD sản phẩm quá mới/hiếm) — trường hợp đó ghi rõ trong description là thông số tham khảo, cần shop kiểm tra lại.
 
