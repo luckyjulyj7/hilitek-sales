@@ -912,6 +912,18 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkVal, setLinkVal] = useState("");
 
+  // Chặn "click ma" — trình duyệt đôi khi tự phát sinh thêm 1 sự kiện click vào nút này ngay sau khi
+  // bấm vào vùng soạn thảo bên dưới (không rõ nguyên nhân, đang tìm hiểu thêm), làm tự mở hộp thoại
+  // chọn ảnh dù người dùng không hề bấm vào nút. Chỉ coi là click thật nếu vừa có mousedown NGAY
+  // TRÊN CHÍNH nút đó ngay trước đó.
+  const armedRef = useRef(null);
+  const arm = (name) => () => { armedRef.current = name; };
+  const guardedClick = (name, handler) => (e) => {
+    if (armedRef.current !== name) { e.preventDefault(); e.stopPropagation(); return; }
+    armedRef.current = null;
+    handler(e);
+  };
+
   // Chèn 1 loạt ảnh (url) vào đúng vị trí con trỏ đã lưu (bấm nút ngoài toolbar làm mất focus/con trỏ
   // nên phải lưu lại TRƯỚC khi mở hộp thoại chọn file), mặc định chèn cuối bài nếu chưa có vị trí nào.
   const insertImagesAt = (urls) => {
@@ -1093,16 +1105,23 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
     <div>
       <div className="flex items-center gap-2 mb-1 flex-wrap">
         <button type="button"
-          onClick={() => { pendingRangeRef.current = quillRef.current && quillRef.current.getSelection(true); fileRef.current && fileRef.current.click(); }}
+          onMouseDown={arm("chenAnh")}
+          onClick={guardedClick("chenAnh", () => { pendingRangeRef.current = quillRef.current && quillRef.current.getSelection(true); fileRef.current && fileRef.current.click(); })}
           disabled={busy}
           className="text-xs px-2 py-1 rounded-sm border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy ? 0.5 : 1 }}>
           <ImagePlus size={13} /> Chèn ảnh
         </button>
-        <button type="button" onClick={() => { setLinkOpen((v) => !v); setMsg(""); }} disabled={busy}
+        <button type="button"
+          onMouseDown={arm("linkNgoai")}
+          onClick={guardedClick("linkNgoai", () => { setLinkOpen((v) => !v); setMsg(""); })}
+          disabled={busy}
           className="text-xs px-2 py-1 rounded-sm border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy ? 0.5 : 1 }}>
           <LinkIcon size={13} /> Link ảnh ngoài
         </button>
-        <button type="button" onClick={doBeautify} disabled={busy}
+        <button type="button"
+          onMouseDown={arm("beautify")}
+          onClick={guardedClick("beautify", doBeautify)}
+          disabled={busy}
           className="text-xs px-2 py-1 rounded-sm border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy ? 0.5 : 1 }}>
           <Sparkles size={13} /> Làm đẹp mô tả
         </button>
