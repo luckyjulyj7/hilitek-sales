@@ -1025,8 +1025,15 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
       return delta;
     });
 
+    // Gán innerHTML trực tiếp (không qua API của Quill) đôi khi khiến MutationObserver nội bộ của
+    // Quill tự sinh 1 sự kiện "text-change" ngay sau đó dù nội dung không hề đổi — làm form tưởng
+    // nhầm "có thay đổi chưa lưu" ngay khi vừa mở trang. Bỏ qua các thay đổi "ma" này trong ít lâu
+    // sau khi nạp xong, chỉ báo onChange cho thay đổi THẬT do người dùng gõ/sửa sau đó.
+    let ignoreChanges = true;
     quill.root.innerHTML = value || "";
+    requestAnimationFrame(() => { ignoreChanges = false; });
     quill.on("text-change", () => {
+      if (ignoreChanges) return;
       const html = quill.root.innerHTML;
       lastEmitted.current = html;
       onChangeRef.current(html);
@@ -1085,7 +1092,9 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
       const target = e.target;
       if (target.tagName === "BUTTON" && containerRef.current && !containerRef.current.contains(target) && armedRef.current == null) {
         const quill = quillRef.current;
-        if (quill) requestAnimationFrame(() => quill.focus());
+        // preventScroll: true — quill.focus() mặc định cuộn trang tới khung soạn thảo, làm màn
+        // hình "giật" lên mỗi lần bị cướp focus; chỉ cần lấy lại focus, không cần cuộn gì cả.
+        if (quill) requestAnimationFrame(() => quill.root.focus({ preventScroll: true }));
       }
     };
     root.addEventListener("focusin", onFocusIn);
