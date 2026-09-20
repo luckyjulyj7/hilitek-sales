@@ -1038,20 +1038,25 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
       const fileImgs = [...(dt.items || [])].filter((it) => it.kind === "file" && it.type.startsWith("image/"));
       if (fileImgs.length) {
         ev.preventDefault();
+        ev.stopPropagation();
         await addFiles(fileImgs.map((it) => it.getAsFile()).filter(Boolean));
         return;
       }
       const html = dt.getData("text/html");
       if (html && /<img\s/i.test(html)) {
         ev.preventDefault();
+        ev.stopPropagation();
         await pasteArticle(html, dt.getData("text/plain"));
       }
     };
-    quill.root.addEventListener("paste", onPaste);
+    // Bắt sự kiện "paste" ở TẦNG CAPTURE trên khung NGOÀI (containerRef, không phải quill.root) —
+    // để chạy TRƯỚC bộ xử lý dán ảnh có sẵn của chính Quill (đăng ký ngay trên quill.root). Nếu
+    // không chặn trước, cả 2 bên cùng chèn ảnh khi dán → ảnh bị nhân đôi.
+    containerRef.current.addEventListener("paste", onPaste, true);
 
     quillRef.current = quill;
     return () => {
-      quill.root.removeEventListener("paste", onPaste);
+      containerRef.current && containerRef.current.removeEventListener("paste", onPaste, true);
       quillRef.current = null;
       if (containerRef.current) containerRef.current.innerHTML = "";
     };
