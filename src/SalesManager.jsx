@@ -1025,15 +1025,12 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
       return delta;
     });
 
-    // Gán innerHTML trực tiếp (không qua API của Quill) đôi khi khiến MutationObserver nội bộ của
-    // Quill tự sinh 1 sự kiện "text-change" ngay sau đó dù nội dung không hề đổi — làm form tưởng
-    // nhầm "có thay đổi chưa lưu" ngay khi vừa mở trang. Bỏ qua các thay đổi "ma" này trong ít lâu
-    // sau khi nạp xong, chỉ báo onChange cho thay đổi THẬT do người dùng gõ/sửa sau đó.
-    let ignoreChanges = true;
-    quill.root.innerHTML = value || "";
-    requestAnimationFrame(() => { ignoreChanges = false; });
+    // Nạp nội dung ban đầu qua API "silent" của Quill (thay vì gán thẳng innerHTML) — nguồn
+    // "silent" khiến Quill KHÔNG bắn sự kiện text-change cho lần nạp này, nên không còn báo nhầm
+    // "có thay đổi chưa lưu" ngay khi vừa mở trang (gán innerHTML trực tiếp trước đây khiến
+    // MutationObserver nội bộ của Quill tự coi đây là 1 thay đổi thật).
+    if (value) quill.clipboard.dangerouslyPasteHTML(value, "silent");
     quill.on("text-change", () => {
-      if (ignoreChanges) return;
       const html = quill.root.innerHTML;
       lastEmitted.current = html;
       onChangeRef.current(html);
@@ -1076,7 +1073,7 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
     const quill = quillRef.current;
     if (!quill) return;
     if (value !== lastEmitted.current) {
-      quill.root.innerHTML = value || "";
+      quill.clipboard.dangerouslyPasteHTML(value || "", "silent");
       lastEmitted.current = value;
     }
   }, [value]);
@@ -1085,20 +1082,35 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
   // ngoài/Làm đẹp mô tả...) mà KHÔNG do người dùng thật sự bấm chuột vào đó (armedRef trống — xem
   // arm()/guardedClick() ở trên), kéo focus về lại khung soạn thảo ngay để gõ chữ không bị "rớt"
   // ra ngoài. Chưa rõ nguyên nhân gốc của việc cướp focus lạ này, đây là lớp bảo vệ chung.
+  // Bản thân cú focus "ma" đáp xuống 1 nút phía TRÊN khung soạn thảo đã khiến trình duyệt tự cuộn
+  // trang lên để lộ nút đó ra NGAY LÚC ĐÓ (hành vi mặc định khi 1 phần tử được focus) — chuyện này
+  // xảy ra TRƯỚC KHI focusin bên dưới kịp chạy, nên chỉ gọi focus({preventScroll:true}) để lấy lại
+  // focus là không đủ (nó chỉ ngăn CHÍNH lệnh focus() của mình gây cuộn thêm, không hủy được cú
+  // cuộn đã xảy ra). Phải lưu sẵn vị trí cuộn ngay trước mỗi lần bấm chuột/mousedown, rồi chủ động
+  // trả trang về đúng vị trí đó khi phát hiện focus "ma".
+  const scrollPosRef = useRef(null);
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
+    const onMouseDown = () => { scrollPosRef.current = { x: window.scrollX, y: window.scrollY }; };
+    const restoreScroll = () => {
+      const pos = scrollPosRef.current;
+      if (pos) window.scrollTo({ top: pos.y, left: pos.x, behavior: "instant" });
+    };
     const onFocusIn = (e) => {
       const target = e.target;
       if (target.tagName === "BUTTON" && containerRef.current && !containerRef.current.contains(target) && armedRef.current == null) {
+        restoreScroll();
         const quill = quillRef.current;
-        // preventScroll: true — quill.focus() mặc định cuộn trang tới khung soạn thảo, làm màn
-        // hình "giật" lên mỗi lần bị cướp focus; chỉ cần lấy lại focus, không cần cuộn gì cả.
-        if (quill) requestAnimationFrame(() => quill.root.focus({ preventScroll: true }));
+        if (quill) requestAnimationFrame(() => { quill.root.focus({ preventScroll: true }); restoreScroll(); });
       }
     };
+    root.addEventListener("mousedown", onMouseDown, true);
     root.addEventListener("focusin", onFocusIn);
-    return () => root.removeEventListener("focusin", onFocusIn);
+    return () => {
+      root.removeEventListener("mousedown", onMouseDown, true);
+      root.removeEventListener("focusin", onFocusIn);
+    };
   }, []);
 
   const onDrop = async (ev) => {
