@@ -899,6 +899,7 @@ const DESC_TOOLBAR = [
  *   • Nút video trên thanh công cụ: dán link YouTube... để nhúng khung phát.
  */
 export function WebDescEditor({ value, onChange, rows = 6, bg }) {
+  const rootRef = useRef(null);
   const containerRef = useRef(null);
   const quillRef = useRef(null);
   const fileRef = useRef(null);
@@ -1068,6 +1069,24 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
     }
   }, [value]);
 
+  // Lớp chặn an toàn bổ sung: nếu focus bất ngờ nhảy sang 1 trong các nút phía trên (Link ảnh
+  // ngoài/Làm đẹp mô tả...) mà KHÔNG do người dùng thật sự bấm chuột vào đó (armedRef trống — xem
+  // arm()/guardedClick() ở trên), kéo focus về lại khung soạn thảo ngay để gõ chữ không bị "rớt"
+  // ra ngoài. Chưa rõ nguyên nhân gốc của việc cướp focus lạ này, đây là lớp bảo vệ chung.
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const onFocusIn = (e) => {
+      const target = e.target;
+      if (target.tagName === "BUTTON" && containerRef.current && !containerRef.current.contains(target) && armedRef.current == null) {
+        const quill = quillRef.current;
+        if (quill) requestAnimationFrame(() => quill.focus());
+      }
+    };
+    root.addEventListener("focusin", onFocusIn);
+    return () => root.removeEventListener("focusin", onFocusIn);
+  }, []);
+
   const onDrop = async (ev) => {
     if (!ev.dataTransfer || !ev.dataTransfer.files || !ev.dataTransfer.files.length) return;
     ev.preventDefault(); setDrag(false);
@@ -1102,15 +1121,8 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
   };
 
   return (
-    <div>
+    <div ref={rootRef}>
       <div className="flex items-center gap-2 mb-1 flex-wrap">
-        <button type="button"
-          onMouseDown={arm("chenAnh")}
-          onClick={guardedClick("chenAnh", () => { pendingRangeRef.current = quillRef.current && quillRef.current.getSelection(true); fileRef.current && fileRef.current.click(); })}
-          disabled={busy}
-          className="text-xs px-2 py-1 rounded-sm border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy ? 0.5 : 1 }}>
-          <ImagePlus size={13} /> Chèn ảnh
-        </button>
         <button type="button"
           onMouseDown={arm("linkNgoai")}
           onClick={guardedClick("linkNgoai", () => { setLinkOpen((v) => !v); setMsg(""); })}
@@ -1125,7 +1137,7 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
           className="text-xs px-2 py-1 rounded-sm border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy ? 0.5 : 1 }}>
           <Sparkles size={13} /> Làm đẹp mô tả
         </button>
-        <span className="text-[11px] opacity-55">Dán ảnh (Ctrl+V) · kéo–thả file · dán cả bài từ web khác</span>
+        <span className="text-[11px] opacity-55">Chèn ảnh: bấm icon ảnh trên thanh công cụ bên dưới · dán ảnh (Ctrl+V) · kéo–thả file · dán cả bài từ web khác</span>
         {busy && <span className="text-[11px] inline-flex items-center gap-1" style={{ color: BLUE }}><Loader2 size={12} className="animate-spin" /> {msg}</span>}
         {!busy && msg && <span className="text-[11px]" style={{ color: /Lỗi|không|phải/i.test(msg) ? RUST : BLUE }}>{msg}</span>}
         <input ref={fileRef} type="file" accept="image/*" multiple className="hidden"
