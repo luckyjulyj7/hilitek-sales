@@ -718,14 +718,14 @@ async function readEditLocks() {
     if (!r || !r.value) return {};
     const locks = JSON.parse(r.value);
     return locks && typeof locks === "object" ? locks : {};
-  } catch { return {}; }
+  } catch (e) { console.error("readEditLocks:", e); return {}; }
 }
-async function touchEditLock(productId, by) {
+async function touchEditLock(productId, userId, by) {
   try {
     const locks = await readEditLocks();
-    locks[productId] = { by, at: new Date().toISOString() };
+    locks[productId] = { userId, by, at: new Date().toISOString() };
     await window.storage.set(EDIT_LOCKS_KEY, JSON.stringify(locks), true);
-  } catch { /* chỉ là cảnh báo phụ, lỗi thì bỏ qua */ }
+  } catch (e) { console.error("touchEditLock:", e); }
 }
 async function clearEditLock(productId) {
   try {
@@ -2950,6 +2950,19 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                   prefix = prefix.replace(/_+$/, "");
                   return prefix && prefix !== members[0]?.code ? prefix : "";
                 })();
+                // SKU chính = phần chung đứng đầu SKU của TẤT CẢ phiên bản, suy ra tương tự baseCode —
+                // hiện ở dòng đại diện để thấy rõ "mã gốc" này đã dùng, tránh cấp trùng khi tạo SP mới.
+                const baseSku = (() => {
+                  let prefix = members[0]?.sku || "";
+                  for (let i = 1; i < members.length && prefix; i++) {
+                    const s = members[i].sku || "";
+                    let j = 0;
+                    while (j < prefix.length && j < s.length && prefix[j] === s[j]) j++;
+                    prefix = prefix.slice(0, j);
+                  }
+                  prefix = prefix.replace(/_+$/, "");
+                  return prefix && prefix !== members[0]?.sku ? prefix : "";
+                })();
                 return (
                   <React.Fragment key={gid}>
                     {/* Chưa mở rộng: nền bình thường như sản phẩm khác, chỉ badge "N phiên bản" tô đậm.
@@ -2977,7 +2990,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                           {baseCode || `${members.length} mã`}
                         </button>
                       </td>
-                      <td className="px-3 py-3 opacity-30">—</td>
+                      <td className="px-3 py-3 whitespace-nowrap opacity-70" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{baseSku || "—"}</td>
                       <td className="px-3 py-3" style={{ color: INK, minWidth: 260 }}>
                         <button onClick={() => toggleGroup(gid)} className="text-left hover:underline font-medium">{baseVariantName(rep)}</button>
                         <div className="flex gap-1.5 mt-1 flex-wrap">
@@ -13831,16 +13844,19 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
   // Chỉ để CẢNH BÁO — không khoá, không chặn ai sửa/lưu cả.
   useEffect(() => {
     let alive = true;
+    const myName = currentUser.fullName || currentUser.username;
     const check = async () => {
       const locks = await readEditLocks();
       const lock = locks[p.id];
       if (!alive) return;
       const isFresh = lock && Date.now() - new Date(lock.at).getTime() < EDIT_LOCK_STALE_MS;
-      setOtherEditor(isFresh && lock.by !== currentUser.fullName ? lock : null);
+      // So "chính mình hay không" bằng ID TÀI KHOẢN (luôn duy nhất) — KHÔNG so bằng tên hiển thị,
+      // vì "Họ tên" có thể để trống hoặc trùng giữa 2 tài khoản khác nhau, làm sai lệch nhận diện.
+      setOtherEditor(isFresh && lock.userId !== currentUser.id ? lock : null);
     };
     check();
-    touchEditLock(p.id, currentUser.fullName);
-    const iv = setInterval(() => { check(); touchEditLock(p.id, currentUser.fullName); }, 20000);
+    touchEditLock(p.id, currentUser.id, myName);
+    const iv = setInterval(() => { check(); touchEditLock(p.id, currentUser.id, myName); }, 20000);
     return () => { alive = false; clearInterval(iv); clearEditLock(p.id); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.id]);
