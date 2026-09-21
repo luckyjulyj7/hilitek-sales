@@ -1613,7 +1613,7 @@ function planActual(plan, orders, purchaseOrders, products) {
     return products.filter((p) => p.createdAt && p.createdAt.slice(0, 7) === plan.month && (!plan.sellerName || p.createdBy === plan.sellerName)).length;
   }
   if (plan.type === "webpublish") {
-    return products.filter((p) => p.web?.publishedAt && p.web.publishedAt.slice(0, 7) === plan.month && (!plan.sellerName || p.web.publishedBy === plan.sellerName)).length;
+    return products.filter((p) => p.web?.published && p.web?.publishedAt && p.web.publishedAt.slice(0, 7) === plan.month && (!plan.sellerName || p.web.publishedBy === plan.sellerName)).length;
   }
   if (plan.type === "sales") {
     const relevant = orders.filter((o) => o.status !== "cancelled" && o.createdAt.slice(0, 7) === plan.month && (!plan.sellerName || o.seller === plan.sellerName));
@@ -12427,7 +12427,10 @@ function ProductAdditionReport({ products, employeeNames, onBarClick }) {
     const map = {}; list.forEach((b) => { map[b.key] = b; });
     products.forEach((p) => {
       if (p.createdAt) { const b = map[keyOf(new Date(p.createdAt))]; if (b) b["Mã mới vào kho"] += 1; }
-      if (p.web?.publishedAt) { const b = map[keyOf(new Date(p.web.publishedAt))]; if (b) b["Mã đăng web"] += 1; }
+      // Chỉ đếm sản phẩm ĐANG BẬT "Đăng web" — tắt đi thì phải mất khỏi biểu đồ ngay, không tính
+      // là "đã từng đăng" mãi mãi (publishedAt vẫn giữ nguyên mốc lần đầu, chỉ để bật lại không bị
+      // tính nhầm là "đăng mới" một lần nữa).
+      if (p.web?.published && p.web?.publishedAt) { const b = map[keyOf(new Date(p.web.publishedAt))]; if (b) b["Mã đăng web"] += 1; }
     });
     return { buckets: list, totalAdded: list.reduce((s, b) => s + b["Mã mới vào kho"], 0), totalPublished: list.reduce((s, b) => s + b["Mã đăng web"], 0) };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -12443,7 +12446,7 @@ function ProductAdditionReport({ products, employeeNames, onBarClick }) {
         if (!map[p.createdBy]) map[p.createdBy] = { name: p.createdBy, added: 0, published: 0 };
         map[p.createdBy].added += 1;
       }
-      if (p.web?.publishedAt && p.web.publishedAt.slice(0, 7) === monthKey && p.web.publishedBy) {
+      if (p.web?.published && p.web?.publishedAt && p.web.publishedAt.slice(0, 7) === monthKey && p.web.publishedBy) {
         if (!map[p.web.publishedBy]) map[p.web.publishedBy] = { name: p.web.publishedBy, added: 0, published: 0 };
         map[p.web.publishedBy].published += 1;
       }
@@ -13249,6 +13252,7 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
     if (initialPublishedFrom || initialPublishedTo) {
       setFilterPublishedFrom(initialPublishedFrom || "");
       setFilterPublishedTo(initialPublishedTo || "");
+      setFilter("on"); // khớp đúng với biểu đồ — chỉ tính/hiện sản phẩm ĐANG bật Đăng web
       onFocusHandled && onFocusHandled();
     }
   }, [initialPublishedFrom, initialPublishedTo]);
