@@ -13869,7 +13869,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
       setOtherEditor(isFresh && lock.userId !== currentUser.id ? lock : null);
       setLockDebug(
         `kiểm tra ${new Date().toLocaleTimeString("vi-VN")} — sp #${p.id.slice(0, 6)} — mình: ${currentUser.id?.slice(0, 6)} (${myName}) — ` +
-        (lock ? `bản ghi: ${lock.userId?.slice(0, 6)} (${lock.by}) lúc ${new Date(lock.at).toLocaleTimeString("vi-VN")}${isFresh ? "" : " [ĐÃ CŨ >3'"}${lock.userId === currentUser.id ? " [LÀ CHÍNH MÌNH]" : ""}` : "không có bản ghi nào")
+        (lock ? `bản ghi: ${lock.userId?.slice(0, 6)} (${lock.by}) lúc ${new Date(lock.at).toLocaleTimeString("vi-VN")}${isFresh ? "" : " [ĐÃ CŨ >3 phút]"}${lock.userId === currentUser.id ? " [LÀ CHÍNH MÌNH]" : ""}` : "không có bản ghi nào")
       );
     };
     check();
@@ -13987,6 +13987,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
         </button>
       </div>
 
+      {lockDebug && <p className="text-[10px] opacity-40 mb-1" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>debug: {lockDebug}</p>}
       {otherEditor && (
         <div className="mb-4 p-3 rounded-sm flex items-start gap-2.5" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44` }}>
           <AlertTriangle size={16} style={{ color: RUST }} className="mt-0.5 shrink-0" />
