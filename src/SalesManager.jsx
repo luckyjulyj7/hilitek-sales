@@ -707,6 +707,33 @@ async function saveData(data) {
   catch (e) { console.error("Lỗi lưu dữ liệu:", e); }
 }
 
+// ── Báo "đang có người sửa" (Website → Sản phẩm) ────────────────────────────
+// Lưu ở 1 KEY RIÊNG (không đụng vào blob dữ liệu chính) — chỉ để cảnh báo, KHÔNG khoá/chặn sửa.
+// 2 người vẫn có thể cùng sửa (last-write-wins như trước), nhưng ít nhất được nhắc để tự để ý.
+const EDIT_LOCKS_KEY = STORAGE_KEY + ":edit-locks";
+const EDIT_LOCK_STALE_MS = 3 * 60 * 1000; // quá 3 phút không "làm mới" (đóng tab, mất mạng...) coi như đã rời đi
+async function readEditLocks() {
+  try {
+    const r = await window.storage.get(EDIT_LOCKS_KEY, true);
+    if (!r || !r.value) return {};
+    const locks = JSON.parse(r.value);
+    return locks && typeof locks === "object" ? locks : {};
+  } catch { return {}; }
+}
+async function touchEditLock(productId, by) {
+  try {
+    const locks = await readEditLocks();
+    locks[productId] = { by, at: new Date().toISOString() };
+    await window.storage.set(EDIT_LOCKS_KEY, JSON.stringify(locks), true);
+  } catch { /* chỉ là cảnh báo phụ, lỗi thì bỏ qua */ }
+}
+async function clearEditLock(productId) {
+  try {
+    const locks = await readEditLocks();
+    if (locks[productId]) { delete locks[productId]; await window.storage.set(EDIT_LOCKS_KEY, JSON.stringify(locks), true); }
+  } catch { /* noop */ }
+}
+
 // Bảng mã hậu tố ngắn cho các giá trị thuộc tính phiên bản thường gặp (màu sắc, kích cỡ...) — dùng để tự sinh SKU/mã VT theo phiên bản.
 // Giá trị không có trong bảng sẽ tự suy ra 2-3 ký tự đầu (bỏ dấu, viết hoa).
 const VARIANT_CODE_MAP = {
@@ -13794,9 +13821,29 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
   const [draft, setDraft] = useState(() => normalizeWeb(product.web));
   const [weightDraft, setWeightDraft] = useState(product.weight ?? 0);
   const [dirty, setDirty] = useState(false);
+  const [otherEditor, setOtherEditor] = useState(null); // { by, at } — người khác đang mở sửa CHÍNH sản phẩm này
 
   const setWeb = (wpatch) => { setDraft((d) => normalizeWeb({ ...d, ...wpatch })); setDirty(true); };
   const setWeightField = (v) => { setWeightDraft(v); setDirty(true); };
+
+  // Báo "đang có người sửa" — kiểm tra ngay lúc mở trang, tự "làm mới" mốc thời gian của mình định
+  // kỳ để người khác mở sau biết mình vẫn đang ở đây, và tự dò xem có ai MỚI mở vào SAU mình không.
+  // Chỉ để CẢNH BÁO — không khoá, không chặn ai sửa/lưu cả.
+  useEffect(() => {
+    let alive = true;
+    const check = async () => {
+      const locks = await readEditLocks();
+      const lock = locks[p.id];
+      if (!alive) return;
+      const isFresh = lock && Date.now() - new Date(lock.at).getTime() < EDIT_LOCK_STALE_MS;
+      setOtherEditor(isFresh && lock.by !== currentUser.fullName ? lock : null);
+    };
+    check();
+    touchEditLock(p.id, currentUser.fullName);
+    const iv = setInterval(() => { check(); touchEditLock(p.id, currentUser.fullName); }, 20000);
+    return () => { alive = false; clearInterval(iv); clearEditLock(p.id); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.id]);
 
   const doSave = () => {
     // Chặn lưu khi đường dẫn SEO (slug) trùng với 1 sản phẩm khác — trùng slug khiến storefront
@@ -13905,6 +13952,15 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
           <Save size={13} /> Lưu
         </button>
       </div>
+
+      {otherEditor && (
+        <div className="mb-4 p-3 rounded-sm flex items-start gap-2.5" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44` }}>
+          <AlertTriangle size={16} style={{ color: RUST }} className="mt-0.5 shrink-0" />
+          <p className="text-sm" style={{ color: INK }}>
+            <span className="font-medium" style={{ color: RUST }}>{otherEditor.by}</span> cũng đang mở sửa sản phẩm này (từ {formatDateTime(otherEditor.at)}) — nếu cả 2 cùng bấm Lưu, người lưu SAU sẽ đè mất thay đổi của người lưu TRƯỚC. Nên trao đổi trước khi lưu.
+          </p>
+        </div>
+      )}
 
       <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
         <div>
