@@ -2212,7 +2212,7 @@ function StatCard({ label, value, icon: Icon, accent }) {
 // để hiện thumbnail — dùng chung giữa "Sản phẩm & Tồn kho" và "Sản phẩm web" cho nhất quán.
 function displayImage(p) { return p?.image || (Array.isArray(p?.web?.images) && p.web.images[0]) || null; }
 
-function ProductsInventory({ products, setProducts, addLog, currentUser, focusProductId, focusEdit, onFocusHandled, goToDoc, suppliers, goToSupplier, goToWebProduct, categories, setCategories, brands, setBrands, webConfig }) {
+function ProductsInventory({ products, setProducts, addLog, currentUser, focusProductId, focusEdit, initialCreatedFrom, initialCreatedTo, onFocusHandled, goToDoc, suppliers, goToSupplier, goToWebProduct, categories, setCategories, brands, setBrands, webConfig }) {
   // Cây danh mục web đầy đủ (mọi cấp), dạng phẳng — cho ô chọn "Danh mục phụ trên web".
   const webCatsFlat = useMemo(() => {
     return webFlattenMenuTree(webConfig && Array.isArray(webConfig.MENU) && webConfig.MENU.length ? webConfig.MENU : WEB_DEFAULT_MENU);
@@ -2232,6 +2232,16 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
   const HISTORY_PAGE_SIZE = 20;
   const [filterCategory, setFilterCategory] = useState("");
   const [filterBrand, setFilterBrand] = useState("");
+  // Lọc theo ngày TẠO mã (createdAt) — dùng khi bấm cột "Mã mới vào kho" từ báo cáo "Tốc độ thêm mã sản phẩm mới".
+  const [filterCreatedFrom, setFilterCreatedFrom] = useState("");
+  const [filterCreatedTo, setFilterCreatedTo] = useState("");
+  useEffect(() => {
+    if (initialCreatedFrom || initialCreatedTo) {
+      setFilterCreatedFrom(initialCreatedFrom || "");
+      setFilterCreatedTo(initialCreatedTo || "");
+      onFocusHandled && onFocusHandled();
+    }
+  }, [initialCreatedFrom, initialCreatedTo]);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState(new Set());
@@ -2273,6 +2283,14 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
     (p) => (p.name.toLowerCase().includes(query.toLowerCase()) || p.code.toLowerCase().includes(query.toLowerCase()))
       && (!filterCategory || p.category === filterCategory)
       && (!filterBrand || p.brand === filterBrand)
+      && (() => {
+        if (!filterCreatedFrom && !filterCreatedTo) return true;
+        if (!p.createdAt) return false;
+        const t = new Date(p.createdAt).getTime();
+        if (filterCreatedFrom && t < new Date(filterCreatedFrom).getTime()) return false;
+        if (filterCreatedTo && t > new Date(filterCreatedTo).getTime() + 24 * 3600 * 1000 - 1) return false;
+        return true;
+      })()
   ).reverse();
   const toggleSelect = (id) => setSelectedIds((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
   const toggleSelectAll = () => setSelectedIds((prev) => (prev.size === filtered.length ? new Set() : new Set(filtered.map((p) => p.id))));
@@ -2724,6 +2742,12 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         </select>
         {(filterCategory || filterBrand) && (
           <button onClick={() => { setFilterCategory(""); setFilterBrand(""); }} className="text-xs opacity-50 hover:opacity-100 underline shrink-0">Xoá lọc</button>
+        )}
+        {(filterCreatedFrom || filterCreatedTo) && (
+          <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-sm shrink-0" style={{ background: `${FOREST}14`, color: FOREST }}>
+            Ngày thêm: {filterCreatedFrom || "…"} → {filterCreatedTo || "…"}
+            <button onClick={() => { setFilterCreatedFrom(""); setFilterCreatedTo(""); }} title="Xoá lọc ngày"><X size={12} /></button>
+          </span>
         )}
         <div className="flex-1" />
         {selectedIds.size > 0 && (
@@ -7017,7 +7041,7 @@ function ProductsSection({ products, setProducts, purchaseOrders, setPurchaseOrd
 
   useEffect(() => {
     if (navTarget?.type === "po" && isAdmin) setSub("purchase");
-    else if (navTarget?.type === "product") setSub("list");
+    else if (navTarget?.type === "product" || navTarget?.type === "products-daterange") setSub("list");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navTarget]);
 
@@ -7053,7 +7077,7 @@ function ProductsSection({ products, setProducts, purchaseOrders, setPurchaseOrd
           </button>
         )}
       </div>
-      {sub === "list" && <ProductsInventory products={products} setProducts={setProducts} addLog={addLog} currentUser={currentUser} focusProductId={navTarget?.type === "product" ? navTarget.id : null} focusEdit={navTarget?.type === "product" && !!navTarget.edit} onFocusHandled={onFocusHandled} goToDoc={goToDoc} suppliers={suppliers} goToSupplier={goToSupplier} goToWebProduct={goToWebProduct} categories={categories} setCategories={setCategories} brands={brands} setBrands={setBrands} webConfig={webConfig} />}
+      {sub === "list" && <ProductsInventory products={products} setProducts={setProducts} addLog={addLog} currentUser={currentUser} focusProductId={navTarget?.type === "product" ? navTarget.id : null} focusEdit={navTarget?.type === "product" && !!navTarget.edit} initialCreatedFrom={navTarget?.type === "products-daterange" ? navTarget.from : null} initialCreatedTo={navTarget?.type === "products-daterange" ? navTarget.to : null} onFocusHandled={onFocusHandled} goToDoc={goToDoc} suppliers={suppliers} goToSupplier={goToSupplier} goToWebProduct={goToWebProduct} categories={categories} setCategories={setCategories} brands={brands} setBrands={setBrands} webConfig={webConfig} />}
       {isAdmin && sub === "purchase" && <PurchaseOrders purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} products={products} setProducts={setProducts} suppliers={suppliers} setSuppliers={setSuppliers} employeeNames={employeeNames} addLog={addLog} focusPOId={navTarget?.type === "po" ? navTarget.id : null} onFocusHandled={onFocusHandled} />}
       {isAdmin && sub === "stocktake" && <Stocktake products={products} setProducts={setProducts} stocktakes={stocktakes} setStocktakes={setStocktakes} currentUser={currentUser} addLog={addLog} />}
       {!isCtv && sub === "warranty" && <WarrantyTickets products={products} setProducts={setProducts} orders={orders} customers={customers} warrantyTickets={warrantyTickets} setWarrantyTickets={setWarrantyTickets} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} />}
@@ -9532,7 +9556,7 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
   );
 }
 
-function Orders({ orders, setOrders, products, setProducts, customers, setCustomers, employeeNames, currentUser, addLog, focusOrderId, initialFilterStatus, onFocusHandled, printSettings, setPrintSettings }) {
+function Orders({ orders, setOrders, products, setProducts, customers, setCustomers, employeeNames, currentUser, addLog, focusOrderId, initialFilterStatus, initialDeliveredFrom, initialDeliveredTo, onFocusHandled, printSettings, setPrintSettings }) {
   const isCtv = currentUser.role === "ctv";
   const isAdmin = currentUser.role === "admin";
   const [creating, setCreating] = useState(false);
@@ -9545,6 +9569,10 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
   const [filterSeller, setFilterSeller] = useState("");
   const [filterFrom, setFilterFrom] = useState("");
   const [filterTo, setFilterTo] = useState("");
+  // Lọc theo ngày GIAO HÀNG THÀNH CÔNG (khác filterFrom/filterTo lọc theo ngày TẠO đơn ở trên) —
+  // dùng khi bấm cột từ biểu đồ "Hoạt động kinh doanh" (báo cáo tính theo deliveredAt).
+  const [filterDeliveredFrom, setFilterDeliveredFrom] = useState("");
+  const [filterDeliveredTo, setFilterDeliveredTo] = useState("");
   const [filterInvoice, setFilterInvoice] = useState("");
   const [filterText, setFilterText] = useState("");
   const [filterCustomer, setFilterCustomer] = useState("");
@@ -9602,6 +9630,17 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
       onFocusHandled && onFocusHandled();
     }
   }, [initialFilterStatus]);
+
+  useEffect(() => {
+    if (initialDeliveredFrom || initialDeliveredTo) {
+      setFilterStatus("all");
+      setFilterDeliveredFrom(initialDeliveredFrom || "");
+      setFilterDeliveredTo(initialDeliveredTo || "");
+      setShowFilters(true);
+      setSelectedIds(new Set());
+      onFocusHandled && onFocusHandled();
+    }
+  }, [initialDeliveredFrom, initialDeliveredTo]);
 
   const openNew = () => {
     setForm({
@@ -9988,13 +10027,21 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
       return true;
     })
     .filter((o) => {
+      if (!filterDeliveredFrom && !filterDeliveredTo) return true;
+      if (!o.deliveredAt) return false;
+      const t = new Date(o.deliveredAt).getTime();
+      if (filterDeliveredFrom && t < new Date(filterDeliveredFrom).getTime()) return false;
+      if (filterDeliveredTo && t > new Date(filterDeliveredTo).getTime() + 24 * 3600 * 1000 - 1) return false;
+      return true;
+    })
+    .filter((o) => {
       if (!filterText.trim()) return true;
       const q = filterText.trim().toLowerCase();
       return (o.notes || "").toLowerCase().includes(q) || (o.tags || []).some((t) => t.toLowerCase().includes(q));
     });
-  const activeFilterCount = [filterSeller, filterFrom, filterTo, filterInvoice, filterText, filterCustomer, filterProduct].filter(Boolean).length + (filterApprovalOnly ? 1 : 0) + (filterCancelledOnly ? 1 : 0);
+  const activeFilterCount = [filterSeller, filterFrom, filterTo, filterDeliveredFrom, filterDeliveredTo, filterInvoice, filterText, filterCustomer, filterProduct].filter(Boolean).length + (filterApprovalOnly ? 1 : 0) + (filterCancelledOnly ? 1 : 0);
   const clearFilters = () => {
-    setFilterSeller(""); setFilterFrom(""); setFilterTo(""); setFilterInvoice(""); setFilterText("");
+    setFilterSeller(""); setFilterFrom(""); setFilterTo(""); setFilterDeliveredFrom(""); setFilterDeliveredTo(""); setFilterInvoice(""); setFilterText("");
     setFilterCustomer(""); setFilterProduct(""); setFilterApprovalOnly(false); setFilterCancelledOnly(false);
   };
 
@@ -10128,6 +10175,14 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
           <label className="text-xs shrink-0" style={{ width: 140 }}>
             <span className="block opacity-60 mb-1">Đến ngày</span>
             <input type="date" value={filterTo} onChange={(e) => setFilterTo(e.target.value)} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
+          </label>
+          <label className="text-xs shrink-0" style={{ width: 140 }}>
+            <span className="block opacity-60 mb-1">Giao hàng từ</span>
+            <input type="date" value={filterDeliveredFrom} onChange={(e) => setFilterDeliveredFrom(e.target.value)} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
+          </label>
+          <label className="text-xs shrink-0" style={{ width: 140 }}>
+            <span className="block opacity-60 mb-1">Giao hàng đến</span>
+            <input type="date" value={filterDeliveredTo} onChange={(e) => setFilterDeliveredTo(e.target.value)} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
           </label>
           <label className="text-xs shrink-0" style={{ width: 140 }}>
             <span className="block opacity-60 mb-1">Xuất hoá đơn</span>
@@ -12194,7 +12249,7 @@ function PeriodComparisonReport({ orders, products }) {
   );
 }
 
-function BusinessActivityChart({ orders, products }) {
+function BusinessActivityChart({ orders, products, onBarClick }) {
   const [preset, setPreset] = useState("30d");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
@@ -12259,10 +12314,23 @@ function BusinessActivityChart({ orders, products }) {
     { id: "this_year", label: "Năm nay" }, { id: "last_year", label: "Năm trước" }, { id: "custom", label: "Tuỳ chọn ngày" },
   ];
 
+  // Bấm cột "Doanh thu" -> mở tab Bán hàng đã lọc đúng khoảng ngày/tháng của cột đó (xem lại đơn hàng).
+  const handleBarClick = (data) => {
+    if (!onBarClick) return;
+    const key = (data && data.payload ? data.payload : data)?.key;
+    if (!key) return;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(key)) { onBarClick(key, key); return; }
+    if (/^\d{4}-\d{2}$/.test(key)) {
+      const [y, m] = key.split("-").map(Number);
+      const last = new Date(y, m, 0);
+      onBarClick(`${key}-01`, `${last.getFullYear()}-${String(last.getMonth() + 1).padStart(2, "0")}-${String(last.getDate()).padStart(2, "0")}`);
+    }
+  };
+
   return (
     <div className="p-5 sm:p-6 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
       <h4 className="text-sm uppercase tracking-wider mb-1" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Hoạt động kinh doanh</h4>
-      <p className="text-xs opacity-50 mb-4">Ghi nhận theo ngày giao hàng thành công · Lợi nhuận gộp = (giá bán − giá nhập) × số lượng</p>
+      <p className="text-xs opacity-50 mb-4">Ghi nhận theo ngày giao hàng thành công · Lợi nhuận gộp = (giá bán − giá nhập) × số lượng{onBarClick && " · Bấm vào 1 cột để xem đơn hàng đúng khoảng đó"}</p>
 
       <div className="flex flex-wrap gap-1.5 mb-4">
         {PRESETS.map((p) => (
@@ -12304,7 +12372,7 @@ function BusinessActivityChart({ orders, products }) {
           <YAxis tick={axisTick} axisLine={false} tickLine={false} width={56} tickFormatter={(v) => (Math.abs(v) >= 1000000 ? `${(v / 1000000).toFixed(0)}tr` : `${v / 1000}k`)} />
           <Tooltip formatter={(v) => vnd(v)} contentStyle={tooltipStyle} cursor={{ fill: PAPER }} />
           <Legend wrapperStyle={{ fontSize: 13, fontFamily: "'Inter', sans-serif" }} />
-          <Bar dataKey="Doanh thu" fill={BLUE} radius={[6, 6, 0, 0]} maxBarSize={48} />
+          <Bar dataKey="Doanh thu" fill={BLUE} radius={[6, 6, 0, 0]} maxBarSize={48} onClick={handleBarClick} cursor={onBarClick ? "pointer" : "default"} />
           <Line type="monotone" dataKey="Lợi nhuận gộp" stroke="#F5A623" strokeWidth={3} dot={{ r: 3, fill: "#F5A623" }} activeDot={{ r: 5 }} />
         </ComposedChart>
       </ResponsiveContainer>
@@ -12323,7 +12391,7 @@ function weekStartOf(d) {
 // Báo cáo tốc độ thêm mã sản phẩm mới vào kho + đăng lên website — theo dõi năng suất nhân viên so
 // với chỉ tiêu đặt ở màn "Kế hoạch". Đếm theo createdAt (sản phẩm) / web.publishedAt (đăng web),
 // nên chỉ tính được từ ngày các mốc này bắt đầu được ghi lại — sản phẩm cũ tạo trước đó sẽ không có.
-function ProductAdditionReport({ products, employeeNames }) {
+function ProductAdditionReport({ products, employeeNames, onBarClick }) {
   const [granularity, setGranularity] = useState("day"); // day | week | month
 
   // Dùng giờ ĐỊA PHƯƠNG (getFullYear/getMonth/getDate) để tạo khoá ngày — KHÔNG dùng
@@ -12388,10 +12456,41 @@ function ProductAdditionReport({ products, employeeNames }) {
   const axisTick = { fontSize: 12, fill: INK, fontFamily: "'Inter', sans-serif" };
   const GRANULARITIES = [["day", "Theo ngày (30 ngày)"], ["week", "Theo tuần (12 tuần)"], ["month", "Theo tháng (12 tháng)"]];
 
+  // Bấm 1 cột -> mở đúng khoảng ngày/tuần/tháng của cột đó, lọc theo field tương ứng
+  // ("createdAt" cho cột "Mã mới vào kho" -> tab Sản phẩm & Tồn kho; "publishedAt" cho cột
+  // "Mã đăng web" -> tab Website → Sản phẩm).
+  const rangeOfKey = (key) => {
+    if (granularity === "month") {
+      const [y, m] = key.split("-").map(Number);
+      const last = new Date(y, m, 0);
+      return [`${key}-01`, `${key}-${String(last.getDate()).padStart(2, "0")}`];
+    }
+    if (granularity === "week") {
+      const [y, m, d] = key.split("-").map(Number);
+      const end = new Date(y, m - 1, d + 6);
+      return [key, `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`];
+    }
+    return [key, key];
+  };
+  const handleAddedClick = (data) => {
+    if (!onBarClick) return;
+    const key = (data && data.payload ? data.payload : data)?.key;
+    if (!key) return;
+    const [from, to] = rangeOfKey(key);
+    onBarClick(from, to, "createdAt");
+  };
+  const handlePublishedClick = (data) => {
+    if (!onBarClick) return;
+    const key = (data && data.payload ? data.payload : data)?.key;
+    if (!key) return;
+    const [from, to] = rangeOfKey(key);
+    onBarClick(from, to, "publishedAt");
+  };
+
   return (
     <div className="p-5 sm:p-6 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
       <h4 className="text-sm uppercase tracking-wider mb-1" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Tốc độ thêm mã sản phẩm mới</h4>
-      <p className="text-xs opacity-50 mb-4">Số mã sản phẩm mới thêm vào kho và số mã đăng lên website — so với chỉ tiêu ở màn "Kế hoạch"</p>
+      <p className="text-xs opacity-50 mb-4">Số mã sản phẩm mới thêm vào kho và số mã đăng lên website — so với chỉ tiêu ở màn "Kế hoạch"{onBarClick && " · Bấm vào 1 cột để xem đúng sản phẩm khoảng đó"}</p>
 
       <div className="flex flex-wrap gap-1.5 mb-4">
         {GRANULARITIES.map(([id, label]) => (
@@ -12420,8 +12519,8 @@ function ProductAdditionReport({ products, employeeNames }) {
           <YAxis tick={axisTick} axisLine={false} tickLine={false} width={40} allowDecimals={false} />
           <Tooltip contentStyle={tooltipStyle} cursor={{ fill: PAPER }} />
           <Legend wrapperStyle={{ fontSize: 13, fontFamily: "'Inter', sans-serif" }} />
-          <Bar dataKey="Mã mới vào kho" fill={FOREST} radius={[6, 6, 0, 0]} maxBarSize={30} />
-          <Bar dataKey="Mã đăng web" fill={BLUE} radius={[6, 6, 0, 0]} maxBarSize={30} />
+          <Bar dataKey="Mã mới vào kho" fill={FOREST} radius={[6, 6, 0, 0]} maxBarSize={30} onClick={handleAddedClick} cursor={onBarClick ? "pointer" : "default"} />
+          <Bar dataKey="Mã đăng web" fill={BLUE} radius={[6, 6, 0, 0]} maxBarSize={30} onClick={handlePublishedClick} cursor={onBarClick ? "pointer" : "default"} />
         </BarChart>
       </ResponsiveContainer>
 
@@ -12445,7 +12544,7 @@ function ProductAdditionReport({ products, employeeNames }) {
   );
 }
 
-function Reports({ orders, products, customers, accounts, purchaseOrders, warrantyTickets, employeeNames }) {
+function Reports({ orders, products, customers, accounts, purchaseOrders, warrantyTickets, employeeNames, goToOrdersDateRange, goToProductsDateRange }) {
   const [sub, setSub] = useState("overview"); // overview | ranking
   const byCategory = useMemo(() => {
     const map = {};
@@ -12508,9 +12607,9 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
       </div>
 
       {sub === "ranking" ? <SalesRanking orders={orders} products={products} accounts={accounts} /> : (<>
-      <BusinessActivityChart orders={orders} products={products} />
+      <BusinessActivityChart orders={orders} products={products} onBarClick={goToOrdersDateRange} />
 
-      <ProductAdditionReport products={products} employeeNames={employeeNames} />
+      <ProductAdditionReport products={products} employeeNames={employeeNames} onBarClick={goToProductsDateRange} />
 
       <PeriodComparisonReport orders={orders} products={products} />
       <ProfitMarginReport orders={orders} products={products} />
@@ -13095,7 +13194,7 @@ function webOrderTotal(o) {
 function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig, categories, brands, currentUser, addLog, onOpenOrder, navTarget, onFocusHandled, goToInventoryProductEdit }) {
   const [sub, setSub] = useState("products");
   useEffect(() => {
-    if (navTarget?.type === "webproduct") setSub("products");
+    if (navTarget?.type === "webproduct" || navTarget?.type === "webproducts-daterange") setSub("products");
   }, [navTarget]);
   const subs = [
     { id: "products", label: "Sản phẩm web" },
@@ -13113,14 +13212,14 @@ function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig
           </button>
         ))}
       </div>
-      {sub === "products" && <WebProducts products={products} setProducts={setProducts} categories={categories} brands={brands} currentUser={currentUser} addLog={addLog} webConfig={webConfig} focusProductId={navTarget?.type === "webproduct" ? navTarget.id : null} onFocusHandled={onFocusHandled} goToInventoryProductEdit={goToInventoryProductEdit} />}
+      {sub === "products" && <WebProducts products={products} setProducts={setProducts} categories={categories} brands={brands} currentUser={currentUser} addLog={addLog} webConfig={webConfig} focusProductId={navTarget?.type === "webproduct" ? navTarget.id : null} initialPublishedFrom={navTarget?.type === "webproducts-daterange" ? navTarget.from : null} initialPublishedTo={navTarget?.type === "webproducts-daterange" ? navTarget.to : null} onFocusHandled={onFocusHandled} goToInventoryProductEdit={goToInventoryProductEdit} />}
       {sub === "orders" && <WebOrders orders={orders} onOpenOrder={onOpenOrder} />}
       {sub === "config" && <WebConfigForm webConfig={webConfig} setWebConfig={setWebConfig} setProducts={setProducts} addLog={addLog} products={products} categories={categories} />}
     </div>
   );
 }
 
-function WebProducts({ products, setProducts, categories, brands, currentUser, addLog, webConfig, focusProductId, onFocusHandled, goToInventoryProductEdit }) {
+function WebProducts({ products, setProducts, categories, brands, currentUser, addLog, webConfig, focusProductId, initialPublishedFrom, initialPublishedTo, onFocusHandled, goToInventoryProductEdit }) {
   // Danh mục web khả dụng = toàn bộ cây danh mục (mọi cấp) trong menu ở "Cấu hình web" (hoặc menu mặc định),
   // kèm cấp (depth) để hiện thụt lề đúng thứ bậc khi chọn cho sản phẩm.
   const webCats = useMemo(() => {
@@ -13131,6 +13230,9 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
   const [filter, setFilter] = useState("all"); // all | on | off
   const [filterCategory, setFilterCategory] = useState("");
   const [filterBrand, setFilterBrand] = useState("");
+  // Lọc theo ngày ĐĂNG WEB (web.publishedAt) — dùng khi bấm cột "Mã đăng web" từ báo cáo "Tốc độ thêm mã sản phẩm mới".
+  const [filterPublishedFrom, setFilterPublishedFrom] = useState("");
+  const [filterPublishedTo, setFilterPublishedTo] = useState("");
   const [editId, setEditId] = useState(null);
   const [expandedGroups, setExpandedGroups] = useState(new Set());
   const toggleGroup = (gid) => setExpandedGroups((prev) => { const n = new Set(prev); n.has(gid) ? n.delete(gid) : n.add(gid); return n; });
@@ -13142,6 +13244,14 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
       onFocusHandled && onFocusHandled();
     }
   }, [focusProductId]);
+
+  useEffect(() => {
+    if (initialPublishedFrom || initialPublishedTo) {
+      setFilterPublishedFrom(initialPublishedFrom || "");
+      setFilterPublishedTo(initialPublishedTo || "");
+      onFocusHandled && onFocusHandled();
+    }
+  }, [initialPublishedFrom, initialPublishedTo]);
 
   const categoryOptions = useMemo(() => [...new Set(categories || [])].sort((a, b) => a.localeCompare(b, "vi")), [categories]);
   const brandOptions = useMemo(() => {
@@ -13162,10 +13272,18 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
       .filter(({ p }) => (filter === "on" ? p.web?.published : filter === "off" ? !p.web?.published : true))
       .filter(({ p }) => !filterCategory || p.category === filterCategory)
       .filter(({ p }) => !filterBrand || p.brand === filterBrand)
+      .filter(({ p }) => {
+        if (!filterPublishedFrom && !filterPublishedTo) return true;
+        if (!p.web?.publishedAt) return false;
+        const t = new Date(p.web.publishedAt).getTime();
+        if (filterPublishedFrom && t < new Date(filterPublishedFrom).getTime()) return false;
+        if (filterPublishedTo && t > new Date(filterPublishedTo).getTime() + 24 * 3600 * 1000 - 1) return false;
+        return true;
+      })
       .filter(({ p }) => !kw || webSlugify(`${p.name} ${p.sku} ${p.code}`).includes(kw))
       .sort((a, b) => b.i - a.i)
       .map(({ p }) => p);
-  }, [products, q, filter, filterCategory, filterBrand]);
+  }, [products, q, filter, filterCategory, filterBrand, filterPublishedFrom, filterPublishedTo]);
 
   const patch = (id, fn) => setProducts((prev) => prev.map((p) => (p.id === id ? fn(p) : p)));
   // Đóng dấu ngày đăng web lần đầu (publishedAt/publishedBy) khi 1 sản phẩm chuyển từ chưa đăng -> đăng —
@@ -13235,6 +13353,12 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
         </select>
         {(filterCategory || filterBrand) && (
           <button onClick={() => { setFilterCategory(""); setFilterBrand(""); }} className="text-xs underline opacity-60">Xoá lọc</button>
+        )}
+        {(filterPublishedFrom || filterPublishedTo) && (
+          <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-sm shrink-0" style={{ background: `${BLUE}14`, color: BLUE }}>
+            Ngày đăng web: {filterPublishedFrom || "…"} → {filterPublishedTo || "…"}
+            <button onClick={() => { setFilterPublishedFrom(""); setFilterPublishedTo(""); }} title="Xoá lọc ngày"><X size={12} /></button>
+          </span>
         )}
         <div className="flex-1" />
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm tên / SKU…" className="border rounded-sm py-1.5 px-2.5 text-sm w-48" style={{ borderColor: LINE }} />
@@ -15001,6 +15125,16 @@ export default function SalesManager() {
   const goToOrdersFilter = (status) => {
     setTab("orders"); setNavTarget({ type: "orders-filter", status });
   };
+  // Bấm vào 1 cột/điểm trên biểu đồ "Hoạt động kinh doanh" -> lọc thẳng đơn hàng trong đúng khoảng ngày đó (giao hàng thành công).
+  const goToOrdersDateRange = (from, to) => {
+    setTab("orders"); setNavTarget({ type: "orders-daterange", from, to });
+  };
+  // Bấm vào 1 cột trên biểu đồ "Tốc độ thêm mã sản phẩm mới" -> lọc sản phẩm theo đúng khoảng ngày đó.
+  // field: "createdAt" (cột "Mã mới vào kho" -> tab Sản phẩm & Tồn kho) hoặc "publishedAt" (cột "Mã đăng web" -> tab Website).
+  const goToProductsDateRange = (from, to, field) => {
+    if (field === "publishedAt") { setTab("website"); setNavTarget({ type: "webproducts-daterange", from, to }); }
+    else { setTab("products"); setNavTarget({ type: "products-daterange", from, to }); }
+  };
   const [printSettings, setPrintSettings] = useState(DEFAULT_PRINT_SETTINGS);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [loaded, setLoaded] = useState(false);
@@ -15353,12 +15487,12 @@ export default function SalesManager() {
             {tab === "dashboard" && <Dashboard products={products} orders={orders} goToOrdersFilter={goToOrdersFilter} />}
             {tab === "products" && roleTabIds.includes("products") && <ProductsSection products={products} setProducts={setProducts} purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} suppliers={suppliers} setSuppliers={setSuppliers} categories={categories} setCategories={setCategories} brands={brands} setBrands={setBrands} stocktakes={stocktakes} setStocktakes={setStocktakes} warrantyTickets={warrantyTickets} setWarrantyTickets={setWarrantyTickets} repairTickets={repairTickets} setRepairTickets={setRepairTickets} helpdeskTickets={helpdeskTickets} setHelpdeskTickets={setHelpdeskTickets} orders={orders} customers={customers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} navTarget={tab === "products" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} goToDoc={goToDoc} goToSupplier={goToSupplier} goToWebProduct={goToWebProduct} webConfig={webConfig} />}
             {tab === "quotes" && <Quotations quotations={quotations} setQuotations={setQuotations} orders={orders} setOrders={setOrders} products={products} setProducts={setProducts} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} brands={brands} />}
-            {tab === "orders" && <Orders orders={orders} setOrders={setOrders} products={products} setProducts={setProducts} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} focusOrderId={tab === "orders" ? navTarget?.type === "order" ? navTarget.id : null : null} initialFilterStatus={tab === "orders" && navTarget?.type === "orders-filter" ? navTarget.status : null} onFocusHandled={() => setNavTarget(null)} printSettings={printSettings} setPrintSettings={setPrintSettings} />}
+            {tab === "orders" && <Orders orders={orders} setOrders={setOrders} products={products} setProducts={setProducts} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} focusOrderId={tab === "orders" ? navTarget?.type === "order" ? navTarget.id : null : null} initialFilterStatus={tab === "orders" && navTarget?.type === "orders-filter" ? navTarget.status : null} initialDeliveredFrom={tab === "orders" && navTarget?.type === "orders-daterange" ? navTarget.from : null} initialDeliveredTo={tab === "orders" && navTarget?.type === "orders-daterange" ? navTarget.to : null} onFocusHandled={() => setNavTarget(null)} printSettings={printSettings} setPrintSettings={setPrintSettings} />}
             {tab === "shipping" && roleTabIds.includes("shipping") && <Shipping shippingTickets={shippingTickets} setShippingTickets={setShippingTickets} parcelLabels={parcelLabels} setParcelLabels={setParcelLabels} orders={orders} customers={customers} currentUser={currentUser} addLog={addLog} />}
             {tab === "customers" && <Customers customers={customers} setCustomers={setCustomers} orders={orders} products={products} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} employeeNames={employeeNames} webConfig={webConfig} pointAdjustments={pointAdjustments} setPointAdjustments={setPointAdjustments} />}
             {tab === "suppliers" && <Suppliers suppliers={suppliers} setSuppliers={setSuppliers} purchaseOrders={purchaseOrders} addLog={addLog} goToDoc={goToDoc} navTarget={tab === "suppliers" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} />}
             {tab === "plans" && roleTabIds.includes("plans") && <Plans plans={plans} setPlans={setPlans} orders={orders} purchaseOrders={purchaseOrders} products={products} employeeNames={employeeNames} />}
-            {tab === "reports" && roleTabIds.includes("reports") && <Reports orders={orders} products={products} customers={customers} accounts={accounts} purchaseOrders={purchaseOrders} warrantyTickets={warrantyTickets} employeeNames={employeeNames} />}
+            {tab === "reports" && roleTabIds.includes("reports") && <Reports orders={orders} products={products} customers={customers} accounts={accounts} purchaseOrders={purchaseOrders} warrantyTickets={warrantyTickets} employeeNames={employeeNames} goToOrdersDateRange={goToOrdersDateRange} goToProductsDateRange={goToProductsDateRange} />}
             {tab === "website" && currentUser.role === "admin" && <WebsiteSection products={products} setProducts={setProducts} orders={orders} webConfig={webConfig} setWebConfig={setWebConfig} categories={categories} brands={brands} currentUser={currentUser} addLog={addLog} onOpenOrder={(id) => { setTab("orders"); setNavTarget({ type: "order", id }); }} navTarget={tab === "website" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} goToInventoryProductEdit={goToInventoryProductEdit} />}
             {tab === "activity" && currentUser.role === "admin" && <ActivityLog log={activityLog} accounts={accounts} />}
             {tab === "accounts" && currentUser.isOwner && <Accounts accounts={accounts} setAccounts={setAccounts} currentUser={currentUser} addLog={addLog} onResetTestData={resetTestData} onDownloadBackup={downloadBackup} onRestoreBackup={restoreBackup} />}
