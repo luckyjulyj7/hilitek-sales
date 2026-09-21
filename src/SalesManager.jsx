@@ -13784,7 +13784,7 @@ function AIWriteFromUrl({ onApply, product, products, setProducts, addLog }) {
           const variantLabel = x.variantAttrs ? Object.values(x.variantAttrs).join(" ") : "";
           const sPatch = {};
           if (pick.slug && !w.slug) sPatch.slug = webSlugify(x.name);
-          if (pick.seoTitle && !w.seoTitle) sPatch.seoTitle = x.name.slice(0, 65);
+          if (pick.seoTitle && !w.seoTitle) sPatch.seoTitle = x.name.slice(0, 48).trim() + " | HiliPC";
           if (pick.seoDesc && !w.seoDesc && baseSeoDesc) sPatch.seoDesc = (variantLabel ? `${variantLabel} — ${baseSeoDesc}` : baseSeoDesc).slice(0, 160);
           if (Object.keys(sPatch).length === 0) return x;
           siblingCount++;
