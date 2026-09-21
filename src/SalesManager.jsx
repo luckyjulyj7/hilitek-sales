@@ -368,6 +368,15 @@ function fileToDataUrl(file) {
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 const vnd = (n) => (Math.round(Number(n)) || 0).toLocaleString("vi-VN") + "đ";
 const todayISO = () => new Date().toISOString().slice(0, 10);
+// Đổi chuỗi "YYYY-MM-DD" (từ ô <input type="date">) thành mốc mili-giây ĐẦU/CUỐI ngày theo GIỜ ĐỊA
+// PHƯƠNG — KHÔNG dùng thẳng `new Date("YYYY-MM-DD")` (chuẩn ISO parse ra UTC midnight, lệch múi
+// giờ VN UTC+7 gần 7 tiếng, khiến các bộ lọc "Từ ngày/Đến ngày" bỏ sót hoặc lẫn nhầm dữ liệu của
+// ngày liền kề).
+const localDayBounds = (fromStr, toStr) => {
+  const start = fromStr ? (() => { const [y, m, d] = fromStr.split("-").map(Number); return new Date(y, m - 1, d, 0, 0, 0, 0).getTime(); })() : null;
+  const end = toStr ? (() => { const [y, m, d] = toStr.split("-").map(Number); return new Date(y, m - 1, d, 23, 59, 59, 999).getTime(); })() : null;
+  return [start, end];
+};
 const parseSeries = (text) =>
   text.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
 
@@ -2287,8 +2296,9 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         if (!filterCreatedFrom && !filterCreatedTo) return true;
         if (!p.createdAt) return false;
         const t = new Date(p.createdAt).getTime();
-        if (filterCreatedFrom && t < new Date(filterCreatedFrom).getTime()) return false;
-        if (filterCreatedTo && t > new Date(filterCreatedTo).getTime() + 24 * 3600 * 1000 - 1) return false;
+        const [from, to] = localDayBounds(filterCreatedFrom, filterCreatedTo);
+        if (from != null && t < from) return false;
+        if (to != null && t > to) return false;
         return true;
       })()
   ).reverse();
@@ -7204,7 +7214,17 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
     }
     setEditing(null);
   };
-  const remove = (id) => setCustomers((prev) => prev.filter((c) => c.id !== id));
+  const remove = (id) => {
+    const c = customers.find((x) => x.id === id);
+    if (!c) return;
+    const orderCount = orders.filter((o) => o.customerId === id).length;
+    const warn = orderCount > 0
+      ? `Khách hàng "${c.name}" đã có ${orderCount} đơn hàng. Xoá khách KHÔNG xoá các đơn hàng đó, nhưng sẽ mất thông tin liên kết khách hàng trên các đơn cũ. Không thể hoàn tác.\n\nTiếp tục xoá?`
+      : `Xoá khách hàng "${c.name}"? Không thể hoàn tác.`;
+    if (!window.confirm(warn)) return;
+    setCustomers((prev) => prev.filter((x) => x.id !== id));
+    addLog("Xoá khách hàng", c.name);
+  };
   const fullAddress = (c) => [c.addressDetail, c.ward, c.province].filter(Boolean).join(", ");
   const fullAddressOf = (a) => [a.addressDetail, a.ward, a.province].filter(Boolean).join(", ");
 
@@ -10022,16 +10042,18 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
     .filter((o) => {
       if (!filterFrom && !filterTo) return true;
       const t = new Date(o.createdAt).getTime();
-      if (filterFrom && t < new Date(filterFrom).getTime()) return false;
-      if (filterTo && t > new Date(filterTo).getTime() + 24 * 3600 * 1000 - 1) return false;
+      const [from, to] = localDayBounds(filterFrom, filterTo);
+      if (from != null && t < from) return false;
+      if (to != null && t > to) return false;
       return true;
     })
     .filter((o) => {
       if (!filterDeliveredFrom && !filterDeliveredTo) return true;
       if (!o.deliveredAt) return false;
       const t = new Date(o.deliveredAt).getTime();
-      if (filterDeliveredFrom && t < new Date(filterDeliveredFrom).getTime()) return false;
-      if (filterDeliveredTo && t > new Date(filterDeliveredTo).getTime() + 24 * 3600 * 1000 - 1) return false;
+      const [from, to] = localDayBounds(filterDeliveredFrom, filterDeliveredTo);
+      if (from != null && t < from) return false;
+      if (to != null && t > to) return false;
       return true;
     })
     .filter((o) => {
@@ -13280,8 +13302,9 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
         if (!filterPublishedFrom && !filterPublishedTo) return true;
         if (!p.web?.publishedAt) return false;
         const t = new Date(p.web.publishedAt).getTime();
-        if (filterPublishedFrom && t < new Date(filterPublishedFrom).getTime()) return false;
-        if (filterPublishedTo && t > new Date(filterPublishedTo).getTime() + 24 * 3600 * 1000 - 1) return false;
+        const [from, to] = localDayBounds(filterPublishedFrom, filterPublishedTo);
+        if (from != null && t < from) return false;
+        if (to != null && t > to) return false;
         return true;
       })
       .filter(({ p }) => !kw || webSlugify(`${p.name} ${p.sku} ${p.code}`).includes(kw))
