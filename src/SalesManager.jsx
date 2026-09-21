@@ -13271,6 +13271,13 @@ function NotificationBell({ notifications, markRead, markAllRead, onGoto }) {
 function webSlugify(s) {
   return stripDiacriticsVN(String(s || "")).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
+// Bản "đang gõ" của webSlugify — KHÔNG cắt dấu "-" ở cuối. Gõ tay trực tiếp vào ô slug (không phải
+// tự sinh từ tên sản phẩm) mà dùng webSlugify() ngay trên mỗi phím gõ thì dấu "-" gõ ở cuối chuỗi
+// (chỗ thường gõ nhất, vì con trỏ luôn ở cuối) bị xoá lại ngay lập tức, cảm giác như không gõ được
+// dấu gạch ngang. Chỉ cắt gọn đầy đủ (kể cả "-" thừa ở cuối) lúc rời khỏi ô (onBlur).
+function webSlugifyLive(s) {
+  return stripDiacriticsVN(String(s || "")).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-/, "");
+}
 function webOrderTotal(o) {
   return (o.items || []).reduce((s, it) => s + (Number(it.qty) || 0) * (Number(it.price) || 0), 0);
 }
@@ -14175,7 +14182,10 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
           <div className="p-4 rounded-sm space-y-3" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
             <p className="text-base font-bold" style={{ color: RUST }}>SEO Google</p>
             <Field label="Đường dẫn (slug)" hint="Bỏ trống = tự tạo từ tên sản phẩm">
-              <input className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} value={w.slug} onChange={(e) => setWeb({ slug: webSlugify(e.target.value) })} placeholder={effSlug} />
+              <input className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} value={w.slug}
+                onChange={(e) => setWeb({ slug: webSlugifyLive(e.target.value) })}
+                onBlur={(e) => setWeb({ slug: webSlugify(e.target.value) })}
+                placeholder={effSlug} />
             </Field>
             <Field label="Tiêu đề SEO" hint={`Bỏ trống = dùng tên sản phẩm. ~60 ký tự (${seoTitle.length})`}>
               <input className={inputCls} style={{ borderColor: LINE }} value={w.seoTitle} onChange={(e) => setWeb({ seoTitle: e.target.value })} placeholder={p.name} />
@@ -14754,7 +14764,10 @@ function LandingsEditor({ webConfig, setWebConfig }) {
           <div className="flex items-center gap-2 text-xs">
             <span className="opacity-60 shrink-0">Đường dẫn</span>
             <span className="opacity-50">/trang/</span>
-            <input value={l.slug || ""} onChange={(e) => setAt(i, { slug: webSlugify(e.target.value) })} placeholder={webSlugify(l.title || "") || "duong-dan"}
+            <input value={l.slug || ""}
+              onChange={(e) => setAt(i, { slug: webSlugifyLive(e.target.value) })}
+              onBlur={(e) => setAt(i, { slug: webSlugify(e.target.value) })}
+              placeholder={webSlugify(l.title || "") || "duong-dan"}
               className="flex-1 border rounded-sm py-1 px-2" style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} />
             <button type="button"
               onClick={() => { try { navigator.clipboard.writeText(`/trang/${l.slug || webSlugify(l.title || "")}`); } catch (e) {} }}
