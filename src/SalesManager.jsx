@@ -13848,6 +13848,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
   const [weightDraft, setWeightDraft] = useState(product.weight ?? 0);
   const [dirty, setDirty] = useState(false);
   const [otherEditor, setOtherEditor] = useState(null); // { by, at } — người khác đang mở sửa CHÍNH sản phẩm này
+  const [lockDebug, setLockDebug] = useState(""); // dòng debug tạm — xem cơ chế "báo đang sửa" có chạy đúng không
 
   const setWeb = (wpatch) => { setDraft((d) => normalizeWeb({ ...d, ...wpatch })); setDirty(true); };
   const setWeightField = (v) => { setWeightDraft(v); setDirty(true); };
@@ -13866,6 +13867,10 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
       // So "chính mình hay không" bằng ID TÀI KHOẢN (luôn duy nhất) — KHÔNG so bằng tên hiển thị,
       // vì "Họ tên" có thể để trống hoặc trùng giữa 2 tài khoản khác nhau, làm sai lệch nhận diện.
       setOtherEditor(isFresh && lock.userId !== currentUser.id ? lock : null);
+      setLockDebug(
+        `kiểm tra ${new Date().toLocaleTimeString("vi-VN")} — sp #${p.id.slice(0, 6)} — mình: ${currentUser.id?.slice(0, 6)} (${myName}) — ` +
+        (lock ? `bản ghi: ${lock.userId?.slice(0, 6)} (${lock.by}) lúc ${new Date(lock.at).toLocaleTimeString("vi-VN")}${isFresh ? "" : " [ĐÃ CŨ >3'"}${lock.userId === currentUser.id ? " [LÀ CHÍNH MÌNH]" : ""}` : "không có bản ghi nào")
+      );
     };
     check();
     touchEditLock(p.id, currentUser.id, myName);
