@@ -154,7 +154,9 @@ export default function ProductDetail({ slug, navigate, catalog }) {
     if (variant.attrs) setPreviewAttrs(variant.attrs);
     if (variant.price != null) setPreviewPrice(variant.price);
     if (variant.stock != null) setPreviewStock(variant.stock);
-    navigate(`/san-pham/${variant.slug}`);
+    // replace:true — đổi phiên bản KHÔNG đẩy thêm mốc lịch sử mới (thay thế mốc sản phẩm hiện tại),
+    // để bấm Back thoát thẳng về trang trước khi vào sản phẩm, không phải lùi qua từng phiên bản.
+    navigate(`/san-pham/${variant.slug}`, { replace: true });
   };
 
   return (

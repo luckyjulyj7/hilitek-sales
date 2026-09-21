@@ -33,13 +33,17 @@ export function useRoute() {
     return () => window.removeEventListener("popstate", onChange);
   }, []);
 
-  const navigate = useCallback((to) => {
+  // replace=true: THAY THẾ trang hiện tại trong lịch sử thay vì thêm mới — dùng khi đổi PHIÊN BẢN
+  // của cùng 1 sản phẩm (màu/dung lượng...), để bấm Back của trình duyệt thoát thẳng về trang TRƯỚC
+  // KHI vào sản phẩm (VD trang danh mục), không phải lùi qua từng phiên bản đã xem trước đó.
+  const navigate = useCallback((to, { replace = false } = {}) => {
     const next = normalize(to);
     if (window.location.pathname + window.location.search === next) {
       setRoute(parse());
       return;
     }
-    window.history.pushState(null, "", next);
+    if (replace) window.history.replaceState(null, "", next);
+    else window.history.pushState(null, "", next);
     setRoute(parse());
   }, []);
 
