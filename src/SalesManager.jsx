@@ -13704,7 +13704,7 @@ function CopyWebInfoButton({ product, products, setWeb }) {
  * trang (không qua AI). Điền vào bản NHÁP (chưa lưu) — luôn xem & sửa lại trước khi bấm Lưu.
  */
 const AI_WRITE_MAX_URLS = 3;
-function AIWriteFromUrl({ onApply }) {
+function AIWriteFromUrl({ onApply, product, products, setProducts, addLog }) {
   const [urls, setUrls] = useState([""]);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
@@ -13765,8 +13765,39 @@ function AIWriteFromUrl({ onApply }) {
       patch.images = results.filter(Boolean);
     }
     onApply(patch);
+
+    // Sản phẩm có nhiều phiên bản (variantGroupId) — SEO (slug/tiêu đề/mô tả SEO) là RIÊNG từng
+    // phiên bản (không dùng chung như mô tả/thông số, tránh Google coi là trùng nội dung giữa các
+    // trang — xem giải thích trước đó). AI mới chỉ viết cho ĐÚNG phiên bản đang mở, nên ở đây tự
+    // suy ra SEO cho các phiên bản ANH EM còn lại từ chính tên đầy đủ của từng phiên bản đó (đã có
+    // sẵn phần phân biệt như "- Beta (Gray + White)"), CHỈ điền vào phiên bản nào đang TRỐNG SEO —
+    // không đè lên SEO đã có sẵn ai đó tự chỉnh tay.
+    let siblingCount = 0;
+    if (product?.variantGroupId && Array.isArray(products) && setProducts) {
+      const siblings = products.filter((x) => x.id !== product.id && x.variantGroupId === product.variantGroupId);
+      if (siblings.length > 0) {
+        const baseSeoDesc = (pick.seoDesc && preview.seoDesc) || "";
+        setProducts((prev) => prev.map((x) => {
+          const sib = siblings.find((s) => s.id === x.id);
+          if (!sib) return x;
+          const w = normalizeWeb(x.web);
+          const variantLabel = x.variantAttrs ? Object.values(x.variantAttrs).join(" ") : "";
+          const sPatch = {};
+          if (pick.slug && !w.slug) sPatch.slug = webSlugify(x.name);
+          if (pick.seoTitle && !w.seoTitle) sPatch.seoTitle = x.name.slice(0, 65);
+          if (pick.seoDesc && !w.seoDesc && baseSeoDesc) sPatch.seoDesc = (variantLabel ? `${variantLabel} — ${baseSeoDesc}` : baseSeoDesc).slice(0, 160);
+          if (Object.keys(sPatch).length === 0) return x;
+          siblingCount++;
+          return { ...x, web: normalizeWeb({ ...w, ...sPatch }) };
+        }));
+      }
+    }
+    if (siblingCount > 0 && addLog) addLog("AI tự điền SEO cho các phiên bản khác", `${product.name} · ${siblingCount} phiên bản`);
+
     setBusy(false);
-    setMsg("Đã điền vào bản nháp — kiểm tra lại rồi bấm Lưu.");
+    setMsg(siblingCount > 0
+      ? `Đã điền vào bản nháp — kiểm tra lại rồi bấm Lưu. Đã tự điền SEO (đang trống) cho ${siblingCount} phiên bản khác trong nhóm.`
+      : "Đã điền vào bản nháp — kiểm tra lại rồi bấm Lưu.");
     setPreview(null); setUrls([""]);
   };
 
@@ -14066,7 +14097,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
         <div className="space-y-4">
           {p.variantGroupId && <p className="text-xs p-2 rounded-sm" style={{ background: `${BLUE}0D`, color: BLUE }}>Mô tả · thông số · danh mục · trạng thái đăng web · giá so sánh áp dụng cho TẤT CẢ phiên bản cùng nhóm. Ảnh · giá bán · SEO · slug riêng từng phiên bản.</p>}
 
-          <AIWriteFromUrl onApply={setWeb} />
+          <AIWriteFromUrl onApply={setWeb} product={p} products={products} setProducts={setProducts} addLog={addLog} />
 
           <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
             <p className="text-base font-bold mb-2" style={{ color: RUST }}>Mô tả sản phẩm</p>
