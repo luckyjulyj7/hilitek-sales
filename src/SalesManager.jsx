@@ -331,7 +331,10 @@ function nextSupplierCode(suppliers) {
 function nextSKU(products) {
   let max = 0;
   products.forEach((p) => {
-    const m = /^HI(\d+)$/.exec(p.sku || "");
+    // Không neo "$" ở cuối — SKU của phiên bản có dạng "HI029_PI" (thêm hậu tố sau mã gốc), neo "$"
+    // sẽ làm regex này bỏ qua mọi mã gốc đã dùng làm tiền tố cho 1 nhóm phiên bản, khiến hàm tưởng
+    // mã đó chưa dùng và cấp lại y hệt cho sản phẩm đơn mới tạo sau đó -> trùng SKU.
+    const m = /^HI(\d+)/.exec(p.sku || "");
     if (m) max = Math.max(max, parseInt(m[1], 10));
   });
   return SKU_PREFIX + String(max + 1).padStart(3, "0");
