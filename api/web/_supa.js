@@ -191,7 +191,12 @@ export function publicProduct(p, { detail = false } = {}) {
     hasSerial: !!p.hasSeries,
     shortDesc,
     promo: typeof web.promo === "string" ? web.promo.trim().slice(0, 600) : "", // khuyến mãi / quà tặng ngắn (mỗi dòng 1 ý)
-    specChips: specs.slice(0, 4).map(([k, v]) => String(v || k).split("\n")[0].trim()).filter(Boolean),
+    // Giới hạn độ dài mỗi "chip" — dòng thông số đầu tiên đôi khi bị dán nguyên khối dài (VD liệt kê
+    // hết các mã phiên bản trên 1 dòng, không xuống dòng) khiến khối chip vỡ bố cục trên web khách.
+    specChips: specs.slice(0, 4).map(([k, v]) => {
+      const val = String(v || k).split("\n")[0].trim();
+      return val.length > 60 ? val.slice(0, 60).trim() + "…" : val;
+    }).filter(Boolean),
     specs, // cần cho bộ lọc "thông số" ở trang danh mục (nhẹ — vài cặp nhãn|giá trị)
     images,
   };
