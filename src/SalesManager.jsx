@@ -2570,6 +2570,11 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
     if (editing.id) {
       const dup = products.find((p) => p.id !== editing.id && p.code.toLowerCase() === form.code.trim().toLowerCase());
       if (dup) { alert(`Mã VT "${form.code}" đã dùng cho sản phẩm "${dup.name}" — vui lòng chọn mã khác.`); return; }
+      const editingSku = (form.sku || "").trim();
+      if (editingSku) {
+        const dupSku = products.find((p) => p.id !== editing.id && p.sku.toLowerCase() === editingSku.toLowerCase());
+        if (dupSku) { alert(`SKU "${editingSku}" đã dùng cho sản phẩm "${dupSku.name}" (${dupSku.code}) — vui lòng chọn SKU khác.`); return; }
+      }
       setProducts((prev) => prev.map((p) => {
         if (p.id !== editing.id) return p;
         const newRetail = Number(form.retailPrice) || 0, newWholesale = Number(form.wholesalePrice) || 0, newCost = Number(form.costPrice) || 0;
@@ -2634,12 +2639,17 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           variantGroupId: groupId, variantAttrs, movements: [], priceHistory: [], web: newWeb,
         };
       });
-      // Tránh trùng mã VT nếu vô tình bấm tạo 2 lần hoặc trùng với sản phẩm có sẵn.
+      // Tránh trùng mã VT/SKU nếu vô tình bấm tạo 2 lần hoặc trùng với sản phẩm có sẵn.
       const dup = newProducts.find((np) => products.some((p) => p.code.toLowerCase() === np.code.toLowerCase()));
       if (dup) { alert(`Mã VT "${dup.code}" đã tồn tại — vui lòng đổi Mã VT gốc hoặc kiểm tra lại danh sách giá trị.`); return; }
+      const dupSku = newProducts.find((np) => products.some((p) => p.sku.toLowerCase() === np.sku.toLowerCase()));
+      if (dupSku) { alert(`SKU "${dupSku.sku}" đã tồn tại — vui lòng đổi SKU gốc hoặc kiểm tra lại danh sách giá trị.`); return; }
       setProducts((prev) => [...prev, ...newProducts]);
       addLog("Tạo sản phẩm có phiên bản", `${form.name} · ${newProducts.length} phiên bản`);
     } else {
+      const newSku = (form.sku || "").trim() || nextSKU(products);
+      const dupSku = products.find((p) => p.sku.toLowerCase() === newSku.toLowerCase());
+      if (dupSku) { alert(`SKU "${newSku}" đã dùng cho sản phẩm "${dupSku.name}" (${dupSku.code}) — vui lòng chọn SKU khác.`); return; }
       const now = new Date().toISOString();
       const newWeb = normalizeWeb(form.web);
       if (newWeb.published) { newWeb.publishedAt = now; newWeb.publishedBy = currentUser.fullName; }
@@ -2649,7 +2659,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         hasSeries: !!form.hasSeries, isService: !!form.isService, retailPrice: Number(form.retailPrice) || 0, wholesalePrice: Number(form.wholesalePrice) || 0, costPrice: Number(form.costPrice) || 0,
         openingQty: Number(form.openingQty) || 0, minStockLevel: Number(form.minStockLevel) || 0, weight: Number(form.weight) || 0,
         length: Number(form.length) || 0, width: Number(form.width) || 0, height: Number(form.height) || 0,
-        sku: form.sku || nextSKU(products), vat: form.vat || "VAT10", barcode: form.barcode || "", supplierId: form.supplierId || "", warrantyMonths: Number(form.warrantyMonths) || 0, image: form.image || null, images: Array.isArray(form.images) ? form.images.filter(Boolean).slice(0, 3) : [],
+        sku: newSku, vat: form.vat || "VAT10", barcode: form.barcode || "", supplierId: form.supplierId || "", warrantyMonths: Number(form.warrantyMonths) || 0, image: form.image || null, images: Array.isArray(form.images) ? form.images.filter(Boolean).slice(0, 3) : [],
         movements: [], priceHistory: [], web: newWeb,
       }]);
       addLog("Thêm sản phẩm", `${form.code} · ${form.name}`);
@@ -9287,9 +9297,12 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
       alert(`Mã vật tư "${code}" đã tồn tại — vui lòng dùng mã khác.`);
       return null;
     }
+    const newSku = nextSKU(products);
+    const dupSku = products.find((p) => p.sku.toLowerCase() === newSku.toLowerCase());
+    if (dupSku) { alert(`SKU "${newSku}" đã dùng cho sản phẩm "${dupSku.name}" (${dupSku.code}) — vui lòng thử lại.`); return null; }
     const newProduct = normalizeProduct({
       id: uid(), code, name: data.name.trim(), unit: data.unit || UNITS[0], brand: data.brand || "",
-      warrantyMonths: Number(data.warrantyMonths) || 0, vat: data.vat || "VAT10", sku: nextSKU(products),
+      warrantyMonths: Number(data.warrantyMonths) || 0, vat: data.vat || "VAT10", sku: newSku,
     });
     setProducts((prev) => [...prev, newProduct]);
     addLog("Tạo nhanh sản phẩm (từ báo giá)", `${newProduct.code} · ${newProduct.name}`);
