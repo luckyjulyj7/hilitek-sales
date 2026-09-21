@@ -116,14 +116,16 @@ export default function ProductDetail({ slug, navigate, catalog }) {
   const price = previewPrice != null ? previewPrice : p.price;
   const stock = previewStock != null ? previewStock : p.stock;
   const off = discountPercent(price, p.listPrice);
-  const ownImgs = p.images?.length ? p.images.map((im) => im.src || im) : [placeholderImage(p.brand, p.category)];
-  // Ảnh nhỏ hiện đủ ảnh của MỌI phiên bản (giống Shopee) để khách lướt xem thoải mái — lướt qua
-  // lại (mũi tên/ảnh nhỏ) CHỈ đổi ảnh lớn, KHÔNG đổi phiên bản đang chọn. Chỉ khi bấm đúng nút
-  // chọn phiên bản (VariantPicker) mới thật sự chuyển sang phiên bản đó (xem pickProductVariant).
+  const ownImgs = (p.images?.length ? p.images.map((im) => im.src || im) : [placeholderImage(p.brand, p.category)])
+    .map((src) => ({ src, variantSlug: null }));
+  // Ảnh nhỏ hiện đủ ảnh của MỌI phiên bản (giống Shopee) để khách lướt xem thoải mái. Ảnh của
+  // CHÍNH phiên bản đang xem: bấm chỉ đổi ảnh lớn. Ảnh mượn từ phiên bản KHÁC (variantSlug khác
+  // null): bấm sẽ chuyển thẳng sang đúng phiên bản đó (xem chỗ dùng pickProductVariant bên dưới).
   const otherVariantImgs = (p.variants || [])
     .filter((v) => v.slug !== p.slug && v.image)
-    .map((v) => v.image);
+    .map((v) => ({ src: v.image, variantSlug: v.slug }));
   const imgs = [...ownImgs, ...otherVariantImgs];
+  const imgSrcs = imgs.map((im) => im.src);
   const low = stock > 0 && stock <= LOW_STOCK_THRESHOLD;
   const out = !stock;
   const groupName =
@@ -188,7 +190,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
               aria-label="Phóng to ảnh"
             >
               <img
-                src={previewImg || imgs[imgIdx]}
+                src={previewImg || imgs[imgIdx]?.src}
                 alt={p.name}
                 className="w-full h-full object-cover transition-transform duration-300 ease-out will-change-transform"
                 style={{ transform: imgOrigin ? "scale(1.8)" : "scale(1)", transformOrigin: imgOrigin || "center" }}
@@ -212,9 +214,20 @@ export default function ProductDetail({ slug, navigate, catalog }) {
           </div>
           {imgs.length > 1 && (
             <div className="mt-3 grid grid-cols-6 gap-2">
-              {imgs.map((src, i) => (
-                <button key={i} onClick={() => setImgIdx(i)} className={"aspect-square w-full border rounded-md overflow-hidden " + (!previewImg && i === imgIdx ? "border-navy" : "border-line")}>
-                  <img src={src} alt="" className="w-full h-full object-cover" />
+              {imgs.map((img, i) => (
+                <button
+                  key={i}
+                  onClick={() => {
+                    if (img.variantSlug) {
+                      const variant = (p.variants || []).find((v) => v.slug === img.variantSlug);
+                      if (variant) { pickProductVariant(variant); return; }
+                    }
+                    setImgIdx(i);
+                  }}
+                  title={img.variantSlug ? "Xem phiên bản này" : undefined}
+                  className={"aspect-square w-full border rounded-md overflow-hidden " + (!previewImg && i === imgIdx ? "border-navy" : "border-line")}
+                >
+                  <img src={img.src} alt="" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
@@ -402,7 +415,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
 
       {zoom && (
         <Lightbox
-          images={imgs}
+          images={imgSrcs}
           index={imgIdx}
           alt={p.name}
           onIndex={setImgIdx}
