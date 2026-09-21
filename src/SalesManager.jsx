@@ -13799,6 +13799,16 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
   const setWeightField = (v) => { setWeightDraft(v); setDirty(true); };
 
   const doSave = () => {
+    // Chặn lưu khi đường dẫn SEO (slug) trùng với 1 sản phẩm khác — trùng slug khiến storefront
+    // không phân biệt được 2 trang (cùng 1 URL), bấm chọn phiên bản/sản phẩm khác không chuyển
+    // được gì cả. Dễ xảy ra khi 2 người cùng sửa web 1 lúc, gõ/copy nhầm slug giữa các phiên bản.
+    const effSlugOf = (x) => (x.web?.slug || webSlugify(x.name) || webSlugify(x.sku || "")).trim();
+    const mySlug = effSlugOf({ ...p, web: draft });
+    const clash = products.find((x) => x.id !== p.id && effSlugOf(x) === mySlug);
+    if (clash) {
+      alert(`Đường dẫn SEO "${mySlug}" đang trùng với sản phẩm "${clash.name}" (${clash.sku}). Đổi slug khác cho 1 trong 2 rồi lưu lại — trùng đường dẫn sẽ khiến khách không bấm chuyển được giữa các phiên bản/sản phẩm trên web.`);
+      return;
+    }
     const stampPublish = (x, nw) => { if (nw.published && !x.web?.publishedAt) { nw.publishedAt = new Date().toISOString(); nw.publishedBy = currentUser.fullName; } return nw; };
     setProducts((prev) => prev.map((x) => {
       if (x.id === p.id) return { ...x, weight: Number(weightDraft) || 0, web: stampPublish(x, normalizeWeb(draft)) };
