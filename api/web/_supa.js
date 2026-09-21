@@ -208,7 +208,11 @@ export { baseVariantName } from "../../src/lib/variants.js";
 /** Danh sách sản phẩm đã bật "Đăng web" (web.published). */
 export function publishedProducts(state) {
   const list = Array.isArray(state.products) ? state.products : [];
-  return list.filter((p) => p && p.web && p.web.published);
+  // Ưu tiên (web.priority) càng lớn càng lên đầu — dùng cho mặc định "Phổ biến" ở web khách (chưa
+  // tự chọn sắp xếp/lọc theo giá...). Bằng nhau (đa số = 0) thì giữ nguyên thứ tự cũ (sort ổn định).
+  return list
+    .filter((p) => p && p.web && p.web.published)
+    .sort((a, b) => (Number(b.web.priority) || 0) - (Number(a.web.priority) || 0));
 }
 
 function nextCustomerCode(customers) {

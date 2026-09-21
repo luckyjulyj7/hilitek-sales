@@ -791,6 +791,9 @@ function normalizeWeb(w) {
     // Phiên bản được CHỌN TAY làm đại diện ở danh sách/lưới sản phẩm (thay vì tự động lấy phiên
     // bản còn hàng đầu tiên) — chỉ 1 phiên bản/nhóm được true, xem setDefaultVariant().
     isDefaultVariant: !!w.isDefaultVariant,
+    // Độ ưu tiên hiển thị ở danh mục/trang chủ khi khách chưa tự chọn sắp xếp (mặc định "Phổ biến")
+    // — số càng lớn càng lên đầu. Bằng nhau thì giữ nguyên thứ tự cũ (không random).
+    priority: Number(w.priority) || 0,
   };
 }
 // Số tồn kho ảo ngẫu nhiên "trông thật" cho hàng dropship (5–29).
@@ -14141,6 +14144,13 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
                 <span>⚡ Đưa vào khối Flash Sale trang chủ</span>
               </label>
               <p className="text-[11px] opacity-50 mt-1">Sản phẩm sẽ hiện trong khối Flash Sale (không cần nằm trong menu danh mục). Số lượng & cách sắp xếp chỉnh ở Cấu hình web → Flash Sale.</p>
+            </div>
+
+            <div className="mt-3 pt-3" style={{ borderTop: `1px dashed ${LINE}` }}>
+              <label className="text-sm block mb-1">Độ ưu tiên hiển thị</label>
+              <input type="number" className="w-24 border rounded-sm py-1 px-2 text-sm" style={{ borderColor: LINE }}
+                value={w.priority || 0} onChange={(e) => setWeb({ priority: Math.floor(Number(e.target.value) || 0) })} />
+              <p className="text-[11px] opacity-50 mt-1">Số càng lớn càng hiện lên ĐẦU trang danh mục/trang chủ khi khách chưa tự chọn sắp xếp (mặc định "Phổ biến"). Để 0 = theo thứ tự bình thường. Không ảnh hưởng khi khách tự chọn sắp xếp theo giá/tên.</p>
             </div>
           </div>
 
