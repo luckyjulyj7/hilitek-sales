@@ -87,8 +87,12 @@ export default function Catalog({ catalog, route, navigate }) {
   useEffect(() => {
     const catName = cat || group;
     if (!catName) return;
-    const seoTitle = `${catName} chính hãng, giá tốt | HiliPC`;
-    const seoDesc = `Mua ${catName} chính hãng tại Hilitek — đa dạng mẫu mã, giá tốt, giao nhanh toàn quốc, bảo hành uy tín.`;
+    // Có lọc thêm nhãn hiệu (VD "?cat=Bàn phím cơ&brand=Voicsky") -> gộp cả 2 vào tiêu đề, vì đây
+    // chính là dạng từ khoá dài (long-tail) khách hay tìm ("bàn phím cơ voicsky") và ít cạnh tranh
+    // hơn hẳn so với chỉ riêng tên danh mục.
+    const fullName = brand ? `${catName} ${brand}` : catName;
+    const seoTitle = `${fullName} chính hãng, giá tốt | HiliPC`;
+    const seoDesc = `Mua ${fullName} chính hãng tại Hilitek — đa dạng mẫu mã, giá tốt, giao nhanh toàn quốc, bảo hành uy tín.`;
     const prevTitle = document.title;
     document.title = seoTitle;
     let tag = document.querySelector('meta[name="description"]');
@@ -99,7 +103,7 @@ export default function Catalog({ catalog, route, navigate }) {
       document.title = prevTitle;
       if (prevDesc != null) tag.setAttribute("content", prevDesc);
     };
-  }, [cat, group]);
+  }, [cat, group, brand]);
 
   const filterChips = [];
   if (brand) filterChips.push({ k: "Nhãn hiệu", v: brand, clear: { brand: "" } });
