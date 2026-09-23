@@ -79,10 +79,13 @@ function withDeviceSession(backend) {
       try {
         const obj = JSON.parse(res.value);
         obj.session = { userId: readDeviceSession() };
-        return { value: JSON.stringify(obj) };
+        return { value: JSON.stringify(obj), updatedAt: res.updatedAt };
       } catch {
         return res;
       }
+    },
+    async getMeta(key, shared) {
+      return backend.getMeta ? backend.getMeta(key, shared) : { updatedAt: null };
     },
     async set(key, value, shared) {
       if (key !== STORAGE_KEY) return backend.set(key, value, shared);
@@ -119,6 +122,10 @@ export const localStorageShim = {
       mem.delete(key);
     }
     return { ok: true };
+  },
+  // 1 trình duyệt, không có rủi ro nhiều người ghi đè nhau — không cần kiểm tra.
+  async getMeta(/* key, shared */) {
+    return { updatedAt: null };
   },
 };
 

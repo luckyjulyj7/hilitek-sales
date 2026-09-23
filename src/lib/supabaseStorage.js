@@ -65,10 +65,10 @@ export async function healthCheck() {
 }
 
 // Đọc có retry cho lỗi mạng thoáng qua (không retry lỗi cấu hình/bảng).
-async function selectValue(key, attempt = 0) {
+async function selectRow(key, attempt = 0) {
   const { data, error } = await getClient()
     .from(TABLE)
-    .select("value")
+    .select("value, updated_at")
     .eq("key", key)
     .maybeSingle();
 
@@ -76,19 +76,33 @@ async function selectValue(key, attempt = 0) {
     const transient = /fetch|network|timeout|503|429|ECONN/i.test(error.message || "");
     if (transient && attempt < 4) {
       await new Promise((r) => setTimeout(r, 400 * 2 ** attempt));
-      return selectValue(key, attempt + 1);
+      return selectRow(key, attempt + 1);
     }
     throw new Error(`Supabase get("${key}"): ${error.message}`);
   }
-  return data ? data.value : null;
+  return data || null;
 }
 
 export function createSupabaseStorage() {
   return {
     async get(key /* , shared */) {
-      const value = await selectValue(key);
-      if (value == null) return null;
-      return { value: typeof value === "string" ? value : JSON.stringify(value) };
+      const row = await selectRow(key);
+      if (!row || row.value == null) return null;
+      return {
+        value: typeof row.value === "string" ? row.value : JSON.stringify(row.value),
+        updatedAt: row.updated_at || null,
+      };
+    },
+
+    // Đọc nhẹ, KHÔNG kéo `value` — dùng để kiểm tra "có ai vừa lưu đè lên chưa" trước khi tự lưu.
+    async getMeta(key /* , shared */) {
+      const { data, error } = await getClient()
+        .from(TABLE)
+        .select("updated_at")
+        .eq("key", key)
+        .maybeSingle();
+      if (error) throw new Error(`Supabase getMeta("${key}"): ${error.message}`);
+      return { updatedAt: data ? data.updated_at : null };
     },
 
     async set(key, value /* , shared */) {
@@ -101,7 +115,7 @@ export function createSupabaseStorage() {
         .from(TABLE)
         .upsert(row, { onConflict: "key" });
       if (error) throw new Error(`Supabase set("${key}"): ${error.message}`);
-      return { ok: true };
+      return { ok: true, updatedAt: row.updated_at };
     },
 
     async delete(key /* , shared */) {

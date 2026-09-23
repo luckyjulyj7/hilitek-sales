@@ -714,7 +714,11 @@ async function loadData() {
     const marker = await window.storage.get(MIGRATION_MARKER_KEY, true).catch(() => null);
     if (marker && marker.value === "1") {
       const shared = await window.storage.get(STORAGE_KEY, true);
-      if (shared && shared.value) return JSON.parse(shared.value);
+      if (shared && shared.value) {
+        const parsed = JSON.parse(shared.value);
+        parsed.__updatedAt = shared.updatedAt || null;
+        return parsed;
+      }
       return null;
     }
     // Lần đầu tiên sau khi bật chế độ dùng chung: đánh dấu ngay (tránh 2 người cùng mở app trong lúc
@@ -730,9 +734,24 @@ async function loadData() {
   } catch (e) { /* chưa có dữ liệu */ }
   return null;
 }
-async function saveData(data) {
-  try { await window.storage.set(STORAGE_KEY, JSON.stringify(data), true); }
-  catch (e) { console.error("Lỗi lưu dữ liệu:", e); }
+// Trước khi tự lưu, kiểm tra xem có ai vừa lưu đè lên bản chung sau lần mình đọc/lưu gần nhất
+// không — nếu có, KHÔNG tự lưu (tránh lấy dữ liệu cũ trên máy mình đè mất dữ liệu mới của người
+// khác), báo về qua onConflict để hiện banner yêu cầu tải lại trang.
+async function saveData(data, { expectedUpdatedAt, onConflict } = {}) {
+  try {
+    if (expectedUpdatedAt && window.storage.getMeta) {
+      const meta = await window.storage.getMeta(STORAGE_KEY, true).catch(() => null);
+      if (meta && meta.updatedAt && meta.updatedAt !== expectedUpdatedAt) {
+        onConflict && onConflict();
+        return { conflict: true };
+      }
+    }
+    const res = await window.storage.set(STORAGE_KEY, JSON.stringify(data), true);
+    return { ok: true, updatedAt: res && res.updatedAt };
+  } catch (e) {
+    console.error("Lỗi lưu dữ liệu:", e);
+    return { error: e };
+  }
 }
 
 // ── Báo "đang có người sửa" (Website → Sản phẩm) ────────────────────────────
@@ -15456,6 +15475,10 @@ export default function SalesManager() {
   const [printSettings, setPrintSettings] = useState(DEFAULT_PRINT_SETTINGS);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [loaded, setLoaded] = useState(false);
+  // Mốc thời gian bản dữ liệu chung mà máy này đang có (từ lần tải/lưu gần nhất) — dùng để phát
+  // hiện "có người khác vừa lưu đè lên" trước khi tự lưu, tránh mất dữ liệu của họ (xem saveData()).
+  const lastSyncedAtRef = useRef(null);
+  const [syncConflict, setSyncConflict] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -15493,6 +15516,7 @@ export default function SalesManager() {
           const accs = ensureOwner(await migrateAccountPasswords(rawAccs));
           setAccounts(accs);
           setCurrentUserId((data.session && data.session.userId && accs.some((a) => a.id === data.session.userId)) ? data.session.userId : null);
+          lastSyncedAtRef.current = data.__updatedAt || null;
         } else {
           const seed = seedData();
           setProducts(seed.products.map(normalizeProduct));
@@ -15549,10 +15573,16 @@ export default function SalesManager() {
   }, [loaded, currentUserId]);
 
   useEffect(() => {
-    if (!loaded) return;
-    const t = setTimeout(() => { saveData({ products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, parcelLabels, plans, accounts, activityLog, notifications, printSettings, quotations, pointAdjustments, webConfig, session: { userId: currentUserId } }); }, 400);
+    if (!loaded || syncConflict) return;
+    const t = setTimeout(async () => {
+      const res = await saveData(
+        { products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, parcelLabels, plans, accounts, activityLog, notifications, printSettings, quotations, pointAdjustments, webConfig, session: { userId: currentUserId } },
+        { expectedUpdatedAt: lastSyncedAtRef.current, onConflict: () => setSyncConflict(true) }
+      );
+      if (res && res.updatedAt) lastSyncedAtRef.current = res.updatedAt;
+    }, 400);
     return () => clearTimeout(t);
-  }, [products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, parcelLabels, plans, accounts, activityLog, notifications, printSettings, quotations, pointAdjustments, webConfig, currentUserId, loaded]);
+  }, [products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, parcelLabels, plans, accounts, activityLog, notifications, printSettings, quotations, pointAdjustments, webConfig, currentUserId, loaded, syncConflict]);
 
   // Tự kéo đơn hàng mới từ website khách về (khách đặt trên web ghi thẳng vào blob chung).
   // 30s/lần, CHỈ THÊM đơn chưa có (không đụng đơn đang sửa) — hết cảnh phải F5 mới thấy đơn web.
@@ -15760,6 +15790,12 @@ export default function SalesManager() {
         @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
         select { appearance: none; }
       `}</style>
+      {syncConflict && (
+        <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center gap-3 px-4 py-3 text-sm text-white flex-wrap text-center" style={{ background: RUST }}>
+          <span>⚠️ Có người khác vừa lưu dữ liệu mới hơn trong lúc bạn đang mở trang này. Để tránh ghi đè mất dữ liệu của họ, hệ thống đã TẠM DỪNG tự lưu — vui lòng tải lại trang trước khi thao tác tiếp.</span>
+          <button onClick={() => location.reload()} className="px-3.5 py-1.5 rounded-sm text-sm font-medium shrink-0" style={{ background: "#fff", color: RUST }}>Tải lại trang</button>
+        </div>
+      )}
       <div id="app-shell" className="flex flex-col md:flex-row">
         <div className="md:w-72 shrink-0 p-5 flex flex-col md:fixed md:top-0 md:left-0 md:h-screen md:overflow-y-auto md:z-10" style={{ background: INK }}>
           <div className="mb-8 flex items-center gap-2.5">
