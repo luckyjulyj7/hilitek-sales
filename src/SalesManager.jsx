@@ -368,6 +368,27 @@ function fileToDataUrl(file) {
   });
 }
 
+// So sánh 2 bản ghi (trước/sau sửa) theo danh sách field cho trước, trả về mảng mô tả từng field đã
+// đổi — dùng để ghi chi tiết "đã sửa gì" vào Nhật ký thay vì chỉ ghi mỗi tên/mã, xem [[fields, label]].
+// Mỗi giá trị hiển thị cắt gọn (60 ký tự) tránh 1 field dài (VD ghi chú) làm nhật ký vỡ dòng.
+function diffFields(oldObj, newObj, fields) {
+  const short = (v) => { const s = v == null ? "" : String(v).trim(); return s.length > 60 ? s.slice(0, 60) + "…" : s; };
+  const out = [];
+  fields.forEach(([key, label]) => {
+    const os = short(oldObj?.[key]);
+    const ns = short(newObj?.[key]);
+    if (os !== ns) out.push(`${label}: "${os || "—"}" → "${ns || "—"}"`);
+  });
+  return out;
+}
+// Ghép mảng diffFields() thành 1 chuỗi cho Nhật ký — cắt bớt nếu đổi quá nhiều field cùng lúc.
+function diffSummary(changes, fallback) {
+  if (!changes.length) return fallback;
+  const MAX = 6;
+  const shown = changes.slice(0, MAX).join(" · ");
+  return changes.length > MAX ? `${shown} · (+${changes.length - MAX} thay đổi khác)` : shown;
+}
+
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 const vnd = (n) => (Math.round(Number(n)) || 0).toLocaleString("vi-VN") + "đ";
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -2578,9 +2599,21 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         const dupSku = products.find((p) => p.id !== editing.id && p.sku.toLowerCase() === editingSku.toLowerCase());
         if (dupSku) { alert(`SKU "${editingSku}" đã dùng cho sản phẩm "${dupSku.name}" (${dupSku.code}) — vui lòng chọn SKU khác.`); return; }
       }
+      const newRetail = Number(form.retailPrice) || 0, newWholesale = Number(form.wholesalePrice) || 0, newCost = Number(form.costPrice) || 0;
+      // Chi tiết cho Nhật ký — so cả các trường thường (tên, nhóm hàng, giá...) chứ không chỉ mỗi mã/tên.
+      const supplierName = (id) => (suppliers || []).find((s) => s.id === id)?.name || "";
+      const infoChanges = diffFields(
+        { ...editing, supplierId: supplierName(editing.supplierId) },
+        { ...form, retailPrice: newRetail, wholesalePrice: newWholesale, costPrice: newCost, supplierId: supplierName(form.supplierId) },
+        [
+          ["name", "Tên"], ["category", "Nhóm hàng"], ["brand", "Nhãn hiệu"], ["unit", "ĐVT"],
+          ["retailPrice", "Giá bán lẻ"], ["wholesalePrice", "Giá bán sỉ"], ["costPrice", "Giá nhập"],
+          ["warrantyMonths", "Bảo hành (tháng)"], ["barcode", "Mã vạch"], ["supplierId", "Nhà cung cấp"],
+          ["vat", "VAT"], ["weight", "Khối lượng"],
+        ]
+      );
       setProducts((prev) => prev.map((p) => {
         if (p.id !== editing.id) return p;
-        const newRetail = Number(form.retailPrice) || 0, newWholesale = Number(form.wholesalePrice) || 0, newCost = Number(form.costPrice) || 0;
         const changes = [];
         if (newRetail !== p.retailPrice) changes.push({ field: "Giá bán lẻ", oldValue: p.retailPrice, newValue: newRetail });
         if (newWholesale !== p.wholesalePrice) changes.push({ field: "Giá bán sỉ", oldValue: p.wholesalePrice, newValue: newWholesale });
@@ -2599,7 +2632,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           web: newWeb,
         };
       }));
-      addLog("Sửa sản phẩm", `${form.code} · ${form.name}`);
+      addLog("Sửa sản phẩm", `${form.code} · ${form.name} — ${diffSummary(infoChanges, "không đổi thông tin")}`);
     } else if (form.hasVariants) {
       // Tạo hàng loạt phiên bản (màu sắc/kích cỡ...) — mỗi phiên bản là 1 sản phẩm riêng, dùng chung thông tin nền,
       // mã VT/SKU tự thêm hậu tố theo giá trị thuộc tính (vd HI003_BK cho màu Đen).
@@ -5022,8 +5055,13 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
   const submit = () => {
     if (!form.name) return;
     if (editing.id) {
+      const newRec = { ...form, creditDays: Number(form.creditDays) || 0 };
+      const changes = diffFields(editing, newRec, [
+        ["name", "Tên"], ["taxCode", "MST"], ["address", "Địa chỉ"], ["contactPerson", "Người liên hệ"],
+        ["phone", "SĐT"], ["email", "Email"], ["paymentTerm", "Hình thức TT"], ["creditDays", "Số ngày công nợ"],
+      ]);
       setSuppliers((prev) => prev.map((s) => (s.id === editing.id ? { ...s, ...form, creditDays: Number(form.creditDays) || 0 } : s)));
-      addLog("Sửa nhà cung cấp", form.name);
+      addLog("Sửa nhà cung cấp", `${form.name} — ${diffSummary(changes, "không đổi thông tin")}`);
     } else {
       setSuppliers((prev) => [...prev, { ...form, id: uid(), code: form.code || nextSupplierCode(suppliers), creditDays: Number(form.creditDays) || 0 }]);
       addLog("Thêm nhà cung cấp", form.name);
@@ -7274,8 +7312,15 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
     if (!form.name) return;
     const assignedTo = isAdmin ? (form.assignedTo || "") : (editing.id ? (form.assignedTo || currentUser.fullName) : currentUser.fullName);
     if (editing.id) {
+      const newRec = { ...form, assignedTo };
+      const changes = diffFields(editing, newRec, [
+        ["name", "Tên"], ["phone", "SĐT"], ["email", "Email"], ["taxCode", "MST"],
+        ["contactPerson", "Người liên hệ"], ["province", "Tỉnh"], ["ward", "Phường/Xã"], ["addressDetail", "Địa chỉ"],
+        ["note", "Ghi chú"], ["group", "Nhóm"], ["assignedTo", "Phụ trách"],
+        ["representativeName", "Người đại diện"], ["representativeTitle", "Chức vụ"],
+      ]);
       setCustomers((prev) => prev.map((c) => (c.id === editing.id ? { ...c, ...form, assignedTo, code: form.code || c.code } : c)));
-      addLog("Sửa khách hàng", form.name);
+      addLog("Sửa khách hàng", `${form.name} — ${diffSummary(changes, "không đổi thông tin")}`);
     } else {
       setCustomers((prev) => [...prev, { ...form, assignedTo, id: uid(), code: form.code || nextCustomerCode(customers) }]);
       addLog("Thêm khách hàng", `${form.name}${assignedTo ? ` · Phụ trách: ${assignedTo}` : ""}`);
@@ -13995,7 +14040,25 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
       return x;
     }));
     setDirty(false);
-    if (addLog) addLog("Lưu thông tin web sản phẩm", `${p.sku} · ${p.name}`);
+    if (addLog) {
+      // Ghi chi tiết ĐÃ SỬA GÌ vào Nhật ký — mô tả/thông số (HTML/văn bản dài) chỉ báo "đã sửa" thay
+      // vì in nguyên nội dung; các field ngắn (tiêu đề SEO, slug, giá so sánh...) so trực tiếp.
+      const oldWeb = normalizeWeb(p.web);
+      const newWeb = normalizeWeb(draft);
+      const changes = diffFields(oldWeb, newWeb, [
+        ["seoTitle", "Tiêu đề SEO"], ["seoDesc", "Mô tả SEO"], ["slug", "Đường dẫn"],
+        ["shortDesc", "Mô tả ngắn"], ["promo", "Khuyến mãi"], ["compareAtPrice", "Giá so sánh"],
+        ["priority", "Độ ưu tiên hiển thị"], ["virtualStockQty", "SL tồn ảo"],
+      ]);
+      if (!!oldWeb.published !== !!newWeb.published) changes.unshift(`Đăng web: "${oldWeb.published ? "Bật" : "Tắt"}" → "${newWeb.published ? "Bật" : "Tắt"}"`);
+      if (!!oldWeb.virtualStock !== !!newWeb.virtualStock) changes.push(`Tồn kho ảo: "${oldWeb.virtualStock ? "Bật" : "Tắt"}" → "${newWeb.virtualStock ? "Bật" : "Tắt"}"`);
+      if (oldWeb.description !== newWeb.description) changes.push("Mô tả sản phẩm: đã sửa");
+      if (oldWeb.specsText !== newWeb.specsText) changes.push("Thông số kỹ thuật: đã sửa");
+      if (JSON.stringify(oldWeb.categories || []) !== JSON.stringify(newWeb.categories || [])) changes.push(`Danh mục: ${(oldWeb.categories || []).length} → ${(newWeb.categories || []).length} mục`);
+      if (JSON.stringify(oldWeb.images || []) !== JSON.stringify(newWeb.images || [])) changes.push(`Ảnh: ${(oldWeb.images || []).length} → ${(newWeb.images || []).length} ảnh`);
+      if ((Number(p.weight) || 0) !== (Number(weightDraft) || 0)) changes.push(`Khối lượng: "${p.weight || 0}g" → "${weightDraft || 0}g"`);
+      addLog("Lưu thông tin web sản phẩm", `${p.sku} · ${p.name} — ${diffSummary(changes, "không đổi thông tin")}`);
+    }
   };
   const doDiscard = () => {
     setDraft(normalizeWeb(product.web));
