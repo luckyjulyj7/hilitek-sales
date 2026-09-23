@@ -4401,7 +4401,7 @@ function POProgressStepper({ po }) {
   );
 }
 
-function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProducts, suppliers, setSuppliers, employeeNames, addLog, focusPOId, onFocusHandled }) {
+function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProducts, suppliers, setSuppliers, employeeNames, addLog, focusPOId, onFocusHandled, currentUser }) {
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({});
   const [expanded, setExpanded] = useState(null);
@@ -4476,7 +4476,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
     setReturnForm(null);
   };
 
-  const openNew = () => { setForm({ supplier: "", supplierId: "", branch: BRANCHES[0], createdBy: (employeeNames[0] || EMPLOYEES[0]), paymentMethod: "credit", creditDays: 30, invoiceNo: "", notes: "", tags: [], items: [] }); setCreating(true); };
+  const openNew = () => { setForm({ supplier: "", supplierId: "", branch: BRANCHES[0], createdBy: currentUser.fullName, paymentMethod: "credit", creditDays: 30, invoiceNo: "", notes: "", tags: [], items: [] }); setCreating(true); };
 
   const addItem = (productId) => {
     if (!productId) return;
@@ -4761,9 +4761,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Field label="Nhân viên tạo">
-              <select className={inputCls} style={{ borderColor: LINE }} value={form.createdBy} onChange={(e) => setForm({ ...form, createdBy: e.target.value })}>
-                {(employeeNames.length ? employeeNames : EMPLOYEES).map((e2) => <option key={e2} value={e2}>{e2}</option>)}
-              </select>
+              <div className={inputCls} style={{ borderColor: LINE, background: "#F3F4F6", color: INK, display: "flex", alignItems: "center" }}>{form.createdBy}</div>
             </Field>
             <Field label="Số hóa đơn" hint="Có thể điền sau">
               <input className={inputCls} style={{ borderColor: LINE }} value={form.invoiceNo} onChange={(e) => setForm({ ...form, invoiceNo: e.target.value })} placeholder="VD: HD0004521" />
@@ -4882,9 +4880,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Field label="Nhân viên tạo">
-              <select className={inputCls} style={{ borderColor: LINE }} value={editForm.createdBy} onChange={(e) => setEditForm({ ...editForm, createdBy: e.target.value })}>
-                {(employeeNames.length ? employeeNames : EMPLOYEES).map((e2) => <option key={e2} value={e2}>{e2}</option>)}
-              </select>
+              <div className={inputCls} style={{ borderColor: LINE, background: "#F3F4F6", color: INK, display: "flex", alignItems: "center" }}>{editForm.createdBy}</div>
             </Field>
             <Field label="Số hóa đơn">
               <input className={inputCls} style={{ borderColor: LINE }} value={editForm.invoiceNo} onChange={(e) => setEditForm({ ...editForm, invoiceNo: e.target.value })} placeholder="VD: HD0004521" />
@@ -7194,7 +7190,7 @@ function ProductsSection({ products, setProducts, purchaseOrders, setPurchaseOrd
         )}
       </div>
       {sub === "list" && <ProductsInventory products={products} setProducts={setProducts} addLog={addLog} currentUser={currentUser} focusProductId={navTarget?.type === "product" ? navTarget.id : null} focusEdit={navTarget?.type === "product" && !!navTarget.edit} initialCreatedFrom={navTarget?.type === "products-daterange" ? navTarget.from : null} initialCreatedTo={navTarget?.type === "products-daterange" ? navTarget.to : null} onFocusHandled={onFocusHandled} goToDoc={goToDoc} suppliers={suppliers} goToSupplier={goToSupplier} goToWebProduct={goToWebProduct} categories={categories} setCategories={setCategories} brands={brands} setBrands={setBrands} webConfig={webConfig} />}
-      {isAdmin && sub === "purchase" && <PurchaseOrders purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} products={products} setProducts={setProducts} suppliers={suppliers} setSuppliers={setSuppliers} employeeNames={employeeNames} addLog={addLog} focusPOId={navTarget?.type === "po" ? navTarget.id : null} onFocusHandled={onFocusHandled} />}
+      {isAdmin && sub === "purchase" && <PurchaseOrders purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} products={products} setProducts={setProducts} suppliers={suppliers} setSuppliers={setSuppliers} employeeNames={employeeNames} addLog={addLog} focusPOId={navTarget?.type === "po" ? navTarget.id : null} onFocusHandled={onFocusHandled} currentUser={currentUser} />}
       {isAdmin && sub === "stocktake" && <Stocktake products={products} setProducts={setProducts} stocktakes={stocktakes} setStocktakes={setStocktakes} currentUser={currentUser} addLog={addLog} />}
       {!isCtv && sub === "warranty" && <WarrantyTickets products={products} setProducts={setProducts} orders={orders} customers={customers} warrantyTickets={warrantyTickets} setWarrantyTickets={setWarrantyTickets} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} />}
       {!isCtv && sub === "service" && <ServiceTickets repairTickets={repairTickets} setRepairTickets={setRepairTickets} helpdeskTickets={helpdeskTickets} setHelpdeskTickets={setHelpdeskTickets} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} />}
@@ -9538,9 +9534,7 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
               />
             </Field>
             <Field label="Bán bởi">
-              <select className={inputCls} style={{ borderColor: LINE }} value={form.seller} onChange={(e) => setForm({ ...form, seller: e.target.value })}>
-                {(employeeNames.length ? employeeNames : EMPLOYEES).map((e2) => <option key={e2} value={e2}>{e2}</option>)}
-              </select>
+              <div className={inputCls} style={{ borderColor: LINE, background: "#F3F4F6", color: INK, display: "flex", alignItems: "center" }}>{form.seller}</div>
             </Field>
           </div>
           {!form.customerId && (
@@ -10464,9 +10458,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                     </select>
                   </Field>
                   <Field label="Bán bởi">
-                    <select className={inputCls} style={{ borderColor: LINE }} value={form.seller} onChange={(e) => setForm({ ...form, seller: e.target.value })}>
-                      {(employeeNames.length ? employeeNames : EMPLOYEES).map((e2) => <option key={e2} value={e2}>{e2}</option>)}
-                    </select>
+                    <div className={inputCls} style={{ borderColor: LINE, background: "#F3F4F6", color: INK, display: "flex", alignItems: "center" }}>{form.seller}</div>
                   </Field>
                 </div>
                 <Field label="Nguồn">
