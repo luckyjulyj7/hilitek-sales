@@ -96,6 +96,13 @@ function normalizeAccount(a) {
     active: a.active !== false,
     // Tài khoản "chủ" — cấp cao nhất. Chỉ chính chủ mới thấy/sửa được; QTV khác không thấy tài khoản này.
     isOwner: a.isOwner === true,
+    // Quyền riêng do chủ cấp cho từng tài khoản Quản trị viên — mặc định KHÔNG có, chủ phải tick mới được.
+    perms: {
+      deleteProducts: a.perms?.deleteProducts === true,
+      deleteCustomers: a.perms?.deleteCustomers === true,
+      deleteSuppliers: a.perms?.deleteSuppliers === true,
+      viewActivityLog: a.perms?.viewActivityLog === true,
+    },
   };
 }
 // Đảm bảo luôn có ĐÚNG 1 tài khoản chủ (isOwner). Dữ liệu cũ chưa có cờ này thì gán cho
@@ -3201,7 +3208,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
               {isAdmin && goToWebProduct && (
                 <button onClick={() => goToWebProduct(viewingProduct.id)} title="Sửa mô tả, ảnh, giá so sánh... của sản phẩm này trên website" className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm border" style={{ borderColor: BLUE, color: BLUE }}><Globe size={14} /> Sửa trên Website</button>
               )}
-              {isAdmin && (
+              {(currentUser.isOwner || currentUser.perms?.deleteProducts) && (
                 <button
                   onClick={() => {
                     if (confirm(`Xoá sản phẩm "${viewingProduct.name}"? Không thể hoàn tác.`)) {
@@ -5238,7 +5245,7 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
                 <td className="px-3 py-3">
                   <div className="flex gap-1.5 justify-end whitespace-nowrap">
                     <button onClick={() => openEdit(s)} title="Sửa" className="p-1.5 rounded-sm hover:bg-black/5 opacity-60"><Pencil size={14} /></button>
-                    {currentUser.isOwner && (
+                    {(currentUser.isOwner || currentUser.perms?.deleteSuppliers) && (
                       <button onClick={() => remove(s.id)} title="Xoá" className="p-1.5 rounded-sm hover:bg-black/5 opacity-60" style={{ color: RUST }}><Trash2 size={14} /></button>
                     )}
                   </div>
@@ -7650,7 +7657,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
                     {isAdmin && (
                       <div className="flex gap-1.5 justify-end whitespace-nowrap">
                         <button onClick={() => openEdit(c)} className="p-1.5 rounded-sm hover:bg-black/5 opacity-60"><Pencil size={14} /></button>
-                        {currentUser.isOwner && (
+                        {(currentUser.isOwner || currentUser.perms?.deleteCustomers) && (
                           <button onClick={() => remove(c.id)} className="p-1.5 rounded-sm hover:bg-black/5 opacity-60" style={{ color: RUST }}><Trash2 size={14} /></button>
                         )}
                       </div>
@@ -13045,8 +13052,15 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
   // QTV thường không thấy tài khoản chủ; chỉ chính chủ mới thấy và sửa được nó.
   const visibleAccounts = isOwnerViewer ? accounts : accounts.filter((a) => !a.isOwner);
   const canManage = (a) => isOwnerViewer || !a.isOwner;
-  const openNew = () => { setForm({ username: "", password: "", fullName: "", role: "staff", active: true }); setEditing({}); };
-  const openEdit = (a) => { if (!canManage(a)) return; setForm({ ...a, password: "" }); setEditing(a); };
+  const EMPTY_PERMS = { deleteProducts: false, deleteCustomers: false, deleteSuppliers: false, viewActivityLog: false };
+  const PERM_DEFS = [
+    ["deleteProducts", "Xoá sản phẩm"],
+    ["deleteCustomers", "Xoá khách hàng"],
+    ["deleteSuppliers", "Xoá nhà cung cấp"],
+    ["viewActivityLog", "Xem nhật ký"],
+  ];
+  const openNew = () => { setForm({ username: "", password: "", fullName: "", role: "staff", active: true, perms: { ...EMPTY_PERMS } }); setEditing({}); };
+  const openEdit = (a) => { if (!canManage(a)) return; setForm({ ...a, password: "", perms: { ...EMPTY_PERMS, ...a.perms } }); setEditing(a); };
   const submit = async () => {
     const username = form.username.trim().toLowerCase();
     if (!username || !form.fullName) return;
@@ -13055,14 +13069,16 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
     if (editing.id && !canManage(editing)) { alert("Bạn không có quyền sửa tài khoản này."); return; }
     if (form.password && form.password.length < 6) { alert("Mật khẩu tối thiểu 6 ký tự."); return; }
     const passFields = form.password ? await makePasswordFields(form.password) : {};
+    const perms = { ...EMPTY_PERMS, ...form.perms };
     if (editing.id) {
       // Tài khoản chủ luôn giữ vai trò admin và đang hoạt động, không cho đổi.
       const role = editing.isOwner ? "admin" : form.role;
       const active = editing.isOwner ? true : form.active;
-      setAccounts((prev) => prev.map((a) => (a.id === editing.id ? { ...a, username, fullName: form.fullName, role, active, ...passFields } : a)));
-      addLog && addLog("Sửa tài khoản", `${username}${form.password ? " (đổi mật khẩu)" : ""}`);
+      setAccounts((prev) => prev.map((a) => (a.id === editing.id ? { ...a, username, fullName: form.fullName, role, active, perms, ...passFields } : a)));
+      const permChanges = PERM_DEFS.filter(([key]) => !!editing.perms?.[key] !== !!perms[key]).map(([key, label]) => `${label}: ${perms[key] ? "bật" : "tắt"}`);
+      addLog && addLog("Sửa tài khoản", `${username}${form.password ? " (đổi mật khẩu)" : ""}${permChanges.length ? " · " + permChanges.join(", ") : ""}`);
     } else {
-      setAccounts((prev) => [...prev, { id: uid(), username, fullName: form.fullName, role: form.role, active: true, isOwner: false, ...passFields }]);
+      setAccounts((prev) => [...prev, { id: uid(), username, fullName: form.fullName, role: form.role, active: true, isOwner: false, perms, ...passFields }]);
       addLog && addLog("Tạo tài khoản", `${username} · ${ACCOUNT_ROLES.find((r) => r.id === form.role)?.label || form.role}`);
     }
     setEditing(null);
@@ -13194,16 +13210,28 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
               </div>
             </Field>
           ) : (
-            <Field label="Vai trò">
-              <div className="flex gap-2">
-                {ACCOUNT_ROLES.map((r) => (
-                  <button key={r.id} type="button" onClick={() => setForm({ ...form, role: r.id })} className="px-3.5 py-1.5 rounded-sm text-sm border"
-                    style={{ borderColor: form.role === r.id ? INK : LINE, background: form.role === r.id ? INK : "transparent", color: form.role === r.id ? "#fff" : INK }}>
-                    {r.label}
-                  </button>
-                ))}
-              </div>
-            </Field>
+            <>
+              <Field label="Vai trò">
+                <div className="flex gap-2">
+                  {ACCOUNT_ROLES.map((r) => (
+                    <button key={r.id} type="button" onClick={() => setForm({ ...form, role: r.id })} className="px-3.5 py-1.5 rounded-sm text-sm border"
+                      style={{ borderColor: form.role === r.id ? INK : LINE, background: form.role === r.id ? INK : "transparent", color: form.role === r.id ? "#fff" : INK }}>
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+              <Field label="Quyền được chủ cấp thêm" hint="Không tick thì không được xem/sửa/xoá mục tương ứng">
+                <div className="flex flex-col gap-1.5">
+                  {PERM_DEFS.map(([key, label]) => (
+                    <label key={key} className="flex items-center gap-2 text-sm">
+                      <input type="checkbox" checked={!!form.perms?.[key]} onChange={(e) => setForm({ ...form, perms: { ...form.perms, [key]: e.target.checked } })} />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+              </Field>
+            </>
           )}
           <button onClick={submit} className="w-full py-2.5 rounded-sm text-white text-sm mt-2" style={{ background: INK }}>{editing.id ? "Lưu thay đổi" : "Thêm tài khoản"}</button>
         </Modal>
@@ -15720,7 +15748,7 @@ export default function SalesManager() {
   const visibleTabs = [
     ...TABS.filter((t) => roleTabIds.includes(t.id)),
     ...(currentUser.role === "admin" ? [{ id: "website", label: "Website", icon: Globe }] : []),
-    ...(currentUser.role === "admin" ? [{ id: "activity", label: "Nhật ký", icon: History }] : []),
+    ...(currentUser.isOwner || currentUser.perms?.viewActivityLog ? [{ id: "activity", label: "Nhật ký", icon: History }] : []),
     ...(currentUser.isOwner ? [{ id: "accounts", label: "Tài khoản", icon: KeyRound }] : []), // chỉ tài khoản chủ
     { id: "profile", label: "Tài khoản cá nhân", icon: UserCircle }, // mọi vai trò
   ];
@@ -15787,7 +15815,7 @@ export default function SalesManager() {
             {tab === "plans" && roleTabIds.includes("plans") && <Plans plans={plans} setPlans={setPlans} orders={orders} purchaseOrders={purchaseOrders} products={products} employeeNames={employeeNames} />}
             {tab === "reports" && roleTabIds.includes("reports") && <Reports orders={orders} products={products} customers={customers} accounts={accounts} purchaseOrders={purchaseOrders} warrantyTickets={warrantyTickets} employeeNames={employeeNames} goToOrdersDateRange={goToOrdersDateRange} goToProductsDateRange={goToProductsDateRange} />}
             {tab === "website" && currentUser.role === "admin" && <WebsiteSection products={products} setProducts={setProducts} orders={orders} webConfig={webConfig} setWebConfig={setWebConfig} categories={categories} brands={brands} currentUser={currentUser} addLog={addLog} onOpenOrder={(id) => { setTab("orders"); setNavTarget({ type: "order", id }); }} navTarget={tab === "website" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} goToInventoryProductEdit={goToInventoryProductEdit} />}
-            {tab === "activity" && currentUser.role === "admin" && <ActivityLog log={activityLog} accounts={accounts} />}
+            {tab === "activity" && (currentUser.isOwner || currentUser.perms?.viewActivityLog) && <ActivityLog log={activityLog} accounts={accounts} />}
             {tab === "accounts" && currentUser.isOwner && <Accounts accounts={accounts} setAccounts={setAccounts} currentUser={currentUser} addLog={addLog} onResetTestData={resetTestData} onDownloadBackup={downloadBackup} onRestoreBackup={restoreBackup} />}
             {tab === "profile" && <MyProfile currentUser={currentUser} setAccounts={setAccounts} addLog={addLog} />}
           </AppErrorBoundary>
