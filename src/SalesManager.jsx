@@ -15479,6 +15479,45 @@ export default function SalesManager() {
   // hiện "có người khác vừa lưu đè lên" trước khi tự lưu, tránh mất dữ liệu của họ (xem saveData()).
   const lastSyncedAtRef = useRef(null);
   const [syncConflict, setSyncConflict] = useState(false);
+  // true trong lúc có thay đổi cục bộ chưa lưu xong lên server — effect đồng bộ định kỳ tạm hoãn 1
+  // nhịp khi thấy cờ này, tránh áp dữ liệu từ xa đè mất đúng lúc đang lưu.
+  const pendingSaveRef = useRef(false);
+
+  // Áp dữ liệu tải được (lần đầu HOẶC khi phát hiện có người khác vừa lưu bản mới — xem effect đồng
+  // bộ định kỳ bên dưới) vào toàn bộ state — dùng chung để không lặp code. KHÔNG đụng currentUserId
+  // ở đây (chỉ set lúc tải lần đầu) để không tự đăng xuất người đang dùng khi có bản mới về.
+  const applyRemoteData = async (data) => {
+    setProducts((data.products || []).map(normalizeProduct));
+    setOrders((data.orders || []).map(normalizeOrder));
+    setCustomers((data.customers || []).map(normalizeCustomer));
+    setPurchaseOrders((data.purchaseOrders || []).map(normalizePO));
+    setSuppliers((data.suppliers || []).map(normalizeSupplier));
+    // Danh mục nhóm hàng: nếu dữ liệu cũ chưa có danh sách quản lý riêng, tự sinh từ các category đã dùng trên sản phẩm (không mất dữ liệu).
+    const existingCats = [...new Set((data.products || []).map((p) => p.category).filter(Boolean))];
+    setCategories(Array.isArray(data.categories) && data.categories.length > 0 ? data.categories : existingCats);
+    // Danh mục nhãn hiệu: tương tự — tự sinh từ các brand đã dùng trên sản phẩm nếu chưa có danh sách quản lý riêng.
+    // Mỗi nhãn hiệu giờ thuộc về 1 nhóm hàng cụ thể; dữ liệu cũ (chuỗi đơn, chưa có nhóm hàng) được tự chuyển sang dạng mới.
+    const existingBrands = [...new Set((data.products || []).map((p) => p.brand).filter(Boolean))];
+    const rawBrands = Array.isArray(data.brands) && data.brands.length > 0 ? data.brands : existingBrands;
+    setBrands(rawBrands.map(normalizeBrandEntry));
+    setStocktakes((data.stocktakes || []).map(normalizeStocktake));
+    setWarrantyTickets((data.warrantyTickets || []).map(normalizeWarrantyTicket));
+    setRepairTickets((data.repairTickets || []).map(normalizeRepairTicket));
+    setHelpdeskTickets((data.helpdeskTickets || []).map(normalizeHelpdeskTicket));
+    setShippingTickets((data.shippingTickets || []).map(normalizeShippingTicket));
+    setParcelLabels((data.parcelLabels || []).map(normalizeParcelLabel));
+    setPlans((data.plans || []).map(normalizePlan));
+    setActivityLog((data.activityLog || []).map(normalizeLog));
+    setNotifications((data.notifications || []).map(normalizeNotif));
+    setQuotations((data.quotations || []).map(normalizeQuote));
+    setPointAdjustments((data.pointAdjustments || []).map(normalizePointAdjustment));
+    setWebConfig(data.webConfig && typeof data.webConfig === "object" ? data.webConfig : {});
+    setPrintSettings(normalizePrintSettings(data.printSettings));
+    const rawAccs = (data.accounts && data.accounts.length > 0) ? data.accounts.map(normalizeAccount) : seedAccounts();
+    const accs = ensureOwner(await migrateAccountPasswords(rawAccs));
+    setAccounts(accs);
+    return accs;
+  };
 
   useEffect(() => {
     (async () => {
@@ -15486,35 +15525,7 @@ export default function SalesManager() {
       try { data = await loadData(); } catch (e) { console.error("Lỗi tải dữ liệu:", e); }
       try {
         if (data) {
-          setProducts((data.products || []).map(normalizeProduct));
-          setOrders((data.orders || []).map(normalizeOrder));
-          setCustomers((data.customers || []).map(normalizeCustomer));
-          setPurchaseOrders((data.purchaseOrders || []).map(normalizePO));
-          setSuppliers((data.suppliers || []).map(normalizeSupplier));
-          // Danh mục nhóm hàng: nếu dữ liệu cũ chưa có danh sách quản lý riêng, tự sinh từ các category đã dùng trên sản phẩm (không mất dữ liệu).
-          const existingCats = [...new Set((data.products || []).map((p) => p.category).filter(Boolean))];
-          setCategories(Array.isArray(data.categories) && data.categories.length > 0 ? data.categories : existingCats);
-          // Danh mục nhãn hiệu: tương tự — tự sinh từ các brand đã dùng trên sản phẩm nếu chưa có danh sách quản lý riêng.
-          // Mỗi nhãn hiệu giờ thuộc về 1 nhóm hàng cụ thể; dữ liệu cũ (chuỗi đơn, chưa có nhóm hàng) được tự chuyển sang dạng mới.
-          const existingBrands = [...new Set((data.products || []).map((p) => p.brand).filter(Boolean))];
-          const rawBrands = Array.isArray(data.brands) && data.brands.length > 0 ? data.brands : existingBrands;
-          setBrands(rawBrands.map(normalizeBrandEntry));
-          setStocktakes((data.stocktakes || []).map(normalizeStocktake));
-          setWarrantyTickets((data.warrantyTickets || []).map(normalizeWarrantyTicket));
-          setRepairTickets((data.repairTickets || []).map(normalizeRepairTicket));
-          setHelpdeskTickets((data.helpdeskTickets || []).map(normalizeHelpdeskTicket));
-          setShippingTickets((data.shippingTickets || []).map(normalizeShippingTicket));
-          setParcelLabels((data.parcelLabels || []).map(normalizeParcelLabel));
-          setPlans((data.plans || []).map(normalizePlan));
-          setActivityLog((data.activityLog || []).map(normalizeLog));
-          setNotifications((data.notifications || []).map(normalizeNotif));
-          setQuotations((data.quotations || []).map(normalizeQuote));
-          setPointAdjustments((data.pointAdjustments || []).map(normalizePointAdjustment));
-          setWebConfig(data.webConfig && typeof data.webConfig === "object" ? data.webConfig : {});
-          setPrintSettings(normalizePrintSettings(data.printSettings));
-          const rawAccs = (data.accounts && data.accounts.length > 0) ? data.accounts.map(normalizeAccount) : seedAccounts();
-          const accs = ensureOwner(await migrateAccountPasswords(rawAccs));
-          setAccounts(accs);
+          const accs = await applyRemoteData(data);
           setCurrentUserId((data.session && data.session.userId && accs.some((a) => a.id === data.session.userId)) ? data.session.userId : null);
           lastSyncedAtRef.current = data.__updatedAt || null;
         } else {
@@ -15574,41 +15585,43 @@ export default function SalesManager() {
 
   useEffect(() => {
     if (!loaded || syncConflict) return;
+    // Đánh dấu "đang có thay đổi chưa lưu xong" ngay từ lúc này (chưa đợi hết debounce) — effect đồng
+    // bộ định kỳ ở trên sẽ thấy cờ này và tạm hoãn 1 nhịp, tránh áp bản từ xa đè mất đúng lúc đang lưu.
+    pendingSaveRef.current = true;
     const t = setTimeout(async () => {
       const res = await saveData(
         { products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, parcelLabels, plans, accounts, activityLog, notifications, printSettings, quotations, pointAdjustments, webConfig, session: { userId: currentUserId } },
         { expectedUpdatedAt: lastSyncedAtRef.current, onConflict: () => setSyncConflict(true) }
       );
       if (res && res.updatedAt) lastSyncedAtRef.current = res.updatedAt;
+      pendingSaveRef.current = false;
     }, 400);
     return () => clearTimeout(t);
   }, [products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, parcelLabels, plans, accounts, activityLog, notifications, printSettings, quotations, pointAdjustments, webConfig, currentUserId, loaded, syncConflict]);
 
-  // Tự kéo đơn hàng mới từ website khách về (khách đặt trên web ghi thẳng vào blob chung).
-  // 30s/lần, CHỈ THÊM đơn chưa có (không đụng đơn đang sửa) — hết cảnh phải F5 mới thấy đơn web.
+  // Tự đồng bộ với thao tác của người khác (thêm/sửa/xoá khách hàng, sản phẩm, đơn web mới…):
+  // 20s/lần, chỉ kiểm tra nhẹ (updated_at) — nếu có ai vừa lưu bản mới thì mới tải và áp lại toàn
+  // bộ dữ liệu, không thì thôi. Nhờ vậy mọi người thấy thay đổi của nhau mà không cần F5, đồng thời
+  // giữ mốc đồng bộ luôn mới nên tự lưu (xem effect debounce phía trên) ít bị vướng cảnh báo xung đột.
   useEffect(() => {
-    if (!loaded || !currentUserId) return;
+    if (!loaded || !currentUserId || syncConflict) return;
     let stopped = false;
     const pull = async () => {
-      if (document.hidden) return;
+      if (document.hidden || pendingSaveRef.current || !window.storage.getMeta) return;
       try {
+        const meta = await window.storage.getMeta(STORAGE_KEY, true);
+        if (stopped || pendingSaveRef.current || !meta || !meta.updatedAt || meta.updatedAt === lastSyncedAtRef.current) return;
         const raw = await window.storage.get(STORAGE_KEY, true);
         if (stopped || !raw || !raw.value) return;
         const remote = JSON.parse(raw.value);
-        const rOrders = Array.isArray(remote.orders) ? remote.orders : [];
-        if (!rOrders.length) return;
-        setOrders((cur) => {
-          const have = new Set(cur.map((o) => o.id));
-          const fresh = rOrders.filter((o) => o && o.id && !have.has(o.id)).map(normalizeOrder);
-          if (!fresh.length) return cur;
-          return [...fresh, ...cur];
-        });
+        await applyRemoteData(remote);
+        lastSyncedAtRef.current = raw.updatedAt || meta.updatedAt;
       } catch { /* mạng chập chờn — thử lại lần sau */ }
     };
-    const iv = setInterval(pull, 30000);
+    const iv = setInterval(pull, 20000);
     pull();
     return () => { stopped = true; clearInterval(iv); };
-  }, [loaded, currentUserId]);
+  }, [loaded, currentUserId, syncConflict]);
 
   // Đồng bộ danh sách thông báo cho Admin từ dữ liệu thật: sản phẩm dưới định mức/âm tồn, công nợ NCC,
   // công nợ khách B2B quá hạn, đơn hàng cần duyệt (kể cả yêu cầu huỷ/đổi trả). Thông báo đã đọc tự xoá sau 3 ngày.
