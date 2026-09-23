@@ -4996,7 +4996,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
 
 /* ---------------- Sản phẩm & Tồn kho — bao gồm 2 menu con ---------------- */
 
-function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, navTarget, onFocusHandled }) {
+function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, navTarget, onFocusHandled, currentUser }) {
   const [view, setView] = useState("list"); // list | debt
   const [query, setQuery] = useState("");
   const [debtSort, setDebtSort] = useState("amount"); // amount | due
@@ -5030,7 +5030,17 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
     }
     setEditing(null);
   };
-  const remove = (id) => setSuppliers((prev) => prev.filter((s) => s.id !== id));
+  const remove = (id) => {
+    const s = suppliers.find((x) => x.id === id);
+    if (!s) return;
+    const poCount = purchaseOrders.filter((po) => poMatchesSupplier(po, s)).length;
+    const warn = poCount > 0
+      ? `Nhà cung cấp "${s.name}" đã có ${poCount} đơn nhập hàng. Xoá NCC KHÔNG xoá các đơn nhập đó, nhưng sẽ mất thông tin liên kết NCC trên các đơn cũ. Không thể hoàn tác.\n\nTiếp tục xoá?`
+      : `Xoá nhà cung cấp "${s.name}"? Không thể hoàn tác.`;
+    if (!window.confirm(warn)) return;
+    setSuppliers((prev) => prev.filter((x) => x.id !== id));
+    addLog("Xoá nhà cung cấp", s.name);
+  };
 
   // Công nợ phải trả từng NCC: cộng dồn các đơn nhập chưa thanh toán khớp với NCC đó.
   const debtList = suppliers.map((s) => {
@@ -5194,7 +5204,9 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
                 <td className="px-3 py-3">
                   <div className="flex gap-1.5 justify-end whitespace-nowrap">
                     <button onClick={() => openEdit(s)} title="Sửa" className="p-1.5 rounded-sm hover:bg-black/5 opacity-60"><Pencil size={14} /></button>
-                    <button onClick={() => remove(s.id)} title="Xoá" className="p-1.5 rounded-sm hover:bg-black/5 opacity-60" style={{ color: RUST }}><Trash2 size={14} /></button>
+                    {currentUser.isOwner && (
+                      <button onClick={() => remove(s.id)} title="Xoá" className="p-1.5 rounded-sm hover:bg-black/5 opacity-60" style={{ color: RUST }}><Trash2 size={14} /></button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -7597,7 +7609,9 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
                     {isAdmin && (
                       <div className="flex gap-1.5 justify-end whitespace-nowrap">
                         <button onClick={() => openEdit(c)} className="p-1.5 rounded-sm hover:bg-black/5 opacity-60"><Pencil size={14} /></button>
-                        <button onClick={() => remove(c.id)} className="p-1.5 rounded-sm hover:bg-black/5 opacity-60" style={{ color: RUST }}><Trash2 size={14} /></button>
+                        {currentUser.isOwner && (
+                          <button onClick={() => remove(c.id)} className="p-1.5 rounded-sm hover:bg-black/5 opacity-60" style={{ color: RUST }}><Trash2 size={14} /></button>
+                        )}
                       </div>
                     )}
                   </td>
@@ -15675,7 +15689,7 @@ export default function SalesManager() {
             {tab === "orders" && <Orders orders={orders} setOrders={setOrders} products={products} setProducts={setProducts} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} focusOrderId={tab === "orders" ? navTarget?.type === "order" ? navTarget.id : null : null} initialFilterStatus={tab === "orders" && navTarget?.type === "orders-filter" ? navTarget.status : null} initialDeliveredFrom={tab === "orders" && navTarget?.type === "orders-daterange" ? navTarget.from : null} initialDeliveredTo={tab === "orders" && navTarget?.type === "orders-daterange" ? navTarget.to : null} onFocusHandled={() => setNavTarget(null)} printSettings={printSettings} setPrintSettings={setPrintSettings} />}
             {tab === "shipping" && roleTabIds.includes("shipping") && <Shipping shippingTickets={shippingTickets} setShippingTickets={setShippingTickets} parcelLabels={parcelLabels} setParcelLabels={setParcelLabels} orders={orders} customers={customers} currentUser={currentUser} addLog={addLog} />}
             {tab === "customers" && <Customers customers={customers} setCustomers={setCustomers} orders={orders} products={products} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} employeeNames={employeeNames} webConfig={webConfig} pointAdjustments={pointAdjustments} setPointAdjustments={setPointAdjustments} />}
-            {tab === "suppliers" && <Suppliers suppliers={suppliers} setSuppliers={setSuppliers} purchaseOrders={purchaseOrders} addLog={addLog} goToDoc={goToDoc} navTarget={tab === "suppliers" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} />}
+            {tab === "suppliers" && <Suppliers suppliers={suppliers} setSuppliers={setSuppliers} purchaseOrders={purchaseOrders} addLog={addLog} goToDoc={goToDoc} navTarget={tab === "suppliers" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} currentUser={currentUser} />}
             {tab === "plans" && roleTabIds.includes("plans") && <Plans plans={plans} setPlans={setPlans} orders={orders} purchaseOrders={purchaseOrders} products={products} employeeNames={employeeNames} />}
             {tab === "reports" && roleTabIds.includes("reports") && <Reports orders={orders} products={products} customers={customers} accounts={accounts} purchaseOrders={purchaseOrders} warrantyTickets={warrantyTickets} employeeNames={employeeNames} goToOrdersDateRange={goToOrdersDateRange} goToProductsDateRange={goToProductsDateRange} />}
             {tab === "website" && currentUser.role === "admin" && <WebsiteSection products={products} setProducts={setProducts} orders={orders} webConfig={webConfig} setWebConfig={setWebConfig} categories={categories} brands={brands} currentUser={currentUser} addLog={addLog} onOpenOrder={(id) => { setTab("orders"); setNavTarget({ type: "order", id }); }} navTarget={tab === "website" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} goToInventoryProductEdit={goToInventoryProductEdit} />}
