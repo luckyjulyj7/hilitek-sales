@@ -13,7 +13,7 @@ export default function Footer({ navigate }) {
   };
 
   return (
-    <footer className="mt-16 bg-ink text-white/70 font-sans">
+    <footer className="mt-16 bg-ink text-white/70 font-sans pb-[calc(env(safe-area-inset-bottom)+56px)] lg:pb-0">
       <NewsletterSignup />
       <div className="mx-auto max-w-[1500px] px-4 py-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.3fr_0.9fr_0.9fr_1.2fr_1.1fr_1.3fr]">
         <div>

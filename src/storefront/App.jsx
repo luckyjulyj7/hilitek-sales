@@ -114,7 +114,7 @@ export default function App() {
     <CatalogCtx.Provider value={catalog}>
     <div className="min-h-full flex flex-col bg-paper text-ink" data-cfg={cfgTick}>
       <Header route={route} navigate={route.navigate} drawer={drawer} setDrawer={setDrawer} />
-      <main className="flex-1 pb-[calc(env(safe-area-inset-bottom)+56px)] lg:pb-0">
+      <main className="flex-1">
         {error ? (
           <div className="mx-auto max-w-3xl px-4 py-20 text-center text-navy font-sans">
             Không tải được dữ liệu: {error}
