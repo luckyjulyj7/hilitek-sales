@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { SlidersHorizontal, X, ChevronRight } from "lucide-react";
 import ProductCard from "../components/ProductCard.jsx";
 import { discountPercent, formatVND } from "../lib/format.js";
@@ -79,6 +79,27 @@ export default function Catalog({ catalog, route, navigate }) {
 
   const title = q ? `Kết quả: “${route.query.q}”` : cat || group || (onSale ? "Đang khuyến mãi" : "Tất cả sản phẩm");
   const hasFilter = group || cat || brand || hasPrice || q || inStock || onSale || sort !== "popular";
+
+  // SEO: mỗi trang danh mục (VD "Bàn phím", "Bàn phím cơ") cần tiêu đề + mô tả RIÊNG để Google biết
+  // trang này nói về đúng danh mục gì — trước đây mọi trang danh mục dùng chung tiêu đề mặc định của
+  // trang chủ nên Google không có cơ sở xếp hạng cho các từ khoá danh mục (VD "bàn phím cơ").
+  // Bỏ qua trang tìm kiếm (q) và "Tất cả sản phẩm" (không phải 1 danh mục cụ thể, không cần chỉnh).
+  useEffect(() => {
+    const catName = cat || group;
+    if (!catName) return;
+    const seoTitle = `${catName} chính hãng, giá tốt | HiliPC`;
+    const seoDesc = `Mua ${catName} chính hãng tại Hilitek — đa dạng mẫu mã, giá tốt, giao nhanh toàn quốc, bảo hành uy tín.`;
+    const prevTitle = document.title;
+    document.title = seoTitle;
+    let tag = document.querySelector('meta[name="description"]');
+    if (!tag) { tag = document.createElement("meta"); tag.setAttribute("name", "description"); document.head.appendChild(tag); }
+    const prevDesc = tag.getAttribute("content");
+    tag.setAttribute("content", seoDesc);
+    return () => {
+      document.title = prevTitle;
+      if (prevDesc != null) tag.setAttribute("content", prevDesc);
+    };
+  }, [cat, group]);
 
   const filterChips = [];
   if (brand) filterChips.push({ k: "Nhãn hiệu", v: brand, clear: { brand: "" } });
