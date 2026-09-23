@@ -15668,7 +15668,10 @@ export default function SalesManager() {
   }
 
   const addLog = (action, detail) => {
-    setActivityLog((prev) => [{ id: uid(), at: new Date().toISOString(), userId: currentUser.id, userName: currentUser.fullName, role: currentUser.role, action, detail }, ...prev].slice(0, 500));
+    const cutoff = Date.now() - 60 * 24 * 60 * 60 * 1000; // giữ nhật ký trong vòng 2 tháng
+    setActivityLog((prev) => [{ id: uid(), at: new Date().toISOString(), userId: currentUser.id, userName: currentUser.fullName, role: currentUser.role, action, detail }, ...prev]
+      .filter((l) => new Date(l.at).getTime() >= cutoff)
+      .slice(0, 5000)); // chặn an toàn nếu thao tác quá dày đặc
   };
 
   // Đặt lại dữ liệu giao dịch test (đơn bán, đơn nhập hàng, báo giá) — dùng khi cần dọn sạch dữ liệu thử nghiệm trước khi đưa vào dùng thật.
