@@ -11181,16 +11181,52 @@ function FilterSearchSelect({ options, value, onChange, placeholder, onFreeText,
 
 function ActivityLog({ log, accounts }) {
   const [filterUser, setFilterUser] = useState("");
-  const filtered = filterUser ? log.filter((l) => l.userId === filterUser) : log;
+  const [filterFrom, setFilterFrom] = useState("");
+  const [filterTo, setFilterTo] = useState("");
+  const [filterText, setFilterText] = useState("");
+  const filtered = log.filter((l) => {
+    if (filterUser && l.userId !== filterUser) return false;
+    if (filterFrom || filterTo) {
+      const t = new Date(l.at).getTime();
+      const [from, to] = localDayBounds(filterFrom, filterTo);
+      if (from != null && t < from) return false;
+      if (to != null && t > to) return false;
+    }
+    if (filterText.trim()) {
+      const q = filterText.trim().toLowerCase();
+      if (!`${l.action} ${l.detail}`.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+  const hasFilter = filterUser || filterFrom || filterTo || filterText.trim();
+  const clearFilters = () => { setFilterUser(""); setFilterFrom(""); setFilterTo(""); setFilterText(""); };
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
-        <p className="text-sm opacity-60">{filtered.length} hoạt động — ghi lại mọi thao tác quan trọng để admin theo dõi (đóng vai trò như thông báo).</p>
-        <select value={filterUser} onChange={(e) => setFilterUser(e.target.value)} className="text-sm border rounded-sm py-1.5 px-2" style={{ borderColor: LINE }}>
-          <option value="">Tất cả nhân sự</option>
-          {accounts.map((a) => <option key={a.id} value={a.id}>{a.fullName}</option>)}
-        </select>
+      <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+        <p className="text-sm opacity-60">{filtered.length}/{log.length} hoạt động — ghi lại mọi thao tác quan trọng để admin theo dõi (đóng vai trò như thông báo).</p>
+        {hasFilter && <button onClick={clearFilters} className="text-xs opacity-50 hover:opacity-100 underline">Xoá lọc</button>}
+      </div>
+      <div className="flex items-end gap-2 mb-5 flex-wrap">
+        <label className="text-xs">
+          <span className="block opacity-60 mb-1">Nhân sự</span>
+          <select value={filterUser} onChange={(e) => setFilterUser(e.target.value)} className="text-sm border rounded-sm py-1.5 px-2" style={{ borderColor: LINE }}>
+            <option value="">Tất cả nhân sự</option>
+            {accounts.map((a) => <option key={a.id} value={a.id}>{a.fullName}</option>)}
+          </select>
+        </label>
+        <label className="text-xs">
+          <span className="block opacity-60 mb-1">Từ ngày</span>
+          <input type="date" value={filterFrom} onChange={(e) => setFilterFrom(e.target.value)} className="text-sm border rounded-sm py-1.5 px-2" style={{ borderColor: LINE }} />
+        </label>
+        <label className="text-xs">
+          <span className="block opacity-60 mb-1">Đến ngày</span>
+          <input type="date" value={filterTo} onChange={(e) => setFilterTo(e.target.value)} className="text-sm border rounded-sm py-1.5 px-2" style={{ borderColor: LINE }} />
+        </label>
+        <label className="text-xs flex-1" style={{ minWidth: 200 }}>
+          <span className="block opacity-60 mb-1">Tìm trong hoạt động/chi tiết</span>
+          <input value={filterText} onChange={(e) => setFilterText(e.target.value)} placeholder="VD: xoá, đăng web, HI034…" className="w-full text-sm border rounded-sm py-1.5 px-2" style={{ borderColor: LINE }} />
+        </label>
       </div>
       <div className="rounded-sm overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "70vh" }}>
         <table className="w-full text-sm" style={{ minWidth: 640 }}>
