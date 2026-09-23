@@ -191,12 +191,23 @@ export function publicProduct(p, { detail = false } = {}) {
     hasSerial: !!p.hasSeries,
     shortDesc,
     promo: typeof web.promo === "string" ? web.promo.trim().slice(0, 600) : "", // khuyến mãi / quà tặng ngắn (mỗi dòng 1 ý)
-    // Giới hạn độ dài mỗi "chip" — dòng thông số đầu tiên đôi khi bị dán nguyên khối dài (VD liệt kê
-    // hết các mã phiên bản trên 1 dòng, không xuống dòng) khiến khối chip vỡ bố cục trên web khách.
-    specChips: specs.slice(0, 4).map(([k, v]) => {
-      const val = String(v || k).split("\n")[0].trim();
-      return val.length > 60 ? val.slice(0, 60).trim() + "…" : val;
-    }).filter(Boolean),
+    // Chip thông số nổi bật — ưu tiên thông số DỄ HIỂU với khách (VD "Compact 65%", "Màn hình 2.3
+    // inch"), bỏ qua dòng kiểu "SKU/Mã sản phẩm/Model" hay giá trị trông như mã nội bộ (VD
+    // "VSKY-NIMBUS-65-A-DK-TE") — khách không cần thấy mã kỹ thuật ở ngay dưới tên sản phẩm. Nếu
+    // sau khi lọc không còn đủ 4 dòng thì mới lấy tạm cả các dòng bị lọc, cho có nội dung hiển thị.
+    specChips: (() => {
+      const looksLikeCode = ([k, v]) =>
+        /sku|mã sản phẩm|mã hàng|mã vt|model|part\s*number/i.test(k) ||
+        /^[A-Z0-9]+(-[A-Z0-9]+){2,}$/.test(v);
+      const good = specs.filter((r) => !looksLikeCode(r));
+      const source = (good.length ? good : specs).slice(0, 4);
+      // Giới hạn độ dài mỗi "chip" — dòng thông số đầu tiên đôi khi bị dán nguyên khối dài (VD liệt kê
+      // hết các mã phiên bản trên 1 dòng, không xuống dòng) khiến khối chip vỡ bố cục trên web khách.
+      return source.map(([k, v]) => {
+        const val = String(v || k).split("\n")[0].trim();
+        return val.length > 60 ? val.slice(0, 60).trim() + "…" : val;
+      }).filter(Boolean);
+    })(),
     specs, // cần cho bộ lọc "thông số" ở trang danh mục (nhẹ — vài cặp nhãn|giá trị)
     images,
   };
