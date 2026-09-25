@@ -12067,10 +12067,11 @@ function DebtOverviewReport({ orders, customers }) {
 }
 
 // Dòng tiền thu/chi theo ngày — Thu = các lần ghi nhận thanh toán từ khách (trừ hoàn tiền), Chi = các đơn nhập hàng đã đánh dấu thanh toán cho NCC.
-function CashFlowReport({ orders, purchaseOrders }) {
+function CashFlowReport({ orders, purchaseOrders, customers }) {
   const [preset, setPreset] = useState("30d");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
+  const [detailBucket, setDetailBucket] = useState(null); // { key, label } của cột vừa bấm
 
   const { from, to } = useMemo(() => {
     const now = new Date(); now.setHours(23, 59, 59, 999);
@@ -12128,6 +12129,29 @@ function CashFlowReport({ orders, purchaseOrders }) {
     return { buckets: list, totalIn: list.reduce((s, b) => s + b["Thu"], 0), totalOut: list.reduce((s, b) => s + b["Chi"], 0) };
   }, [orders, purchaseOrders, from, to]);
 
+  // Khớp 1 ngày (ISO) với key của cột đã bấm — key dạng "YYYY-MM-DD" (theo ngày) hoặc "YYYY-MM" (theo tháng, khi khoảng thời gian dài hơn 31 ngày).
+  const matchesBucketKey = (dateStr, key) => {
+    const d = new Date(dateStr);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(key)) {
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}` === key;
+    }
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}` === key;
+  };
+  const detail = useMemo(() => {
+    if (!detailBucket) return null;
+    const thu = [];
+    orders.forEach((o) => {
+      (o.payments || []).forEach((p) => {
+        if (!matchesBucketKey(p.date, detailBucket.key)) return;
+        thu.push({ code: o.code, name: customers?.find((c) => c.id === o.customerId)?.name || "Khách lẻ", amount: p.type === "hoan" ? -p.amount : p.amount, isReturn: p.type === "hoan", date: p.date });
+      });
+    });
+    const chi = purchaseOrders
+      .filter((po) => po.paid && po.paidAt && matchesBucketKey(po.paidAt, detailBucket.key))
+      .map((po) => ({ code: po.code, name: po.supplier || "NCC", amount: poNetTotal(po), date: po.paidAt }));
+    return { thu, chi };
+  }, [detailBucket, orders, purchaseOrders, customers]);
+
   const tooltipStyle = { fontFamily: "'Inter', sans-serif", fontSize: 13, border: `1px solid ${LINE}`, borderRadius: 8, boxShadow: "0 8px 24px rgba(31,42,68,0.12)", padding: "8px 12px" };
   const axisTick = { fontSize: 12, fill: INK, fontFamily: "'Inter', sans-serif" };
   const PRESETS = [
@@ -12138,7 +12162,7 @@ function CashFlowReport({ orders, purchaseOrders }) {
   return (
     <div className="p-5 sm:p-6 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
       <h4 className="text-sm uppercase tracking-wider mb-1" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Dòng tiền thu / chi</h4>
-      <p className="text-xs opacity-50 mb-4">Thu = tiền khách thanh toán (trừ hoàn tiền) · Chi = đơn nhập hàng đã thanh toán cho NCC</p>
+      <p className="text-xs opacity-50 mb-4">Thu = tiền khách thanh toán (trừ hoàn tiền) · Chi = đơn nhập hàng đã thanh toán cho NCC · Bấm vào 1 cột để xem từng khoản</p>
 
       <div className="flex flex-wrap gap-1.5 mb-4">
         {PRESETS.map((p) => (
@@ -12184,10 +12208,41 @@ function CashFlowReport({ orders, purchaseOrders }) {
           <YAxis tick={axisTick} axisLine={false} tickLine={false} width={56} tickFormatter={(v) => (Math.abs(v) >= 1000000 ? `${(v / 1000000).toFixed(0)}tr` : `${v / 1000}k`)} />
           <Tooltip formatter={(v) => vnd(v)} contentStyle={tooltipStyle} cursor={{ fill: PAPER }} />
           <Legend wrapperStyle={{ fontSize: 13, fontFamily: "'Inter', sans-serif" }} />
-          <Bar dataKey="Thu" fill={FOREST} radius={[6, 6, 0, 0]} maxBarSize={22} />
-          <Bar dataKey="Chi" fill={RUST} radius={[6, 6, 0, 0]} maxBarSize={22} />
+          <Bar dataKey="Thu" fill={FOREST} radius={[6, 6, 0, 0]} maxBarSize={22} cursor="pointer" onClick={(data) => setDetailBucket({ key: data.key, label: data.label })} />
+          <Bar dataKey="Chi" fill={RUST} radius={[6, 6, 0, 0]} maxBarSize={22} cursor="pointer" onClick={(data) => setDetailBucket({ key: data.key, label: data.label })} />
         </BarChart>
       </ResponsiveContainer>
+
+      {detailBucket && (
+        <Modal title={`Chi tiết ${detailBucket.label}`} onClose={() => setDetailBucket(null)}>
+          <div className="mb-4">
+            <p className="text-xs uppercase tracking-wider mb-2" style={{ color: FOREST, opacity: 0.8 }}>Thu ({detail.thu.length})</p>
+            {detail.thu.length === 0 ? <p className="text-sm opacity-50">Không có khoản thu nào.</p> : (
+              <div className="space-y-1.5">
+                {detail.thu.map((r, i) => (
+                  <div key={i} className="flex items-center justify-between text-sm py-1.5" style={{ borderBottom: `1px dashed ${LINE}` }}>
+                    <span style={{ color: INK }}>{r.code} · {r.name}{r.isReturn ? " (hoàn tiền)" : ""}</span>
+                    <span className="font-medium whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: r.amount < 0 ? RUST : FOREST }}>{vnd(r.amount)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wider mb-2" style={{ color: RUST, opacity: 0.8 }}>Chi ({detail.chi.length})</p>
+            {detail.chi.length === 0 ? <p className="text-sm opacity-50">Không có khoản chi nào.</p> : (
+              <div className="space-y-1.5">
+                {detail.chi.map((r, i) => (
+                  <div key={i} className="flex items-center justify-between text-sm py-1.5" style={{ borderBottom: `1px dashed ${LINE}` }}>
+                    <span style={{ color: INK }}>{r.code} · {r.name}</span>
+                    <span className="font-medium whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: RUST }}>{vnd(r.amount)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
@@ -13083,7 +13138,7 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
 
       <div className="grid lg:grid-cols-2 gap-6">
         <DebtOverviewReport orders={orders} customers={customers} />
-        <CashFlowReport orders={orders} purchaseOrders={purchaseOrders} />
+        <CashFlowReport orders={orders} purchaseOrders={purchaseOrders} customers={customers} />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
