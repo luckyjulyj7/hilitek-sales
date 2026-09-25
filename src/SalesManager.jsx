@@ -604,6 +604,8 @@ function normalizeHelpdeskTicket(t) {
     receivedDate: t.receivedDate || todayISO(), completedDate: t.completedDate || "",
     status: HELPDESK_STATUSES.some((s) => s.id === t.status) ? t.status : "new",
     solution: t.solution || "", note: t.note || "",
+    price: Number(t.price) || 0, vat: VAT_OPTIONS.some((v) => v.id === t.vat) ? t.vat : "VAT8",
+    convertedOrderId: t.convertedOrderId || null,
   };
 }
 
@@ -7058,7 +7060,7 @@ function RepairTickets({ repairTickets, setRepairTickets, currentUser, addLog })
 }
 
 // Phiếu dịch vụ IT Helpdesk — tiếp nhận/xử lý các yêu cầu hỗ trợ kỹ thuật (cài đặt phần mềm, sự cố phần cứng, mạng...).
-function HelpdeskTickets({ helpdeskTickets, setHelpdeskTickets, employeeNames, currentUser, addLog }) {
+function HelpdeskTickets({ helpdeskTickets, setHelpdeskTickets, products, setProducts, orders, setOrders, customers, setCustomers, employeeNames, currentUser, addLog }) {
   const [view, setView] = useState("history");
   const [statusFilter, setStatusFilter] = useState("all");
   const [viewingTicket, setViewingTicket] = useState(null);
@@ -7067,7 +7069,7 @@ function HelpdeskTickets({ helpdeskTickets, setHelpdeskTickets, employeeNames, c
   const [editingId, setEditingId] = useState(null); // id phiếu đang sửa thông tin, null = đang tạo mới
   const emptyForm = () => ({
     customerName: "", customerPhone: "", customerAddress: "", requestType: HELPDESK_TYPES[0], description: "",
-    assignee: currentUser.fullName || "", receivedDate: todayISO(), completedDate: "", solution: "", note: "",
+    assignee: currentUser.fullName || "", receivedDate: todayISO(), completedDate: "", solution: "", note: "", price: 0, vat: "VAT8",
   });
   const [form, setForm] = useState(emptyForm());
 
@@ -7103,6 +7105,44 @@ function HelpdeskTickets({ helpdeskTickets, setHelpdeskTickets, employeeNames, c
     const result = printHTML(html);
     setPrintBlockedUrl(result.ok ? null : result.url);
   };
+  const updateTicketField = (ticket, field, value) => {
+    setHelpdeskTickets((prev) => prev.map((t) => (t.id === ticket.id ? { ...t, [field]: value } : t)));
+    setViewingTicket((v) => (v && v.id === ticket.id ? { ...v, [field]: value } : v));
+  };
+  // Chuyển phiếu thành 1 đơn bán thật (dạng dịch vụ, không quản lý tồn kho) để tính vào doanh thu —
+  // dùng chung 1 sản phẩm dịch vụ "Phí dịch vụ IT Helpdesk" cho mọi lần chuyển, giống cách Quotations
+  // chuyển báo giá thành đơn hàng. Mỗi phiếu chỉ chuyển được 1 lần (convertedOrderId).
+  const convertToOrder = (ticket) => {
+    if (ticket.convertedOrderId) return;
+    if (!ticket.price || ticket.price <= 0) { alert("Vui lòng nhập giá dịch vụ trước khi chuyển thành đơn bán."); return; }
+    let customerId = "";
+    const existingCust = customers.find((c) => c.name === ticket.customerName && (!ticket.customerPhone || c.phone === ticket.customerPhone));
+    if (existingCust) {
+      customerId = existingCust.id;
+    } else {
+      const newCust = { id: uid(), code: nextCustomerCode(customers), name: ticket.customerName, phone: ticket.customerPhone || "", email: "", taxCode: "", province: "", ward: "", addressDetail: ticket.customerAddress || "", note: `Tạo tự động khi chuyển phiếu IT Helpdesk ${ticket.code}`, group: "retail" };
+      setCustomers((prev) => [...prev, newCust]);
+      customerId = newCust.id;
+    }
+    let serviceProduct = products.find((p) => p.isService && p.name === "Phí dịch vụ IT Helpdesk");
+    if (!serviceProduct) {
+      serviceProduct = normalizeProduct({ id: uid(), name: "Phí dịch vụ IT Helpdesk", unit: "Lượt", category: "Dịch vụ", isService: true, vat: ticket.vat, createdBy: currentUser.fullName });
+      setProducts((prev) => [...prev, serviceProduct]);
+    }
+    const code = nextOrderCode(orders);
+    const now = new Date().toISOString();
+    const newOrder = {
+      id: uid(), code, createdAt: now, date: todayISO(), customerId, channel: "store", branch: BRANCHES[0], seller: currentUser.fullName, deliveryDate: "",
+      tags: [], notes: `Doanh thu dịch vụ IT Helpdesk ${ticket.code} · ${ticket.requestType}${ticket.description ? " · " + ticket.description : ""}`,
+      status: "delivered", items: [{ productId: serviceProduct.id, qty: 1, price: ticket.price, series: [], fulfilled: true }], vat: ticket.vat,
+      shippingAt: now, deliveredAt: now, paidCompleteAt: null, cancelledAt: null,
+      orderDiscount: 0, discountType: "amount", creditDays: 0, shippingFee: 0, paidAmount: 0,
+      approvalStatus: "approved", approvalReason: "", createdByRole: currentUser.role,
+    };
+    setOrders((prev) => [newOrder, ...prev]);
+    updateTicketField(ticket, "convertedOrderId", newOrder.id);
+    addLog("Chuyển phiếu IT Helpdesk thành đơn bán", `${ticket.code} → ${code} · ${vnd(ticket.price)}`);
+  };
 
   const filtered = helpdeskTickets.filter((t) => statusFilter === "all" || t.status === statusFilter);
 
@@ -7137,6 +7177,21 @@ function HelpdeskTickets({ helpdeskTickets, setHelpdeskTickets, employeeNames, c
             </select>
           </Field>
           <Field label="Ngày tiếp nhận"><input type="date" className={inputCls} style={{ borderColor: LINE }} value={form.receivedDate} onChange={(e) => setForm({ ...form, receivedDate: e.target.value })} /></Field>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <Field label="Giá dịch vụ" hint="Điền khi hoàn thành, dùng để chuyển thành đơn bán tính doanh thu">
+            <MoneyInput className={inputCls} style={{ borderColor: LINE }} value={form.price} onChange={(v) => setForm({ ...form, price: v })} />
+          </Field>
+          <Field label="VAT">
+            <div className="flex gap-2">
+              {VAT_OPTIONS.map((v) => (
+                <button key={v.id} type="button" onClick={() => setForm({ ...form, vat: v.id })} className="px-3.5 py-1.5 rounded-sm text-sm border"
+                  style={{ borderColor: form.vat === v.id ? INK : LINE, background: form.vat === v.id ? INK : "transparent", color: form.vat === v.id ? "#fff" : INK }}>
+                  {v.label}
+                </button>
+              ))}
+            </div>
+          </Field>
         </div>
         <Field label="Ghi chú">
           <textarea rows={2} className="w-full border rounded-sm p-2 text-sm" style={{ borderColor: LINE }} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
@@ -7222,6 +7277,23 @@ function HelpdeskTickets({ helpdeskTickets, setHelpdeskTickets, employeeNames, c
             <p><span className="opacity-50">Loại yêu cầu: </span><b>{viewingTicket.requestType}</b></p>
             <p className="mt-1"><span className="opacity-50">Mô tả: </span>{viewingTicket.description || "—"}</p>
           </div>
+          <div className="flex items-end gap-3 mb-4 flex-wrap">
+            <div className="flex-1 min-w-[160px]">
+              <p className="text-xs opacity-50 mb-1">Giá dịch vụ</p>
+              {viewingTicket.convertedOrderId ? (
+                <p className="font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: FOREST }}>{vnd(viewingTicket.price)}</p>
+              ) : (
+                <MoneyInput className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} value={viewingTicket.price} onChange={(v) => updateTicketField(viewingTicket, "price", v)} />
+              )}
+            </div>
+            {viewingTicket.convertedOrderId ? (
+              <span className="text-xs px-3 py-2 rounded-sm" style={{ background: `${FOREST}1A`, color: FOREST }}>Đã chuyển thành đơn bán</span>
+            ) : (
+              <button onClick={() => convertToOrder(viewingTicket)} disabled={!viewingTicket.price || viewingTicket.price <= 0} className="flex items-center gap-1.5 text-sm px-3.5 py-2 rounded-sm text-white disabled:opacity-40" style={{ background: FOREST }}>
+                <ArrowUpFromLine size={14} /> Chuyển thành đơn bán
+              </button>
+            )}
+          </div>
           {viewingTicket.status === "done" && (
             <Field label="Giải pháp / kết quả xử lý">
               <textarea rows={2} className="w-full border rounded-sm p-2 text-sm" style={{ borderColor: LINE }} value={viewingTicket.solution}
@@ -7236,7 +7308,7 @@ function HelpdeskTickets({ helpdeskTickets, setHelpdeskTickets, employeeNames, c
 }
 
 // Phiếu dịch vụ — bao gồm 2 mảng tách riêng hoàn toàn: Sửa chữa và IT Helpdesk, chọn mục nào làm việc trên mục đó.
-function ServiceTickets({ repairTickets, setRepairTickets, helpdeskTickets, setHelpdeskTickets, employeeNames, currentUser, addLog }) {
+function ServiceTickets({ repairTickets, setRepairTickets, helpdeskTickets, setHelpdeskTickets, products, setProducts, orders, setOrders, customers, setCustomers, employeeNames, currentUser, addLog }) {
   const [serviceSub, setServiceSub] = useState("repair"); // repair | helpdesk
   return (
     <div>
@@ -7251,12 +7323,12 @@ function ServiceTickets({ repairTickets, setRepairTickets, helpdeskTickets, setH
         </button>
       </div>
       {serviceSub === "repair" && <RepairTickets repairTickets={repairTickets} setRepairTickets={setRepairTickets} currentUser={currentUser} addLog={addLog} />}
-      {serviceSub === "helpdesk" && <HelpdeskTickets helpdeskTickets={helpdeskTickets} setHelpdeskTickets={setHelpdeskTickets} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} />}
+      {serviceSub === "helpdesk" && <HelpdeskTickets helpdeskTickets={helpdeskTickets} setHelpdeskTickets={setHelpdeskTickets} products={products} setProducts={setProducts} orders={orders} setOrders={setOrders} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} />}
     </div>
   );
 }
 
-function ProductsSection({ products, setProducts, purchaseOrders, setPurchaseOrders, suppliers, setSuppliers, categories, setCategories, brands, setBrands, stocktakes, setStocktakes, warrantyTickets, setWarrantyTickets, repairTickets, setRepairTickets, helpdeskTickets, setHelpdeskTickets, orders, customers, employeeNames, currentUser, addLog, navTarget, onFocusHandled, goToDoc, goToSupplier, goToWebProduct, webConfig }) {
+function ProductsSection({ products, setProducts, purchaseOrders, setPurchaseOrders, suppliers, setSuppliers, categories, setCategories, brands, setBrands, stocktakes, setStocktakes, warrantyTickets, setWarrantyTickets, repairTickets, setRepairTickets, helpdeskTickets, setHelpdeskTickets, orders, setOrders, customers, setCustomers, employeeNames, currentUser, addLog, navTarget, onFocusHandled, goToDoc, goToSupplier, goToWebProduct, webConfig }) {
   const [sub, setSub] = useState("list");
   const isAdmin = currentUser.role === "admin";
   const isCtv = currentUser.role === "ctv";
@@ -7303,7 +7375,7 @@ function ProductsSection({ products, setProducts, purchaseOrders, setPurchaseOrd
       {isAdmin && sub === "purchase" && <PurchaseOrders purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} products={products} setProducts={setProducts} suppliers={suppliers} setSuppliers={setSuppliers} employeeNames={employeeNames} addLog={addLog} focusPOId={navTarget?.type === "po" ? navTarget.id : null} onFocusHandled={onFocusHandled} currentUser={currentUser} />}
       {isAdmin && sub === "stocktake" && <Stocktake products={products} setProducts={setProducts} stocktakes={stocktakes} setStocktakes={setStocktakes} currentUser={currentUser} addLog={addLog} />}
       {!isCtv && sub === "warranty" && <WarrantyTickets products={products} setProducts={setProducts} orders={orders} customers={customers} warrantyTickets={warrantyTickets} setWarrantyTickets={setWarrantyTickets} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} />}
-      {!isCtv && sub === "service" && <ServiceTickets repairTickets={repairTickets} setRepairTickets={setRepairTickets} helpdeskTickets={helpdeskTickets} setHelpdeskTickets={setHelpdeskTickets} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} />}
+      {!isCtv && sub === "service" && <ServiceTickets repairTickets={repairTickets} setRepairTickets={setRepairTickets} helpdeskTickets={helpdeskTickets} setHelpdeskTickets={setHelpdeskTickets} products={products} setProducts={setProducts} orders={orders} setOrders={setOrders} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} />}
     </div>
   );
 }
@@ -16046,7 +16118,7 @@ export default function SalesManager() {
           </div>
           <AppErrorBoundary key={tab}>
             {tab === "dashboard" && <Dashboard products={products} orders={orders} goToOrdersFilter={goToOrdersFilter} />}
-            {tab === "products" && roleTabIds.includes("products") && <ProductsSection products={products} setProducts={setProducts} purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} suppliers={suppliers} setSuppliers={setSuppliers} categories={categories} setCategories={setCategories} brands={brands} setBrands={setBrands} stocktakes={stocktakes} setStocktakes={setStocktakes} warrantyTickets={warrantyTickets} setWarrantyTickets={setWarrantyTickets} repairTickets={repairTickets} setRepairTickets={setRepairTickets} helpdeskTickets={helpdeskTickets} setHelpdeskTickets={setHelpdeskTickets} orders={orders} customers={customers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} navTarget={tab === "products" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} goToDoc={goToDoc} goToSupplier={goToSupplier} goToWebProduct={goToWebProduct} webConfig={webConfig} />}
+            {tab === "products" && roleTabIds.includes("products") && <ProductsSection products={products} setProducts={setProducts} purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} suppliers={suppliers} setSuppliers={setSuppliers} categories={categories} setCategories={setCategories} brands={brands} setBrands={setBrands} stocktakes={stocktakes} setStocktakes={setStocktakes} warrantyTickets={warrantyTickets} setWarrantyTickets={setWarrantyTickets} repairTickets={repairTickets} setRepairTickets={setRepairTickets} helpdeskTickets={helpdeskTickets} setHelpdeskTickets={setHelpdeskTickets} orders={orders} setOrders={setOrders} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} navTarget={tab === "products" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} goToDoc={goToDoc} goToSupplier={goToSupplier} goToWebProduct={goToWebProduct} webConfig={webConfig} />}
             {tab === "quotes" && <Quotations quotations={quotations} setQuotations={setQuotations} orders={orders} setOrders={setOrders} products={products} setProducts={setProducts} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} brands={brands} />}
             {tab === "orders" && <Orders orders={orders} setOrders={setOrders} products={products} setProducts={setProducts} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} focusOrderId={tab === "orders" ? navTarget?.type === "order" ? navTarget.id : null : null} initialFilterStatus={tab === "orders" && navTarget?.type === "orders-filter" ? navTarget.status : null} initialDeliveredFrom={tab === "orders" && navTarget?.type === "orders-daterange" ? navTarget.from : null} initialDeliveredTo={tab === "orders" && navTarget?.type === "orders-daterange" ? navTarget.to : null} onFocusHandled={() => setNavTarget(null)} printSettings={printSettings} setPrintSettings={setPrintSettings} />}
             {tab === "shipping" && roleTabIds.includes("shipping") && <Shipping shippingTickets={shippingTickets} setShippingTickets={setShippingTickets} parcelLabels={parcelLabels} setParcelLabels={setParcelLabels} orders={orders} customers={customers} currentUser={currentUser} addLog={addLog} />}
