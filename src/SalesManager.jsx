@@ -2192,7 +2192,7 @@ function Dashboard({ products, orders, goToOrdersFilter }) {
   const stockUnits = products.reduce((s, p) => s + productStats(p).closingQty, 0);
   const totalIn = products.reduce((s, p) => s + productStats(p).importedValue, 0);
   const totalOut = products.reduce((s, p) => s + productStats(p).exportedValue, 0);
-  const lowStock = products.filter((p) => productStats(p).closingQty <= (p.minStockLevel ?? 5) && productStats(p).closingQty >= 0);
+  const lowStock = products.filter((p) => !p.isService && p.minStockLevel > 0 && productStats(p).closingQty <= p.minStockLevel && productStats(p).closingQty >= 0);
 
   // ---- Kết quả kinh doanh trong ngày ----
   const todayOrders = orders.filter((o) => isToday(o.createdAt));
@@ -2407,6 +2407,9 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
   const [filterStock, setFilterStock] = useState(""); // "" | "in" (còn tồn) | "negative" (âm kho)
   const [filterSupplier, setFilterSupplier] = useState("");
   const [filterCreatedBy, setFilterCreatedBy] = useState("");
+  // Mặc định ẨN sản phẩm dịch vụ (vd "Phí dịch vụ IT Helpdesk") khỏi danh sách kho vật lý — không phải
+  // hàng hoá thật, hiện ra sẽ gây rối/phình danh sách kho. Ai cần sửa thì tự bật lên xem.
+  const [showServices, setShowServices] = useState(false);
   // Lọc theo ngày TẠO mã (createdAt) — dùng khi bấm cột "Mã mới vào kho" từ báo cáo "Tốc độ thêm mã sản phẩm mới".
   const [filterCreatedFrom, setFilterCreatedFrom] = useState("");
   const [filterCreatedTo, setFilterCreatedTo] = useState("");
@@ -2457,6 +2460,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
   // để sản phẩm mới tạo hiện lên ĐẦU danh sách, dễ thấy ngay sau khi thêm/tạo phiên bản.
   const filtered = products.filter(
     (p) => (p.name.toLowerCase().includes(query.toLowerCase()) || p.code.toLowerCase().includes(query.toLowerCase()))
+      && (showServices || !p.isService)
       && (!filterCategory || p.category === filterCategory)
       && (!filterBrand || p.brand === filterBrand)
       && (!filterSupplier || p.supplierId === filterSupplier)
@@ -2955,8 +2959,14 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           <option value="">Người tạo: Tất cả</option>
           {createdByOptions.map((n) => <option key={n} value={n}>{n}</option>)}
         </select>
+        <label className="flex items-center gap-1.5 text-xs shrink-0" style={{ color: INK, opacity: 0.7 }}>
+          <input type="checkbox" checked={showServices} onChange={(e) => setShowServices(e.target.checked)} />
+          Hiện cả sản phẩm dịch vụ
+        </label>
         {(filterCategory || filterBrand || filterStock || filterSupplier || filterCreatedBy) && (
-          <button onClick={() => { setFilterCategory(""); setFilterBrand(""); setFilterStock(""); setFilterSupplier(""); setFilterCreatedBy(""); }} className="text-xs opacity-50 hover:opacity-100 underline shrink-0">Xoá lọc</button>
+          <button onClick={() => { setFilterCategory(""); setFilterBrand(""); setFilterStock(""); setFilterSupplier(""); setFilterCreatedBy(""); }} className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full font-medium shrink-0" style={{ background: `${RUST}1A`, color: RUST }}>
+            <X size={12} /> Đang lọc — Xoá lọc
+          </button>
         )}
         {(filterCreatedFrom || filterCreatedTo) && (
           <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-sm shrink-0" style={{ background: `${FOREST}14`, color: FOREST }}>
@@ -3079,7 +3089,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                         <td className="px-2 py-3 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace", color: FOREST }}>+{stats.importedQty}</td>
                         <td className="px-2 py-3 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace", color: RUST }}>-{stats.exportedQty}</td>
                       </>)}
-                      <td className="px-2 py-3 text-right font-medium whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: stats.closingQty < 0 ? "#fff" : (stats.closingQty <= (p.minStockLevel ?? 5) ? RUST : INK) }}>
+                      <td className="px-2 py-3 text-right font-medium whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: stats.closingQty < 0 ? "#fff" : (p.minStockLevel > 0 && stats.closingQty <= p.minStockLevel ? RUST : INK) }}>
                         {p.isService ? "—" : stats.closingQty < 0 ? (
                           <span className="px-1.5 py-0.5 rounded-sm" style={{ background: RUST }}>{stats.closingQty}</span>
                         ) : stats.closingQty}
@@ -3289,7 +3299,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                 ["Nhập từ NCC", `+${stats.importedFromSupplierQty}`, FOREST],
                 ["Nhập lại (đổi trả)", `+${stats.importedFromReturnQty}`, BLUE],
                 ["Xuất trong kỳ", `-${stats.exportedQty}`, RUST],
-                ["Tồn cuối kỳ", stats.closingQty, stats.closingQty <= (viewingProduct.minStockLevel ?? 5) ? RUST : INK],
+                ["Tồn cuối kỳ", stats.closingQty, viewingProduct.minStockLevel > 0 && stats.closingQty <= viewingProduct.minStockLevel ? RUST : INK],
                 ...(isAdmin ? [["Giá nhập", vnd(viewingProduct.costPrice), INK]] : []),
                 ["Giá bán sỉ", vnd(viewingProduct.wholesalePrice), INK],
                 ["Giá bán lẻ", vnd(viewingProduct.retailPrice), INK],
@@ -13014,8 +13024,6 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
       {sub === "ranking" ? <SalesRanking orders={orders} products={products} accounts={accounts} /> : (<>
       <BusinessActivityChart orders={orders} products={products} onBarClick={goToOrdersDateRange} />
 
-      <ProductAdditionReport products={products} employeeNames={employeeNames} onBarClick={goToProductsDateRange} />
-
       <PeriodComparisonReport orders={orders} products={products} />
       <ProfitMarginReport orders={orders} products={products} />
 
@@ -13211,6 +13219,8 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
           </div>
         )}
       </div>
+
+      <ProductAdditionReport products={products} employeeNames={employeeNames} onBarClick={goToProductsDateRange} />
       </>)}
     </div>
   );
@@ -15959,9 +15969,10 @@ export default function SalesManager() {
       fresh.push({ key, category, detail });
     };
     products.forEach((p) => {
+      if (p.isService) return; // sản phẩm dịch vụ không quản lý tồn kho, không cảnh báo tồn
       const s = productStats(p);
       if (s.closingQty < 0) push(`neg:${p.id}`, "neg_stock", `${p.name} (${s.closingQty})`);
-      else if (s.closingQty <= (p.minStockLevel ?? 5)) push(`low:${p.id}`, "low_stock", `${p.name} (còn ${s.closingQty}, định mức ${p.minStockLevel ?? 5})`);
+      else if (p.minStockLevel > 0 && s.closingQty <= p.minStockLevel) push(`low:${p.id}`, "low_stock", `${p.name} (còn ${s.closingQty}, định mức ${p.minStockLevel})`);
     });
     purchaseOrders.forEach((po) => {
       const due = poDueInfo(po);
