@@ -734,14 +734,70 @@ async function loadData() {
   } catch (e) { /* chưa có dữ liệu */ }
   return null;
 }
-// Trước khi tự lưu, kiểm tra xem có ai vừa lưu đè lên bản chung sau lần mình đọc/lưu gần nhất
-// không — nếu có, KHÔNG tự lưu (tránh lấy dữ liệu cũ trên máy mình đè mất dữ liệu mới của người
-// khác), báo về qua onConflict để hiện banner yêu cầu tải lại trang.
-async function saveData(data, { expectedUpdatedAt, onConflict } = {}) {
+// Gộp 1 mảng theo id kiểu "3 nguồn" — base = bản mình biết lúc đồng bộ gần nhất, local = bản đang có
+// trên máy mình (có thể vừa thêm/sửa/xoá gì đó chưa kịp lưu), remote = bản người khác vừa lưu đè lên.
+// Quy tắc ưu tiên AN TOÀN (thà giữ nhầm còn hơn mất thật — lỡ có giữ lại 1 bản ghi ai đó đã cố tình
+// xoá thì chỉ cần xoá lại, còn mất thật thì không lấy lại được):
+//   - MÌNH đang có bản ghi nào (dù mới hay cũ, có sửa hay không) -> LUÔN giữ bản của mình.
+//   - MÌNH đã chủ động xoá (có ở base, không còn ở local) -> tôn trọng, không phục hồi lại.
+//   - Còn lại (mình chưa từng biết, không có ở cả base lẫn local) -> lấy theo remote (ghi nhận cái
+//     mới mà người khác vừa thêm). KHÔNG bao giờ suy luận "remote thiếu = remote đã xoá", vì remote
+//     có thể chỉ đơn giản là 1 bản CŨ hơn (ví dụ tab bị bỏ quên lâu ngày) chứ không phải mới hơn thật.
+function mergeById(base, local, remote) {
+  const bMap = new Map((Array.isArray(base) ? base : []).map((x) => [x.id, x]));
+  const lMap = new Map((Array.isArray(local) ? local : []).map((x) => [x.id, x]));
+  const rMap = new Map((Array.isArray(remote) ? remote : []).map((x) => [x.id, x]));
+  const ids = new Set([...bMap.keys(), ...lMap.keys(), ...rMap.keys()]);
+  const out = [];
+  for (const id of ids) {
+    const l = lMap.get(id);
+    if (l !== undefined) { out.push(l); continue; }
+    if (bMap.has(id)) continue; // mình đã chủ động xoá
+    const r = rMap.get(id);
+    if (r !== undefined) out.push(r);
+  }
+  return out;
+}
+// Gộp toàn bộ state theo từng phần: mảng có id dùng mergeById, categories (mảng chuỗi) gộp theo tập
+// hợp giá trị, webConfig/printSettings (đối tượng đơn) lấy bản của bên nào có đổi so với base.
+function mergeState(base, local, remote) {
+  base = base || {}; local = local || {}; remote = remote || {};
+  const idArrayKeys = [
+    "products", "orders", "customers", "purchaseOrders", "suppliers", "brands",
+    "stocktakes", "warrantyTickets", "repairTickets", "helpdeskTickets", "shippingTickets",
+    "parcelLabels", "plans", "accounts", "activityLog", "notifications", "quotations", "pointAdjustments",
+  ];
+  const merged = {};
+  for (const key of idArrayKeys) merged[key] = mergeById(base[key], local[key], remote[key]);
+  merged.activityLog.sort((a, b) => new Date(b.at || 0) - new Date(a.at || 0));
+  const catsTouched = JSON.stringify([...(local.categories || [])].sort()) !== JSON.stringify([...(base.categories || [])].sort());
+  merged.categories = catsTouched ? [...new Set([...(local.categories || []), ...(remote.categories || [])])] : (remote.categories || []);
+  const pickChanged = (key) => (JSON.stringify(local[key]) !== JSON.stringify(base[key]) ? local[key] : remote[key]);
+  merged.webConfig = pickChanged("webConfig");
+  merged.printSettings = pickChanged("printSettings");
+  merged.session = local.session;
+  return merged;
+}
+// Trước khi tự lưu, kiểm tra xem có ai vừa lưu đè lên bản chung sau lần mình đọc/lưu gần nhất không
+// — nếu có, KHÔNG ghi đè thẳng lên (tránh mất dữ liệu mới của họ); thay vào đó tải bản của họ về rồi
+// TỰ GỘP với thay đổi cục bộ của mình (mergeState ở trên), lưu lại bản đã gộp — vừa giữ được phần
+// việc mình vừa làm, vừa không làm mất phần của người khác, không cần bắt người dùng tải lại trang.
+// Chỉ khi việc gộp thất bại (lỗi mạng...) mới báo về qua onConflict để hiện banner dự phòng.
+async function saveData(data, { expectedUpdatedAt, baseSnapshot, onConflict, onMerged } = {}) {
   try {
     if (expectedUpdatedAt && window.storage.getMeta) {
       const meta = await window.storage.getMeta(STORAGE_KEY, true).catch(() => null);
       if (meta && meta.updatedAt && meta.updatedAt !== expectedUpdatedAt) {
+        try {
+          const remoteRaw = await window.storage.get(STORAGE_KEY, true);
+          if (remoteRaw && remoteRaw.value) {
+            const remote = JSON.parse(remoteRaw.value);
+            const merged = mergeState(baseSnapshot, data, remote);
+            const res = await window.storage.set(STORAGE_KEY, JSON.stringify(merged), true);
+            onMerged && onMerged(merged);
+            return { ok: true, merged: true, updatedAt: res && res.updatedAt, data: merged };
+          }
+        } catch (mergeErr) { console.error("Gộp dữ liệu lỗi:", mergeErr); }
         onConflict && onConflict();
         return { conflict: true };
       }
@@ -15514,6 +15570,9 @@ export default function SalesManager() {
   // Mốc thời gian bản dữ liệu chung mà máy này đang có (từ lần tải/lưu gần nhất) — dùng để phát
   // hiện "có người khác vừa lưu đè lên" trước khi tự lưu, tránh mất dữ liệu của họ (xem saveData()).
   const lastSyncedAtRef = useRef(null);
+  // Bản dữ liệu "gốc" mà máy này biết là cả 2 bên (mình và server) đã từng thống nhất — dùng làm mốc
+  // so sánh khi cần TỰ GỘP với bản mới hơn của người khác (xem mergeState/saveData()).
+  const baseSnapshotRef = useRef(null);
   const [syncConflict, setSyncConflict] = useState(false);
   // true trong lúc có thay đổi cục bộ chưa lưu xong lên server — effect đồng bộ định kỳ tạm hoãn 1
   // nhịp khi thấy cờ này, tránh áp dữ liệu từ xa đè mất đúng lúc đang lưu.
@@ -15576,6 +15635,7 @@ export default function SalesManager() {
           const accs = await applyRemoteData(data);
           setCurrentUserId((data.session && data.session.userId && accs.some((a) => a.id === data.session.userId)) ? data.session.userId : null);
           lastSyncedAtRef.current = data.__updatedAt || null;
+          baseSnapshotRef.current = data;
         } else {
           const seed = seedData();
           setProducts(seed.products.map(normalizeProduct));
@@ -15637,11 +15697,21 @@ export default function SalesManager() {
     // bộ định kỳ ở trên sẽ thấy cờ này và tạm hoãn 1 nhịp, tránh áp bản từ xa đè mất đúng lúc đang lưu.
     pendingSaveRef.current = true;
     const t = setTimeout(async () => {
-      const res = await saveData(
-        { products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, parcelLabels, plans, accounts, activityLog, notifications, printSettings, quotations, pointAdjustments, webConfig, session: { userId: currentUserId } },
-        { expectedUpdatedAt: lastSyncedAtRef.current, onConflict: () => setSyncConflict(true) }
-      );
+      const snapshot = { products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, parcelLabels, plans, accounts, activityLog, notifications, printSettings, quotations, pointAdjustments, webConfig, session: { userId: currentUserId } };
+      const res = await saveData(snapshot, {
+        expectedUpdatedAt: lastSyncedAtRef.current,
+        baseSnapshot: baseSnapshotRef.current,
+        onConflict: () => setSyncConflict(true),
+      });
       if (res && res.updatedAt) lastSyncedAtRef.current = res.updatedAt;
+      if (res && res.merged) {
+        // Có người khác vừa lưu đè trong lúc mình cũng đang lưu — đã tự gộp lại (giữ phần của mình,
+        // nhận phần của họ), giờ áp bản đã gộp vào màn hình để hiển thị đúng thực tế mới nhất.
+        baseSnapshotRef.current = res.data;
+        await applyRemoteData(res.data);
+      } else if (res && res.ok) {
+        baseSnapshotRef.current = snapshot;
+      }
       pendingSaveRef.current = false;
     }, 400);
     return () => clearTimeout(t);
@@ -15671,6 +15741,7 @@ export default function SalesManager() {
         const remote = JSON.parse(raw.value);
         await applyRemoteData(remote);
         lastSyncedAtRef.current = raw.updatedAt || meta.updatedAt;
+        baseSnapshotRef.current = remote;
       } catch { /* mạng chập chờn — thử lại lần sau */ }
     };
     const iv = setInterval(pull, 20000);
