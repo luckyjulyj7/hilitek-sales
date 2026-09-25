@@ -12796,7 +12796,7 @@ function BusinessActivityChart({ orders, products, onBarClick }) {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4 mb-5 max-w-md">
+      <div className="grid grid-cols-3 gap-4 mb-5 max-w-2xl">
         <div>
           <p className="text-xs opacity-50 mb-1">Tổng doanh thu</p>
           <p className="text-xl font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: BLUE }}>{vnd(totalRevenue)}</p>
@@ -12804,6 +12804,10 @@ function BusinessActivityChart({ orders, products, onBarClick }) {
         <div>
           <p className="text-xs opacity-50 mb-1">Tổng lợi nhuận gộp</p>
           <p className="text-xl font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#C97F0F" }}>{vnd(totalProfit)}</p>
+        </div>
+        <div>
+          <p className="text-xs opacity-50 mb-1">Tỉ lệ lợi nhuận</p>
+          <p className="text-xl font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: FOREST }}>{totalRevenue > 0 ? `${((totalProfit / totalRevenue) * 100).toFixed(1)}%` : "—"}</p>
         </div>
       </div>
 
