@@ -2417,6 +2417,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
   // hàng hoá thật, hiện ra sẽ gây rối/phình danh sách kho. Ai cần sửa thì tự bật lên xem.
   const [showServices, setShowServices] = useState(false);
   const [filterIncomplete, setFilterIncomplete] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   // Lọc theo ngày TẠO mã (createdAt) — dùng khi bấm cột "Mã mới vào kho" từ báo cáo "Tốc độ thêm mã sản phẩm mới".
   const [filterCreatedFrom, setFilterCreatedFrom] = useState("");
   const [filterCreatedTo, setFilterCreatedTo] = useState("");
@@ -2459,6 +2460,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
 
   const categoryOptions = [...(categories || [])].sort();
   const createdByOptions = [...new Set(products.map((p) => p.createdBy).filter(Boolean))].sort();
+  const activeFilterCount = [filterCategory, filterBrand, filterStock, filterSupplier, filterCreatedBy].filter(Boolean).length + (filterIncomplete ? 1 : 0);
   // Nhãn hiệu giờ thuộc về 1 nhóm hàng cụ thể — brandOptions (phẳng, dùng cho bộ lọc) và brandOptionsOf(category) (dùng cho form sản phẩm theo đúng nhóm hàng đã chọn).
   const brandOptions = [...new Set((brands || []).map((b) => b.name))].sort();
   const brandOptionsOf = (cat) => [...(brands || [])].filter((b) => b.category === cat).map((b) => b.name).sort();
@@ -2940,42 +2942,16 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           </p>
         </div>
       )}
-      <div className="flex items-center gap-1.5 mb-5 flex-wrap">
+      <div className="flex items-center gap-1.5 mb-3 flex-wrap">
         <div className="relative flex-1 min-w-[220px] max-w-md">
           <Search size={15} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50" />
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm theo mã VT hoặc tên…"
             className="w-full pl-7 pr-2 py-1.5 text-sm rounded-sm border-2 outline-none" style={{ borderColor: INK, background: "#fff" }} />
         </div>
-        <select value={filterCategory} onChange={(e) => { setFilterCategory(e.target.value); if (filterBrand && !brandOptionsOf(e.target.value).includes(filterBrand)) setFilterBrand(""); }} className="border rounded-sm py-1.5 px-2 text-sm shrink-0" style={{ borderColor: LINE, width: 190 }}>
-          <option value="">Nhóm hàng: Tất cả</option>
-          {categoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
-        <select value={filterBrand} onChange={(e) => setFilterBrand(e.target.value)} className="border rounded-sm py-1.5 px-2 text-sm shrink-0" style={{ borderColor: LINE, width: 190 }}>
-          <option value="">Nhãn hiệu: Tất cả</option>
-          {(filterCategory ? brandOptionsOf(filterCategory) : brandOptions).map((b) => <option key={b} value={b}>{b}</option>)}
-        </select>
-        <select value={filterStock} onChange={(e) => setFilterStock(e.target.value)} className="border rounded-sm py-1.5 px-2 text-sm shrink-0" style={{ borderColor: LINE, width: 150 }}>
-          <option value="">Tồn kho: Tất cả</option>
-          <option value="in">Còn tồn</option>
-          <option value="negative">Âm kho</option>
-        </select>
-        <select value={filterSupplier} onChange={(e) => setFilterSupplier(e.target.value)} className="border rounded-sm py-1.5 px-2 text-sm shrink-0" style={{ borderColor: LINE, width: 190 }}>
-          <option value="">Nhà cung cấp: Tất cả</option>
-          {(suppliers || []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
-        <select value={filterCreatedBy} onChange={(e) => setFilterCreatedBy(e.target.value)} className="border rounded-sm py-1.5 px-2 text-sm shrink-0" style={{ borderColor: LINE, width: 170 }}>
-          <option value="">Người tạo: Tất cả</option>
-          {createdByOptions.map((n) => <option key={n} value={n}>{n}</option>)}
-        </select>
-        <label className="flex items-center gap-1.5 text-xs shrink-0" style={{ color: INK, opacity: 0.7 }}>
-          <input type="checkbox" checked={showServices} onChange={(e) => setShowServices(e.target.checked)} />
-          Hiện cả sản phẩm dịch vụ
-        </label>
-        <label className="flex items-center gap-1.5 text-xs shrink-0" style={{ color: INK, opacity: 0.7 }}>
-          <input type="checkbox" checked={filterIncomplete} onChange={(e) => setFilterIncomplete(e.target.checked)} />
-          Chỉ sản phẩm thiếu thông tin
-        </label>
-        {(filterCategory || filterBrand || filterStock || filterSupplier || filterCreatedBy || filterIncomplete) && (
+        <button onClick={() => setShowFilters((s) => !s)} className="flex items-center gap-1.5 text-sm px-3.5 py-1.5 rounded-sm border shrink-0" style={{ borderColor: activeFilterCount ? INK : LINE, color: INK, background: showFilters ? PAPER : "#fff" }}>
+          <Filter size={14} /> Bộ lọc {activeFilterCount > 0 && <span className="text-[10px] px-1.5 rounded-full text-white" style={{ background: INK }}>{activeFilterCount}</span>}
+        </button>
+        {activeFilterCount > 0 && (
           <button onClick={() => { setFilterCategory(""); setFilterBrand(""); setFilterStock(""); setFilterSupplier(""); setFilterCreatedBy(""); setFilterIncomplete(false); }} className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full font-medium shrink-0" style={{ background: `${RUST}1A`, color: RUST }}>
             <X size={12} /> Đang lọc — Xoá lọc
           </button>
@@ -3032,6 +3008,55 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           </button>
         )}
       </div>
+
+      {showFilters && (
+        <div className="flex flex-wrap items-end gap-3 mb-5 p-4 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+          <label className="text-xs shrink-0" style={{ width: 190 }}>
+            <span className="block opacity-60 mb-1">Nhóm hàng</span>
+            <select value={filterCategory} onChange={(e) => { setFilterCategory(e.target.value); if (filterBrand && !brandOptionsOf(e.target.value).includes(filterBrand)) setFilterBrand(""); }} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
+              <option value="">Tất cả</option>
+              {categoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </label>
+          <label className="text-xs shrink-0" style={{ width: 190 }}>
+            <span className="block opacity-60 mb-1">Nhãn hiệu</span>
+            <select value={filterBrand} onChange={(e) => setFilterBrand(e.target.value)} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
+              <option value="">Tất cả</option>
+              {(filterCategory ? brandOptionsOf(filterCategory) : brandOptions).map((b) => <option key={b} value={b}>{b}</option>)}
+            </select>
+          </label>
+          <label className="text-xs shrink-0" style={{ width: 150 }}>
+            <span className="block opacity-60 mb-1">Tồn kho</span>
+            <select value={filterStock} onChange={(e) => setFilterStock(e.target.value)} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
+              <option value="">Tất cả</option>
+              <option value="in">Còn tồn</option>
+              <option value="negative">Âm kho</option>
+            </select>
+          </label>
+          <label className="text-xs shrink-0" style={{ width: 190 }}>
+            <span className="block opacity-60 mb-1">Nhà cung cấp</span>
+            <select value={filterSupplier} onChange={(e) => setFilterSupplier(e.target.value)} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
+              <option value="">Tất cả</option>
+              {(suppliers || []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </label>
+          <label className="text-xs shrink-0" style={{ width: 170 }}>
+            <span className="block opacity-60 mb-1">Người tạo</span>
+            <select value={filterCreatedBy} onChange={(e) => setFilterCreatedBy(e.target.value)} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
+              <option value="">Tất cả</option>
+              {createdByOptions.map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </label>
+          <label className="flex items-center gap-1.5 text-xs shrink-0 pb-1.5" style={{ color: INK, opacity: 0.7 }}>
+            <input type="checkbox" checked={showServices} onChange={(e) => setShowServices(e.target.checked)} />
+            Hiện cả sản phẩm dịch vụ
+          </label>
+          <label className="flex items-center gap-1.5 text-xs shrink-0 pb-1.5" style={{ color: INK, opacity: 0.7 }}>
+            <input type="checkbox" checked={filterIncomplete} onChange={(e) => setFilterIncomplete(e.target.checked)} />
+            Chỉ sản phẩm thiếu thông tin
+          </label>
+        </div>
+      )}
 
       <div className="rounded-sm overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 220px)" }}>
         <table className="w-full text-sm" style={{ minWidth: 940 }}>
