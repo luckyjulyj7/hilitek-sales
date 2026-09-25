@@ -15823,7 +15823,13 @@ export default function SalesManager() {
     // (mất chút thời gian mạng) thì mình vừa tạo/sửa gì đó, dữ liệu vừa tạo bị mất vì bị ghi đè bởi
     // bản đã fetch trước đó (đây chính là nguyên nhân bug "tạo phiếu nhập xong không thấy đâu cả").
     const base = baseSnapshotRef.current || {};
+    const hasBase = Object.keys(base).length > 0; // false = đang tải lần đầu, chưa có mốc gốc để so sánh
     const mf = (key, computed) => (prev) => mergeById(base[key], prev, computed);
+    // Dùng cho các trường "1 khối" (không phải mảng theo id) như webConfig/printSettings: nếu máy này
+    // đang có bản khác với mốc gốc (đang sửa dở, chưa kịp lưu) thì giữ nguyên, không cho bản mới tải về
+    // đè mất; ngược lại (chưa đụng gì) thì nhận bản mới nhất. Lúc tải lần đầu (chưa có mốc gốc) luôn
+    // nhận thẳng bản mới tải về.
+    const pickChanged = (key, computed) => (prev) => (hasBase && JSON.stringify(prev) !== JSON.stringify(base[key]) ? prev : computed);
     setProducts(mf("products", (data.products || []).map(normalizeProduct)));
     setOrders(mf("orders", (data.orders || []).map(normalizeOrder)));
     setCustomers(mf("customers", (data.customers || []).map(normalizeCustomer)));
@@ -15850,8 +15856,8 @@ export default function SalesManager() {
     setNotifications(mf("notifications", (data.notifications || []).map(normalizeNotif)));
     setQuotations(mf("quotations", (data.quotations || []).map(normalizeQuote)));
     setPointAdjustments(mf("pointAdjustments", (data.pointAdjustments || []).map(normalizePointAdjustment)));
-    setWebConfig(data.webConfig && typeof data.webConfig === "object" ? data.webConfig : {});
-    setPrintSettings(normalizePrintSettings(data.printSettings));
+    setWebConfig(pickChanged("webConfig", data.webConfig && typeof data.webConfig === "object" ? data.webConfig : {}));
+    setPrintSettings(pickChanged("printSettings", normalizePrintSettings(data.printSettings)));
     // accounts: CHỈ nạp từ server đúng 1 LẦN lúc máy này chưa có gì (mở trang lần đầu) — sau đó không
     // bao giờ để đồng bộ nền/gộp đụng vào nữa (trường quá nhạy cảm, gộp sai đã 2 lần gây xoá sạch tài
     // khoản, không đăng nhập được). Từ lúc đã có accounts trên máy, mọi thay đổi (đổi quyền, đổi mật
