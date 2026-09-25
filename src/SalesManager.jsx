@@ -2404,6 +2404,9 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
   const HISTORY_PAGE_SIZE = 20;
   const [filterCategory, setFilterCategory] = useState("");
   const [filterBrand, setFilterBrand] = useState("");
+  const [filterStock, setFilterStock] = useState(""); // "" | "in" (còn tồn) | "negative" (âm kho)
+  const [filterSupplier, setFilterSupplier] = useState("");
+  const [filterCreatedBy, setFilterCreatedBy] = useState("");
   // Lọc theo ngày TẠO mã (createdAt) — dùng khi bấm cột "Mã mới vào kho" từ báo cáo "Tốc độ thêm mã sản phẩm mới".
   const [filterCreatedFrom, setFilterCreatedFrom] = useState("");
   const [filterCreatedTo, setFilterCreatedTo] = useState("");
@@ -2445,6 +2448,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
   const [newBrandInputByCat, setNewBrandInputByCat] = useState({}); // { [tênNhómHàng]: text đang gõ }
 
   const categoryOptions = [...(categories || [])].sort();
+  const createdByOptions = [...new Set(products.map((p) => p.createdBy).filter(Boolean))].sort();
   // Nhãn hiệu giờ thuộc về 1 nhóm hàng cụ thể — brandOptions (phẳng, dùng cho bộ lọc) và brandOptionsOf(category) (dùng cho form sản phẩm theo đúng nhóm hàng đã chọn).
   const brandOptions = [...new Set((brands || []).map((b) => b.name))].sort();
   const brandOptionsOf = (cat) => [...(brands || [])].filter((b) => b.category === cat).map((b) => b.name).sort();
@@ -2455,6 +2459,9 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
     (p) => (p.name.toLowerCase().includes(query.toLowerCase()) || p.code.toLowerCase().includes(query.toLowerCase()))
       && (!filterCategory || p.category === filterCategory)
       && (!filterBrand || p.brand === filterBrand)
+      && (!filterSupplier || p.supplierId === filterSupplier)
+      && (!filterCreatedBy || p.createdBy === filterCreatedBy)
+      && (!filterStock || (!p.isService && (filterStock === "negative" ? productStats(p).closingQty < 0 : productStats(p).closingQty > 0)))
       && (() => {
         if (!filterCreatedFrom && !filterCreatedTo) return true;
         if (!p.createdAt) return false;
@@ -2935,8 +2942,21 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           <option value="">Nhãn hiệu: Tất cả</option>
           {(filterCategory ? brandOptionsOf(filterCategory) : brandOptions).map((b) => <option key={b} value={b}>{b}</option>)}
         </select>
-        {(filterCategory || filterBrand) && (
-          <button onClick={() => { setFilterCategory(""); setFilterBrand(""); }} className="text-xs opacity-50 hover:opacity-100 underline shrink-0">Xoá lọc</button>
+        <select value={filterStock} onChange={(e) => setFilterStock(e.target.value)} className="border rounded-sm py-1.5 px-2 text-sm shrink-0" style={{ borderColor: LINE, width: 150 }}>
+          <option value="">Tồn kho: Tất cả</option>
+          <option value="in">Còn tồn</option>
+          <option value="negative">Âm kho</option>
+        </select>
+        <select value={filterSupplier} onChange={(e) => setFilterSupplier(e.target.value)} className="border rounded-sm py-1.5 px-2 text-sm shrink-0" style={{ borderColor: LINE, width: 190 }}>
+          <option value="">Nhà cung cấp: Tất cả</option>
+          {(suppliers || []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
+        <select value={filterCreatedBy} onChange={(e) => setFilterCreatedBy(e.target.value)} className="border rounded-sm py-1.5 px-2 text-sm shrink-0" style={{ borderColor: LINE, width: 170 }}>
+          <option value="">Người tạo: Tất cả</option>
+          {createdByOptions.map((n) => <option key={n} value={n}>{n}</option>)}
+        </select>
+        {(filterCategory || filterBrand || filterStock || filterSupplier || filterCreatedBy) && (
+          <button onClick={() => { setFilterCategory(""); setFilterBrand(""); setFilterStock(""); setFilterSupplier(""); setFilterCreatedBy(""); }} className="text-xs opacity-50 hover:opacity-100 underline shrink-0">Xoá lọc</button>
         )}
         {(filterCreatedFrom || filterCreatedTo) && (
           <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-sm shrink-0" style={{ background: `${FOREST}14`, color: FOREST }}>
@@ -7116,7 +7136,8 @@ function HelpdeskTickets({ helpdeskTickets, setHelpdeskTickets, products, setPro
     if (ticket.convertedOrderId) return;
     if (!ticket.price || ticket.price <= 0) { alert("Vui lòng nhập giá dịch vụ trước khi chuyển thành đơn bán."); return; }
     let customerId = "";
-    const existingCust = customers.find((c) => c.name === ticket.customerName && (!ticket.customerPhone || c.phone === ticket.customerPhone));
+    const normName = (s) => (s || "").trim().toLowerCase();
+    const existingCust = customers.find((c) => normName(c.name) === normName(ticket.customerName) && (!ticket.customerPhone || !c.phone || normalizePhone(c.phone) === normalizePhone(ticket.customerPhone)));
     if (existingCust) {
       customerId = existingCust.id;
     } else {
@@ -12924,6 +12945,26 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
       .slice(0, 5);
   }, [customers, orders]);
 
+  // Doanh thu mảng dịch vụ: cộng dồn các dòng hàng trong đơn bán trỏ tới sản phẩm dịch vụ (isService) —
+  // đây là các đơn được tạo từ "Chuyển thành đơn bán" ở Phiếu sửa chữa/IT Helpdesk.
+  const serviceRevenue = useMemo(() => {
+    const map = {};
+    let total = 0, count = 0;
+    orders.filter((o) => o.status !== "cancelled").forEach((o) => {
+      o.items.forEach((it) => {
+        const p = products.find((x) => x.id === it.productId);
+        if (!p || !p.isService) return;
+        const lineTotal = orderLineTotal(it);
+        map[p.id] = map[p.id] || { name: p.name, count: 0, total: 0 };
+        map[p.id].count += 1;
+        map[p.id].total += lineTotal;
+        total += lineTotal;
+        count += 1;
+      });
+    });
+    return { total, count, items: Object.values(map).sort((a, b) => b.total - a.total) };
+  }, [orders, products]);
+
   // Sản phẩm bán chạy nhất theo N tháng gần nhất (tính đến hôm nay), xếp theo số lượng bán — có thể lọc theo 1 nhóm hàng cụ thể.
   const PRODUCT_PERIODS = [{ months: 1, label: "1 tháng" }, { months: 3, label: "3 tháng" }, { months: 6, label: "6 tháng" }, { months: 12, label: "1 năm" }];
   const computeTopProducts = (months, categoryFilter) => {
@@ -13116,6 +13157,33 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
             </div>
           )}
         </div>
+      </div>
+
+      <div className="p-5 sm:p-6 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+        <h4 className="text-sm uppercase tracking-wider mb-5" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Doanh thu mảng dịch vụ</h4>
+        {serviceRevenue.items.length === 0 ? (
+          <p className="text-sm opacity-50 text-center py-14">Chưa có doanh thu dịch vụ nào — chuyển phiếu sửa chữa/IT Helpdesk đã hoàn thành thành đơn bán để tính vào đây.</p>
+        ) : (
+          <>
+            <div className="flex items-baseline gap-2 mb-5">
+              <span className="text-2xl font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{vnd(serviceRevenue.total)}</span>
+              <span className="text-sm opacity-50">· {serviceRevenue.count} lượt dịch vụ</span>
+            </div>
+            <div className="space-y-3.5">
+              {serviceRevenue.items.map((s, i) => (
+                <div key={i}>
+                  <div className="flex justify-between items-baseline gap-3 mb-1">
+                    <span className="text-sm truncate" style={{ color: INK }}>{s.name}</span>
+                    <span className="text-sm font-medium whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{vnd(s.total)} · {s.count} lượt</span>
+                  </div>
+                  <div className="h-1.5 rounded-full" style={{ background: PAPER }}>
+                    <div className="h-1.5 rounded-full" style={{ width: `${(s.total / serviceRevenue.items[0].total) * 100}%`, background: chartColors[i % chartColors.length] }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       <div className="p-5 sm:p-6 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
