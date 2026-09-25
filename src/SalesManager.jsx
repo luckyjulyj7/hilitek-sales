@@ -15594,34 +15594,45 @@ export default function SalesManager() {
   // bộ định kỳ bên dưới) vào toàn bộ state — dùng chung để không lặp code. KHÔNG đụng currentUserId
   // ở đây (chỉ set lúc tải lần đầu) để không tự đăng xuất người đang dùng khi có bản mới về.
   const applyRemoteData = async (data) => {
-    setProducts((data.products || []).map(normalizeProduct));
-    setOrders((data.orders || []).map(normalizeOrder));
-    setCustomers((data.customers || []).map(normalizeCustomer));
-    setPurchaseOrders((data.purchaseOrders || []).map(normalizePO));
-    setSuppliers((data.suppliers || []).map(normalizeSupplier));
+    // Áp theo kiểu GỘP AN TOÀN (mergeById, dùng dạng "functional update" đọc state MỚI NHẤT tại thời
+    // điểm React thực sự áp dụng) thay vì ghi đè thẳng — tránh trường hợp giữa lúc đang tải dữ liệu về
+    // (mất chút thời gian mạng) thì mình vừa tạo/sửa gì đó, dữ liệu vừa tạo bị mất vì bị ghi đè bởi
+    // bản đã fetch trước đó (đây chính là nguyên nhân bug "tạo phiếu nhập xong không thấy đâu cả").
+    const base = baseSnapshotRef.current || {};
+    const mf = (key, computed) => (prev) => mergeById(base[key], prev, computed);
+    setProducts(mf("products", (data.products || []).map(normalizeProduct)));
+    setOrders(mf("orders", (data.orders || []).map(normalizeOrder)));
+    setCustomers(mf("customers", (data.customers || []).map(normalizeCustomer)));
+    setPurchaseOrders(mf("purchaseOrders", (data.purchaseOrders || []).map(normalizePO)));
+    setSuppliers(mf("suppliers", (data.suppliers || []).map(normalizeSupplier)));
     // Danh mục nhóm hàng: nếu dữ liệu cũ chưa có danh sách quản lý riêng, tự sinh từ các category đã dùng trên sản phẩm (không mất dữ liệu).
     const existingCats = [...new Set((data.products || []).map((p) => p.category).filter(Boolean))];
-    setCategories(Array.isArray(data.categories) && data.categories.length > 0 ? data.categories : existingCats);
+    const remoteCats = Array.isArray(data.categories) && data.categories.length > 0 ? data.categories : existingCats;
+    setCategories((prev) => [...new Set([...(prev || []), ...remoteCats])]);
     // Danh mục nhãn hiệu: tương tự — tự sinh từ các brand đã dùng trên sản phẩm nếu chưa có danh sách quản lý riêng.
-    // Mỗi nhãn hiệu giờ thuộc về 1 nhóm hàng cụ thể; dữ liệu cũ (chuỗi đơn, chưa có nhóm hàng) được tự chuyển sang dạng mới.
     const existingBrands = [...new Set((data.products || []).map((p) => p.brand).filter(Boolean))];
     const rawBrands = Array.isArray(data.brands) && data.brands.length > 0 ? data.brands : existingBrands;
     setBrands(rawBrands.map(normalizeBrandEntry));
-    setStocktakes((data.stocktakes || []).map(normalizeStocktake));
-    setWarrantyTickets((data.warrantyTickets || []).map(normalizeWarrantyTicket));
-    setRepairTickets((data.repairTickets || []).map(normalizeRepairTicket));
-    setHelpdeskTickets((data.helpdeskTickets || []).map(normalizeHelpdeskTicket));
-    setShippingTickets((data.shippingTickets || []).map(normalizeShippingTicket));
-    setParcelLabels((data.parcelLabels || []).map(normalizeParcelLabel));
-    setPlans((data.plans || []).map(normalizePlan));
-    setActivityLog((data.activityLog || []).map(normalizeLog));
-    setNotifications((data.notifications || []).map(normalizeNotif));
-    setQuotations((data.quotations || []).map(normalizeQuote));
-    setPointAdjustments((data.pointAdjustments || []).map(normalizePointAdjustment));
+    setStocktakes(mf("stocktakes", (data.stocktakes || []).map(normalizeStocktake)));
+    setWarrantyTickets(mf("warrantyTickets", (data.warrantyTickets || []).map(normalizeWarrantyTicket)));
+    setRepairTickets(mf("repairTickets", (data.repairTickets || []).map(normalizeRepairTicket)));
+    setHelpdeskTickets(mf("helpdeskTickets", (data.helpdeskTickets || []).map(normalizeHelpdeskTicket)));
+    setShippingTickets(mf("shippingTickets", (data.shippingTickets || []).map(normalizeShippingTicket)));
+    setParcelLabels(mf("parcelLabels", (data.parcelLabels || []).map(normalizeParcelLabel)));
+    setPlans(mf("plans", (data.plans || []).map(normalizePlan)));
+    setActivityLog((prev) => mergeById(base.activityLog, prev, (data.activityLog || []).map(normalizeLog)).sort((a, b) => new Date(b.at || 0) - new Date(a.at || 0)));
+    setNotifications(mf("notifications", (data.notifications || []).map(normalizeNotif)));
+    setQuotations(mf("quotations", (data.quotations || []).map(normalizeQuote)));
+    setPointAdjustments(mf("pointAdjustments", (data.pointAdjustments || []).map(normalizePointAdjustment)));
     setWebConfig(data.webConfig && typeof data.webConfig === "object" ? data.webConfig : {});
     setPrintSettings(normalizePrintSettings(data.printSettings));
+    // accounts cần thêm bước nâng cấp mật khẩu (async) nên không dùng thẳng dạng functional update được
+    // — "nhìn trộm" state accounts MỚI NHẤT (không đổi gì) rồi mới gộp, tránh cùng race điều kiện như trên.
+    let latestAccounts = null;
+    setAccounts((prev) => { latestAccounts = prev; return prev; });
     const rawAccs = (data.accounts && data.accounts.length > 0) ? data.accounts.map(normalizeAccount) : seedAccounts();
-    const accs = ensureOwner(await migrateAccountPasswords(rawAccs));
+    const mergedAccs = mergeById(base.accounts, latestAccounts, rawAccs);
+    const accs = ensureOwner(await migrateAccountPasswords(mergedAccs));
     setAccounts(accs);
     return accs;
   };
@@ -15706,9 +15717,13 @@ export default function SalesManager() {
       if (res && res.updatedAt) lastSyncedAtRef.current = res.updatedAt;
       if (res && res.merged) {
         // Có người khác vừa lưu đè trong lúc mình cũng đang lưu — đã tự gộp lại (giữ phần của mình,
-        // nhận phần của họ), giờ áp bản đã gộp vào màn hình để hiển thị đúng thực tế mới nhất.
-        baseSnapshotRef.current = res.data;
+        // nhận phần của họ). Áp bản đã gộp vào màn hình, dùng ĐÚNG bản snapshot lúc nãy (không phải
+        // bản vừa gộp) làm mốc gốc cho lần áp này, để applyRemoteData còn phân biệt được phần nào
+        // mình vừa tạo/sửa thêm SAU lúc gửi đi (phải giữ) với phần chỉ đơn thuần mới được gộp vào
+        // (không phải do mình tự xoá) — tránh xoá nhầm chính những gì vừa gộp thêm.
+        baseSnapshotRef.current = snapshot;
         await applyRemoteData(res.data);
+        baseSnapshotRef.current = res.data;
       } else if (res && res.ok) {
         baseSnapshotRef.current = snapshot;
       }
