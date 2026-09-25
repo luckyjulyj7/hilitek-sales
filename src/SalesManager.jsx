@@ -15517,6 +15517,11 @@ export default function SalesManager() {
   const [parcelLabels, setParcelLabels] = useState([]);
   const [plans, setPlans] = useState([]);
   const [accounts, setAccounts] = useState([]);
+  // Bản sao "luôn mới nhất" của accounts, cập nhật đồng bộ mỗi lần render — dùng trong applyRemoteData
+  // để đọc state hiện tại ngay lập tức khi cần gộp (đọc qua setState updater bị trễ 1 nhịp do React
+  // gom nhóm cập nhật, không lấy được giá trị ngay — đây chính là nguyên nhân bug xoá sạch tài khoản).
+  const accountsRef = useRef(accounts);
+  accountsRef.current = accounts;
   const [activityLog, setActivityLog] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [quotations, setQuotations] = useState([]);
@@ -15627,11 +15632,9 @@ export default function SalesManager() {
     setWebConfig(data.webConfig && typeof data.webConfig === "object" ? data.webConfig : {});
     setPrintSettings(normalizePrintSettings(data.printSettings));
     // accounts cần thêm bước nâng cấp mật khẩu (async) nên không dùng thẳng dạng functional update được
-    // — "nhìn trộm" state accounts MỚI NHẤT (không đổi gì) rồi mới gộp, tránh cùng race điều kiện như trên.
-    let latestAccounts = null;
-    setAccounts((prev) => { latestAccounts = prev; return prev; });
+    // — đọc accountsRef.current (luôn mới nhất, xem khai báo ref) thay vì state accounts có thể cũ.
     const rawAccs = (data.accounts && data.accounts.length > 0) ? data.accounts.map(normalizeAccount) : seedAccounts();
-    const mergedAccs = mergeById(base.accounts, latestAccounts, rawAccs);
+    const mergedAccs = mergeById(base.accounts, accountsRef.current, rawAccs);
     const accs = ensureOwner(await migrateAccountPasswords(mergedAccs));
     setAccounts(accs);
     return accs;
