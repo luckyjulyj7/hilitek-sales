@@ -781,6 +781,27 @@ async function clearEditLock(productId) {
   } catch { /* noop */ }
 }
 
+// ── Đăng xuất từ xa (chủ sở hữu ép 1 tài khoản đăng xuất ngay) ──────────────────────────────
+// Lưu ở 1 KEY RIÊNG, chỉ ghi { [accountId]: "thời điểm ép đăng xuất" }. Mỗi tab tự so sánh mốc
+// đăng nhập của MÌNH với mốc này (xem effect kiểm tra định kỳ) — chỉ có tác dụng với các tab đang
+// chạy bản code có tính năng này; tab đang chạy bản code cũ hơn sẽ không biết để tự đăng xuất.
+const KICK_KEY = STORAGE_KEY + ":kicked-accounts";
+async function readKickList() {
+  try {
+    const r = await window.storage.get(KICK_KEY, true);
+    if (!r || !r.value) return {};
+    const list = JSON.parse(r.value);
+    return list && typeof list === "object" ? list : {};
+  } catch (e) { console.error("readKickList:", e); return {}; }
+}
+async function kickAccount(accountId) {
+  try {
+    const list = await readKickList();
+    list[accountId] = new Date().toISOString();
+    await window.storage.set(KICK_KEY, JSON.stringify(list), true);
+  } catch (e) { console.error("kickAccount:", e); }
+}
+
 // Bảng mã hậu tố ngắn cho các giá trị thuộc tính phiên bản thường gặp (màu sắc, kích cỡ...) — dùng để tự sinh SKU/mã VT theo phiên bản.
 // Giá trị không có trong bảng sẽ tự suy ra 2-3 ký tự đầu (bỏ dấu, viết hoa).
 const VARIANT_CODE_MAP = {
@@ -13044,7 +13065,7 @@ function LoginScreen({ accounts, onLogin, onUpgradeHash }) {
   );
 }
 
-function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData, onDownloadBackup, onRestoreBackup }) {
+function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData, onDownloadBackup, onRestoreBackup, onKickAccount }) {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({});
   const [confirmReset, setConfirmReset] = useState(false);
@@ -13158,6 +13179,21 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
                         <span className="text-[10px] opacity-40 pr-1">Chỉ chính chủ</span>
                       ) : (
                         <>
+                          {!a.isOwner && onKickAccount && (
+                            <button
+                              onClick={() => {
+                                if (confirm(`Ép "${a.username}" đăng xuất ngay trên mọi thiết bị đang mở?\n\nLưu ý: chỉ có tác dụng với các tab đang chạy bản phần mềm mới nhất — tab đang mở bản cũ hơn sẽ không nhận được lệnh này.`)) {
+                                  onKickAccount(a.id);
+                                  addLog && addLog("Đăng xuất từ xa", a.username);
+                                }
+                              }}
+                              title="Đăng xuất từ xa"
+                              className="p-1.5 rounded-sm hover:bg-black/5 opacity-60"
+                              style={{ color: BRASS }}
+                            >
+                              <LogOut size={14} />
+                            </button>
+                          )}
                           <button onClick={() => openEdit(a)} className="p-1.5 rounded-sm hover:bg-black/5 opacity-60"><Pencil size={14} /></button>
                           <button onClick={() => remove(a)} disabled={a.isOwner} className="p-1.5 rounded-sm hover:bg-black/5 opacity-60 disabled:opacity-20" style={{ color: RUST }}><Trash2 size={14} /></button>
                         </>
@@ -15482,6 +15518,18 @@ export default function SalesManager() {
   // true trong lúc có thay đổi cục bộ chưa lưu xong lên server — effect đồng bộ định kỳ tạm hoãn 1
   // nhịp khi thấy cờ này, tránh áp dữ liệu từ xa đè mất đúng lúc đang lưu.
   const pendingSaveRef = useRef(false);
+  // Mốc thời điểm TAB này bắt đầu chạy — dùng để biết lệnh "đăng xuất từ xa" nào là MỚI (phát sinh
+  // sau khi tab đã mở), tránh 1 lệnh kick cũ còn sót lại làm tự đăng xuất ngay khi vừa mở tab.
+  const sessionStartRef = useRef(Date.now());
+  // src file JS đang chạy (có hash riêng theo từng lần build) — dùng để tự phát hiện khi đã có bản
+  // triển khai mới hơn (xem effect kiểm tra phiên bản bên dưới), phòng trường hợp bỏ quên tab quá lâu
+  // chạy code cũ rồi âm thầm ghi đè lên dữ liệu mới hơn của người khác.
+  const myScriptSrcRef = useRef(null);
+  const [staleVersion, setStaleVersion] = useState(false);
+  useEffect(() => {
+    const s = document.querySelector('script[type="module"]');
+    myScriptSrcRef.current = s ? s.getAttribute("src") : null;
+  }, []);
 
   // Áp dữ liệu tải được (lần đầu HOẶC khi phát hiện có người khác vừa lưu bản mới — xem effect đồng
   // bộ định kỳ bên dưới) vào toàn bộ state — dùng chung để không lặp code. KHÔNG đụng currentUserId
@@ -15584,7 +15632,7 @@ export default function SalesManager() {
   }, [loaded, currentUserId]);
 
   useEffect(() => {
-    if (!loaded || syncConflict) return;
+    if (!loaded || syncConflict || staleVersion) return;
     // Đánh dấu "đang có thay đổi chưa lưu xong" ngay từ lúc này (chưa đợi hết debounce) — effect đồng
     // bộ định kỳ ở trên sẽ thấy cờ này và tạm hoãn 1 nhịp, tránh áp bản từ xa đè mất đúng lúc đang lưu.
     pendingSaveRef.current = true;
@@ -15597,18 +15645,25 @@ export default function SalesManager() {
       pendingSaveRef.current = false;
     }, 400);
     return () => clearTimeout(t);
-  }, [products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, parcelLabels, plans, accounts, activityLog, notifications, printSettings, quotations, pointAdjustments, webConfig, currentUserId, loaded, syncConflict]);
+  }, [products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, parcelLabels, plans, accounts, activityLog, notifications, printSettings, quotations, pointAdjustments, webConfig, currentUserId, loaded, syncConflict, staleVersion]);
 
   // Tự đồng bộ với thao tác của người khác (thêm/sửa/xoá khách hàng, sản phẩm, đơn web mới…):
   // 20s/lần, chỉ kiểm tra nhẹ (updated_at) — nếu có ai vừa lưu bản mới thì mới tải và áp lại toàn
   // bộ dữ liệu, không thì thôi. Nhờ vậy mọi người thấy thay đổi của nhau mà không cần F5, đồng thời
   // giữ mốc đồng bộ luôn mới nên tự lưu (xem effect debounce phía trên) ít bị vướng cảnh báo xung đột.
   useEffect(() => {
-    if (!loaded || !currentUserId || syncConflict) return;
+    if (!loaded || !currentUserId || syncConflict || staleVersion) return;
     let stopped = false;
     const pull = async () => {
       if (document.hidden || pendingSaveRef.current || !window.storage.getMeta) return;
       try {
+        // Bị chủ sở hữu ép đăng xuất từ xa? (chỉ tính lệnh phát sinh SAU khi tab này đã mở)
+        const kicks = await readKickList();
+        const kickedAt = kicks[currentUserId];
+        if (kickedAt && new Date(kickedAt).getTime() > sessionStartRef.current) {
+          if (!stopped) { alert("Bạn đã bị đăng xuất từ xa bởi chủ sở hữu."); setCurrentUserId(null); }
+          return;
+        }
         const meta = await window.storage.getMeta(STORAGE_KEY, true);
         if (stopped || pendingSaveRef.current || !meta || !meta.updatedAt || meta.updatedAt === lastSyncedAtRef.current) return;
         const raw = await window.storage.get(STORAGE_KEY, true);
@@ -15621,7 +15676,27 @@ export default function SalesManager() {
     const iv = setInterval(pull, 20000);
     pull();
     return () => { stopped = true; clearInterval(iv); };
-  }, [loaded, currentUserId, syncConflict]);
+  }, [loaded, currentUserId, syncConflict, staleVersion]);
+
+  // Tự phát hiện khi đã có bản triển khai MỚI hơn bản đang chạy trên tab này (so sánh file JS đang
+  // tải với file JS mà admin.html hiện tại đang trỏ tới) — nếu khác, khoá tự lưu + đồng bộ ngay lập
+  // tức và bắt tải lại trang. Mục đích: 1 tab bị bỏ quên nhiều ngày, chạy code cũ, sẽ tự dừng thay vì
+  // âm thầm ghi đè dữ liệu mới hơn của người khác (đây chính là nguyên nhân vụ mất đơn hàng vừa rồi).
+  useEffect(() => {
+    if (!loaded) return;
+    let stopped = false;
+    const check = async () => {
+      if (document.hidden || !myScriptSrcRef.current) return;
+      try {
+        const res = await fetch("/admin.html", { cache: "no-store" });
+        const html = await res.text();
+        const m = html.match(/<script[^>]+type="module"[^>]+src="([^"]+)"/i);
+        if (!stopped && m && m[1] && m[1] !== myScriptSrcRef.current) setStaleVersion(true);
+      } catch { /* mạng chập chờn — thử lại lần sau */ }
+    };
+    const iv = setInterval(check, 3 * 60 * 1000);
+    return () => { stopped = true; clearInterval(iv); };
+  }, [loaded]);
 
   // Đồng bộ danh sách thông báo cho Admin từ dữ liệu thật: sản phẩm dưới định mức/âm tồn, công nợ NCC,
   // công nợ khách B2B quá hạn, đơn hàng cần duyệt (kể cả yêu cầu huỷ/đổi trả). Thông báo đã đọc tự xoá sau 3 ngày.
@@ -15809,6 +15884,12 @@ export default function SalesManager() {
           <button onClick={() => location.reload()} className="px-3.5 py-1.5 rounded-sm text-sm font-medium shrink-0" style={{ background: "#fff", color: RUST }}>Tải lại trang</button>
         </div>
       )}
+      {staleVersion && !syncConflict && (
+        <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center gap-3 px-4 py-3 text-sm text-white flex-wrap text-center" style={{ background: BRASS }}>
+          <span>🔄 Trang đang mở bản cũ hơn bản mới nhất (có thể do mở tab đã lâu). Hệ thống đã TẠM DỪNG tự lưu để tránh ghi đè nhầm — vui lòng tải lại trang để lấy bản mới nhất.</span>
+          <button onClick={() => location.reload()} className="px-3.5 py-1.5 rounded-sm text-sm font-medium shrink-0" style={{ background: "#fff", color: BRASS }}>Tải lại trang</button>
+        </div>
+      )}
       <div id="app-shell" className="flex flex-col md:flex-row">
         <div className="md:w-72 shrink-0 p-5 flex flex-col md:fixed md:top-0 md:left-0 md:h-screen md:overflow-y-auto md:z-10" style={{ background: INK }}>
           <div className="mb-8 flex items-center gap-2.5">
@@ -15865,7 +15946,7 @@ export default function SalesManager() {
             {tab === "reports" && roleTabIds.includes("reports") && <Reports orders={orders} products={products} customers={customers} accounts={accounts} purchaseOrders={purchaseOrders} warrantyTickets={warrantyTickets} employeeNames={employeeNames} goToOrdersDateRange={goToOrdersDateRange} goToProductsDateRange={goToProductsDateRange} />}
             {tab === "website" && currentUser.role === "admin" && <WebsiteSection products={products} setProducts={setProducts} orders={orders} webConfig={webConfig} setWebConfig={setWebConfig} categories={categories} brands={brands} currentUser={currentUser} addLog={addLog} onOpenOrder={(id) => { setTab("orders"); setNavTarget({ type: "order", id }); }} navTarget={tab === "website" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} goToInventoryProductEdit={goToInventoryProductEdit} />}
             {tab === "activity" && (currentUser.isOwner || currentUser.perms?.viewActivityLog) && <ActivityLog log={activityLog} accounts={accounts} />}
-            {tab === "accounts" && currentUser.isOwner && <Accounts accounts={accounts} setAccounts={setAccounts} currentUser={currentUser} addLog={addLog} onResetTestData={resetTestData} onDownloadBackup={downloadBackup} onRestoreBackup={restoreBackup} />}
+            {tab === "accounts" && currentUser.isOwner && <Accounts accounts={accounts} setAccounts={setAccounts} currentUser={currentUser} addLog={addLog} onResetTestData={resetTestData} onDownloadBackup={downloadBackup} onRestoreBackup={restoreBackup} onKickAccount={kickAccount} />}
             {tab === "profile" && <MyProfile currentUser={currentUser} setAccounts={setAccounts} addLog={addLog} />}
           </AppErrorBoundary>
         </div>
