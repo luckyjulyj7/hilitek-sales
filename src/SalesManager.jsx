@@ -435,6 +435,12 @@ function productStats(p) {
   };
 }
 
+// Sản phẩm "thiếu thông tin" — thường là tạo nhanh lúc nhập hàng/báo giá, chỉ có mã + tên + giá nhập,
+// chưa kịp phân loại nhóm hàng/nhãn hiệu/giá bán. Sản phẩm dịch vụ không tính (không có các trường này).
+function isIncompleteProduct(p) {
+  return !p.isService && (!p.category || !p.brand || !p.retailPrice || !p.costPrice);
+}
+
 // flatten every product's movements into a series list: {serial, code, name, importDoc, importDate, exportDoc, exportDate, status}
 function seriesList(p) {
   const rows = [];
@@ -2410,6 +2416,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
   // Mặc định ẨN sản phẩm dịch vụ (vd "Phí dịch vụ IT Helpdesk") khỏi danh sách kho vật lý — không phải
   // hàng hoá thật, hiện ra sẽ gây rối/phình danh sách kho. Ai cần sửa thì tự bật lên xem.
   const [showServices, setShowServices] = useState(false);
+  const [filterIncomplete, setFilterIncomplete] = useState(false);
   // Lọc theo ngày TẠO mã (createdAt) — dùng khi bấm cột "Mã mới vào kho" từ báo cáo "Tốc độ thêm mã sản phẩm mới".
   const [filterCreatedFrom, setFilterCreatedFrom] = useState("");
   const [filterCreatedTo, setFilterCreatedTo] = useState("");
@@ -2466,6 +2473,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
       && (!filterSupplier || p.supplierId === filterSupplier)
       && (!filterCreatedBy || p.createdBy === filterCreatedBy)
       && (!filterStock || (!p.isService && (filterStock === "negative" ? productStats(p).closingQty < 0 : productStats(p).closingQty > 0)))
+      && (!filterIncomplete || isIncompleteProduct(p))
       && (() => {
         if (!filterCreatedFrom && !filterCreatedTo) return true;
         if (!p.createdAt) return false;
@@ -2963,8 +2971,12 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           <input type="checkbox" checked={showServices} onChange={(e) => setShowServices(e.target.checked)} />
           Hiện cả sản phẩm dịch vụ
         </label>
-        {(filterCategory || filterBrand || filterStock || filterSupplier || filterCreatedBy) && (
-          <button onClick={() => { setFilterCategory(""); setFilterBrand(""); setFilterStock(""); setFilterSupplier(""); setFilterCreatedBy(""); }} className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full font-medium shrink-0" style={{ background: `${RUST}1A`, color: RUST }}>
+        <label className="flex items-center gap-1.5 text-xs shrink-0" style={{ color: INK, opacity: 0.7 }}>
+          <input type="checkbox" checked={filterIncomplete} onChange={(e) => setFilterIncomplete(e.target.checked)} />
+          Chỉ sản phẩm thiếu thông tin
+        </label>
+        {(filterCategory || filterBrand || filterStock || filterSupplier || filterCreatedBy || filterIncomplete) && (
+          <button onClick={() => { setFilterCategory(""); setFilterBrand(""); setFilterStock(""); setFilterSupplier(""); setFilterCreatedBy(""); setFilterIncomplete(false); }} className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full font-medium shrink-0" style={{ background: `${RUST}1A`, color: RUST }}>
             <X size={12} /> Đang lọc — Xoá lọc
           </button>
         )}
@@ -4336,13 +4348,13 @@ function ProductPicker({ products, onPick, onQuickCreate, brands }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [creatingNew, setCreatingNew] = useState(false);
-  const [newForm, setNewForm] = useState({ code: "", name: "", unit: UNITS[0], brand: "", warrantyMonths: 0, vat: "VAT10" });
+  const [newForm, setNewForm] = useState({ code: "", name: "", unit: UNITS[0], brand: "", warrantyMonths: 0, vat: "VAT10", costPrice: 0 });
   const q = query.trim().toLowerCase();
   const matches = q
     ? products.filter((p) => p.name.toLowerCase().includes(q) || (p.code || "").toLowerCase().includes(q) || (p.sku || "").toLowerCase().includes(q)).slice(0, 60)
     : products.slice(0, 60);
 
-  const startQuickCreate = () => { setNewForm({ code: "", name: query, unit: UNITS[0], brand: "", warrantyMonths: 0, vat: "VAT10" }); setCreatingNew(true); };
+  const startQuickCreate = () => { setNewForm({ code: "", name: query, unit: UNITS[0], brand: "", warrantyMonths: 0, vat: "VAT10", costPrice: 0 }); setCreatingNew(true); };
   const saveQuickCreate = () => {
     if (!newForm.code.trim() || !newForm.name.trim()) { alert("Vui lòng nhập Mã vật tư và Tên vật tư."); return; }
     const newProduct = onQuickCreate(newForm);
@@ -4380,6 +4392,7 @@ function ProductPicker({ products, onPick, onQuickCreate, brands }) {
                 </select>
               </div>
               <input value={newForm.name} onChange={(e) => setNewForm({ ...newForm, name: e.target.value })} placeholder="Tên vật tư *" className="w-full border rounded-sm py-1.5 px-2 text-sm mb-2" style={{ borderColor: LINE }} />
+              <MoneyInput value={newForm.costPrice} onChange={(v) => setNewForm({ ...newForm, costPrice: v })} placeholder="Giá nhập" className="w-full border rounded-sm py-1.5 px-2 text-sm mb-2" style={{ borderColor: LINE }} />
               <select value={newForm.brand} onChange={(e) => setNewForm({ ...newForm, brand: e.target.value })} className="w-full border rounded-sm py-1.5 px-2 text-sm mb-2" style={{ borderColor: LINE }}>
                 <option value="">— Nhãn hiệu (không bắt buộc) —</option>
                 {[...new Set((brands || []).map((b) => (typeof b === "string" ? b : b.name)))].sort().map((b) => <option key={b} value={b}>{b}</option>)}
@@ -4540,7 +4553,7 @@ function POProgressStepper({ po }) {
   );
 }
 
-function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProducts, suppliers, setSuppliers, employeeNames, addLog, focusPOId, onFocusHandled, currentUser }) {
+function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProducts, suppliers, setSuppliers, brands, employeeNames, addLog, focusPOId, onFocusHandled, currentUser }) {
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({});
   const [expanded, setExpanded] = useState(null);
@@ -4617,11 +4630,34 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
 
   const openNew = () => { setForm({ supplier: "", supplierId: "", branch: BRANCHES[0], createdBy: currentUser.fullName, paymentMethod: "credit", creditDays: 30, invoiceNo: "", notes: "", tags: [], items: [] }); setCreating(true); };
 
-  const addItem = (productId) => {
+  // Tạo nhanh sản phẩm ngay trong lúc tạo/sửa đơn nhập hàng — chỉ cần Mã SP, Tên SP, Giá nhập, các
+  // thông tin còn lại (nhóm hàng, nhãn hiệu, giá lẻ...) để trống, bổ sung sau (sẽ tự hiện cảnh báo
+  // "thiếu thông tin" ở danh sách sản phẩm cho tới khi hoàn thiện).
+  const quickCreateProduct = (data) => {
+    const code = data.code.trim();
+    if (products.some((p) => p.code.toLowerCase() === code.toLowerCase())) {
+      alert(`Mã vật tư "${code}" đã tồn tại — vui lòng dùng mã khác.`);
+      return null;
+    }
+    const newSku = nextSKU(products);
+    const dupSku = products.find((p) => p.sku.toLowerCase() === newSku.toLowerCase());
+    if (dupSku) { alert(`SKU "${newSku}" đã dùng cho sản phẩm "${dupSku.name}" (${dupSku.code}) — vui lòng thử lại.`); return null; }
+    const newProduct = normalizeProduct({
+      id: uid(), code, name: data.name.trim(), unit: data.unit || UNITS[0], brand: data.brand || "",
+      warrantyMonths: Number(data.warrantyMonths) || 0, vat: data.vat || "VAT10", sku: newSku,
+      costPrice: Number(data.costPrice) || 0, createdBy: currentUser.fullName,
+    });
+    setProducts((prev) => [...prev, newProduct]);
+    addLog("Tạo nhanh sản phẩm (từ đơn nhập hàng)", `${newProduct.code} · ${newProduct.name}`);
+    return newProduct;
+  };
+
+  const addItem = (productId, productOverride) => {
     if (!productId) return;
     setForm((f) => {
       if (f.items.some((it) => it.productId === productId)) return f;
-      const p = products.find((x) => x.id === productId);
+      const p = productOverride || products.find((x) => x.id === productId);
+      if (!p) return f;
       return { ...f, items: [...f.items, { productId, qty: 1, price: p.costPrice || 0, vat: p.vat || "VAT10", series: [] }] };
     });
   };
@@ -4706,11 +4742,12 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
     }
   }, [focusPOId]);
 
-  const editAddItem = (productId) => {
+  const editAddItem = (productId, productOverride) => {
     if (!productId) return;
     setEditForm((f) => {
       if (f.items.some((it) => it.productId === productId)) return f;
-      const p = products.find((x) => x.id === productId);
+      const p = productOverride || products.find((x) => x.id === productId);
+      if (!p) return f;
       return { ...f, items: [...f.items, { productId, qty: 1, price: p.costPrice || 0, vat: p.vat || "VAT10", series: [] }] };
     });
   };
@@ -4931,7 +4968,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
           <div className="my-4" style={{ borderTop: `1px dashed ${LINE}` }} />
 
           <Field label="Thêm sản phẩm vào đơn">
-            <ProductPicker products={products} onPick={addItem} />
+            <ProductPicker products={products} onPick={addItem} onQuickCreate={quickCreateProduct} brands={brands} />
           </Field>
 
           <ItemsTable items={form.items || []} products={products} onUpdate={updateItem} onRemove={removeItem} />
@@ -5052,7 +5089,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
           {viewingPO.status === "pending" ? (
             <>
               <Field label="Thêm sản phẩm vào đơn">
-                <ProductPicker products={products} onPick={editAddItem} />
+                <ProductPicker products={products} onPick={editAddItem} onQuickCreate={quickCreateProduct} brands={brands} />
               </Field>
               {editForm.items.length > 0 && (
                 <ItemsTable items={editForm.items} products={products} onUpdate={editUpdateItem} onRemove={editRemoveItem} />
@@ -7370,8 +7407,20 @@ function ProductsSection({ products, setProducts, purchaseOrders, setPurchaseOrd
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navTarget]);
 
+  const incompleteProducts = products.filter(isIncompleteProduct);
+
   return (
     <div>
+      {incompleteProducts.length > 0 && (
+        <div className="mb-4 p-3 rounded-sm flex items-start gap-2.5 flex-wrap" style={{ background: `${BRASS}10`, border: `1px solid ${BRASS}44` }}>
+          <AlertTriangle size={16} style={{ color: BRASS }} className="mt-0.5 shrink-0" />
+          <p className="text-sm flex-1" style={{ color: INK }}>
+            <span className="font-medium" style={{ color: BRASS }}>{incompleteProducts.length} sản phẩm thiếu thông tin: </span>
+            {incompleteProducts.slice(0, 5).map((p) => p.name).join(", ")}{incompleteProducts.length > 5 ? ` +${incompleteProducts.length - 5} sản phẩm khác` : ""} — cần bổ sung nhóm hàng/nhãn hiệu/giá nhập/giá lẻ.
+          </p>
+          <button onClick={() => setSub("list")} className="text-xs px-3 py-1.5 rounded-sm border shrink-0" style={{ borderColor: BRASS, color: BRASS }}>Xem danh sách</button>
+        </div>
+      )}
       <div className="flex gap-1.5 mb-5 flex-wrap">
         <button onClick={() => setSub("list")} className="px-3 py-1.5 rounded-full text-sm border whitespace-nowrap"
           style={{ borderColor: sub === "list" ? INK : LINE, background: sub === "list" ? INK : "transparent", color: sub === "list" ? "#fff" : INK }}>
@@ -7403,7 +7452,7 @@ function ProductsSection({ products, setProducts, purchaseOrders, setPurchaseOrd
         )}
       </div>
       {sub === "list" && <ProductsInventory products={products} setProducts={setProducts} addLog={addLog} currentUser={currentUser} focusProductId={navTarget?.type === "product" ? navTarget.id : null} focusEdit={navTarget?.type === "product" && !!navTarget.edit} initialCreatedFrom={navTarget?.type === "products-daterange" ? navTarget.from : null} initialCreatedTo={navTarget?.type === "products-daterange" ? navTarget.to : null} onFocusHandled={onFocusHandled} goToDoc={goToDoc} suppliers={suppliers} goToSupplier={goToSupplier} goToWebProduct={goToWebProduct} categories={categories} setCategories={setCategories} brands={brands} setBrands={setBrands} webConfig={webConfig} />}
-      {isAdmin && sub === "purchase" && <PurchaseOrders purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} products={products} setProducts={setProducts} suppliers={suppliers} setSuppliers={setSuppliers} employeeNames={employeeNames} addLog={addLog} focusPOId={navTarget?.type === "po" ? navTarget.id : null} onFocusHandled={onFocusHandled} currentUser={currentUser} />}
+      {isAdmin && sub === "purchase" && <PurchaseOrders purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} products={products} setProducts={setProducts} suppliers={suppliers} setSuppliers={setSuppliers} brands={brands} employeeNames={employeeNames} addLog={addLog} focusPOId={navTarget?.type === "po" ? navTarget.id : null} onFocusHandled={onFocusHandled} currentUser={currentUser} />}
       {isAdmin && sub === "stocktake" && <Stocktake products={products} setProducts={setProducts} stocktakes={stocktakes} setStocktakes={setStocktakes} currentUser={currentUser} addLog={addLog} />}
       {!isCtv && sub === "warranty" && <WarrantyTickets products={products} setProducts={setProducts} orders={orders} customers={customers} warrantyTickets={warrantyTickets} setWarrantyTickets={setWarrantyTickets} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} />}
       {!isCtv && sub === "service" && <ServiceTickets repairTickets={repairTickets} setRepairTickets={setRepairTickets} helpdeskTickets={helpdeskTickets} setHelpdeskTickets={setHelpdeskTickets} products={products} setProducts={setProducts} orders={orders} setOrders={setOrders} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} />}
@@ -9574,6 +9623,7 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
     const newProduct = normalizeProduct({
       id: uid(), code, name: data.name.trim(), unit: data.unit || UNITS[0], brand: data.brand || "",
       warrantyMonths: Number(data.warrantyMonths) || 0, vat: data.vat || "VAT10", sku: newSku,
+      costPrice: Number(data.costPrice) || 0, createdBy: currentUser.fullName,
     });
     setProducts((prev) => [...prev, newProduct]);
     addLog("Tạo nhanh sản phẩm (từ báo giá)", `${newProduct.code} · ${newProduct.name}`);
@@ -13610,6 +13660,7 @@ const NOTIF_CATEGORIES = [
   { id: "b2b_due", label: "Khách B2B quá hạn công nợ", color: RUST },
   { id: "neg_stock", label: "Sản phẩm âm tồn", color: RUST },
   { id: "low_stock", label: "Sản phẩm dưới định mức tồn", color: BRASS },
+  { id: "incomplete_product", label: "Sản phẩm thiếu thông tin", color: BRASS },
   { id: "plan_kpi", label: "Kế hoạch có nguy cơ không đạt", color: BRASS },
   { id: "order_cancelled", label: "Đơn hàng bị huỷ bởi nhân viên/CTV", color: RUST },
 ];
@@ -13618,7 +13669,7 @@ function NotificationBell({ notifications, markRead, markAllRead, onGoto }) {
   const [open, setOpen] = useState(false);
   const unread = notifications.filter((n) => !n.read);
   const sorted = [...notifications].sort((a, b) => (a.read === b.read ? (a.createdAt < b.createdAt ? 1 : -1) : a.read ? 1 : -1));
-  const isNavigable = (n) => { const prefix = n.key.split(":")[0]; return ["appr", "cxreq", "rtreq", "b2bdue", "pend", "podue", "low", "neg"].includes(prefix); };
+  const isNavigable = (n) => { const prefix = n.key.split(":")[0]; return ["appr", "cxreq", "rtreq", "b2bdue", "pend", "podue", "low", "neg", "incom"].includes(prefix); };
 
   return (
     <div>
@@ -15973,6 +16024,14 @@ export default function SalesManager() {
       const s = productStats(p);
       if (s.closingQty < 0) push(`neg:${p.id}`, "neg_stock", `${p.name} (${s.closingQty})`);
       else if (p.minStockLevel > 0 && s.closingQty <= p.minStockLevel) push(`low:${p.id}`, "low_stock", `${p.name} (còn ${s.closingQty}, định mức ${p.minStockLevel})`);
+      if (isIncompleteProduct(p)) {
+        const missing = [];
+        if (!p.category) missing.push("nhóm hàng");
+        if (!p.brand) missing.push("nhãn hiệu");
+        if (!p.costPrice) missing.push("giá nhập");
+        if (!p.retailPrice) missing.push("giá lẻ");
+        push(`incom:${p.id}`, "incomplete_product", `${p.name} (${p.code}) — thiếu ${missing.join(", ")}${p.createdBy ? ` · người tạo: ${p.createdBy}` : ""}`);
+      }
     });
     purchaseOrders.forEach((po) => {
       const due = poDueInfo(po);
@@ -16177,7 +16236,7 @@ export default function SalesManager() {
                   const [prefix, id] = n.key.split(":");
                   if (["appr", "cxreq", "rtreq", "b2bdue", "pend", "cancelled"].includes(prefix)) { setTab("orders"); setNavTarget({ type: "order", id }); }
                   else if (prefix === "podue") { setTab("products"); setNavTarget({ type: "po", id }); }
-                  else if (prefix === "low" || prefix === "neg") { setTab("products"); setNavTarget({ type: "product", id }); }
+                  else if (prefix === "low" || prefix === "neg" || prefix === "incom") { setTab("products"); setNavTarget({ type: "product", id }); }
                 }}
               />
             </div>
