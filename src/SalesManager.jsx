@@ -12202,14 +12202,22 @@ function CashFlowReport({ orders, purchaseOrders, customers }) {
       </div>
 
       <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={buckets} barCategoryGap="30%">
+        <BarChart
+          data={buckets}
+          barCategoryGap="30%"
+          style={{ cursor: "pointer" }}
+          onClick={(state) => {
+            const p = state && state.activePayload && state.activePayload[0] && state.activePayload[0].payload;
+            if (p) setDetailBucket({ key: p.key, label: p.label });
+          }}
+        >
           <CartesianGrid vertical={false} strokeDasharray="3 3" stroke={LINE} />
           <XAxis dataKey="label" tick={axisTick} axisLine={{ stroke: LINE }} tickLine={false} interval={buckets.length > 20 ? Math.ceil(buckets.length / 15) : 0} />
           <YAxis tick={axisTick} axisLine={false} tickLine={false} width={56} tickFormatter={(v) => (Math.abs(v) >= 1000000 ? `${(v / 1000000).toFixed(0)}tr` : `${v / 1000}k`)} />
           <Tooltip formatter={(v) => vnd(v)} contentStyle={tooltipStyle} cursor={{ fill: PAPER }} />
           <Legend wrapperStyle={{ fontSize: 13, fontFamily: "'Inter', sans-serif" }} />
-          <Bar dataKey="Thu" fill={FOREST} radius={[6, 6, 0, 0]} maxBarSize={22} cursor="pointer" onClick={(data) => setDetailBucket({ key: data.key, label: data.label })} />
-          <Bar dataKey="Chi" fill={RUST} radius={[6, 6, 0, 0]} maxBarSize={22} cursor="pointer" onClick={(data) => setDetailBucket({ key: data.key, label: data.label })} />
+          <Bar dataKey="Thu" fill={FOREST} radius={[6, 6, 0, 0]} maxBarSize={22} />
+          <Bar dataKey="Chi" fill={RUST} radius={[6, 6, 0, 0]} maxBarSize={22} />
         </BarChart>
       </ResponsiveContainer>
 
@@ -12867,13 +12875,18 @@ function BusinessActivityChart({ orders, products, onBarClick }) {
       </div>
 
       <ResponsiveContainer width="100%" height={320}>
-        <ComposedChart data={buckets} barCategoryGap="30%">
+        <ComposedChart
+          data={buckets}
+          barCategoryGap="30%"
+          style={{ cursor: onBarClick ? "pointer" : "default" }}
+          onClick={onBarClick ? (state) => handleBarClick(state && state.activePayload && state.activePayload[0]) : undefined}
+        >
           <CartesianGrid vertical={false} strokeDasharray="3 3" stroke={LINE} />
           <XAxis dataKey="label" tick={axisTick} axisLine={{ stroke: LINE }} tickLine={false} interval={buckets.length > 20 ? Math.ceil(buckets.length / 15) : 0} />
           <YAxis tick={axisTick} axisLine={false} tickLine={false} width={56} tickFormatter={(v) => (Math.abs(v) >= 1000000 ? `${(v / 1000000).toFixed(0)}tr` : `${v / 1000}k`)} />
           <Tooltip formatter={(v) => vnd(v)} contentStyle={tooltipStyle} cursor={{ fill: PAPER }} />
           <Legend wrapperStyle={{ fontSize: 13, fontFamily: "'Inter', sans-serif" }} />
-          <Bar dataKey="Doanh thu" fill={BLUE} radius={[6, 6, 0, 0]} maxBarSize={48} onClick={handleBarClick} cursor={onBarClick ? "pointer" : "default"} />
+          <Bar dataKey="Doanh thu" fill={BLUE} radius={[6, 6, 0, 0]} maxBarSize={48} />
           <Line type="monotone" dataKey="Lợi nhuận gộp" stroke="#F5A623" strokeWidth={3} dot={{ r: 3, fill: "#F5A623" }} activeDot={{ r: 5 }} />
         </ComposedChart>
       </ResponsiveContainer>
