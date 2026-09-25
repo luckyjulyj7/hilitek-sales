@@ -15834,9 +15834,11 @@ export default function SalesManager() {
     const remoteCats = Array.isArray(data.categories) && data.categories.length > 0 ? data.categories : existingCats;
     setCategories((prev) => [...new Set([...(prev || []), ...remoteCats])]);
     // Danh mục nhãn hiệu: tương tự — tự sinh từ các brand đã dùng trên sản phẩm nếu chưa có danh sách quản lý riêng.
+    // Dùng mergeById (id nhãn hiệu đã ổn định từ lần lưu trước) để không bị đè mất nhãn hiệu vừa thêm
+    // cục bộ trong lúc đồng bộ nền chạy — đây chính là nguyên nhân tên nhãn hiệu bị chớp tắt khi đang sửa.
     const existingBrands = [...new Set((data.products || []).map((p) => p.brand).filter(Boolean))];
-    const rawBrands = Array.isArray(data.brands) && data.brands.length > 0 ? data.brands : existingBrands;
-    setBrands(rawBrands.map(normalizeBrandEntry));
+    const rawBrands = (Array.isArray(data.brands) && data.brands.length > 0 ? data.brands : existingBrands).map(normalizeBrandEntry);
+    setBrands((prev) => mergeById(base.brands, prev, rawBrands));
     setStocktakes(mf("stocktakes", (data.stocktakes || []).map(normalizeStocktake)));
     setWarrantyTickets(mf("warrantyTickets", (data.warrantyTickets || []).map(normalizeWarrantyTicket)));
     setRepairTickets(mf("repairTickets", (data.repairTickets || []).map(normalizeRepairTicket)));
