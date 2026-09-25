@@ -4734,6 +4734,9 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
   };
 
   const dueSoonPOs = purchaseOrders.map((po) => ({ po, due: poDueInfo(po) })).filter((x) => x.due && x.due.nearDue);
+  // Sắp lại theo ngày tạo mới nhất trước khi hiển thị — mảng gốc có thể không còn đúng thứ tự tạo sau
+  // khi đồng bộ/gộp dữ liệu nền, nếu không sắp lại danh sách sẽ "nhảy vị trí" ngẫu nhiên lúc thì thế này lúc thì thế khác.
+  const sortedPOs = [...purchaseOrders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   return (
     <div>
@@ -4768,7 +4771,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
             </tr>
           </thead>
           <tbody>
-            {purchaseOrders.map((po) => {
+            {sortedPOs.map((po) => {
               const s = PO_STATUSES.find((x) => x.id === po.status);
               const total = po.items.reduce((sum, it) => sum + it.qty * it.price, 0);
               const isOpen = expanded === po.id;
@@ -9507,11 +9510,13 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
     setEditingQuoteId(null);
   };
 
-  const filtered = quotations.filter((q) => {
-    if (!query.trim()) return true;
-    const s = query.trim().toLowerCase();
-    return q.code.toLowerCase().includes(s) || (q.customerName || "").toLowerCase().includes(s);
-  });
+  const filtered = quotations
+    .filter((q) => {
+      if (!query.trim()) return true;
+      const s = query.trim().toLowerCase();
+      return q.code.toLowerCase().includes(s) || (q.customerName || "").toLowerCase().includes(s);
+    })
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const viewingQuote = quotations.find((q) => q.id === viewingId) || null;
 
   // Chuyển báo giá thành đơn hàng thật: tự tạo khách hàng mới nếu báo giá chưa gắn khách có sẵn.
@@ -9818,6 +9823,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
   const [filterProduct, setFilterProduct] = useState("");
   const [filterApprovalOnly, setFilterApprovalOnly] = useState(false);
   const [filterCancelledOnly, setFilterCancelledOnly] = useState(false);
+  const [filterUnpaidOnly, setFilterUnpaidOnly] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [viewingId, setViewingId] = useState(null);
   const [payInput, setPayInput] = useState("");
@@ -10258,6 +10264,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
     .filter((o) => !filterProduct || o.items.some((it) => it.productId === filterProduct))
     .filter((o) => !filterApprovalOnly || o.approvalStatus === "pending")
     .filter((o) => !filterCancelledOnly || o.status === "cancelled")
+    .filter((o) => !filterUnpaidOnly || (o.status !== "cancelled" && orderCalc(o).remaining > 0))
     .filter((o) => {
       if (!filterFrom && !filterTo) return true;
       const t = new Date(o.createdAt).getTime();
@@ -10279,11 +10286,14 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
       if (!filterText.trim()) return true;
       const q = filterText.trim().toLowerCase();
       return (o.notes || "").toLowerCase().includes(q) || (o.tags || []).some((t) => t.toLowerCase().includes(q));
-    });
-  const activeFilterCount = [filterSeller, filterFrom, filterTo, filterDeliveredFrom, filterDeliveredTo, filterInvoice, filterText, filterCustomer, filterProduct].filter(Boolean).length + (filterApprovalOnly ? 1 : 0) + (filterCancelledOnly ? 1 : 0);
+    })
+    // Sắp lại theo ngày tạo mới nhất trước — mảng gốc có thể lệch thứ tự sau khi đồng bộ/gộp dữ liệu
+    // nền, không sắp lại thì danh sách sẽ "nhảy vị trí" lúc thế này lúc thế khác.
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const activeFilterCount = [filterSeller, filterFrom, filterTo, filterDeliveredFrom, filterDeliveredTo, filterInvoice, filterText, filterCustomer, filterProduct].filter(Boolean).length + (filterApprovalOnly ? 1 : 0) + (filterCancelledOnly ? 1 : 0) + (filterUnpaidOnly ? 1 : 0);
   const clearFilters = () => {
     setFilterSeller(""); setFilterFrom(""); setFilterTo(""); setFilterDeliveredFrom(""); setFilterDeliveredTo(""); setFilterInvoice(""); setFilterText("");
-    setFilterCustomer(""); setFilterProduct(""); setFilterApprovalOnly(false); setFilterCancelledOnly(false);
+    setFilterCustomer(""); setFilterProduct(""); setFilterApprovalOnly(false); setFilterCancelledOnly(false); setFilterUnpaidOnly(false);
   };
 
   const toggleSelect = (id) => setSelectedIds((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
@@ -10444,6 +10454,10 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
           <label className="flex items-center gap-1.5 text-xs shrink-0 pb-1.5">
             <input type="checkbox" checked={filterCancelledOnly} onChange={(e) => setFilterCancelledOnly(e.target.checked)} />
             Chỉ đơn đã huỷ
+          </label>
+          <label className="flex items-center gap-1.5 text-xs shrink-0 pb-1.5">
+            <input type="checkbox" checked={filterUnpaidOnly} onChange={(e) => setFilterUnpaidOnly(e.target.checked)} />
+            Chỉ đơn chưa thanh toán
           </label>
         </div>
       )}
