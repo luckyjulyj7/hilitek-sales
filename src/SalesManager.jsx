@@ -765,11 +765,15 @@ function mergeState(base, local, remote) {
   const idArrayKeys = [
     "products", "orders", "customers", "purchaseOrders", "suppliers", "brands",
     "stocktakes", "warrantyTickets", "repairTickets", "helpdeskTickets", "shippingTickets",
-    "parcelLabels", "plans", "accounts", "activityLog", "notifications", "quotations", "pointAdjustments",
+    "parcelLabels", "plans", "activityLog", "notifications", "quotations", "pointAdjustments",
   ];
   const merged = {};
   for (const key of idArrayKeys) merged[key] = mergeById(base[key], local[key], remote[key]);
   merged.activityLog.sort((a, b) => new Date(b.at || 0) - new Date(a.at || 0));
+  // accounts: KHÔNG gộp theo id — trường này quá nhạy cảm (đăng nhập được hay không), gộp sai đã 2 lần
+  // gây xoá sạch tài khoản. Luôn giữ NGUYÊN bản đang có trên máy mình (đang là sự thật mới nhất về việc
+  // ai vừa đăng nhập/đổi mật khẩu/đổi quyền ở phiên này); chỉ dùng remote khi máy mình chưa có gì cả.
+  merged.accounts = (local.accounts && local.accounts.length > 0) ? local.accounts : (remote.accounts || []);
   const catsTouched = JSON.stringify([...(local.categories || [])].sort()) !== JSON.stringify([...(base.categories || [])].sort());
   merged.categories = catsTouched ? [...new Set([...(local.categories || []), ...(remote.categories || [])])] : (remote.categories || []);
   const pickChanged = (key) => (JSON.stringify(local[key]) !== JSON.stringify(base[key]) ? local[key] : remote[key]);
@@ -15631,11 +15635,14 @@ export default function SalesManager() {
     setPointAdjustments(mf("pointAdjustments", (data.pointAdjustments || []).map(normalizePointAdjustment)));
     setWebConfig(data.webConfig && typeof data.webConfig === "object" ? data.webConfig : {});
     setPrintSettings(normalizePrintSettings(data.printSettings));
-    // accounts cần thêm bước nâng cấp mật khẩu (async) nên không dùng thẳng dạng functional update được
-    // — đọc accountsRef.current (luôn mới nhất, xem khai báo ref) thay vì state accounts có thể cũ.
+    // accounts: CHỈ nạp từ server đúng 1 LẦN lúc máy này chưa có gì (mở trang lần đầu) — sau đó không
+    // bao giờ để đồng bộ nền/gộp đụng vào nữa (trường quá nhạy cảm, gộp sai đã 2 lần gây xoá sạch tài
+    // khoản, không đăng nhập được). Từ lúc đã có accounts trên máy, mọi thay đổi (đổi quyền, đổi mật
+    // khẩu, thêm/xoá tài khoản...) chỉ đến từ chính thao tác trong phiên này rồi tự lưu lên như bình
+    // thường — applyRemoteData không còn việc gì phải làm với accounts nữa.
+    if (accountsRef.current && accountsRef.current.length > 0) return accountsRef.current;
     const rawAccs = (data.accounts && data.accounts.length > 0) ? data.accounts.map(normalizeAccount) : seedAccounts();
-    const mergedAccs = mergeById(base.accounts, accountsRef.current, rawAccs);
-    const accs = ensureOwner(await migrateAccountPasswords(mergedAccs));
+    const accs = ensureOwner(await migrateAccountPasswords(rawAccs));
     setAccounts(accs);
     return accs;
   };
