@@ -15956,6 +15956,11 @@ export default function SalesManager() {
   // true trong lúc có thay đổi cục bộ chưa lưu xong lên server — effect đồng bộ định kỳ tạm hoãn 1
   // nhịp khi thấy cờ này, tránh áp dữ liệu từ xa đè mất đúng lúc đang lưu.
   const pendingSaveRef = useRef(false);
+  // Bản dữ liệu cục bộ MỚI NHẤT tại mọi thời điểm (cập nhật ngay mỗi lần state đổi, không đợi hết
+  // debounce 400ms) — dùng để LƯU NGAY một lần cuối khi phát hiện bản triển khai mới hơn, trước khi
+  // khoá tự lưu lại, tránh mất các thao tác vừa làm trong lúc đang gõ/thao tác liên tục (xem effect
+  // kiểm tra phiên bản bên dưới — đây chính là nguyên nhân 1 phiên gộp phiên bản hàng loạt bị mất hết).
+  const latestSnapshotRef = useRef(null);
   // Mốc thời điểm TAB này bắt đầu chạy — dùng để biết lệnh "đăng xuất từ xa" nào là MỚI (phát sinh
   // sau khi tab đã mở), tránh 1 lệnh kick cũ còn sót lại làm tự đăng xuất ngay khi vừa mở tab.
   const sessionStartRef = useRef(Date.now());
@@ -16091,12 +16096,16 @@ export default function SalesManager() {
   }, [loaded, currentUserId]);
 
   useEffect(() => {
+    // Luôn cập nhật bản mới nhất ngay lập tức (không đợi hết debounce 400ms bên dưới) — kể cả khi
+    // đang bị khoá tự lưu (syncConflict/staleVersion) — để effect kiểm tra phiên bản mới có thể LƯU
+    // NGAY 1 lần cuối từ đúng bản này trước khi khoá hẳn, không bỏ lỡ thao tác vừa làm.
+    const snapshot = { products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, parcelLabels, plans, accounts, activityLog, notifications, printSettings, quotations, pointAdjustments, webConfig, session: { userId: currentUserId } };
+    latestSnapshotRef.current = snapshot;
     if (!loaded || syncConflict || staleVersion) return;
     // Đánh dấu "đang có thay đổi chưa lưu xong" ngay từ lúc này (chưa đợi hết debounce) — effect đồng
     // bộ định kỳ ở trên sẽ thấy cờ này và tạm hoãn 1 nhịp, tránh áp bản từ xa đè mất đúng lúc đang lưu.
     pendingSaveRef.current = true;
     const t = setTimeout(async () => {
-      const snapshot = { products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, parcelLabels, plans, accounts, activityLog, notifications, printSettings, quotations, pointAdjustments, webConfig, session: { userId: currentUserId } };
       const res = await saveData(snapshot, {
         expectedUpdatedAt: lastSyncedAtRef.current,
         baseSnapshot: baseSnapshotRef.current,
@@ -16165,7 +16174,22 @@ export default function SalesManager() {
         const res = await fetch("/admin.html", { cache: "no-store" });
         const html = await res.text();
         const m = html.match(/<script[^>]+type="module"[^>]+src="([^"]+)"/i);
-        if (!stopped && m && m[1] && m[1] !== myScriptSrcRef.current) setStaleVersion(true);
+        if (stopped || !m || !m[1] || m[1] === myScriptSrcRef.current) return;
+        // Phát hiện bản mới hơn ngay GIỮA lúc đang thao tác (VD gộp phiên bản hàng loạt) từng làm mất
+        // trắng các thay đổi chưa kịp lưu, vì khoá tự lưu chặn luôn debounce đang chờ. Lưu NGAY 1 lần
+        // cuối từ bản mới nhất hiện có trước khi khoá — nếu lỗi mạng vẫn khoá lại để an toàn dữ liệu.
+        if (latestSnapshotRef.current) {
+          try {
+            const flush = await saveData(latestSnapshotRef.current, {
+              expectedUpdatedAt: lastSyncedAtRef.current,
+              baseSnapshot: baseSnapshotRef.current,
+              onConflict: () => setSyncConflict(true),
+            });
+            if (flush && flush.updatedAt) lastSyncedAtRef.current = flush.updatedAt;
+            if (flush && (flush.ok || flush.merged)) baseSnapshotRef.current = flush.data || latestSnapshotRef.current;
+          } catch { /* vẫn khoá lại bên dưới dù lưu cuối lỗi — ưu tiên an toàn hơn mất thêm dữ liệu */ }
+        }
+        if (!stopped) setStaleVersion(true);
       } catch { /* mạng chập chờn — thử lại lần sau */ }
     };
     const iv = setInterval(check, 3 * 60 * 1000);
@@ -16369,7 +16393,7 @@ export default function SalesManager() {
       )}
       {staleVersion && !syncConflict && (
         <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center gap-3 px-4 py-3 text-sm text-white flex-wrap text-center" style={{ background: BRASS }}>
-          <span>🔄 Trang đang mở bản cũ hơn bản mới nhất (có thể do mở tab đã lâu). Hệ thống đã TẠM DỪNG tự lưu để tránh ghi đè nhầm — vui lòng tải lại trang để lấy bản mới nhất.</span>
+          <span>🔄 Trang đang mở bản cũ hơn bản mới nhất (có thể do mở tab đã lâu). Đã tự lưu lại các thao tác gần nhất của bạn, sau đó TẠM DỪNG tự lưu để tránh ghi đè nhầm — vui lòng tải lại trang để lấy bản mới nhất rồi tiếp tục thao tác.</span>
           <button onClick={() => location.reload()} className="px-3.5 py-1.5 rounded-sm text-sm font-medium shrink-0" style={{ background: "#fff", color: BRASS }}>Tải lại trang</button>
         </div>
       )}
