@@ -2494,8 +2494,10 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
 
   const categoryOptions = [...(categories || [])].sort();
   const createdByOptions = [...new Set(products.map((p) => p.createdBy).filter(Boolean))].sort();
-  // Chỉ admin dùng — gom sản phẩm theo duplicateCheckKey(tên), nhóm nào có từ 2 sản phẩm trở lên
-  // (và khoá không rỗng) thì coi là nghi trùng tên.
+  // Chỉ admin dùng — gom sản phẩm theo duplicateCheckKey(tên). Các phiên bản CÙNG 1 nhóm
+  // (chung variantGroupId) vốn dĩ chỉ khác hậu tố màu/hạng nên đã ra cùng 1 khoá — không tính là
+  // trùng lẫn nhau, gộp chung thành 1 "đơn vị". Chỉ cảnh báo khi 1 khoá có từ 2 đơn vị khác nhau
+  // trở lên (2 sản phẩm/nhóm riêng biệt vô tình đặt tên giống nhau).
   const duplicateProductIds = useMemo(() => {
     if (!isAdmin) return new Set();
     const groups = new Map();
@@ -2503,12 +2505,17 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
       if (p.isService) continue;
       const key = duplicateCheckKey(p.name);
       if (!key) continue;
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key).push(p.id);
+      if (!groups.has(key)) groups.set(key, new Map());
+      const unitKey = p.variantGroupId || `_solo_${p.id}`;
+      const units = groups.get(key);
+      if (!units.has(unitKey)) units.set(unitKey, []);
+      units.get(unitKey).push(p.id);
     }
     const ids = new Set();
-    for (const idList of groups.values()) {
-      if (idList.length >= 2) idList.forEach((id) => ids.add(id));
+    for (const units of groups.values()) {
+      if (units.size >= 2) {
+        for (const idList of units.values()) idList.forEach((id) => ids.add(id));
+      }
     }
     return ids;
   }, [products, isAdmin]);
