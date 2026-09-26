@@ -441,6 +441,22 @@ function isIncompleteProduct(p) {
   return !p.isService && (!p.category || !p.brand || !p.retailPrice || !p.costPrice);
 }
 
+// Từ khoá biến thể (màu sắc/hạng) — 2 sản phẩm CHỈ khác nhau ở các từ này (VD "... Black" và
+// "... White") vẫn coi là biến thể của CÙNG 1 sản phẩm gốc, không tính là trùng tên. Dùng để dò
+// cảnh báo trùng sản phẩm (thường do nhập Excel nhiều lần/nhiều nguồn cho cùng 1 mặt hàng).
+const DUPLICATE_CHECK_STOPWORDS = new Set([
+  "BLACK", "WHITE", "PINK", "RED", "BLUE", "GREEN", "GREY", "GRAY", "ORANGE", "PURPLE", "SILVER",
+  "GOLD", "YELLOW", "BROWN", "DEN", "TRANG", "HONG", "DO", "XANH", "XAM", "BAC", "VANG", "TIM", "CAM",
+  "PRO", "ELITE", "PLUS", "MAX", "ULTRA", "LITE", "MINI", "SE", "EVO", "NEW",
+]);
+// Rút gọn tên sản phẩm về 1 "khoá" để so trùng: bỏ dấu, viết hoa, bỏ các từ biến thể ở trên, giữ
+// nguyên thứ tự các từ còn lại. 2 sản phẩm ra cùng 1 khoá (và khoá đó không rỗng) = nghi trùng.
+function duplicateCheckKey(name) {
+  const ascii = stripDiacriticsVN(String(name || "")).toUpperCase();
+  const tokens = (ascii.match(/[A-Z0-9]+/g) || []).filter((t) => !DUPLICATE_CHECK_STOPWORDS.has(t));
+  return tokens.join(" ");
+}
+
 // flatten every product's movements into a series list: {serial, code, name, importDoc, importDate, exportDoc, exportDate, status}
 function seriesList(p) {
   const rows = [];
@@ -2432,6 +2448,9 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
   // hàng hoá thật, hiện ra sẽ gây rối/phình danh sách kho. Ai cần sửa thì tự bật lên xem.
   const [showServices, setShowServices] = useState(false);
   const [filterIncomplete, setFilterIncomplete] = useState(false);
+  // Chỉ admin dùng — dò sản phẩm nghi trùng tên (thường do nhập Excel nhiều lần/nhiều nguồn cho
+  // cùng 1 mặt hàng). Không tính các phiên bản màu sắc/hạng (Black/White/Pro/Elite...) là trùng.
+  const [filterDuplicate, setFilterDuplicate] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   // Lọc theo ngày TẠO mã (createdAt) — dùng khi bấm cột "Mã mới vào kho" từ báo cáo "Tốc độ thêm mã sản phẩm mới".
   const [filterCreatedFrom, setFilterCreatedFrom] = useState("");
@@ -2475,7 +2494,25 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
 
   const categoryOptions = [...(categories || [])].sort();
   const createdByOptions = [...new Set(products.map((p) => p.createdBy).filter(Boolean))].sort();
-  const activeFilterCount = [filterCategory, filterBrand, filterStock, filterSupplier, filterCreatedBy].filter(Boolean).length + (filterIncomplete ? 1 : 0);
+  // Chỉ admin dùng — gom sản phẩm theo duplicateCheckKey(tên), nhóm nào có từ 2 sản phẩm trở lên
+  // (và khoá không rỗng) thì coi là nghi trùng tên.
+  const duplicateProductIds = useMemo(() => {
+    if (!isAdmin) return new Set();
+    const groups = new Map();
+    for (const p of products) {
+      if (p.isService) continue;
+      const key = duplicateCheckKey(p.name);
+      if (!key) continue;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(p.id);
+    }
+    const ids = new Set();
+    for (const idList of groups.values()) {
+      if (idList.length >= 2) idList.forEach((id) => ids.add(id));
+    }
+    return ids;
+  }, [products, isAdmin]);
+  const activeFilterCount = [filterCategory, filterBrand, filterStock, filterSupplier, filterCreatedBy].filter(Boolean).length + (filterIncomplete ? 1 : 0) + (filterDuplicate ? 1 : 0);
   // Nhãn hiệu giờ thuộc về 1 nhóm hàng cụ thể — brandOptions (phẳng, dùng cho bộ lọc) và brandOptionsOf(category) (dùng cho form sản phẩm theo đúng nhóm hàng đã chọn).
   const brandOptions = [...new Set((brands || []).map((b) => b.name))].sort();
   const brandOptionsOf = (cat) => [...(brands || [])].filter((b) => b.category === cat).map((b) => b.name).sort();
@@ -2491,6 +2528,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
       && (!filterCreatedBy || p.createdBy === filterCreatedBy)
       && (!filterStock || (!p.isService && (filterStock === "negative" ? productStats(p).closingQty < 0 : productStats(p).closingQty > 0)))
       && (!filterIncomplete || isIncompleteProduct(p))
+      && (!filterDuplicate || duplicateProductIds.has(p.id))
       && (() => {
         if (!filterCreatedFrom && !filterCreatedTo) return true;
         if (!p.createdAt) return false;
@@ -2991,7 +3029,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           <Filter size={14} /> Bộ lọc {activeFilterCount > 0 && <span className="text-[10px] px-1.5 rounded-full text-white" style={{ background: INK }}>{activeFilterCount}</span>}
         </button>
         {activeFilterCount > 0 && (
-          <button onClick={() => { setFilterCategory(""); setFilterBrand(""); setFilterStock(""); setFilterSupplier(""); setFilterCreatedBy(""); setFilterIncomplete(false); }} className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full font-medium shrink-0" style={{ background: `${RUST}1A`, color: RUST }}>
+          <button onClick={() => { setFilterCategory(""); setFilterBrand(""); setFilterStock(""); setFilterSupplier(""); setFilterCreatedBy(""); setFilterIncomplete(false); setFilterDuplicate(false); }} className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full font-medium shrink-0" style={{ background: `${RUST}1A`, color: RUST }}>
             <X size={12} /> Đang lọc — Xoá lọc
           </button>
         )}
@@ -3094,6 +3132,12 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
             <input type="checkbox" checked={filterIncomplete} onChange={(e) => setFilterIncomplete(e.target.checked)} />
             Chỉ sản phẩm thiếu thông tin
           </label>
+          {isAdmin && (
+            <label className="flex items-center gap-1.5 text-xs shrink-0 pb-1.5" style={{ color: INK, opacity: 0.7 }}>
+              <input type="checkbox" checked={filterDuplicate} onChange={(e) => setFilterDuplicate(e.target.checked)} />
+              Chỉ sản phẩm nghi trùng tên
+            </label>
+          )}
         </div>
       )}
 
@@ -3155,6 +3199,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                           {p.hasSeries && <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${BLUE}1A`, color: BLUE }}><Barcode size={10} /> Series</span>}
                           {p.vat && <span className="inline-block text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${BRASS}1A`, color: BRASS }}>{VAT_OPTIONS.find((v) => v.id === p.vat)?.label || p.vat}</span>}
                           {p.variantAttrs && <span className="inline-block text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${PURPLE}1A`, color: PURPLE }}>{Object.values(p.variantAttrs).join(" / ")}</span>}
+                          {isAdmin && duplicateProductIds.has(p.id) && <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${RUST}1A`, color: RUST }}><AlertTriangle size={10} /> Nghi trùng</span>}
                         </div>
                       </td>
                       <td className="px-2 py-3 opacity-70 whitespace-nowrap">{p.unit}</td>
