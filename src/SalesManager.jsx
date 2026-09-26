@@ -790,6 +790,16 @@ function mergeState(base, local, remote) {
   merged.session = local.session;
   return merged;
 }
+// So 2 mốc thời gian theo ĐÚNG thời điểm thực tế (mili-giây), KHÔNG so chuỗi ký tự — Supabase trả về
+// updated_at với định dạng khác (số chữ số phần giây, ký hiệu múi giờ) so với chuỗi mình tự ghi lúc
+// lưu, dù là cùng 1 thời điểm. So chuỗi trực tiếp sẽ LUÔN lệch, khiến hệ thống tưởng nhầm là "có người
+// khác vừa lưu" ngay cả khi dùng 1 mình — đây là nguyên nhân banner chặn lưu hiện sai.
+function sameInstant(a, b) {
+  if (!a || !b) return a === b;
+  const ta = new Date(a).getTime(), tb = new Date(b).getTime();
+  if (isNaN(ta) || isNaN(tb)) return a === b;
+  return ta === tb;
+}
 // Trước khi tự lưu, kiểm tra xem có ai vừa lưu đè lên bản chung sau lần mình đọc/lưu gần nhất không
 // — nếu có, KHÔNG ghi đè thẳng lên (tránh mất dữ liệu mới của họ); thay vào đó tải bản của họ về rồi
 // TỰ GỘP với thay đổi cục bộ của mình (mergeState ở trên), lưu lại bản đã gộp — vừa giữ được phần
@@ -799,7 +809,7 @@ async function saveData(data, { expectedUpdatedAt, baseSnapshot, onConflict, onM
   try {
     if (expectedUpdatedAt && window.storage.getMeta) {
       const meta = await window.storage.getMeta(STORAGE_KEY, true).catch(() => null);
-      if (meta && meta.updatedAt && meta.updatedAt !== expectedUpdatedAt) {
+      if (meta && meta.updatedAt && !sameInstant(meta.updatedAt, expectedUpdatedAt)) {
         try {
           const remoteRaw = await window.storage.get(STORAGE_KEY, true);
           if (remoteRaw && remoteRaw.value) {
@@ -16080,7 +16090,7 @@ export default function SalesManager() {
           return;
         }
         const meta = await window.storage.getMeta(STORAGE_KEY, true);
-        if (stopped || pendingSaveRef.current || !meta || !meta.updatedAt || meta.updatedAt === lastSyncedAtRef.current) return;
+        if (stopped || pendingSaveRef.current || !meta || !meta.updatedAt || sameInstant(meta.updatedAt, lastSyncedAtRef.current)) return;
         const raw = await window.storage.get(STORAGE_KEY, true);
         if (stopped || !raw || !raw.value) return;
         const remote = JSON.parse(raw.value);
