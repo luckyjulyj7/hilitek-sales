@@ -412,7 +412,18 @@ const parseSeries = (text) =>
   text.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
 
 /* ---------------- derived stock helpers (Tồn đầu / Nhập / Xuất / Tồn cuối) ---------------- */
+// Cache theo REFERENCE của object sản phẩm — cả file luôn cập nhật sản phẩm theo kiểu immutable
+// (tạo object mới khi movements/giá thay đổi, không sửa trực tiếp), nên cache theo reference là an
+// toàn: sản phẩm chưa đổi gì thì trả kết quả cũ ngay (O(1)) thay vì duyệt lại toàn bộ movements mỗi
+// lần render — tránh app càng nhiều dữ liệu (nhiều sản phẩm, nhiều lượt nhập/xuất) càng lag.
+const productStatsCache = new WeakMap();
 function productStats(p) {
+  if (productStatsCache.has(p)) return productStatsCache.get(p);
+  const result = computeProductStats(p);
+  productStatsCache.set(p, result);
+  return result;
+}
+function computeProductStats(p) {
   const inMoves = p.movements.filter((m) => m.type === "in");
   const outMoves = p.movements.filter((m) => m.type === "out");
   const importedQty = inMoves.reduce((s, m) => s + m.qty, 0);
@@ -2465,6 +2476,12 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState(new Set());
+  // Phân trang bảng sản phẩm — càng nhiều sản phẩm thì render hết 1 lần càng lag (nhiều DOM node),
+  // nên chỉ vẽ PRODUCT_PAGE_SIZE dòng/trang. Quay về trang 1 mỗi khi đổi tìm kiếm/bộ lọc.
+  const [productPage, setProductPage] = useState(1);
+  useEffect(() => {
+    setProductPage(1);
+  }, [query, filterCategory, filterBrand, filterStock, filterSupplier, filterCreatedBy, filterIncomplete, filterDuplicate, filterCreatedFrom, filterCreatedTo, showServices]);
   const [mergeOpen, setMergeOpen] = useState(false);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [deletePasswordInput, setDeletePasswordInput] = useState("");
@@ -2548,6 +2565,26 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
   ).reverse();
   const toggleSelect = (id) => setSelectedIds((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
   const toggleSelectAll = () => setSelectedIds((prev) => (prev.size === filtered.length ? new Set() : new Set(filtered.map((p) => p.id))));
+
+  // Gom các phiên bản (variantGroupId) lại thành 1 dòng đại diện — bấm mở ra mới hiện từng phiên
+  // bản riêng. Dùng luôn làm đơn vị phân trang (1 group = 1 "dòng" trong trang, dù mở rộng ra nhiều
+  // dòng con) để số dòng/trang không nhảy lung tung khi mở/đóng 1 nhóm phiên bản.
+  const productGroups = [];
+  {
+    const seenGroups = new Set();
+    filtered.forEach((p) => {
+      if (!p.variantGroupId) { productGroups.push({ type: "single", p }); return; }
+      if (seenGroups.has(p.variantGroupId)) return;
+      seenGroups.add(p.variantGroupId);
+      const members = filtered.filter((x) => x.variantGroupId === p.variantGroupId);
+      productGroups.push({ type: "group", gid: p.variantGroupId, members });
+    });
+  }
+  // Phân trang — chỉ vẽ ra 1 trang thay vì toàn bộ danh sách, tránh app chậm dần khi có nhiều sản phẩm.
+  const PRODUCT_PAGE_SIZE = 50;
+  const productTotalPages = Math.max(1, Math.ceil(productGroups.length / PRODUCT_PAGE_SIZE));
+  const productSafePage = Math.min(productPage, productTotalPages);
+  const pagedProductGroups = productGroups.slice((productSafePage - 1) * PRODUCT_PAGE_SIZE, productSafePage * PRODUCT_PAGE_SIZE);
 
   // Xuất Excel: theo sản phẩm đã chọn, hoặc theo bộ lọc hiện tại (nhóm hàng/nhãn hiệu/VAT/tìm kiếm) nếu chưa chọn dòng nào.
   const exportProducts = () => {
@@ -3160,21 +3197,6 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           </thead>
           <tbody>
             {(() => {
-              // Gom các phiên bản (variantGroupId) lại thành 1 dòng đại diện — bấm mở ra mới
-              // hiện từng phiên bản riêng để thao tác (tồn kho/giá/sửa vẫn theo đúng phiên bản đó).
-              // Lưu ý: chỉ nhóm 1 LẦN mỗi variantGroupId ở đây (không tự đẩy dòng phiên bản nào cả) —
-              // các dòng phiên bản khi mở rộng được render riêng ở .map(members) bên dưới, tránh bị
-              // đẩy trùng 2 lần (từng gây key trùng khiến tick chọn/xoá bị đơ ở dòng phiên bản).
-              const seenGroups = new Set();
-              const groups = [];
-              filtered.forEach((p) => {
-                if (!p.variantGroupId) { groups.push({ type: "single", p }); return; }
-                if (seenGroups.has(p.variantGroupId)) return;
-                seenGroups.add(p.variantGroupId);
-                const members = filtered.filter((x) => x.variantGroupId === p.variantGroupId);
-                groups.push({ type: "group", gid: p.variantGroupId, members });
-              });
-
               const renderMemberRow = (p, inGroup) => {
                 const stats = productStats(p);
                 // inGroup: dòng phiên bản đang mở ra từ 1 nhóm — tô cùng tông tím nhạt hơn dòng đại
@@ -3236,7 +3258,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                 );
               };
 
-              return groups.map((g) => {
+              return pagedProductGroups.map((g) => {
                 if (g.type === "single") return renderMemberRow(g.p);
                 const { gid, members } = g;
                 const rep = members[0];
@@ -3341,6 +3363,21 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           </tbody>
         </table>
       </div>
+
+      {productGroups.length > 0 && (
+        <div className="flex items-center justify-between mt-2.5 text-xs" style={{ color: INK, opacity: 0.7 }}>
+          <span>
+            {(productSafePage - 1) * PRODUCT_PAGE_SIZE + 1}–{Math.min(productSafePage * PRODUCT_PAGE_SIZE, productGroups.length)} / {productGroups.length} sản phẩm
+          </span>
+          <div className="flex items-center gap-1">
+            <button onClick={() => setProductPage((p) => Math.max(1, p - 1))} disabled={productSafePage <= 1}
+              className="px-2 py-1 rounded-sm disabled:opacity-30" style={{ border: `1px solid ${LINE}` }}><ChevronLeft size={14} /></button>
+            <span className="px-2">Trang {productSafePage} / {productTotalPages}</span>
+            <button onClick={() => setProductPage((p) => Math.min(productTotalPages, p + 1))} disabled={productSafePage >= productTotalPages}
+              className="px-2 py-1 rounded-sm disabled:opacity-30" style={{ border: `1px solid ${LINE}` }}><ChevronRight size={14} /></button>
+          </div>
+        </div>
+      )}
 
       {/* Modal chi tiết sản phẩm — thông tin đầy đủ + danh sách series + lịch sử nhập/xuất */}
       {viewingProduct && (() => {
@@ -13982,6 +14019,11 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
   const [editId, setEditId] = useState(null);
   const [expandedGroups, setExpandedGroups] = useState(new Set());
   const toggleGroup = (gid) => setExpandedGroups((prev) => { const n = new Set(prev); n.has(gid) ? n.delete(gid) : n.add(gid); return n; });
+  // Phân trang — tránh vẽ hết toàn bộ danh sách 1 lần khi có nhiều sản phẩm (giống tab Sản phẩm & Tồn kho).
+  const [webPage, setWebPage] = useState(1);
+  useEffect(() => {
+    setWebPage(1);
+  }, [q, filter, filterCategory, filterBrand, filterPublishedFrom, filterPublishedTo]);
 
   // Bấm "Sửa trên Website" từ bên "Sản phẩm & Tồn kho" -> vào thẳng trang sửa đúng sản phẩm đó.
   useEffect(() => {
@@ -14033,6 +14075,24 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
       .sort((a, b) => b.i - a.i)
       .map(({ p }) => p);
   }, [products, q, filter, filterCategory, filterBrand, filterPublishedFrom, filterPublishedTo]);
+
+  // Gộp các phiên bản (variantGroupId) thành 1 dòng đại diện — dùng luôn làm đơn vị phân trang
+  // (1 group = 1 dòng trong trang) để số dòng/trang không đổi khi mở/đóng 1 nhóm.
+  const webGroups = useMemo(() => {
+    const groups = [];
+    const seenGroups = new Set();
+    rows.forEach((p) => {
+      if (!p.variantGroupId) { groups.push({ type: "single", p }); return; }
+      if (seenGroups.has(p.variantGroupId)) return;
+      seenGroups.add(p.variantGroupId);
+      groups.push({ type: "group", gid: p.variantGroupId, members: rows.filter((x) => x.variantGroupId === p.variantGroupId) });
+    });
+    return groups;
+  }, [rows]);
+  const WEB_PAGE_SIZE = 50;
+  const webTotalPages = Math.max(1, Math.ceil(webGroups.length / WEB_PAGE_SIZE));
+  const webSafePage = Math.min(webPage, webTotalPages);
+  const pagedWebGroups = webGroups.slice((webSafePage - 1) * WEB_PAGE_SIZE, webSafePage * WEB_PAGE_SIZE);
 
   const patch = (id, fn) => setProducts((prev) => prev.map((p) => (p.id === id ? fn(p) : p)));
   // Đóng dấu ngày đăng web lần đầu (publishedAt/publishedBy) khi 1 sản phẩm chuyển từ chưa đăng -> đăng —
@@ -14144,18 +14204,6 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
           <tbody>
             {rows.length === 0 && <tr><td colSpan={7} className="text-center py-8 opacity-50">Không có sản phẩm.</td></tr>}
             {(() => {
-              // Gộp các phiên bản (cùng variantGroupId, dù không đứng cạnh nhau trong rows) thành 1
-              // dòng đại diện (mô tả/thông số/trạng thái/giá so sánh đã dùng CHUNG qua setWeb ở
-              // trên), bấm mở ra mới thấy từng phiên bản để sửa ẢNH riêng.
-              const groups = [];
-              const seenGroups = new Set();
-              rows.forEach((p) => {
-                if (!p.variantGroupId) { groups.push({ type: "single", p }); return; }
-                if (seenGroups.has(p.variantGroupId)) return;
-                seenGroups.add(p.variantGroupId);
-                groups.push({ type: "group", gid: p.variantGroupId, members: rows.filter((x) => x.variantGroupId === p.variantGroupId) });
-              });
-
               const renderRow = (p, indent) => {
                 const st = productStats(p);
                 const vLabel = p.variantAttrs ? Object.values(p.variantAttrs).join(" / ") : "";
@@ -14210,7 +14258,7 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
                 );
               };
 
-              return groups.map((g) => {
+              return pagedWebGroups.map((g) => {
                 if (g.type === "single") return renderRow(g.p, false);
                 const { gid, members } = g;
                 const rep = members[0];
@@ -14269,6 +14317,20 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
           </tbody>
         </table>
       </div>
+      {webGroups.length > 0 && (
+        <div className="flex items-center justify-between mt-2.5 text-xs" style={{ color: INK, opacity: 0.7 }}>
+          <span>
+            {(webSafePage - 1) * WEB_PAGE_SIZE + 1}–{Math.min(webSafePage * WEB_PAGE_SIZE, webGroups.length)} / {webGroups.length} sản phẩm
+          </span>
+          <div className="flex items-center gap-1">
+            <button onClick={() => setWebPage((p) => Math.max(1, p - 1))} disabled={webSafePage <= 1}
+              className="px-2 py-1 rounded-sm disabled:opacity-30" style={{ border: `1px solid ${LINE}` }}><ChevronLeft size={14} /></button>
+            <span className="px-2">Trang {webSafePage} / {webTotalPages}</span>
+            <button onClick={() => setWebPage((p) => Math.min(webTotalPages, p + 1))} disabled={webSafePage >= webTotalPages}
+              className="px-2 py-1 rounded-sm disabled:opacity-30" style={{ border: `1px solid ${LINE}` }}><ChevronRight size={14} /></button>
+          </div>
+        </div>
+      )}
       <p className="text-xs opacity-50 mt-3">Thay đổi tự lưu. Web khách cập nhật khi tải lại trang.</p>
     </div>
   );
