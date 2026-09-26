@@ -2622,6 +2622,15 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
     if (has("Ảnh (link, cách nhau bởi dấu phẩy)")) patch.images = String(row["Ảnh (link, cách nhau bởi dấu phẩy)"]).split(",").map((s) => s.trim()).filter(Boolean);
     return patch;
   };
+  // Đọc cột Bảo hành / Định mức tồn tối thiểu trong 1 dòng Excel → patch cho sản phẩm đã có sẵn.
+  // CHỈ lấy ô có điền (ô để trống = giữ nguyên) — dùng để sửa hàng loạt bảo hành/định mức tồn kho qua Excel.
+  const parseInventoryColumns = (row) => {
+    const has = (k) => row[k] !== undefined && String(row[k]).trim() !== "";
+    const patch = {};
+    if (has("Bảo hành")) patch.warrantyMonths = parseWarrantyCell(row["Bảo hành"]);
+    if (has("Định mức tồn tối thiểu")) patch.minStockLevel = Number(row["Định mức tồn tối thiểu"]) || 0;
+    return patch;
+  };
   const handleImportFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -2637,7 +2646,8 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         const existingCodes = new Set(byCode.keys());
         const existingSkus = new Set(bySku.keys());
         const newProducts = [];
-        const webUpdates = new Map(); // productId -> patch web (sản phẩm đã có sẵn — chỉ cập nhật phần web, không đụng kho/giá)
+        const webUpdates = new Map(); // productId -> patch web (sản phẩm đã có sẵn — chỉ cập nhật phần web, không đụng giá)
+        const invUpdates = new Map(); // productId -> patch { warrantyMonths?, minStockLevel? } (sản phẩm đã có sẵn — không đụng giá/tồn kho hiện tại)
         const skipped = [];
         const newCatsSet = new Set(categories || []);
         const newBrandsList = [...(brands || [])];
@@ -2648,13 +2658,15 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           const sku = String(row["SKU"] ?? "").trim();
           const skuKey = sku.toLowerCase();
 
-          // Mã đã có sẵn trong kho → coi đây là dòng "cập nhật thông tin web hàng loạt"
-          // (xuất Excel ra, điền cột web rồi nhập lại) — KHÔNG đụng tới giá/tồn kho của sản phẩm.
+          // Mã đã có sẵn trong kho → coi đây là dòng "cập nhật hàng loạt": cột web, Bảo hành, Định mức tồn tối
+          // thiểu (ô nào có điền thì áp dụng, để trống thì giữ nguyên) — KHÔNG đụng tới giá/tồn kho của sản phẩm.
           const existing = byCode.get(codeKey) || (skuKey ? bySku.get(skuKey) : undefined);
           if (existing) {
-            const patch = parseWebColumns(row);
-            if (Object.keys(patch).length > 0) webUpdates.set(existing.id, patch);
-            else skipped.push(code);
+            const webPatch = parseWebColumns(row);
+            const invPatch = parseInventoryColumns(row);
+            if (Object.keys(webPatch).length > 0) webUpdates.set(existing.id, webPatch);
+            if (Object.keys(invPatch).length > 0) invUpdates.set(existing.id, invPatch);
+            if (Object.keys(webPatch).length === 0 && Object.keys(invPatch).length === 0) skipped.push(code);
             return;
           }
 
@@ -2682,14 +2694,18 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
             web: importedWeb,
           }));
         });
-        if (newProducts.length > 0 || webUpdates.size > 0) {
+        if (newProducts.length > 0 || webUpdates.size > 0 || invUpdates.size > 0) {
           setProducts((prev) =>
             prev
               .map((p) => {
-                if (!webUpdates.has(p.id)) return p;
-                const newWeb = normalizeWeb({ ...normalizeWeb(p.web), ...webUpdates.get(p.id) });
-                if (newWeb.published && !p.web?.publishedAt) { newWeb.publishedAt = new Date().toISOString(); newWeb.publishedBy = currentUser.fullName; }
-                return { ...p, web: newWeb };
+                let next = p;
+                if (webUpdates.has(p.id)) {
+                  const newWeb = normalizeWeb({ ...normalizeWeb(p.web), ...webUpdates.get(p.id) });
+                  if (newWeb.published && !p.web?.publishedAt) { newWeb.publishedAt = new Date().toISOString(); newWeb.publishedBy = currentUser.fullName; }
+                  next = { ...next, web: newWeb };
+                }
+                if (invUpdates.has(p.id)) next = { ...next, ...invUpdates.get(p.id) };
+                return next;
               })
               .concat(newProducts)
           );
@@ -2700,9 +2716,10 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           "Nhập sản phẩm từ Excel",
           `${newProducts.length} sản phẩm mới` +
             (webUpdates.size ? ` · Cập nhật web cho ${webUpdates.size} sản phẩm` : "") +
+            (invUpdates.size ? ` · Cập nhật bảo hành/định mức tồn cho ${invUpdates.size} sản phẩm` : "") +
             (skipped.length > 0 ? ` · Bỏ qua ${skipped.length} dòng` : "")
         );
-        setImportResult({ added: newProducts.length, webUpdated: webUpdates.size, skipped });
+        setImportResult({ added: newProducts.length, webUpdated: webUpdates.size, invUpdated: invUpdates.size, skipped });
       } catch (err) {
         alert("Không đọc được file Excel — vui lòng dùng đúng file đã tải từ nút \"Xuất Excel\" (không đổi tên cột) rồi thử lại.");
       }
@@ -3889,10 +3906,13 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
             {importResult.webUpdated > 0 && (
               <p className="text-sm mt-1" style={{ color: FOREST }}>Đã cập nhật thông tin web cho <b>{importResult.webUpdated}</b> sản phẩm có sẵn (không đụng giá/tồn kho).</p>
             )}
+            {importResult.invUpdated > 0 && (
+              <p className="text-sm mt-1" style={{ color: FOREST }}>Đã cập nhật Bảo hành/Định mức tồn tối thiểu cho <b>{importResult.invUpdated}</b> sản phẩm có sẵn (không đụng giá/tồn kho).</p>
+            )}
           </div>
           {importResult.skipped.length > 0 && (
             <div className="p-3 rounded-sm" style={{ background: `${BRASS}0D`, border: `1px solid ${BRASS}44` }}>
-              <p className="text-sm mb-1.5" style={{ color: BRASS }}>Bỏ qua {importResult.skipped.length} dòng (mã đã tồn tại nhưng không có cột web nào được điền, hoặc trùng mã trong file):</p>
+              <p className="text-sm mb-1.5" style={{ color: BRASS }}>Bỏ qua {importResult.skipped.length} dòng (mã đã tồn tại nhưng không có cột web/Bảo hành/Định mức tồn tối thiểu nào được điền, hoặc trùng mã trong file):</p>
               <p className="text-xs opacity-70" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{importResult.skipped.join(", ")}</p>
             </div>
           )}
