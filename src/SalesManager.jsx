@@ -1627,6 +1627,9 @@ function normalizeProduct(p) {
     // Phiên bản sản phẩm (màu sắc, kích cỡ...) — các phiên bản cùng 1 sản phẩm gốc chia sẻ chung variantGroupId.
     variantGroupId: p.variantGroupId || null,
     variantAttrs: (p.variantAttrs && typeof p.variantAttrs === "object" && !Array.isArray(p.variantAttrs)) ? p.variantAttrs : null,
+    // Tên chung hiện ở dòng đại diện nhóm phiên bản (VD "Vỏ máy vi tính Mini Sugo 13") — khác tên
+    // đầy đủ riêng từng phiên bản. Để trống thì baseVariantName() tự suy ra bằng cách cắt hậu tố.
+    variantGroupName: p.variantGroupName ? String(p.variantGroupName).trim() : "",
     // Sản phẩm dịch vụ (vd Phí sửa chữa, Phí IT Helpdesk) — không quản lý tồn kho, không trừ kho khi bán.
     isService: !!p.isService,
     // Lịch sử thay đổi giá (bán lẻ/bán sỉ/giá nhập) — mỗi lần sửa sản phẩm mà giá đổi sẽ tự ghi lại ai đổi, lúc nào, từ bao nhiêu thành bao nhiêu.
@@ -2575,12 +2578,12 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
   // bản — gán chung variantGroupId + variantAttrs theo đúng tên attribute + giá trị admin xác nhận,
   // để từ đây web/danh sách tự gộp lại như sản phẩm tạo qua "Nhiều phiên bản". KHÔNG đổi tên/giá/
   // kho — chỉ gắn thông tin liên kết.
-  const applyMerge = (attrName, valuesById) => {
+  const applyMerge = (attrName, valuesById, groupName) => {
     const gid = uid();
     setProducts((prev) => prev.map((p) => (
-      valuesById[p.id] != null ? { ...p, variantGroupId: gid, variantAttrs: { [attrName]: valuesById[p.id] } } : p
+      valuesById[p.id] != null ? { ...p, variantGroupId: gid, variantAttrs: { [attrName]: valuesById[p.id] }, variantGroupName: groupName || "" } : p
     )));
-    addLog("Gộp sản phẩm thành phiên bản", `${Object.keys(valuesById).length} sản phẩm · ${attrName}`);
+    addLog("Gộp sản phẩm thành phiên bản", `${Object.keys(valuesById).length} sản phẩm · ${attrName}${groupName ? ` · "${groupName}"` : ""}`);
     setMergeOpen(false);
     setSelectedIds(new Set());
   };
@@ -2769,8 +2772,15 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           ["vat", "VAT"], ["weight", "Khối lượng"],
         ]
       );
+      const newGroupName = (form.variantGroupName || "").trim();
+      const groupNameChanged = editing.variantGroupId && newGroupName !== (editing.variantGroupName || "").trim();
       setProducts((prev) => prev.map((p) => {
-        if (p.id !== editing.id) return p;
+        if (p.id !== editing.id) {
+          // Tên chung của nhóm phiên bản là thông tin DÙNG CHUNG — đổi ở 1 phiên bản thì áp dụng
+          // luôn cho các phiên bản anh em còn lại, tránh mỗi phiên bản hiện 1 tên chung khác nhau.
+          if (groupNameChanged && p.variantGroupId === editing.variantGroupId) return { ...p, variantGroupName: newGroupName };
+          return p;
+        }
         const changes = [];
         if (newRetail !== p.retailPrice) changes.push({ field: "Giá bán lẻ", oldValue: p.retailPrice, newValue: newRetail });
         if (newWholesale !== p.wholesalePrice) changes.push({ field: "Giá bán sỉ", oldValue: p.wholesalePrice, newValue: newWholesale });
@@ -2786,7 +2796,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           length: Number(form.length) || 0, width: Number(form.width) || 0, height: Number(form.height) || 0,
           sku: form.sku || p.sku, vat: form.vat, barcode: form.barcode || "", supplierId: form.supplierId || "", warrantyMonths: Number(form.warrantyMonths) || 0, image: form.image || null, images: Array.isArray(form.images) ? form.images.filter(Boolean).slice(0, 3) : [],
           priceHistory: newHistoryEntries.length > 0 ? [...newHistoryEntries, ...(p.priceHistory || [])] : (p.priceHistory || []),
-          web: newWeb,
+          web: newWeb, variantGroupName: editing.variantGroupId ? newGroupName : p.variantGroupName,
         };
       }));
       addLog("Sửa sản phẩm", `${form.code} · ${form.name} — ${diffSummary(infoChanges, "không đổi thông tin")}`);
@@ -3564,6 +3574,12 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
 
           <Field label="Tên vật tư"><input className={inputCls} style={{ borderColor: LINE }} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
 
+          {editing.id && editing.variantGroupId && (
+            <Field label="Tên chung hiện ở dòng đại diện của nhóm phiên bản" hint={`Áp dụng cho tất cả ${editingSiblings.length} phiên bản cùng nhóm. Để trống thì hiện nguyên tên của 1 phiên bản đại diện.`}>
+              <input className={inputCls} style={{ borderColor: LINE }} value={form.variantGroupName || ""} onChange={(e) => setForm({ ...form, variantGroupName: e.target.value })} placeholder="VD: Vỏ máy vi tính Mini Sugo 13" />
+            </Field>
+          )}
+
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <Field label="Nhóm hàng" hint={isAdmin ? "Chọn “+ Tạo nhóm hàng mới…” để thêm nhanh ngay tại đây" : "Chỉ chọn được nhóm hàng do quản trị viên tạo sẵn"}>
               <select className={inputCls} style={{ borderColor: LINE }} value={form.category || ""}
@@ -4205,6 +4221,15 @@ function MergeVariantsModal({ products, onClose, onApply }) {
   const [values, setValues] = useState(() => Object.fromEntries(products.map((p) => [p.id, guessValue(p)])));
   const setVal = (id, v) => setValues((s) => ({ ...s, [id]: v }));
   const alreadyGrouped = products.filter((p) => p.variantGroupId);
+  // Gợi ý tên chung = tên sản phẩm đầu tiên, bỏ phần hậu tố cuối cùng sau " - " (nếu có) — chỉ là
+  // gợi ý ban đầu, admin sửa lại tuỳ ý hoặc để trống (để trống thì hiện nguyên tên sản phẩm đại diện
+  // như trước đây, không đổi hành vi cũ).
+  const guessGroupName = () => {
+    const first = products[0]?.name || "";
+    const parts = first.split(" - ");
+    return parts.length > 1 ? parts.slice(0, -1).join(" - ").trim() : "";
+  };
+  const [groupName, setGroupName] = useState(guessGroupName);
 
   const submit = () => {
     const name = attrName.trim();
@@ -4215,7 +4240,7 @@ function MergeVariantsModal({ products, onClose, onApply }) {
     if (alreadyGrouped.length > 0 && !confirm(`${alreadyGrouped.length} sản phẩm đã thuộc 1 nhóm phiên bản khác — gộp tiếp sẽ tách chúng khỏi nhóm cũ. Tiếp tục?`)) return;
     const valuesById = {};
     products.forEach((p) => { valuesById[p.id] = values[p.id].trim(); });
-    onApply(name, valuesById);
+    onApply(name, valuesById, groupName.trim());
   };
 
   return (
@@ -4225,13 +4250,16 @@ function MergeVariantsModal({ products, onClose, onApply }) {
         — danh sách và web sẽ tự gộp lại 1 thẻ chung, có nút chọn phiên bản. Không đổi tên/giá/tồn
         kho hiện tại, chỉ gắn thông tin liên kết.
       </p>
+      <Field label="Tên chung hiện ở dòng đại diện của nhóm" hint='Để trống thì hiện nguyên tên của 1 sản phẩm đại diện như trước đây. VD: "Vỏ máy vi tính Mini Sugo 13"'>
+        <input value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder="VD: Vỏ máy vi tính Mini Sugo 13" className={inputCls} style={{ borderColor: LINE }} />
+      </Field>
       <Field label='Tên thuộc tính khác nhau giữa các phiên bản (VD: "Màu sắc", "Kích cỡ")'>
         <input value={attrName} onChange={(e) => setAttrName(e.target.value)} className={inputCls} style={{ borderColor: LINE }} />
       </Field>
       <div className="mt-3 space-y-2 max-h-[45vh] overflow-y-auto">
         {products.map((p) => (
-          <div key={p.id} className="flex items-center gap-3 p-2 rounded-sm" style={{ border: `1px solid ${LINE}` }}>
-            <span className="flex-1 text-sm min-w-0 truncate" style={{ color: INK }}>{p.name}</span>
+          <div key={p.id} className="flex items-start gap-3 p-2 rounded-sm" style={{ border: `1px solid ${LINE}` }}>
+            <span className="flex-1 text-sm min-w-0 break-words" style={{ color: INK }} title={p.name}>{p.name}</span>
             <input value={values[p.id] || ""} onChange={(e) => setVal(p.id, e.target.value)} placeholder="Giá trị (VD: Đen)" className="w-40 border rounded-sm py-1.5 px-2 text-sm shrink-0" style={{ borderColor: LINE }} />
           </div>
         ))}

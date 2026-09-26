@@ -9,6 +9,8 @@
  * Dùng để hiện 1 tên chung cho cả nhóm phiên bản (danh sách sản phẩm, web, trang chi tiết web).
  */
 export function baseVariantName(p) {
+  const groupName = p && p.variantGroupName;
+  if (groupName && String(groupName).trim()) return String(groupName).trim();
   const attrs = p && p.variantAttrs;
   const name = (p && p.name) || "";
   if (!attrs || typeof attrs !== "object") return name;
