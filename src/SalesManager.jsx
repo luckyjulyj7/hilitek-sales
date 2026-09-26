@@ -13923,6 +13923,7 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
   const [filter, setFilter] = useState("all"); // all | on | off
   const [filterCategory, setFilterCategory] = useState("");
   const [filterBrand, setFilterBrand] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
   // Lọc theo ngày ĐĂNG WEB (web.publishedAt) — dùng khi bấm cột "Mã đăng web" từ báo cáo "Tốc độ thêm mã sản phẩm mới".
   const [filterPublishedFrom, setFilterPublishedFrom] = useState("");
   const [filterPublishedTo, setFilterPublishedTo] = useState("");
@@ -13954,6 +13955,7 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
       : products.map((p) => p.brand).filter(Boolean);
     return [...new Set(source)].sort((a, b) => a.localeCompare(b, "vi"));
   }, [brands, products, filterCategory]);
+  const activeFilterCount = [filterCategory, filterBrand].filter(Boolean).length;
 
   // Sản phẩm mới thêm luôn nằm CUỐI mảng products (thêm bằng cách nối vào cuối) — sắp theo vị trí
   // gốc GIẢM DẦN để sản phẩm mới tạo hiện lên ĐẦU danh sách. Nhóm phiên bản vẫn gộp đúng vì phần
@@ -14025,29 +14027,19 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-3 flex-wrap text-sm">
-        <span className="opacity-60">Đang đăng: <b>{publishedCount}</b> sản phẩm</span>
-        <div className="flex-1" />
-        <div className="flex gap-1">
-          {[["all", "Tất cả"], ["on", "Đã đăng"], ["off", "Chưa đăng"]].map(([id, l]) => (
-            <button key={id} onClick={() => setFilter(id)} className="px-3 py-1.5 rounded-sm border text-xs"
-              style={{ borderColor: filter === id ? INK : LINE, background: filter === id ? INK : "transparent", color: filter === id ? "#fff" : INK }}>{l}</button>
-          ))}
+      <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+        <div className="relative flex-1 min-w-[220px] max-w-md">
+          <Search size={15} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm tên / SKU…"
+            className="w-full pl-7 pr-2 py-1.5 text-sm rounded-sm border-2 outline-none" style={{ borderColor: INK, background: "#fff" }} />
         </div>
-      </div>
-      <div className="flex items-center gap-2 mb-4 flex-wrap text-sm">
-        <select value={filterCategory} onChange={(e) => { setFilterCategory(e.target.value); setFilterBrand(""); }}
-          className="border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
-          <option value="">Tất cả nhóm hàng</option>
-          {categoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
-        <select value={filterBrand} onChange={(e) => setFilterBrand(e.target.value)}
-          className="border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
-          <option value="">Tất cả nhãn hiệu</option>
-          {brandOptions.map((b) => <option key={b} value={b}>{b}</option>)}
-        </select>
-        {(filterCategory || filterBrand) && (
-          <button onClick={() => { setFilterCategory(""); setFilterBrand(""); }} className="text-xs underline opacity-60">Xoá lọc</button>
+        <button onClick={() => setShowFilters((s) => !s)} className="flex items-center gap-1.5 text-sm px-3.5 py-1.5 rounded-sm border shrink-0" style={{ borderColor: activeFilterCount ? INK : LINE, color: INK, background: showFilters ? PAPER : "#fff" }}>
+          <Filter size={14} /> Bộ lọc {activeFilterCount > 0 && <span className="text-[10px] px-1.5 rounded-full text-white" style={{ background: INK }}>{activeFilterCount}</span>}
+        </button>
+        {activeFilterCount > 0 && (
+          <button onClick={() => { setFilterCategory(""); setFilterBrand(""); }} className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full font-medium shrink-0" style={{ background: `${RUST}1A`, color: RUST }}>
+            <X size={12} /> Đang lọc — Xoá lọc
+          </button>
         )}
         {(filterPublishedFrom || filterPublishedTo) && (
           <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-sm shrink-0" style={{ background: `${BLUE}14`, color: BLUE }}>
@@ -14056,8 +14048,33 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
           </span>
         )}
         <div className="flex-1" />
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm tên / SKU…" className="border rounded-sm py-1.5 px-2.5 text-sm w-48" style={{ borderColor: LINE }} />
+        <div className="flex gap-1 shrink-0">
+          {[["all", "Tất cả"], ["on", "Đã đăng"], ["off", "Chưa đăng"]].map(([id, l]) => (
+            <button key={id} onClick={() => setFilter(id)} className="px-3 py-1.5 rounded-sm border text-xs"
+              style={{ borderColor: filter === id ? INK : LINE, background: filter === id ? INK : "transparent", color: filter === id ? "#fff" : INK }}>{l}</button>
+          ))}
+        </div>
+        <span className="text-sm opacity-60 shrink-0">Đang đăng: <b>{publishedCount}</b> sản phẩm</span>
       </div>
+
+      {showFilters && (
+        <div className="flex flex-wrap items-end gap-3 mb-5 p-4 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+          <label className="text-xs shrink-0" style={{ width: 190 }}>
+            <span className="block opacity-60 mb-1">Nhóm hàng</span>
+            <select value={filterCategory} onChange={(e) => { setFilterCategory(e.target.value); setFilterBrand(""); }} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
+              <option value="">Tất cả</option>
+              {categoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </label>
+          <label className="text-xs shrink-0" style={{ width: 190 }}>
+            <span className="block opacity-60 mb-1">Nhãn hiệu</span>
+            <select value={filterBrand} onChange={(e) => setFilterBrand(e.target.value)} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
+              <option value="">Tất cả</option>
+              {brandOptions.map((b) => <option key={b} value={b}>{b}</option>)}
+            </select>
+          </label>
+        </div>
+      )}
 
       <div className="border rounded-sm overflow-x-auto" style={{ borderColor: LINE }}>
         <table className="w-full text-sm" style={{ minWidth: 760 }}>
