@@ -804,7 +804,8 @@ function sameInstant(a, b) {
 // — nếu có, KHÔNG ghi đè thẳng lên (tránh mất dữ liệu mới của họ); thay vào đó tải bản của họ về rồi
 // TỰ GỘP với thay đổi cục bộ của mình (mergeState ở trên), lưu lại bản đã gộp — vừa giữ được phần
 // việc mình vừa làm, vừa không làm mất phần của người khác, không cần bắt người dùng tải lại trang.
-// Chỉ khi việc gộp thất bại (lỗi mạng...) mới báo về qua onConflict để hiện banner dự phòng.
+// LUÔN LƯU bằng được: nếu tải bản của họ về hoặc gộp bị lỗi (mạng chập chờn...), vẫn ghi đè thẳng
+// bằng dữ liệu cục bộ thay vì bỏ cuộc — thà chấp nhận rủi ro hiếm gặp còn hơn để mất thao tác vừa làm.
 async function saveData(data, { expectedUpdatedAt, baseSnapshot, onConflict, onMerged } = {}) {
   try {
     if (expectedUpdatedAt && window.storage.getMeta) {
@@ -819,9 +820,10 @@ async function saveData(data, { expectedUpdatedAt, baseSnapshot, onConflict, onM
             onMerged && onMerged(merged);
             return { ok: true, merged: true, updatedAt: res && res.updatedAt, data: merged };
           }
-        } catch (mergeErr) { console.error("Gộp dữ liệu lỗi:", mergeErr); }
+        } catch (mergeErr) { console.error("Gộp dữ liệu lỗi — vẫn lưu đè bằng bản cục bộ:", mergeErr); }
         onConflict && onConflict();
-        return { conflict: true };
+        const res = await window.storage.set(STORAGE_KEY, JSON.stringify(data), true);
+        return { ok: true, updatedAt: res && res.updatedAt };
       }
     }
     const res = await window.storage.set(STORAGE_KEY, JSON.stringify(data), true);
@@ -15952,7 +15954,6 @@ export default function SalesManager() {
   // Bản dữ liệu "gốc" mà máy này biết là cả 2 bên (mình và server) đã từng thống nhất — dùng làm mốc
   // so sánh khi cần TỰ GỘP với bản mới hơn của người khác (xem mergeState/saveData()).
   const baseSnapshotRef = useRef(null);
-  const [syncConflict, setSyncConflict] = useState(false);
   // true trong lúc có thay đổi cục bộ chưa lưu xong lên server — effect đồng bộ định kỳ tạm hoãn 1
   // nhịp khi thấy cờ này, tránh áp dữ liệu từ xa đè mất đúng lúc đang lưu.
   const pendingSaveRef = useRef(false);
@@ -16096,20 +16097,20 @@ export default function SalesManager() {
   }, [loaded, currentUserId]);
 
   useEffect(() => {
-    // Luôn cập nhật bản mới nhất ngay lập tức (không đợi hết debounce 400ms bên dưới) — kể cả khi
-    // đang bị khoá tự lưu (syncConflict/staleVersion) — để effect kiểm tra phiên bản mới có thể LƯU
-    // NGAY 1 lần cuối từ đúng bản này trước khi khoá hẳn, không bỏ lỡ thao tác vừa làm.
+    // Luôn cập nhật bản mới nhất ngay lập tức (không đợi hết debounce 400ms bên dưới) — để effect
+    // kiểm tra phiên bản mới có thể LƯU NGAY khi phát hiện bản triển khai mới, không bỏ lỡ gì cả.
     const snapshot = { products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, parcelLabels, plans, accounts, activityLog, notifications, printSettings, quotations, pointAdjustments, webConfig, session: { userId: currentUserId } };
     latestSnapshotRef.current = snapshot;
-    if (!loaded || syncConflict || staleVersion) return;
+    if (!loaded) return;
     // Đánh dấu "đang có thay đổi chưa lưu xong" ngay từ lúc này (chưa đợi hết debounce) — effect đồng
     // bộ định kỳ ở trên sẽ thấy cờ này và tạm hoãn 1 nhịp, tránh áp bản từ xa đè mất đúng lúc đang lưu.
     pendingSaveRef.current = true;
     const t = setTimeout(async () => {
+      // saveData() luôn lưu bằng được (tự gộp nếu có người khác vừa lưu, hoặc lưu đè khi gộp lỗi) —
+      // không còn banner chặn thao tác giữa chừng chờ tải lại trang nữa.
       const res = await saveData(snapshot, {
         expectedUpdatedAt: lastSyncedAtRef.current,
         baseSnapshot: baseSnapshotRef.current,
-        onConflict: () => setSyncConflict(true),
       });
       if (res && res.updatedAt) lastSyncedAtRef.current = res.updatedAt;
       if (res && res.merged) {
@@ -16127,14 +16128,14 @@ export default function SalesManager() {
       pendingSaveRef.current = false;
     }, 400);
     return () => clearTimeout(t);
-  }, [products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, parcelLabels, plans, accounts, activityLog, notifications, printSettings, quotations, pointAdjustments, webConfig, currentUserId, loaded, syncConflict, staleVersion]);
+  }, [products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, parcelLabels, plans, accounts, activityLog, notifications, printSettings, quotations, pointAdjustments, webConfig, currentUserId, loaded, staleVersion]);
 
   // Tự đồng bộ với thao tác của người khác (thêm/sửa/xoá khách hàng, sản phẩm, đơn web mới…):
   // 20s/lần, chỉ kiểm tra nhẹ (updated_at) — nếu có ai vừa lưu bản mới thì mới tải và áp lại toàn
   // bộ dữ liệu, không thì thôi. Nhờ vậy mọi người thấy thay đổi của nhau mà không cần F5, đồng thời
   // giữ mốc đồng bộ luôn mới nên tự lưu (xem effect debounce phía trên) ít bị vướng cảnh báo xung đột.
   useEffect(() => {
-    if (!loaded || !currentUserId || syncConflict || staleVersion) return;
+    if (!loaded || !currentUserId || staleVersion) return;
     let stopped = false;
     const pull = async () => {
       if (document.hidden || pendingSaveRef.current || !window.storage.getMeta) return;
@@ -16159,7 +16160,7 @@ export default function SalesManager() {
     const iv = setInterval(pull, 20000);
     pull();
     return () => { stopped = true; clearInterval(iv); };
-  }, [loaded, currentUserId, syncConflict, staleVersion]);
+  }, [loaded, currentUserId, staleVersion]);
 
   // Tự phát hiện khi đã có bản triển khai MỚI hơn bản đang chạy trên tab này (so sánh file JS đang
   // tải với file JS mà admin.html hiện tại đang trỏ tới) — nếu khác, khoá tự lưu + đồng bộ ngay lập
@@ -16183,7 +16184,6 @@ export default function SalesManager() {
             const flush = await saveData(latestSnapshotRef.current, {
               expectedUpdatedAt: lastSyncedAtRef.current,
               baseSnapshot: baseSnapshotRef.current,
-              onConflict: () => setSyncConflict(true),
             });
             if (flush && flush.updatedAt) lastSyncedAtRef.current = flush.updatedAt;
             if (flush && (flush.ok || flush.merged)) baseSnapshotRef.current = flush.data || latestSnapshotRef.current;
@@ -16385,16 +16385,18 @@ export default function SalesManager() {
         @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
         select { appearance: none; }
       `}</style>
-      {syncConflict && (
-        <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center gap-3 px-4 py-3 text-sm text-white flex-wrap text-center" style={{ background: RUST }}>
-          <span>⚠️ Có người khác vừa lưu dữ liệu mới hơn trong lúc bạn đang mở trang này. Để tránh ghi đè mất dữ liệu của họ, hệ thống đã TẠM DỪNG tự lưu — vui lòng tải lại trang trước khi thao tác tiếp.</span>
-          <button onClick={() => location.reload()} className="px-3.5 py-1.5 rounded-sm text-sm font-medium shrink-0" style={{ background: "#fff", color: RUST }}>Tải lại trang</button>
-        </div>
-      )}
-      {staleVersion && !syncConflict && (
-        <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center gap-3 px-4 py-3 text-sm text-white flex-wrap text-center" style={{ background: BRASS }}>
-          <span>🔄 Trang đang mở bản cũ hơn bản mới nhất (có thể do mở tab đã lâu). Đã tự lưu lại các thao tác gần nhất của bạn, sau đó TẠM DỪNG tự lưu để tránh ghi đè nhầm — vui lòng tải lại trang để lấy bản mới nhất rồi tiếp tục thao tác.</span>
-          <button onClick={() => location.reload()} className="px-3.5 py-1.5 rounded-sm text-sm font-medium shrink-0" style={{ background: "#fff", color: BRASS }}>Tải lại trang</button>
+      {staleVersion && (
+        // Khoá thao tác THẬT SỰ (không chỉ 1 banner trong khi phần còn lại vẫn bấm được) — tránh đúng
+        // kiểu lỗi cũ: người dùng tưởng vẫn đang thao tác bình thường trong khi tự lưu đã âm thầm bị
+        // tắt phía sau. Dữ liệu tới thời điểm này đã tự lưu 1 lần cuối (xem effect kiểm tra phiên bản)
+        // — chỉ còn đúng 1 việc phải làm là tải lại trang, nên chặn hẳn phần còn lại của trang.
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ background: "rgba(20,20,20,0.6)" }}>
+          <div className="max-w-sm w-full rounded-sm shadow-2xl text-center p-6" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+            <p className="text-3xl mb-2">🔄</p>
+            <p className="text-base font-medium mb-2" style={{ color: INK }}>Đã có bản cập nhật mới</p>
+            <p className="text-sm opacity-70 mb-5">Các thao tác gần nhất của bạn đã được tự lưu lại. Trang tạm khoá thao tác — bấm tải lại để tiếp tục làm việc trên bản mới nhất.</p>
+            <button onClick={() => location.reload()} className="w-full px-4 py-2.5 rounded-sm text-sm font-medium text-white" style={{ background: BRASS }}>Tải lại trang</button>
+          </div>
         </div>
       )}
       <div id="app-shell" className="flex flex-col md:flex-row">
