@@ -36,6 +36,21 @@ export default function App() {
   // Đóng menu danh mục (drawer trái) mỗi khi chuyển trang.
   useEffect(() => { setDrawer(false); }, [route.path]);
 
+  // SEO: thẻ canonical PHẢI trỏ đúng về từng trang — shop.html có sẵn 1 thẻ canonical tĩnh trỏ về
+  // trang chủ (dùng cho lần tải đầu/trang chủ), nhưng SPA điều hướng qua nhiều route mà không đổi
+  // lại thẻ này thì mọi trang (sản phẩm, danh mục...) đều "tự khai" là bản sao của trang chủ ->
+  // Google gộp/bỏ qua tất cả, không index riêng từng sản phẩm dù đã có trong sitemap.xml.
+  // Bỏ query string (bộ lọc/tham số) khỏi canonical để không tạo trùng lặp nội dung giữa các tổ hợp lọc.
+  useEffect(() => {
+    let tag = document.querySelector('link[rel="canonical"]');
+    if (!tag) {
+      tag = document.createElement("link");
+      tag.setAttribute("rel", "canonical");
+      document.head.appendChild(tag);
+    }
+    tag.setAttribute("href", `https://hilipc.vn${route.path === "/" ? "" : route.path}`);
+  }, [route.path]);
+
   useEffect(() => {
     fetchCatalog()
       .then((c) => setCatalog({ ...EMPTY, ...c }))
