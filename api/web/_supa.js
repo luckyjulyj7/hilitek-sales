@@ -38,6 +38,27 @@ export async function readState() {
   try { return JSON.parse(data.value); } catch { return {}; }
 }
 
+// Bản đọc có nhớ tạm (20s) trong bộ nhớ của function đang chạy — CHỈ dùng cho API công khai chỉ-đọc
+// (products/product/config). Mỗi lần đọc thật là tải + parse cả blob (vài MB) từ Supabase, mất 1-3s;
+// khách bấm hết sản phẩm này sang sản phẩm khác (mỗi sản phẩm 1 URL riêng nên không trúng cache
+// Edge) sẽ dùng chung bản đã đọc thay vì mỗi lần đọc lại. KHÔNG dùng cho API ghi (orders...) —
+// ghi dựa trên dữ liệu cũ sẽ làm mất thay đổi. Nơi gọi KHÔNG được sửa object trả về.
+let _stateCache = { at: 0, state: null, pending: null };
+const STATE_CACHE_MS = 20000;
+export async function readStateCached() {
+  if (_stateCache.state && Date.now() - _stateCache.at < STATE_CACHE_MS) return _stateCache.state;
+  if (_stateCache.pending) return _stateCache.pending;
+  const pending = readState()
+    .then((state) => { _stateCache = { at: Date.now(), state, pending: null }; return state; })
+    .catch((e) => {
+      _stateCache.pending = null;
+      if (_stateCache.state) return _stateCache.state; // lỗi mạng thoáng qua — dùng tạm bản cũ
+      throw e;
+    });
+  _stateCache.pending = pending;
+  return pending;
+}
+
 export async function writeState(state) {
   const { error } = await client()
     .from(TABLE)

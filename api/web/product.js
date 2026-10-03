@@ -4,7 +4,7 @@
  * Sản phẩm thuộc nhóm nhiều phiên bản (màu sắc/kích cỡ...) được trả kèm `variants[]` (các phiên
  * bản khác cùng nhóm) để trang chi tiết hiện nút chọn option.
  */
-import { handler, json, readState, publishedProducts, publicProduct, productSlug, slugify, webStockOf, baseVariantName } from "./_supa.js";
+import { handler, json, readStateCached, publishedProducts, publicProduct, productSlug, slugify, webStockOf, baseVariantName } from "./_supa.js";
 
 export default handler(async (req, res) => {
   if (req.method !== "GET") return json(res, 405, { error: "Chỉ hỗ trợ GET." });
@@ -12,7 +12,7 @@ export default handler(async (req, res) => {
   const slug = String((req.query && req.query.slug) || "").trim().toLowerCase();
   if (!slug) return json(res, 400, { error: "Thiếu slug." });
 
-  const list = publishedProducts(await readState());
+  const list = publishedProducts(await readStateCached());
   const found = list.find((p) => {
     const s = p.web && p.web.slug ? slugify(p.web.slug) : productSlug(p);
     const sku = String(p.sku || "").toLowerCase();
@@ -41,5 +41,5 @@ export default handler(async (req, res) => {
 
   // Cache ngắn ở Vercel Edge — xem sản phẩm/đổi phiên bản gọi API này liên tục, cache giúp các
   // lượt xem gần nhau (kể cả của người khác) trả về gần như tức thì thay vì đọc lại cả blob.
-  json(res, 200, detail, "public, max-age=20, stale-while-revalidate=120");
+  json(res, 200, detail, "public, max-age=10, s-maxage=30, stale-while-revalidate=120");
 });

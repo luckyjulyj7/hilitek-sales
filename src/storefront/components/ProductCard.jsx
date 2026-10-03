@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useRef } from "react";
 import { Plus, Check, Gift } from "lucide-react";
 import { formatVND, discountPercent, placeholderImage } from "../lib/format.js";
+import { prefetchProduct } from "../lib/api.js";
 import { LOW_STOCK_THRESHOLD } from "../config.js";
 import { useCart } from "../cart.jsx";
 
@@ -17,8 +18,19 @@ export default function ProductCard({ product, onOpen }) {
   const low = p.stock > 0 && p.stock <= LOW_STOCK_THRESHOLD;
   const out = !p.stock;
 
+  // Tải trước chi tiết sản phẩm khi rê chuột dừng lại ~150ms (không bắn request khi chỉ lướt qua)
+  // hoặc vừa chạm ngón tay (điện thoại) — lúc bấm vào đã có sẵn dữ liệu.
+  const warmTimer = useRef(null);
+  const warm = () => { clearTimeout(warmTimer.current); warmTimer.current = setTimeout(() => prefetchProduct(p.slug), 150); };
+  const cancelWarm = () => clearTimeout(warmTimer.current);
+
   return (
-    <div className="group flex h-full flex-col bg-white border border-line rounded-lg overflow-hidden hover:shadow-card hover:border-navy/30 transition">
+    <div
+      onMouseEnter={warm}
+      onMouseLeave={cancelWarm}
+      onTouchStart={() => prefetchProduct(p.slug)}
+      className="group flex h-full flex-col bg-white border border-line rounded-lg overflow-hidden hover:shadow-card hover:border-navy/30 transition"
+    >
       <a
         href={`/san-pham/${p.slug}`}
         onClick={(e) => { e.preventDefault(); onOpen(p.slug); }}

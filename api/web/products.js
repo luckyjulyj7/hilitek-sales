@@ -3,11 +3,11 @@
  * Sản phẩm nhiều phiên bản (màu sắc/kích cỡ...) được GỘP lại thành 1 thẻ đại diện ở đây (danh
  * sách/lưới sản phẩm) — khách chỉ thấy chọn phiên bản khi vào trang chi tiết. Xem product.js.
  */
-import { handler, json, readState, publishedProducts, publicProduct, baseVariantName } from "./_supa.js";
+import { handler, json, readStateCached, publishedProducts, publicProduct, baseVariantName } from "./_supa.js";
 
 export default handler(async (req, res) => {
   if (req.method !== "GET") return json(res, 405, { error: "Chỉ hỗ trợ GET." });
-  const state = await readState();
+  const state = await readStateCached();
   const raw = publishedProducts(state);
   const mapped = raw.map((p) => publicProduct(p));
 
@@ -43,5 +43,5 @@ export default handler(async (req, res) => {
   const products = [...singles, ...merged];
   // Cache ngắn ở Vercel Edge — đọc lại toàn bộ blob Supabase mỗi lần là phần chậm nhất khi duyệt
   // web; 20s vẫn đủ nhanh cập nhật tồn kho/giá sau khi admin sửa, không đáng lo bị "cũ" lâu.
-  json(res, 200, { products, count: products.length }, "public, max-age=20, stale-while-revalidate=120");
+  json(res, 200, { products, count: products.length }, "public, max-age=10, s-maxage=30, stale-while-revalidate=120");
 });

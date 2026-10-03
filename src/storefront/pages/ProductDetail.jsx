@@ -99,7 +99,14 @@ export default function ProductDetail({ slug, navigate, catalog }) {
     };
   }, [product]);
 
-  if (product === undefined)
+  // Đang chờ chi tiết từ server: nếu sản phẩm này đã có trong danh sách vừa tải (tên, giá, ảnh, tồn
+  // kho, thông số...) thì hiện NGAY từ đó, phần còn lại (mô tả dài, nút chọn phiên bản) bổ sung khi
+  // tải xong — không để khách nhìn màn "Đang tải…" 1-2s. Bỏ qua sản phẩm nhiều phiên bản: thẻ trong
+  // danh sách là bản gộp (giá thấp nhất/tổng tồn) nên khác với trang chi tiết, hiện tạm sẽ nhảy giá.
+  const hint = product === undefined
+    ? (catalog.products || []).find((x) => x.slug === slug && !(x.variantCount > 1)) || null
+    : null;
+  if (product === undefined && !hint)
     return <div className="mx-auto max-w-[1500px] px-4 py-20 text-center text-mute">Đang tải…</div>;
 
   if (product === null)
@@ -112,7 +119,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
       </div>
     );
 
-  const p = product;
+  const p = product === undefined ? hint : product;
   const price = previewPrice != null ? previewPrice : p.price;
   const stock = previewStock != null ? previewStock : p.stock;
   const off = discountPercent(price, p.listPrice);

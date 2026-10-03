@@ -74,7 +74,24 @@ export function takePrefetchedCatalog() {
   return p;
 }
 
-export async function fetchProduct(slug) {
+// Nhớ tạm chi tiết sản phẩm 30s (kèm dedupe request đang chạy): tải trước khi rê chuột vào thẻ sản
+// phẩm (prefetchProduct) → lúc bấm vào đã có sẵn, mở trang gần như tức thì; xem lại sản phẩm vừa
+// xem cũng không phải gọi lại. 30s đủ ngắn để giá/tồn kho không bị cũ.
+const PRODUCT_TTL_MS = 30000;
+const _productCache = new Map(); // slug -> { at, promise }
+export function fetchProduct(slug) {
+  const hit = _productCache.get(slug);
+  if (hit && Date.now() - hit.at < PRODUCT_TTL_MS) return hit.promise;
+  const promise = fetchProductNet(slug);
+  _productCache.set(slug, { at: Date.now(), promise });
+  promise.catch(() => { if (_productCache.get(slug)?.promise === promise) _productCache.delete(slug); });
+  return promise;
+}
+export function prefetchProduct(slug) {
+  if (slug) fetchProduct(slug).catch(() => {});
+}
+
+async function fetchProductNet(slug) {
   if (USE_MOCK) return delay(MOCK_PRODUCTS.find((x) => x.slug === slug) || null);
   try {
     const res = await fetch(`/api/web/product?slug=${encodeURIComponent(slug)}`, { headers: { Accept: "application/json" } });

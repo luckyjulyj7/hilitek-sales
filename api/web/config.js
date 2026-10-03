@@ -1,11 +1,11 @@
 /** GET /api/web/config — state.webConfig (chủ shop chỉnh từ app quản lý). */
-import { handler, json, readState } from "./_supa.js";
+import { handler, json, readStateCached } from "./_supa.js";
 
 const CACHE = "public, max-age=60, stale-while-revalidate=300";
 
 export default handler(async (req, res) => {
   if (req.method !== "GET") return json(res, 405, { error: "Chỉ hỗ trợ GET." });
-  const state = await readState();
+  const state = await readStateCached();
   const cfg = state && typeof state.webConfig === "object" && state.webConfig ? state.webConfig : {};
   const landings = Array.isArray(cfg.LANDINGS) ? cfg.LANDINGS.filter((l) => l && l.slug && l.published !== false) : [];
 
