@@ -61,6 +61,19 @@ export async function fetchCatalog() {
   }
 }
 
+// Bắt đầu tải danh sách sản phẩm NGAY khi vào web (song song với cấu hình web) thay vì đợi cấu hình
+// xong + app render xong mới bắt đầu — bớt 1 vòng chờ mạng nối tiếp lúc mở trang.
+let _prefetched = null;
+export function prefetchCatalog() {
+  if (!_prefetched) { _prefetched = fetchCatalog(); _prefetched.catch(() => {}); }
+  return _prefetched;
+}
+export function takePrefetchedCatalog() {
+  const p = _prefetched;
+  _prefetched = null;
+  return p;
+}
+
 export async function fetchProduct(slug) {
   if (USE_MOCK) return delay(MOCK_PRODUCTS.find((x) => x.slug === slug) || null);
   try {
@@ -139,6 +152,17 @@ export async function fetchWebConfig() {
   } catch {
     return {}; // lỗi -> dùng cấu hình mặc định trong config.js
   }
+}
+
+/** Nội dung đầy đủ 1 trang landing (cấu hình chung chỉ có tiêu đề/slug, không kèm nội dung nặng). */
+export async function fetchLanding(slug) {
+  if (USE_MOCK) return null;
+  const res = await fetch(`/api/web/config?landing=${encodeURIComponent(slug)}`, { headers: { Accept: "application/json" } });
+  if (!isJson(res)) throw new Error("API chưa sẵn sàng");
+  if (res.status === 404) return null;
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Lỗi ${res.status}`);
+  return data;
 }
 
 export async function lookupWarranty(serial) {

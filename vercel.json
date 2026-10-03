@@ -12,6 +12,16 @@
     { "source": "/media/(.*)", "destination": "https://wddfjbcrkwkzshibghdi.supabase.co/storage/v1/object/public/product-media/$1" },
     { "source": "/((?!api/).*)", "destination": "/shop.html" }
   ],
+  "headers": [
+    {
+      "source": "/posters/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
+    },
+    {
+      "source": "/(logo-sm|zalo-sm|bo-cong-thuong|logo1|Logo2|og-image)\\.(png|jpg)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
+    }
+  ],
   "crons": [
     { "path": "/api/cron/backup", "schedule": "0 17 * * *" }
   ],

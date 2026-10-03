@@ -16,7 +16,7 @@ export const SITE = {
   // │  Bản vẽ vector tạm `/logo.svg` sẽ tự bị thay khi có file thật.        │
   // └───────────────────────────────────────────────────────────────────────┘
   logo: {
-    src: "/logo.png",
+    src: "/logo-sm.png", // bản 192px nhẹ (6KB) của logo.png — logo chỉ hiện ~34-40px, không cần ảnh 144KB
     alts: ["/logo.jpg", "/logo.jpeg", "/logo.webp"],
     fallbackSrc: "/logo.svg",
     wordmark: true, // false nếu file logo đã có sẵn chữ "Hilitek"

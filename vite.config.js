@@ -47,6 +47,16 @@ export default defineConfig({
         admin: resolve(__dirname, "admin.html"),
         shop: resolve(__dirname, "shop.html"),
       },
+      output: {
+        // Tách thư viện lớn ra file riêng: trình duyệt tải song song và LƯU CACHE được — mỗi lần
+        // deploy chỉ phải tải lại code app (thay đổi), không tải lại cả ~2MB thư viện không đổi.
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+          if (/[\\/]node_modules[\\/](recharts|d3-[^\\/]+|victory-vendor|recharts-scale|decimal\.js-light|internmap)[\\/]/.test(id)) return "vendor-charts";
+          if (/[\\/]node_modules[\\/](quill|parchment|quill-delta|fast-diff|lodash-es|lodash\.[^\\/]+|eventemitter3)[\\/]/.test(id)) return "vendor-editor";
+          if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return "vendor-react";
+        },
+      },
     },
   },
 });

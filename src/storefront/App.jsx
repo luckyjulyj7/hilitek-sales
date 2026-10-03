@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useRoute, match } from "./router.js";
-import { fetchCatalog, fetchWebConfig } from "./lib/api.js";
+import { fetchCatalog, fetchWebConfig, takePrefetchedCatalog } from "./lib/api.js";
 import { applyWebConfig } from "./lib/applyWebConfig.js";
 import { PAGES } from "./config.js";
 import { CatalogCtx } from "./catalogContext.js";
@@ -52,7 +52,7 @@ export default function App() {
   }, [route.path]);
 
   useEffect(() => {
-    fetchCatalog()
+    (takePrefetchedCatalog() || fetchCatalog())
       .then((c) => setCatalog({ ...EMPTY, ...c }))
       .catch((e) => setError(e.message || String(e)))
       .finally(() => setLoading(false));

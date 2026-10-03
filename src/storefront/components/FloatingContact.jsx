@@ -31,7 +31,7 @@ export default function FloatingContact() {
       )}
       {SITE.zaloHref && (
         <Bubble href={SITE.zaloHref} label="Chat Zalo" bg="bg-white" className="border border-line hover:bg-navy-050" pulse pulseColor="bg-[#0068FF]">
-          <img src="/zalo.png" alt="Zalo" className="w-6 h-6 lg:w-8 lg:h-8 object-contain" />
+          <img src="/zalo-sm.png" alt="Zalo" className="w-6 h-6 lg:w-8 lg:h-8 object-contain" />
         </Bubble>
       )}
       <Bubble href={"tel:" + SITE.phoneRaw} label={"Gọi " + SITE.phone} bg="bg-navy" pulse>

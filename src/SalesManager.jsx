@@ -9,7 +9,6 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, ComposedChart, Line, Legend
 } from "recharts";
-import * as XLSX from "xlsx";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
 import { ghn as ghnApi } from "./lib/ghn.js";
@@ -22,7 +21,9 @@ import { pointsForPhone, normalizePhone, DEFAULT_LOYALTY } from "./lib/loyalty.j
 import { baseVariantName } from "./lib/variants.js";
 
 // Xuất 1 hoặc nhiều bảng dữ liệu ra 1 file Excel (.xlsx), mỗi bảng là 1 sheet riêng.
-function exportExcel(filename, sheets) {
+// Thư viện Excel (xlsx) nặng ~400KB — chỉ tải khi thật sự bấm xuất/nhập file, không nằm trong lần tải đầu.
+async function exportExcel(filename, sheets) {
+  const XLSX = await import("xlsx");
   const wb = XLSX.utils.book_new();
   sheets.forEach(({ name, rows }) => {
     const ws = XLSX.utils.json_to_sheet(rows && rows.length ? rows : [{ "Không có dữ liệu": "" }]);
@@ -2722,8 +2723,9 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       try {
+        const XLSX = await import("xlsx");
         const data = new Uint8Array(evt.target.result);
         const wb = XLSX.read(data, { type: "array" });
         const sheet = wb.Sheets[wb.SheetNames[0]];
@@ -7853,8 +7855,9 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       try {
+        const XLSX = await import("xlsx");
         const data = new Uint8Array(evt.target.result);
         const wb = XLSX.read(data, { type: "array" });
         const sheet = wb.Sheets[wb.SheetNames[0]];
