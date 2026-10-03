@@ -24,9 +24,6 @@ export default function Footer({ navigate }) {
             {SITE.legalName}
             {SITE.taxCode && <> — MST: {SITE.taxCode}</>}
           </p>
-          <p className="mt-1 text-[13px] leading-relaxed text-white/45">
-            Website đang đợi thông báo Bộ Công Thương, chưa chính thức bán hàng.
-          </p>
         </div>
 
         <div>
@@ -128,8 +125,16 @@ export default function Footer({ navigate }) {
       </div>
 
       <div className="border-t border-white/10">
-        <div className="mx-auto max-w-[1500px] px-4 py-4 text-[13px] text-white/45">
+        <div className="mx-auto max-w-[1500px] px-4 py-4 text-[13px] text-white/45 flex flex-wrap items-center justify-between gap-3">
           <span>© {new Date().getFullYear()} {SITE.name}. Giá và tình trạng hàng có thể thay đổi không báo trước.</span>
+          <a
+            href="https://online.gov.vn/nen-tang/b0779da4-2084-41a1-ad8b-6f445882b9ec"
+            target="_blank"
+            rel="noreferrer noopener"
+            title="Đã thông báo Bộ Công Thương"
+          >
+            <img src="/bo-cong-thuong.png" alt="Đã thông báo Bộ Công Thương" width="150" height="56" loading="lazy" className="h-[56px] w-auto" />
+          </a>
         </div>
       </div>
     </footer>
