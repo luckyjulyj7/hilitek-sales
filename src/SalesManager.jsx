@@ -693,6 +693,7 @@ function normalizeParcelLabel(p) {
     senderPhone: p.senderPhone || COMPANY_INFO.phone,
     senderAddress: p.senderAddress || COMPANY_INFO.address,
     note: p.note == null ? PARCEL_DEFAULT_NOTE : p.note,
+    internalNote: p.internalNote || "",   // ghi chú nội bộ — chỉ hiện trong app, KHÔNG in ra nhãn
   };
 }
 function nextParcelCode(list) {
@@ -6394,7 +6395,7 @@ function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, a
   const blank = () => ({
     route: "", company: "", recipientName: "", recipientPhone: "", recipientAddress: "",
     senderName: COMPANY_INFO.name, senderPhone: COMPANY_INFO.phone, senderAddress: COMPANY_INFO.address,
-    note: PARCEL_DEFAULT_NOTE,
+    note: PARCEL_DEFAULT_NOTE, internalNote: "",
   });
   const [form, setForm] = useState(blank());
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -6403,7 +6404,7 @@ function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, a
   const list = (parcelLabels || []).filter((p) => {
     const s = q.trim().toLowerCase();
     if (!s) return true;
-    return [p.company, p.recipientName, p.recipientPhone, p.route].filter(Boolean).join(" ").toLowerCase().includes(s);
+    return [p.company, p.recipientName, p.recipientPhone, p.route, p.internalNote].filter(Boolean).join(" ").toLowerCase().includes(s);
   });
 
   const custMatches = custQuery.trim()
@@ -6494,6 +6495,14 @@ function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, a
 
         <Field label="Dòng lưu ý (in đậm dưới nhãn)"><input className={inputCls} style={{ borderColor: LINE }} value={form.note} onChange={(e) => set("note", e.target.value)} placeholder={PARCEL_DEFAULT_NOTE} /></Field>
 
+        <div className="mt-4">
+          <Field label="Ghi chú nội bộ (không in ra nhãn)">
+            <textarea rows={3} className="w-full border rounded-sm py-2 px-3 text-sm" style={{ borderColor: LINE, background: `${BRASS}0D` }}
+              value={form.internalNote || ""} onChange={(e) => set("internalNote", e.target.value)}
+              placeholder="VD: gửi chành xe lúc 17h, khách thanh toán cước khi nhận, liên hệ anh Nguyên trước khi gửi…" />
+          </Field>
+        </div>
+
         <button onClick={save} className="w-full py-2.5 rounded-sm text-white text-sm mt-3" style={{ background: INK }}>{editingId ? "Lưu thay đổi" : "Lưu phiếu gửi hàng"}</button>
       </div>
     );
@@ -6520,6 +6529,11 @@ function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, a
                   {p.route ? ` · 🚛 ${p.route}` : ""}
                 </p>
                 <p className="text-xs opacity-50 truncate">{p.recipientAddress}</p>
+                {p.internalNote && (
+                  <p className="text-xs mt-1 px-2 py-1 rounded-sm whitespace-pre-line" style={{ background: `${BRASS}14`, color: INK }} title="Ghi chú nội bộ — không in ra nhãn">
+                    📝 {p.internalNote}
+                  </p>
+                )}
               </div>
               <div className="flex gap-1.5 shrink-0">
                 <button onClick={() => { setPrintFor(p); setPrintOpts({ copies: 2, boxes: 1, paper: "A4" }); }} className="text-xs px-2.5 py-1.5 rounded-sm text-white" style={{ background: BLUE }}>🖨 In nhãn</button>
