@@ -7634,8 +7634,56 @@ function ProductsSection({ products, setProducts, purchaseOrders, setPurchaseOrd
 
   const incompleteProducts = products.filter(isIncompleteProduct);
 
+  // Dò phiếu kho bị mất: đơn nhập "Đã nhập" mà sản phẩm không có phiếu nhập mang mã đơn đó, hoặc dòng
+  // hàng đã xuất kho của đơn bán (chưa huỷ) mà sản phẩm không có phiếu xuất mang mã đơn đó. Xảy ra do
+  // lỗi đồng bộ cũ (máy khác giữ bản sản phẩm cũ lưu đè mất phiếu) — khôi phục lại từ chứng từ gốc.
+  const missingMoves = useMemo(() => {
+    if (!isAdmin) return [];
+    const byId = new Map(products.map((p) => [p.id, p]));
+    const has = (p, type, docNo) => (p.movements || []).some((m) => m.type === type && m.docNo === docNo);
+    const out = [];
+    (purchaseOrders || []).forEach((po) => {
+      if (po.status !== "received") return;
+      po.items.forEach((it) => {
+        const p = byId.get(it.productId);
+        if (!p || p.isService || has(p, "in", po.code)) return;
+        out.push({ productId: p.id, productName: p.name, docNo: po.code, mv: { type: "in", docNo: po.code, date: (po.receivedAt || po.createdAt || "").slice(0, 10) || todayISO(), qty: it.qty, price: it.price, series: it.series || [] } });
+      });
+    });
+    (orders || []).forEach((o) => {
+      if (o.status === "cancelled") return;
+      o.items.forEach((it) => {
+        if (!it.fulfilled) return;
+        const p = byId.get(it.productId);
+        if (!p || p.isService || has(p, "out", o.code)) return;
+        out.push({ productId: p.id, productName: p.name, docNo: o.code, mv: { type: "out", docNo: o.code, date: o.date || (o.createdAt || "").slice(0, 10) || todayISO(), qty: it.qty, price: it.price, series: it.series || [] } });
+      });
+    });
+    return out;
+  }, [products, orders, purchaseOrders, isAdmin]);
+  const restoreMissingMoves = () => {
+    if (!window.confirm(`Khôi phục ${missingMoves.length} phiếu nhập/xuất kho bị thiếu theo đúng chứng từ gốc?`)) return;
+    // Phiếu nhập trước, phiếu xuất sau — để series vừa nhập lại có sẵn trước khi bị xuất.
+    const sorted = [...missingMoves].sort((a, b) => (a.mv.type === b.mv.type ? 0 : a.mv.type === "in" ? -1 : 1));
+    setProducts((prev) => prev.map((p) => {
+      const add = sorted.filter((x) => x.productId === p.id);
+      return add.length ? { ...p, movements: [...p.movements, ...add.map((x) => ({ id: uid(), ...x.mv }))] } : p;
+    }));
+    addLog("Khôi phục phiếu kho bị thiếu", missingMoves.map((x) => `${x.docNo} · ${x.productName}`).join("; ").slice(0, 500));
+  };
+
   return (
     <div>
+      {missingMoves.length > 0 && (
+        <div className="mb-4 p-3 rounded-sm flex items-start gap-2.5 flex-wrap" style={{ background: `${RUST}0D`, border: `1px solid ${RUST}55` }}>
+          <AlertTriangle size={16} style={{ color: RUST }} className="mt-0.5 shrink-0" />
+          <p className="text-sm flex-1" style={{ color: INK }}>
+            <span className="font-medium" style={{ color: RUST }}>{missingMoves.length} phiếu kho bị thiếu so với chứng từ (tồn kho đang sai): </span>
+            {missingMoves.slice(0, 6).map((x) => `${x.mv.type === "in" ? "nhập" : "xuất"} ${x.docNo} — ${x.productName}`).join(", ")}{missingMoves.length > 6 ? ` +${missingMoves.length - 6} phiếu khác` : ""}
+          </p>
+          <button onClick={restoreMissingMoves} className="text-xs px-3 py-1.5 rounded-sm text-white shrink-0" style={{ background: RUST }}>Khôi phục tồn kho</button>
+        </div>
+      )}
       {incompleteProducts.length > 0 && (
         <div className="mb-4 p-3 rounded-sm flex items-start gap-2.5 flex-wrap" style={{ background: `${BRASS}10`, border: `1px solid ${BRASS}44` }}>
           <AlertTriangle size={16} style={{ color: BRASS }} className="mt-0.5 shrink-0" />
