@@ -780,7 +780,42 @@ async function loadData() {
 //   - Còn lại (mình chưa từng biết, không có ở cả base lẫn local) -> lấy theo remote (ghi nhận cái
 //     mới mà người khác vừa thêm). KHÔNG bao giờ suy luận "remote thiếu = remote đã xoá", vì remote
 //     có thể chỉ đơn giản là 1 bản CŨ hơn (ví dụ tab bị bỏ quên lâu ngày) chứ không phải mới hơn thật.
-function mergeById(base, local, remote) {
+function sameRecord(a, b) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  try { return JSON.stringify(a) === JSON.stringify(b); } catch { return false; }
+}
+// Gộp 3 chiều danh sách con có id (phiếu nhập/xuất của sản phẩm...): giữ của mình + thêm những mục
+// bên kia mới tạo (không có ở mình, cũng không có ở mốc gốc — có ở mốc gốc mà mình không còn nghĩa
+// là mình đã chủ động xoá, không được hồi sinh lại).
+function mergeChildList(base, local, remote) {
+  const l = Array.isArray(local) ? local : [];
+  const lIds = new Set(l.map((x) => x && x.id));
+  const bIds = new Set((Array.isArray(base) ? base : []).map((x) => x && x.id));
+  const extra = (Array.isArray(remote) ? remote : []).filter((x) => x && x.id && !lIds.has(x.id) && !bIds.has(x.id));
+  return extra.length ? [...l, ...extra] : l;
+}
+// 1 bản ghi có ở cả máy mình (l) và bản mới tải về (r). Trước đây LUÔN lấy bản của mình — kể cả khi
+// mình không hề sửa gì — nên máy đang giữ bản cũ ghi đè mất thay đổi của người khác (VD máy A bổ sung
+// series cho đơn → trừ kho sản phẩm; máy B còn giữ sản phẩm bản cũ, lưu bất kỳ thứ gì là phiếu xuất
+// của A bị xoá, kho báo vẫn còn tồn). Giờ: mình không sửa → nhận bản của họ; họ không sửa → giữ của
+// mình; cả 2 cùng sửa → giữ của mình, riêng sản phẩm thì gộp thêm phiếu nhập/xuất + lịch sử giá của họ.
+function mergeRecord(key, b, l, r) {
+  if (r === undefined) return l;
+  if (b !== undefined) {
+    if (sameRecord(l, b)) return r;
+    if (sameRecord(r, b)) return l;
+  }
+  if (key === "products") {
+    return {
+      ...l,
+      movements: mergeChildList(b && b.movements, l.movements, r.movements),
+      priceHistory: mergeChildList(b && b.priceHistory, l.priceHistory, r.priceHistory),
+    };
+  }
+  return l;
+}
+function mergeById(base, local, remote, key) {
   const bMap = new Map((Array.isArray(base) ? base : []).map((x) => [x.id, x]));
   const lMap = new Map((Array.isArray(local) ? local : []).map((x) => [x.id, x]));
   const rMap = new Map((Array.isArray(remote) ? remote : []).map((x) => [x.id, x]));
@@ -788,7 +823,7 @@ function mergeById(base, local, remote) {
   const out = [];
   for (const id of ids) {
     const l = lMap.get(id);
-    if (l !== undefined) { out.push(l); continue; }
+    if (l !== undefined) { out.push(mergeRecord(key, bMap.get(id), l, rMap.get(id))); continue; }
     if (bMap.has(id)) continue; // mình đã chủ động xoá
     const r = rMap.get(id);
     if (r !== undefined) out.push(r);
@@ -805,7 +840,7 @@ function mergeState(base, local, remote) {
     "parcelLabels", "plans", "activityLog", "notifications", "quotations", "pointAdjustments",
   ];
   const merged = {};
-  for (const key of idArrayKeys) merged[key] = mergeById(base[key], local[key], remote[key]);
+  for (const key of idArrayKeys) merged[key] = mergeById(base[key], local[key], remote[key], key);
   merged.activityLog.sort((a, b) => new Date(b.at || 0) - new Date(a.at || 0));
   // accounts: KHÔNG gộp theo id — trường này quá nhạy cảm (đăng nhập được hay không), gộp sai đã 2 lần
   // gây xoá sạch tài khoản. Luôn giữ NGUYÊN bản đang có trên máy mình (đang là sự thật mới nhất về việc
@@ -16133,7 +16168,7 @@ export default function SalesManager() {
     // bản đã fetch trước đó (đây chính là nguyên nhân bug "tạo phiếu nhập xong không thấy đâu cả").
     const base = baseSnapshotRef.current || {};
     const hasBase = Object.keys(base).length > 0; // false = đang tải lần đầu, chưa có mốc gốc để so sánh
-    const mf = (key, computed) => (prev) => mergeById(base[key], prev, computed);
+    const mf = (key, computed) => (prev) => mergeById(base[key], prev, computed, key);
     // Dùng cho các trường "1 khối" (không phải mảng theo id) như webConfig/printSettings: nếu máy này
     // đang có bản khác với mốc gốc (đang sửa dở, chưa kịp lưu) thì giữ nguyên, không cho bản mới tải về
     // đè mất; ngược lại (chưa đụng gì) thì nhận bản mới nhất. Lúc tải lần đầu (chưa có mốc gốc) luôn
