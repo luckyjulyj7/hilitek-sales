@@ -16427,6 +16427,29 @@ export default function SalesManager() {
     return () => { stopped = true; clearInterval(iv); };
   }, [loaded]);
 
+  // Tự tải lại trang khi RẢNH 10 phút (không ai gõ/bấm/cuộn) để màn hình luôn là bản mới nhất. Chỉ tải
+  // lại khi chắc chắn không mất gì: không mở cửa sổ (popup) nào, không đang gõ dở trong ô nhập/ô ghi
+  // chú nào, và mọi thay đổi đã lưu xong lên server. Không thoả thì đợi lượt kiểm tra sau (mỗi phút).
+  useEffect(() => {
+    if (!loaded) return;
+    const IDLE_MS = 10 * 60 * 1000;
+    let lastActivity = Date.now();
+    const bump = () => { lastActivity = Date.now(); };
+    const evs = ["mousedown", "mousemove", "keydown", "wheel", "touchstart", "input", "scroll"];
+    evs.forEach((e) => window.addEventListener(e, bump, { passive: true, capture: true }));
+    const typingSomewhere = () => {
+      const a = document.activeElement;
+      if (a && (a.tagName === "TEXTAREA" || a.isContentEditable || (a.tagName === "INPUT" && !/^(checkbox|radio|button|submit)$/i.test(a.type)))) return true;
+      return [...document.querySelectorAll("textarea, .ql-editor")].some((el) => (el.value ?? el.textContent ?? "").trim() !== "");
+    };
+    const iv = setInterval(() => {
+      if (Date.now() - lastActivity < IDLE_MS) return;
+      if (__modalStack.length > 0 || pendingSaveRef.current || typingSomewhere()) return;
+      location.reload();
+    }, 60 * 1000);
+    return () => { clearInterval(iv); evs.forEach((e) => window.removeEventListener(e, bump, { capture: true })); };
+  }, [loaded]);
+
   // Đồng bộ danh sách thông báo cho Admin từ dữ liệu thật: sản phẩm dưới định mức/âm tồn, công nợ NCC,
   // công nợ khách B2B quá hạn, đơn hàng cần duyệt (kể cả yêu cầu huỷ/đổi trả). Thông báo đã đọc tự xoá sau 3 ngày.
   useEffect(() => {
