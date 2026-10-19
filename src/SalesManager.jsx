@@ -476,11 +476,14 @@ function seriesList(p) {
   p.movements
     .filter((m) => m.type === "out")
     .forEach((m) => (m.series || []).forEach((s) => exported.add(s)));
+  // Phiếu xuất ứng với 1 lượt nhập = phiếu xuất ĐẦU TIÊN có series đó nằm SAU lượt nhập ấy (movements
+  // luôn nối thêm theo thứ tự thời gian). Trước đây lấy phiếu xuất bất kỳ có series → series đã được
+  // nhập lại kho (sửa đơn "-SUA", đổi trả "-RT", huỷ "-HUY") vẫn bị báo "Đã xuất", không bán lại được.
   p.movements
-    .filter((m) => m.type === "in")
-    .forEach((m) => {
+    .forEach((m, mi) => {
+      if (m.type !== "in") return;
       (m.series || []).forEach((s) => {
-        const outMove = p.movements.find((mo) => mo.type === "out" && (mo.series || []).includes(s));
+        const outMove = p.movements.find((mo, oi) => oi > mi && mo.type === "out" && (mo.series || []).includes(s));
         rows.push({
           serial: s,
           importDoc: m.docNo, importDate: m.date,
@@ -495,7 +498,7 @@ function seriesList(p) {
 function findSeriesOwner(products, serial) {
   for (const p of products) {
     if (!p.hasSeries) continue;
-    const row = seriesList(p).find((s) => s.serial === serial);
+    const row = [...seriesList(p)].reverse().find((s) => s.serial === serial); // lượt nhập gần nhất = trạng thái hiện tại
     if (row) return { product: p, row };
   }
   return null;
@@ -8571,10 +8574,21 @@ function CustomerPicker({ customers, setCustomers, onPick, placeholder, currentU
 function SeriesPicker({ available, selected, setSelected, need }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
-  const remaining = available.filter((s) => !selected.includes(s.serial));
+  // 1 series có thể có nhiều lượt nhập (nhập lại sau sửa đơn/đổi trả) — chỉ hiện 1 lần.
+  const uniq = [...new Map(available.map((s) => [s.serial, s])).values()];
   const q = query.trim().toLowerCase();
-  const matches = (q ? remaining.filter((s) => s.serial.toLowerCase().includes(q)) : remaining).slice(0, 30);
-  const pick = (serial) => { if (selected.length >= need) return; setSelected([...selected, serial]); setQuery(""); };
+  const matches = (q ? uniq.filter((s) => s.serial.toLowerCase().includes(q)) : uniq).slice(0, 200);
+  const full = selected.length >= need;
+  // Tích chọn nhiều series liên tục, danh sách vẫn mở; bỏ tích để bỏ chọn.
+  const toggle = (serial) => {
+    if (selected.includes(serial)) setSelected(selected.filter((s) => s !== serial));
+    else if (!full) setSelected([...selected, serial]);
+  };
+  const pickAll = () => {
+    const room = need - selected.length;
+    const add = matches.map((s) => s.serial).filter((s) => !selected.includes(s)).slice(0, Math.max(0, room));
+    if (add.length) setSelected([...selected, ...add]);
+  };
   const removeAt = (serial) => setSelected(selected.filter((s) => s !== serial));
   const boxRef = useClickAway(open, () => setOpen(false));
 
@@ -8596,7 +8610,7 @@ function SeriesPicker({ available, selected, setSelected, need }) {
           <input
             value={query} onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
             onFocus={() => setOpen(true)}
-            placeholder={selected.length >= need ? "Đã đủ series" : "Gõ để tìm số series còn tồn…"}
+            placeholder={full ? `Đã đủ ${need} series` : `Bấm để tích chọn series (${selected.length}/${need}) — gõ để lọc…`}
             className="w-full pl-8 pr-8 py-2 text-xs rounded-sm border outline-none" style={{ borderColor: LINE, background: "#fff" }}
           />
           {open && (
@@ -8606,13 +8620,27 @@ function SeriesPicker({ available, selected, setSelected, need }) {
           )}
         </div>
         {open && (
-          <div className="absolute z-20 mt-1 w-full max-h-40 overflow-y-auto rounded-sm shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+          <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto rounded-sm shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
             {matches.length === 0 ? (
               <p className="text-xs opacity-50 p-2">Không tìm thấy series phù hợp.</p>
-            ) : matches.map((s) => (
-              <button key={s.serial} onMouseDown={() => pick(s.serial)} className="w-full text-left px-3 py-1.5 text-xs hover:bg-black/5"
-                style={{ fontFamily: "'IBM Plex Mono', monospace", borderBottom: `1px dashed ${LINE}` }}>{s.serial}</button>
-            ))}
+            ) : (<>
+              <div className="sticky top-0 flex items-center justify-between px-3 py-1.5 text-[11px]" style={{ background: PAPER, borderBottom: `1px solid ${LINE}` }}>
+                <span className="opacity-60">Đã chọn {selected.length}/{need}</span>
+                {!full && <button type="button" onMouseDown={(e) => { e.preventDefault(); pickAll(); }} className="underline" style={{ color: BLUE }}>Chọn nhanh {Math.min(need - selected.length, matches.filter((s) => !selected.includes(s.serial)).length)} series đầu</button>}
+              </div>
+              {matches.map((s) => {
+                const on = selected.includes(s.serial);
+                const disabled = !on && full;
+                return (
+                  <label key={s.serial} onMouseDown={(e) => e.preventDefault()}
+                    className={"flex items-center gap-2 px-3 py-1.5 text-xs " + (disabled ? "opacity-40" : "cursor-pointer hover:bg-black/5")}
+                    style={{ fontFamily: "'IBM Plex Mono', monospace", borderBottom: `1px dashed ${LINE}`, background: on ? `${BLUE}0D` : undefined }}>
+                    <input type="checkbox" checked={on} disabled={disabled} onChange={() => toggle(s.serial)} />
+                    {s.serial}
+                  </label>
+                );
+              })}
+            </>)}
           </div>
         )}
       </div>
