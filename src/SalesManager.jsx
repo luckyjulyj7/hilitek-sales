@@ -4036,7 +4036,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
 
           {ioModal.product.hasSeries && ioModal.type === "out" && (
             <Field label="Chọn series xuất (bắt buộc, phải khớp số lượng)" hint={`Đã chọn ${ioForm.selectedSeries.length} / cần ${Number(ioForm.qty) || 0} — còn tồn ${availableSeries.length}`}>
-              <SeriesPicker available={availableSeries} selected={ioForm.selectedSeries} setSelected={(arr) => setIoForm({ ...ioForm, selectedSeries: arr })} need={Number(ioForm.qty) || 0} />
+              <SeriesPicker growable available={availableSeries} selected={ioForm.selectedSeries} setSelected={(arr) => setIoForm({ ...ioForm, selectedSeries: arr, qty: Math.max(Number(ioForm.qty) || 0, arr.length) })} need={Number(ioForm.qty) || 0} />
             </Field>
           )}
 
@@ -8571,21 +8571,22 @@ function CustomerPicker({ customers, setCustomers, onPick, placeholder, currentU
   );
 }
 
-function SeriesPicker({ available, selected, setSelected, need }) {
+function SeriesPicker({ available, selected, setSelected, need, growable }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   // 1 series có thể có nhiều lượt nhập (nhập lại sau sửa đơn/đổi trả) — chỉ hiện 1 lần.
   const uniq = [...new Map(available.map((s) => [s.serial, s])).values()];
   const q = query.trim().toLowerCase();
   const matches = (q ? uniq.filter((s) => s.serial.toLowerCase().includes(q)) : uniq).slice(0, 200);
-  const full = selected.length >= need;
+  // growable: tích thêm series thì số lượng tự tăng theo (form bán hàng/xuất kho) — không chặn ở "need".
+  const full = !growable && selected.length >= need;
   // Tích chọn nhiều series liên tục, danh sách vẫn mở; bỏ tích để bỏ chọn.
   const toggle = (serial) => {
     if (selected.includes(serial)) setSelected(selected.filter((s) => s !== serial));
     else if (!full) setSelected([...selected, serial]);
   };
   const pickAll = () => {
-    const room = need - selected.length;
+    const room = growable ? Infinity : need - selected.length;
     const add = matches.map((s) => s.serial).filter((s) => !selected.includes(s)).slice(0, Math.max(0, room));
     if (add.length) setSelected([...selected, ...add]);
   };
@@ -8626,7 +8627,7 @@ function SeriesPicker({ available, selected, setSelected, need }) {
             ) : (<>
               <div className="sticky top-0 flex items-center justify-between px-3 py-1.5 text-[11px]" style={{ background: PAPER, borderBottom: `1px solid ${LINE}` }}>
                 <span className="opacity-60">Đã chọn {selected.length}/{need}</span>
-                {!full && <button type="button" onMouseDown={(e) => { e.preventDefault(); pickAll(); }} className="underline" style={{ color: BLUE }}>Chọn nhanh {Math.min(need - selected.length, matches.filter((s) => !selected.includes(s.serial)).length)} series đầu</button>}
+                {!full && <button type="button" onMouseDown={(e) => { e.preventDefault(); pickAll(); }} className="underline" style={{ color: BLUE }}>{growable ? `Chọn tất cả ${matches.filter((s) => !selected.includes(s.serial)).length} series` : `Chọn nhanh ${Math.min(need - selected.length, matches.filter((s) => !selected.includes(s.serial)).length)} series đầu`}</button>}
               </div>
               {matches.map((s) => {
                 const on = selected.includes(s.serial);
@@ -8720,7 +8721,7 @@ function SalesItemsTable({ items, products, onUpdate, onRemove, role }) {
                           <span className="text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${BRASS}1A`, color: BRASS }}>Sẽ ở trạng thái chờ hàng</span>
                         )}
                       </div>
-                      <SeriesPicker available={available} selected={it.series} setSelected={(arr) => onUpdate(it.productId, { series: arr })} need={it.qty} />
+                      <SeriesPicker growable available={available} selected={it.series} setSelected={(arr) => onUpdate(it.productId, { series: arr, qty: Math.max(Number(it.qty) || 0, arr.length) })} need={it.qty} />
                       {it.series.length < it.qty && <p className="text-[11px] opacity-50 mt-1">Chưa đủ series (thường vì chưa đủ hàng trong kho) — vẫn tạo được đơn, bổ sung series sau khi nhập hàng về.</p>}
                     </td>
                   </tr>
