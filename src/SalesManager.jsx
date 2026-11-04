@@ -41,13 +41,32 @@ async function exportExcel(filename, sheets) {
 
 const STORAGE_KEY = "solbh-data-v2";
 
-const INK = "#1E2A8A";
-const BRASS = "#B7791F";
-const PAPER = "#F3F6FC";
+const INK = "#1E2A8A"; // xanh thương hiệu: nút chính, thanh bên, mục đang chọn
+const TEXT = "#111827"; // chữ nội dung
+// Thông báo góc màn hình, thay cho alert của trình duyệt. Tự ẩn, bấm vào để đóng sớm.
+function notify(message) {
+  let box = document.getElementById("hili-toasts");
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "hili-toasts";
+    box.style.cssText = "position:fixed;top:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px;max-width:380px";
+    document.body.appendChild(box);
+  }
+  const el = document.createElement("div");
+  el.setAttribute("role", "status");
+  el.textContent = String(message);
+  el.style.cssText = "background:#fff;color:#111827;border:1px solid #E5E7EB;border-left:4px solid #1E2A8A;border-radius:6px;padding:10px 14px;font:14px/1.45 Inter,sans-serif;box-shadow:0 8px 20px rgba(15,23,70,.16);cursor:pointer;white-space:pre-line";
+  const close = () => el.remove();
+  el.onclick = close;
+  box.appendChild(el);
+  setTimeout(close, Math.min(12000, 4000 + String(message).length * 50));
+}
+const BRASS = "#B45309";
+const PAPER = "#F6F7FB";
 const FOREST = "#15803D";
-const RUST = "#D0342C";
-const BLUE = "#1F5FD0";
-const LINE = "#DCE3F2";
+const RUST = "#C62828";
+const BLUE = "#1D4ED8";
+const LINE = "#E5E7EB";
 const GOLD = "#F7C600"; // vàng thương hiệu hilipc.vn: chỉ dùng làm nền/điểm nhấn, không dùng cho chữ trên nền trắng
 
 const CHANNELS = [
@@ -1416,19 +1435,19 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
           onMouseDown={arm("linkNgoai")}
           onClick={guardedClick("linkNgoai", () => { setLinkOpen((v) => !v); setMsg(""); })}
           disabled={busy}
-          className="text-xs px-2 py-1 rounded-md border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy ? 0.5 : 1 }}>
+          className="text-xs px-2 py-1 rounded-md border inline-flex items-center gap-1" style={{ borderColor: LINE, color: TEXT, opacity: busy ? 0.5 : 1 }}>
           <LinkIcon size={13} /> Link ảnh ngoài
         </button>
         <button type="button"
           onMouseDown={arm("beautify")}
           onClick={guardedClick("beautify", doBeautify)}
           disabled={busy}
-          className="text-xs px-2 py-1 rounded-md border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy ? 0.5 : 1 }}>
+          className="text-xs px-2 py-1 rounded-md border inline-flex items-center gap-1" style={{ borderColor: LINE, color: TEXT, opacity: busy ? 0.5 : 1 }}>
           <Sparkles size={13} /> Làm đẹp mô tả
         </button>
-        <span className="text-[11px] opacity-55">Chèn ảnh: bấm icon ảnh trên thanh công cụ bên dưới · dán ảnh (Ctrl+V) · kéo–thả file · dán cả bài từ web khác</span>
-        {busy && <span className="text-[11px] inline-flex items-center gap-1" style={{ color: BLUE }}><Loader2 size={12} className="animate-spin" /> {msg}</span>}
-        {!busy && msg && <span className="text-[11px]" style={{ color: /Lỗi|không|phải/i.test(msg) ? RUST : BLUE }}>{msg}</span>}
+        <span className="text-xs opacity-60">Chèn ảnh: bấm icon ảnh trên thanh công cụ bên dưới · dán ảnh (Ctrl+V) · kéo–thả file · dán cả bài từ web khác</span>
+        {busy && <span className="text-xs inline-flex items-center gap-1" style={{ color: BLUE }}><Loader2 size={12} className="animate-spin" /> {msg}</span>}
+        {!busy && msg && <span className="text-xs" style={{ color: /Lỗi|không|phải/i.test(msg) ? RUST : BLUE }}>{msg}</span>}
         <input ref={fileRef} type="file" accept="image/*" multiple className="hidden"
           onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
       </div>
@@ -1437,7 +1456,7 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
           <button key={emo} type="button" onClick={() => insertEmoji(emo)}
             className="w-7 h-7 grid place-items-center rounded-md border text-[13px]" style={{ borderColor: LINE }}>{emo}</button>
         ))}
-        <span className="text-[11px] opacity-45 ml-1">Chèn nhanh biểu tượng — đậm/nghiêng/tiêu đề/danh sách... dùng thanh công cụ bên dưới</span>
+        <span className="text-xs opacity-60 ml-1">Chèn nhanh biểu tượng — đậm/nghiêng/tiêu đề/danh sách... dùng thanh công cụ bên dưới</span>
       </div>
       {linkOpen && (
         <div className="mb-1">
@@ -1448,7 +1467,7 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addExternalLink())} />
             <button type="button" onClick={addExternalLink} className="px-3 py-1 rounded-md text-white text-sm" style={{ background: INK }}>Chèn</button>
           </div>
-          <div className="text-[11px] opacity-55 mt-1">Ảnh giữ nguyên link gốc, không tải về kho. Google Drive: chia sẻ ở chế độ “Bất kỳ ai có đường liên kết”.</div>
+          <div className="text-xs opacity-60 mt-1">Ảnh giữ nguyên link gốc, không tải về kho. Google Drive: chia sẻ ở chế độ “Bất kỳ ai có đường liên kết”.</div>
         </div>
       )}
       <div className="relative rounded-md" style={{ border: `1px solid ${drag ? BLUE : LINE}` }}
@@ -1605,16 +1624,16 @@ function WebImageGrid({ images, onChange, max = 10 }) {
   return (
     <div>
       <div className="flex items-center gap-2 mb-2 flex-wrap text-xs">
-        <span className="opacity-55">{list.length}/{max} ảnh</span>
+        <span className="opacity-60">{list.length}/{max} ảnh</span>
         <button type="button" disabled={busy || !room()} onClick={() => fileRef.current && fileRef.current.click()}
-          className="px-2 py-1 rounded-md border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy || !room() ? 0.5 : 1 }}>
+          className="px-2 py-1 rounded-md border inline-flex items-center gap-1" style={{ borderColor: LINE, color: TEXT, opacity: busy || !room() ? 0.5 : 1 }}>
           <ImagePlus size={13} /> Thêm ảnh
         </button>
         <button type="button" disabled={busy || !room()} onClick={() => { setUrlOpen((v) => !v); setMsg(""); }}
-          className="px-2 py-1 rounded-md border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy || !room() ? 0.5 : 1 }}>
+          className="px-2 py-1 rounded-md border inline-flex items-center gap-1" style={{ borderColor: LINE, color: TEXT, opacity: busy || !room() ? 0.5 : 1 }}>
           <LinkIcon size={13} /> Từ URL / Drive
         </button>
-        {!busy && !msg && <span className="opacity-55">hoặc bấm vào khung ảnh rồi dán (Ctrl+V) cả bài — tự lấy hết ảnh trong đó</span>}
+        {!busy && !msg && <span className="opacity-60">hoặc bấm vào khung ảnh rồi dán (Ctrl+V) cả bài — tự lấy hết ảnh trong đó</span>}
         {busy && <span className="inline-flex items-center gap-1" style={{ color: BLUE }}><Loader2 size={12} className="animate-spin" /> {msg}</span>}
         {!busy && msg && <span style={{ color: /Lỗi|không|phải/i.test(msg) ? RUST : BLUE }}>{msg}</span>}
         <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
@@ -1626,10 +1645,10 @@ function WebImageGrid({ images, onChange, max = 10 }) {
               placeholder="https://.../anh.jpg  hoặc  link Google Drive"
               className="flex-1 min-w-[180px] border rounded-md px-2 py-1 text-sm" style={{ borderColor: LINE }}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addUrlDirect())} />
-            <button type="button" onClick={addUrl} className="px-3 py-1 rounded-md border text-sm" style={{ borderColor: LINE, color: INK }}>Tải về kho</button>
+            <button type="button" onClick={addUrl} className="px-3 py-1 rounded-md border text-sm" style={{ borderColor: LINE, color: TEXT }}>Tải về kho</button>
             <button type="button" onClick={addUrlDirect} className="px-3 py-1 rounded-md text-white text-sm" style={{ background: INK }}>Giữ link ngoài</button>
           </div>
-          <div className="text-[11px] opacity-55 mt-1">
+          <div className="text-xs opacity-60 mt-1">
             <b>Giữ link ngoài</b>: không tốn dung lượng kho, nhưng ảnh phụ thuộc web nguồn. Google Drive phải chia sẻ “Bất kỳ ai có đường liên kết”.
           </div>
         </div>
@@ -1644,7 +1663,7 @@ function WebImageGrid({ images, onChange, max = 10 }) {
         onPaste={onPasteZone}
       >
         {list.length === 0 && (
-          <div className="col-span-full text-center text-xs opacity-45 py-6">
+          <div className="col-span-full text-center text-xs opacity-60 py-6">
             Kéo–thả ảnh vào đây, bấm "Thêm ảnh", hoặc bấm vào khung này rồi dán (Ctrl+V) —
             dán cả bài từ trang khác sẽ tự lấy hết ảnh trong đó, tải song song về kho.
           </div>
@@ -1653,12 +1672,12 @@ function WebImageGrid({ images, onChange, max = 10 }) {
           <div key={i} className="relative group aspect-square rounded-md overflow-hidden" style={{ border: `1px solid ${brokenUrls.has(src) ? RUST : LINE}`, background: "#fff" }}>
             {brokenUrls.has(src) ? (
               <div className="w-full h-full grid place-items-center text-center px-1" style={{ color: RUST, background: `${RUST}0D` }}>
-                <span className="text-[10px] leading-tight">⚠ Ảnh lỗi<br />(xoá & thêm lại)</span>
+                <span className="text-xs leading-tight">⚠ Ảnh lỗi<br />(xoá & thêm lại)</span>
               </div>
             ) : (
               <img src={src} alt="" className="w-full h-full object-cover" onError={() => markBroken(src)} />
             )}
-            {i === 0 && <span className="absolute top-0.5 left-0.5 text-[9px] px-1 rounded-md text-white" style={{ background: INK }}>Đại diện</span>}
+            {i === 0 && <span className="absolute top-0.5 left-0.5 text-xs px-1 rounded-md text-white" style={{ background: INK }}>Đại diện</span>}
             <div className="absolute inset-x-0 bottom-0 flex justify-between px-0.5 py-0.5 opacity-0 group-hover:opacity-100 transition" style={{ background: "rgba(0,0,0,0.45)" }}>
               <button type="button" onClick={() => move(i, -1)} disabled={i === 0} className="text-white text-xs px-1 disabled:opacity-30">←</button>
               <button type="button" onClick={() => del(i)} className="text-white text-xs px-1" title="Xoá">✕</button>
@@ -2104,9 +2123,9 @@ function Stamp({ status }) {
 function Field({ label, children, hint }) {
   return (
     <label className="block mb-3">
-      <span className="block text-xs font-medium mb-1" style={{ color: INK, opacity: 0.7 }}>{label}</span>
+      <span className="block text-xs font-medium mb-1" style={{ color: TEXT, opacity: 0.7 }}>{label}</span>
       {children}
-      {hint && <span className="block text-[11px] mt-1 opacity-50">{hint}</span>}
+      {hint && <span className="block text-xs mt-1 opacity-60">{hint}</span>}
     </label>
   );
 }
@@ -2146,13 +2165,13 @@ function MoneyInput({ value, onChange, className, style, placeholder }) {
 
 function TagsNotesCompact({ tags, setTags, notes, setNotes }) {
   return (
-    <div className="grid grid-cols-2 gap-3 mt-4 pt-3" style={{ borderTop: `1px dashed ${LINE}` }}>
+    <div className="grid grid-cols-2 gap-3 mt-4 pt-3" style={{ borderTop: `1px solid ${LINE}` }}>
       <div>
-        <span className="block text-[10px] uppercase tracking-wider mb-1 opacity-45">Tags</span>
+        <span className="block text-xs mb-1 opacity-60 font-medium">Tags</span>
         <SeriesTagInput series={tags} setSeries={setTags} placeholder="Gõ rồi cách khoảng trắng…" />
       </div>
       <div>
-        <span className="block text-[10px] uppercase tracking-wider mb-1 opacity-45">Ghi chú</span>
+        <span className="block text-xs mb-1 opacity-60 font-medium">Ghi chú</span>
         <textarea rows={1} className="w-full border rounded-md p-2 text-xs" style={{ borderColor: LINE }} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ghi chú thêm…" />
       </div>
     </div>
@@ -2225,12 +2244,15 @@ function ImageLightbox({ images, startIndex, onClose }) {
 const __modalStack = [];
 function Modal({ title, onClose, children, wide, size, headerAction }) {
   const sizeClass = { md: "max-w-md", lg: "max-w-lg", xl: "max-w-3xl", "2xl": "max-w-6xl", "3xl": "max-w-[92rem]" }[size] || (wide ? "max-w-lg" : "max-w-md");
+  const touchedRef = useRef(false); // đã gõ/chọn trong popup thì Esc phải hỏi lại
   // Bấm ESC để đóng — chỉ popup trên cùng phản hồi (tránh đóng luôn popup nền).
   useEffect(() => {
     const token = {};
     __modalStack.push(token);
     const onKey = (e) => {
-      if (e.key === "Escape" && __modalStack[__modalStack.length - 1] === token) onClose && onClose();
+      if (e.key !== "Escape" || __modalStack[__modalStack.length - 1] !== token) return;
+      if (touchedRef.current && !window.confirm("Bạn đang nhập dở. Đóng cửa sổ này và bỏ thay đổi?")) return;
+      onClose && onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => {
@@ -2241,14 +2263,14 @@ function Modal({ title, onClose, children, wide, size, headerAction }) {
   }, [onClose]);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4" style={{ background: "rgba(15,23,70,0.45)" }}>
-      <div onClick={(e) => e.stopPropagation()}
+      <div onClick={(e) => e.stopPropagation()} onInput={() => { touchedRef.current = true; }} onChange={() => { touchedRef.current = true; }}
         className={`w-full ${sizeClass} rounded-md shadow-2xl relative flex flex-col`}
         style={{ background: "#fff", maxHeight: "90vh" }}>
         <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3.5 shrink-0" style={{ borderBottom: `1px solid ${LINE}` }}>
-          <h3 className="text-base sm:text-lg flex-1 min-w-0" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, color: INK }}>{title}</h3>
+          <h3 className="text-base sm:text-lg flex-1 min-w-0" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, color: TEXT }}>{title}</h3>
           <div className="flex items-center gap-2 shrink-0">
             {headerAction}
-            <button onClick={onClose} className="opacity-60 hover:opacity-100" style={{ color: INK }}><X size={18} /></button>
+            <button onClick={onClose} className="opacity-60 hover:opacity-100" style={{ color: TEXT }}><X size={18} /></button>
           </div>
         </div>
         <div className="px-4 sm:px-6 py-4 sm:py-5 overflow-y-auto min-w-0" style={{ flex: "1 1 auto" }}>
@@ -2272,7 +2294,7 @@ function MiniStat({ label, value, icon: Icon, accent, onClick }) {
       </div>
       <div>
         <p className="text-sm opacity-60">{label}</p>
-        <p className="text-lg font-semibold" style={{ color: INK }}>{value}</p>
+        <p className="text-lg font-semibold" style={{ color: TEXT }}>{value}</p>
       </div>
     </Tag>
   );
@@ -2348,7 +2370,7 @@ function Dashboard({ products, orders, goToOrdersFilter }) {
     <div>
       {/* Kết quả kinh doanh trong ngày */}
       <div className="p-5 rounded-md mb-6" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-        <h4 className="text-sm uppercase tracking-wider mb-4" style={{ color: INK, opacity: 0.6, letterSpacing: "0.06em" }}>Kết quả kinh doanh trong ngày</h4>
+        <h4 className="text-sm mb-4 font-medium" style={{ color: TEXT, opacity: 0.6, letterSpacing: "0.06em" }}>Kết quả kinh doanh trong ngày</h4>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
           <MiniStat label="Doanh thu" value={vnd(todayRevenue)} icon={Wallet} accent={BLUE} />
           <MiniStat label="Đơn hàng mới" value={todayNewOrders} icon={Package} accent={FOREST} />
@@ -2360,7 +2382,7 @@ function Dashboard({ products, orders, goToOrdersFilter }) {
       {/* Doanh thu bán hàng theo ngày */}
       <div className="p-5 rounded-md mb-6" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-          <h4 className="text-sm uppercase tracking-wider" style={{ color: INK, opacity: 0.6, letterSpacing: "0.06em" }}>Doanh thu bán hàng</h4>
+          <h4 className="text-sm font-medium" style={{ color: TEXT, opacity: 0.6, letterSpacing: "0.06em" }}>Doanh thu bán hàng</h4>
           <div className="flex gap-1.5">
             {[7, 14, 30].map((d) => (
               <button key={d} onClick={() => setChartDays(d)} className="text-xs px-3 py-1.5 rounded-full border"
@@ -2379,12 +2401,12 @@ function Dashboard({ products, orders, goToOrdersFilter }) {
             <Bar dataKey="total" fill={BLUE} radius={[6, 6, 0, 0]} maxBarSize={40} />
           </BarChart>
         </ResponsiveContainer>
-        <p className="text-sm mt-2" style={{ color: INK }}>Tổng doanh thu: <span className="font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(chartTotal)}</span></p>
+        <p className="text-sm mt-2" style={{ color: TEXT }}>Tổng doanh thu: <span className="font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(chartTotal)}</span></p>
       </div>
 
       {/* Đơn hàng chờ xử lý */}
       <div className="p-5 rounded-md mb-6" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-        <h4 className="text-sm uppercase tracking-wider mb-4" style={{ color: INK, opacity: 0.6, letterSpacing: "0.06em" }}>Đơn hàng chờ xử lý</h4>
+        <h4 className="text-sm mb-4 font-medium" style={{ color: TEXT, opacity: 0.6, letterSpacing: "0.06em" }}>Đơn hàng chờ xử lý</h4>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
           <MiniStat label="Chờ duyệt" value={pendingApproval} icon={ShieldCheck} accent={RUST} onClick={() => goToOrdersFilter && goToOrdersFilter("approval_pending")} />
           <MiniStat label="Chờ thanh toán" value={pendingPayment} icon={Wallet} accent={BRASS} onClick={() => goToOrdersFilter && goToOrdersFilter("delivered")} />
@@ -2404,7 +2426,7 @@ function Dashboard({ products, orders, goToOrdersFilter }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="p-5 rounded-md min-w-0" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-            <h4 className="text-sm uppercase tracking-wider" style={{ color: INK, opacity: 0.6, letterSpacing: "0.06em" }}>Top sản phẩm bán chạy</h4>
+            <h4 className="text-sm font-medium" style={{ color: TEXT, opacity: 0.6, letterSpacing: "0.06em" }}>Top sản phẩm bán chạy</h4>
             <div className="flex gap-1.5">
               {[7, 30].map((d) => (
                 <button key={d} onClick={() => setTopDays(d)} className="text-xs px-2.5 py-1 rounded-full border"
@@ -2414,16 +2436,16 @@ function Dashboard({ products, orders, goToOrdersFilter }) {
               ))}
             </div>
           </div>
-          {topProductsByQty.length === 0 ? <p className="text-sm opacity-50 text-center py-10">Chưa có dữ liệu xuất kho trong khoảng thời gian này.</p> : (
+          {topProductsByQty.length === 0 ? <p className="text-sm opacity-60 text-center py-10">Chưa có dữ liệu xuất kho trong khoảng thời gian này.</p> : (
             <div className="space-y-3">
               {topProductsByQty.map((p, i) => (
                 <div key={p.code} className="flex items-center gap-3">
-                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0" style={{ background: `${pieColors[i % pieColors.length]}1A`, color: pieColors[i % pieColors.length] }}>{String(i + 1).padStart(2, "0")}</span>
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold shrink-0" style={{ background: `${pieColors[i % pieColors.length]}1A`, color: pieColors[i % pieColors.length] }}>{String(i + 1).padStart(2, "0")}</span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm truncate" style={{ color: INK }}>{p.name}</p>
-                    <p className="text-xs opacity-50" style={{ fontFamily: "'Inter', sans-serif" }}>{p.code}</p>
+                    <p className="text-sm truncate" style={{ color: TEXT }}>{p.name}</p>
+                    <p className="text-xs opacity-60" style={{ fontFamily: "'Inter', sans-serif" }}>{p.code}</p>
                   </div>
-                  <span className="text-sm font-semibold shrink-0" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{p.qty}</span>
+                  <span className="text-sm font-semibold shrink-0" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{p.qty}</span>
                 </div>
               ))}
             </div>
@@ -2431,25 +2453,25 @@ function Dashboard({ products, orders, goToOrdersFilter }) {
         </div>
 
         <div className="p-5 rounded-md min-w-0" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-          <h4 className="text-sm uppercase tracking-wider mb-4" style={{ color: INK, opacity: 0.6, letterSpacing: "0.06em" }}>Thông tin kho</h4>
+          <h4 className="text-sm mb-4 font-medium" style={{ color: TEXT, opacity: 0.6, letterSpacing: "0.06em" }}>Thông tin kho</h4>
           <div className="space-y-1">
-            <div className="flex items-center justify-between py-3" style={{ borderBottom: `1px dashed ${LINE}` }}>
+            <div className="flex items-center justify-between py-3" style={{ borderBottom: `1px solid ${LINE}` }}>
               <span className="text-sm flex items-center gap-1.5" style={{ color: lowStock.length > 0 ? RUST : INK }}>
                 {lowStock.length > 0 && <AlertTriangle size={14} />} Sản phẩm dưới định mức (≤5)
               </span>
               <span className="text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: lowStock.length > 0 ? RUST : INK }}>{lowStock.length}</span>
             </div>
-            <div className="flex items-center justify-between py-3" style={{ borderBottom: `1px dashed ${LINE}` }}>
+            <div className="flex items-center justify-between py-3" style={{ borderBottom: `1px solid ${LINE}` }}>
               <span className="text-sm opacity-70">Số tồn kho (tổng SL)</span>
-              <span className="text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{stockUnits}</span>
+              <span className="text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{stockUnits}</span>
             </div>
             <div className="flex items-center justify-between py-3">
               <span className="text-sm opacity-70">Giá trị tồn kho</span>
-              <span className="text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(stockValue)}</span>
+              <span className="text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{vnd(stockValue)}</span>
             </div>
           </div>
           {lowStock.length > 0 && (
-            <div className="mt-3 p-3 rounded-md text-xs" style={{ background: "#FBF0EC", color: INK }}>
+            <div className="mt-3 p-3 rounded-md text-xs" style={{ background: "#FBF0EC", color: TEXT }}>
               {lowStock.slice(0, 6).map((p) => `${p.name} (còn ${productStats(p).closingQty})`).join(", ")}{lowStock.length > 6 ? "…" : ""}
             </div>
           )}
@@ -2462,8 +2484,8 @@ function StatCard({ label, value, icon: Icon, accent }) {
   return (
     <div className="p-5 rounded-md flex items-center justify-between" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
       <div>
-        <p className="text-xs uppercase tracking-wider mb-1" style={{ color: INK, opacity: 0.55 }}>{label}</p>
-        <p className="text-2xl" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{value}</p>
+        <p className="text-xs mb-1 font-medium" style={{ color: TEXT, opacity: 0.55 }}>{label}</p>
+        <p className="text-2xl" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{value}</p>
       </div>
       <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: `${accent}1A` }}>
         <Icon size={18} style={{ color: accent }} />
@@ -2543,7 +2565,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
     const newName = rawNew.trim();
     if (!newName || newName === oldName) { setEditingCategory(null); return; }
     if ((categories || []).some((x) => x !== oldName && x.toLowerCase() === newName.toLowerCase())) {
-      alert(`Nhóm hàng "${newName}" đã tồn tại.`);
+      notify(`Nhóm hàng "${newName}" đã tồn tại.`);
       return;
     }
     setCategories((categories || []).map((x) => (x === oldName ? newName : x)));
@@ -2644,7 +2666,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
   // Xuất Excel: theo sản phẩm đã chọn, hoặc theo bộ lọc hiện tại (nhóm hàng/nhãn hiệu/VAT/tìm kiếm) nếu chưa chọn dòng nào.
   const exportProducts = () => {
     const list = selectedIds.size > 0 ? products.filter((p) => selectedIds.has(p.id)) : filtered;
-    if (list.length === 0) { alert("Không có sản phẩm nào để xuất."); return; }
+    if (list.length === 0) { notify("Không có sản phẩm nào để xuất."); return; }
     const rows = list.map((p) => {
       const s = productStats(p);
       const row = {
@@ -2735,16 +2757,16 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
     const extraName = (addVariantFor.extraName || "").trim();
     const extraExisting = (addVariantFor.extraExisting || "").trim();
     const extraNew = (addVariantFor.extraNew || "").trim();
-    if (addVariantFor.addAttr && (!extraName || !extraExisting || !extraNew)) { alert("Vui lòng nhập đủ tên thuộc tính và 2 giá trị."); return; }
-    if (addVariantFor.addAttr && addVariantFor.attrs.some((k) => k.toLowerCase() === extraName.toLowerCase())) { alert(`Nhóm đã có thuộc tính "${extraName}".`); return; }
+    if (addVariantFor.addAttr && (!extraName || !extraExisting || !extraNew)) { notify("Vui lòng nhập đủ tên thuộc tính và 2 giá trị."); return; }
+    if (addVariantFor.addAttr && addVariantFor.attrs.some((k) => k.toLowerCase() === extraName.toLowerCase())) { notify(`Nhóm đã có thuộc tính "${extraName}".`); return; }
     const withExtra = !!addVariantFor.addAttr;
     const attrs = withExtra ? [...addVariantFor.attrs, extraName] : addVariantFor.attrs;
     const vals = [...addVariantFor.attrs.map((k) => (values[k] || "").trim()), ...(withExtra ? [extraNew] : [])];
-    if (vals.some((v) => !v)) { alert("Vui lòng nhập đủ giá trị phiên bản."); return; }
+    if (vals.some((v) => !v)) { notify("Vui lòng nhập đủ giá trị phiên bản."); return; }
     const siblings = products.filter((x) => x.variantGroupId === rep.variantGroupId);
     const attrOf = (x, k) => (withExtra && k === extraName ? extraExisting : String(x.variantAttrs?.[k] || ""));
     const same = siblings.find((x) => attrs.every((k, i) => attrOf(x, k).trim().toLowerCase() === vals[i].toLowerCase()));
-    if (same) { alert(`Phiên bản này đã có trong nhóm (${same.code}).`); return; }
+    if (same) { notify(`Phiên bản này đã có trong nhóm (${same.code}).`); return; }
     const taken = (suffix) => products.some((x) => x.code.toLowerCase() === `${baseCode}_${suffix}`.toLowerCase() || (x.sku || "").toLowerCase() === `${baseSku}_${suffix}`.toLowerCase());
     let suffix = vals.map((v) => variantValueCode(v)).join("_");
     if (taken(suffix)) suffix = vals.map((v) => variantValueCode(v, 6)).join("_");
@@ -2919,7 +2941,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         );
         setImportResult({ added: newProducts.length, webUpdated: webUpdates.size, invUpdated: invUpdates.size, skipped });
       } catch (err) {
-        alert("Không đọc được file Excel — vui lòng dùng đúng file đã tải từ nút \"Xuất Excel\" (không đổi tên cột) rồi thử lại.");
+        notify("Không đọc được file Excel — vui lòng dùng đúng file đã tải từ nút \"Xuất Excel\" (không đổi tên cột) rồi thử lại.");
       }
       if (importFileRef.current) importFileRef.current.value = "";
     };
@@ -2948,11 +2970,11 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
     if (!form.code || !form.name) return;
     if (editing.id) {
       const dup = products.find((p) => p.id !== editing.id && p.code.toLowerCase() === form.code.trim().toLowerCase());
-      if (dup) { alert(`Mã VT "${form.code}" đã dùng cho sản phẩm "${dup.name}" — vui lòng chọn mã khác.`); return; }
+      if (dup) { notify(`Mã VT "${form.code}" đã dùng cho sản phẩm "${dup.name}" — vui lòng chọn mã khác.`); return; }
       const editingSku = (form.sku || "").trim();
       if (editingSku) {
         const dupSku = products.find((p) => p.id !== editing.id && p.sku.toLowerCase() === editingSku.toLowerCase());
-        if (dupSku) { alert(`SKU "${editingSku}" đã dùng cho sản phẩm "${dupSku.name}" (${dupSku.code}) — vui lòng chọn SKU khác.`); return; }
+        if (dupSku) { notify(`SKU "${editingSku}" đã dùng cho sản phẩm "${dupSku.name}" (${dupSku.code}) — vui lòng chọn SKU khác.`); return; }
       }
       const newRetail = Number(form.retailPrice) || 0, newWholesale = Number(form.wholesalePrice) || 0, newCost = Number(form.costPrice) || 0;
       // Chi tiết cho Nhật ký — so cả các trường thường (tên, nhóm hàng, giá...) chứ không chỉ mỗi mã/tên.
@@ -3002,7 +3024,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
       const attr1Values = form.variantAttr1Values || [];
       const attr2Name = (form.variantAttr2Name || "Thuộc tính 2").trim();
       const attr2Values = form.variantAttr2Enabled ? (form.variantAttr2Values || []) : [];
-      if (attr1Values.length === 0) { alert(`Vui lòng nhập ít nhất 1 giá trị cho "${attr1Name}".`); return; }
+      if (attr1Values.length === 0) { notify(`Vui lòng nhập ít nhất 1 giá trị cho "${attr1Name}".`); return; }
       const combos = cartesianProduct(attr2Values.length > 0 ? [attr1Values, attr2Values] : [attr1Values]);
       const groupId = uid();
       // Hậu tố mã/SKU cho từng tổ hợp — variantValueCode() mặc định chỉ lấy 3 ký tự đầu nên các giá
@@ -3039,15 +3061,15 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
       });
       // Tránh trùng mã VT/SKU nếu vô tình bấm tạo 2 lần hoặc trùng với sản phẩm có sẵn.
       const dup = newProducts.find((np) => products.some((p) => p.code.toLowerCase() === np.code.toLowerCase()));
-      if (dup) { alert(`Mã VT "${dup.code}" đã tồn tại — vui lòng đổi Mã VT gốc hoặc kiểm tra lại danh sách giá trị.`); return; }
+      if (dup) { notify(`Mã VT "${dup.code}" đã tồn tại — vui lòng đổi Mã VT gốc hoặc kiểm tra lại danh sách giá trị.`); return; }
       const dupSku = newProducts.find((np) => products.some((p) => p.sku.toLowerCase() === np.sku.toLowerCase()));
-      if (dupSku) { alert(`SKU "${dupSku.sku}" đã tồn tại — vui lòng đổi SKU gốc hoặc kiểm tra lại danh sách giá trị.`); return; }
+      if (dupSku) { notify(`SKU "${dupSku.sku}" đã tồn tại — vui lòng đổi SKU gốc hoặc kiểm tra lại danh sách giá trị.`); return; }
       setProducts((prev) => [...prev, ...newProducts]);
       addLog("Tạo sản phẩm có phiên bản", `${form.name} · ${newProducts.length} phiên bản`);
     } else {
       const newSku = (form.sku || "").trim() || nextSKU(products);
       const dupSku = products.find((p) => p.sku.toLowerCase() === newSku.toLowerCase());
-      if (dupSku) { alert(`SKU "${newSku}" đã dùng cho sản phẩm "${dupSku.name}" (${dupSku.code}) — vui lòng chọn SKU khác.`); return; }
+      if (dupSku) { notify(`SKU "${newSku}" đã dùng cho sản phẩm "${dupSku.name}" (${dupSku.code}) — vui lòng chọn SKU khác.`); return; }
       const now = new Date().toISOString();
       const newWeb = normalizeWeb(form.web);
       if (newWeb.published) { newWeb.publishedAt = now; newWeb.publishedBy = currentUser.fullName; }
@@ -3067,7 +3089,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
   const onImagePick = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 1.5 * 1024 * 1024) { alert("Ảnh quá lớn — vui lòng chọn ảnh dưới 1.5MB."); return; }
+    if (file.size > 1.5 * 1024 * 1024) { notify("Ảnh quá lớn — vui lòng chọn ảnh dưới 1.5MB."); return; }
     const dataUrl = await fileToDataUrl(file);
     setForm((f) => ({ ...f, image: dataUrl }));
   };
@@ -3075,7 +3097,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
   const onGalleryImagePick = async (idx, e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 1.5 * 1024 * 1024) { alert("Ảnh quá lớn — vui lòng chọn ảnh dưới 1.5MB."); return; }
+    if (file.size > 1.5 * 1024 * 1024) { notify("Ảnh quá lớn — vui lòng chọn ảnh dưới 1.5MB."); return; }
     const dataUrl = await fileToDataUrl(file);
     setForm((f) => {
       const imgs = Array.isArray(f.images) ? [...f.images] : [];
@@ -3115,25 +3137,25 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
       if (type === "in") {
         series = ioForm.series;
         if (series.length !== qty) {
-          alert(`Sản phẩm này quản lý theo series — cần nhập đúng ${qty} số series (đang có ${series.length}).`);
+          notify(`Sản phẩm này quản lý theo series — cần nhập đúng ${qty} số series (đang có ${series.length}).`);
           return;
         }
         const dups = findDuplicateSeries(product, series);
         if (dups.length > 0) {
-          alert(`Số series bị trùng với phiếu nhập trước đó (số series phải là duy nhất cho mỗi sản phẩm): ${dups.join(", ")}.`);
+          notify(`Số series bị trùng với phiếu nhập trước đó (số series phải là duy nhất cho mỗi sản phẩm): ${dups.join(", ")}.`);
           return;
         }
       } else {
         series = ioForm.selectedSeries;
         if (series.length !== qty) {
-          alert(`Sản phẩm này quản lý theo series — cần chọn đúng ${qty} số series còn tồn (đang chọn ${series.length}).`);
+          notify(`Sản phẩm này quản lý theo series — cần chọn đúng ${qty} số series còn tồn (đang chọn ${series.length}).`);
           return;
         }
       }
     } else if (type === "out") {
       const { closingQty } = productStats(product);
       if (qty > closingQty) {
-        alert(`Chỉ còn tồn ${closingQty} — không thể xuất ${qty}.`);
+        notify(`Chỉ còn tồn ${closingQty} — không thể xuất ${qty}.`);
         return;
       }
     }
@@ -3168,7 +3190,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
       {negativeStockProducts.length > 0 && (
         <div className="mb-4 p-3 rounded-md flex items-start gap-2.5" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44` }}>
           <AlertTriangle size={16} style={{ color: RUST }} className="mt-0.5 shrink-0" />
-          <p className="text-sm" style={{ color: INK }}>
+          <p className="text-sm" style={{ color: TEXT }}>
             <span className="font-medium" style={{ color: RUST }}>Cảnh báo âm kho: </span>
             {negativeStockProducts.map((p) => `${p.name} (${productStats(p).closingQty})`).join(", ")} — đã bán vượt tồn kho thực tế, cần nhập bù.
           </p>
@@ -3176,12 +3198,12 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
       )}
       <div className="flex items-center gap-1.5 mb-3 flex-wrap">
         <div className="relative flex-1 min-w-[220px] max-w-md">
-          <Search size={15} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50" />
+          <Search size={15} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-60" />
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm theo mã VT hoặc tên…"
             className="w-full pl-7 pr-2 py-1.5 text-sm rounded-md border-2 outline-none" style={{ borderColor: INK, background: "#fff" }} />
         </div>
-        <button onClick={() => setShowFilters((s) => !s)} className="flex items-center gap-1.5 text-sm px-3.5 py-1.5 rounded-md border shrink-0" style={{ borderColor: activeFilterCount ? INK : LINE, color: INK, background: showFilters ? PAPER : "#fff" }}>
-          <Filter size={14} /> Bộ lọc {activeFilterCount > 0 && <span className="text-[10px] px-1.5 rounded-full text-white" style={{ background: INK }}>{activeFilterCount}</span>}
+        <button onClick={() => setShowFilters((s) => !s)} className="flex items-center gap-1.5 text-sm px-3.5 py-1.5 rounded-md border shrink-0" style={{ borderColor: activeFilterCount ? INK : LINE, color: TEXT, background: showFilters ? PAPER : "#fff" }}>
+          <Filter size={14} /> Bộ lọc {activeFilterCount > 0 && <span className="text-xs px-1.5 rounded-full text-white" style={{ background: INK }}>{activeFilterCount}</span>}
         </button>
         {activeFilterCount > 0 && (
           <button onClick={() => { setFilterCategory(""); setFilterBrand(""); setFilterStock(""); setFilterSupplier(""); setFilterCreatedBy(""); setFilterIncomplete(false); setFilterDuplicate(false); }} className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full font-medium shrink-0" style={{ background: `${RUST}1A`, color: RUST }}>
@@ -3196,7 +3218,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         )}
         <div className="flex-1" />
         {selectedIds.size > 0 && (
-          <button onClick={() => setSelectedIds(new Set())} className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs border whitespace-nowrap" style={{ borderColor: LINE, color: INK }}>
+          <button onClick={() => setSelectedIds(new Set())} className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs border whitespace-nowrap" style={{ borderColor: LINE, color: TEXT }}>
             <X size={13} /> Bỏ chọn ({selectedIds.size})
           </button>
         )}
@@ -3225,12 +3247,12 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           </button>
         )}
         {isAdmin && (
-          <button onClick={() => setManagingCategories(true)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs border whitespace-nowrap" style={{ borderColor: LINE, color: INK }}>
+          <button onClick={() => setManagingCategories(true)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs border whitespace-nowrap" style={{ borderColor: LINE, color: TEXT }}>
             <Filter size={13} /> Quản lý nhóm hàng
           </button>
         )}
         {isAdmin && (
-          <button onClick={() => setManagingBrands(true)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs border whitespace-nowrap" style={{ borderColor: LINE, color: INK }}>
+          <button onClick={() => setManagingBrands(true)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs border whitespace-nowrap" style={{ borderColor: LINE, color: TEXT }}>
             <Filter size={13} /> Quản lý nhãn hiệu
           </button>
         )}
@@ -3279,16 +3301,16 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
               {createdByOptions.map((n) => <option key={n} value={n}>{n}</option>)}
             </select>
           </label>
-          <label className="flex items-center gap-1.5 text-xs shrink-0 pb-1.5" style={{ color: INK, opacity: 0.7 }}>
+          <label className="flex items-center gap-1.5 text-xs shrink-0 pb-1.5" style={{ color: TEXT, opacity: 0.7 }}>
             <input type="checkbox" checked={showServices} onChange={(e) => setShowServices(e.target.checked)} />
             Hiện cả sản phẩm dịch vụ
           </label>
-          <label className="flex items-center gap-1.5 text-xs shrink-0 pb-1.5" style={{ color: INK, opacity: 0.7 }}>
+          <label className="flex items-center gap-1.5 text-xs shrink-0 pb-1.5" style={{ color: TEXT, opacity: 0.7 }}>
             <input type="checkbox" checked={filterIncomplete} onChange={(e) => setFilterIncomplete(e.target.checked)} />
             Chỉ sản phẩm thiếu thông tin
           </label>
           {isAdmin && (
-            <label className="flex items-center gap-1.5 text-xs shrink-0 pb-1.5" style={{ color: INK, opacity: 0.7 }}>
+            <label className="flex items-center gap-1.5 text-xs shrink-0 pb-1.5" style={{ color: TEXT, opacity: 0.7 }}>
               <input type="checkbox" checked={filterDuplicate} onChange={(e) => setFilterDuplicate(e.target.checked)} />
               Chỉ sản phẩm nghi trùng tên
             </label>
@@ -3299,10 +3321,10 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
       <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 220px)" }}>
         <table className="w-full text-sm" style={{ minWidth: 940 }}>
           <thead className="sticky top-0" style={{ zIndex: 2 }}>
-            <tr style={{ borderBottom: `2px solid ${INK}` }}>
+            <tr style={{ borderBottom: `1px solid ${LINE}` }}>
               <th className="px-3 py-2.5" style={{ background: "#fff" }}><input type="checkbox" title="Chọn tất cả sản phẩm trong trang này" checked={pageAllSelected()} onChange={toggleSelectAll} /></th>
               {["", "", "Mã VT", "SKU", "Tên vật tư", "ĐVT", "Tồn ĐK", "Nhập", "Xuất", "Tồn CK", ...(isAdmin ? ["Giá nhập"] : []), ""].map((h, hi) => (
-                <th key={hi} className="text-left px-2 py-2.5 text-xs uppercase tracking-wider whitespace-nowrap" style={h === "Tên vật tư" ? { color: INK, opacity: 0.6, background: "#fff", minWidth: 260 } : { color: INK, opacity: 0.6, background: "#fff" }}>{h}</th>
+                <th key={hi} className="text-left px-2 py-2.5 text-xs whitespace-nowrap font-medium" style={h === "Tên vật tư" ? { color: TEXT, opacity: 0.6, background: "#fff", minWidth: 260 } : { color: TEXT, opacity: 0.6, background: "#fff" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -3314,10 +3336,10 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                 // diện (PURPLE...) + thụt lề mã/tên, để thấy rõ các dòng này thuộc cùng 1 sản phẩm
                 // chính, không lẫn với sản phẩm đơn lẻ khác.
                 return (
-                  <tr key={p.id} style={{ borderBottom: `1px dashed ${LINE}`, background: inGroup ? `${PURPLE}14` : undefined }} className="hover:bg-black/[0.02]">
+                  <tr key={p.id} style={{ borderBottom: `1px solid ${LINE}`, background: inGroup ? `${PURPLE}14` : undefined }} className="hover:bg-black/[0.02]">
                       <td className="px-3 py-3"><input type="checkbox" checked={selectedIds.has(p.id)} onChange={() => toggleSelect(p.id)} /></td>
                       <td className="px-2 py-3">
-                        <button onClick={() => openProductDetail(p.id)} className="opacity-50 hover:opacity-100" title="Xem chi tiết"><ChevronRight size={15} /></button>
+                        <button onClick={() => openProductDetail(p.id)} className="opacity-60 hover:opacity-100" title="Xem chi tiết"><ChevronRight size={15} /></button>
                       </td>
                       <td className="px-2 py-3">
                         {displayImage(p) ? (
@@ -3332,19 +3354,19 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                         <button onClick={() => openProductDetail(p.id)} className="hover:underline" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{p.code}</button>
                       </td>
                       <td className="px-3 py-3 opacity-70 whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>{p.sku || "—"}</td>
-                      <td className="px-3 py-3" style={{ color: INK, minWidth: 260 }}>
+                      <td className="px-3 py-3" style={{ color: TEXT, minWidth: 260 }}>
                         <button onClick={() => openProductDetail(p.id)} className="text-left hover:underline">{p.name}</button>
                         <div className="flex gap-1.5 mt-1 flex-wrap">
-                          {p.isService && <span className="inline-block text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider" style={{ background: `${BLUE}1A`, color: BLUE }}>Dịch vụ</span>}
-                          {p.hasSeries && <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider" style={{ background: `${BLUE}1A`, color: BLUE }}><Barcode size={10} /> Series</span>}
-                          {p.vat && <span className="inline-block text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider" style={{ background: `${BRASS}1A`, color: BRASS }}>{VAT_OPTIONS.find((v) => v.id === p.vat)?.label || p.vat}</span>}
-                          {p.variantAttrs && <span className="inline-block text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider" style={{ background: `${PURPLE}1A`, color: PURPLE }}>{Object.values(p.variantAttrs).join(" / ")}</span>}
-                          {isAdmin && duplicateProductIds.has(p.id) && <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider" style={{ background: `${RUST}1A`, color: RUST }}><AlertTriangle size={10} /> Nghi trùng</span>}
+                          {p.isService && <span className="inline-block text-xs px-1.5 py-0.5 rounded-md font-medium" style={{ background: `${BLUE}1A`, color: BLUE }}>Dịch vụ</span>}
+                          {p.hasSeries && <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-md font-medium" style={{ background: `${BLUE}1A`, color: BLUE }}><Barcode size={10} /> Series</span>}
+                          {p.vat && <span className="inline-block text-xs px-1.5 py-0.5 rounded-md font-medium" style={{ background: `${BRASS}1A`, color: BRASS }}>{VAT_OPTIONS.find((v) => v.id === p.vat)?.label || p.vat}</span>}
+                          {p.variantAttrs && <span className="inline-block text-xs px-1.5 py-0.5 rounded-md font-medium" style={{ background: `${PURPLE}1A`, color: PURPLE }}>{Object.values(p.variantAttrs).join(" / ")}</span>}
+                          {isAdmin && duplicateProductIds.has(p.id) && <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-md font-medium" style={{ background: `${RUST}1A`, color: RUST }}><AlertTriangle size={10} /> Nghi trùng</span>}
                         </div>
                       </td>
                       <td className="px-2 py-3 opacity-70 whitespace-nowrap">{p.unit}</td>
                       {p.isService ? (
-                        <td colSpan={3} className="px-2 py-3 text-center opacity-40 text-xs">— không quản lý tồn kho —</td>
+                        <td colSpan={3} className="px-2 py-3 text-center opacity-60 text-xs">— không quản lý tồn kho —</td>
                       ) : (<>
                         <td className="px-2 py-3 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>{p.openingQty}</td>
                         <td className="px-2 py-3 text-right" style={{ fontFamily: "'Inter', sans-serif", color: FOREST }}>+{stats.importedQty}</td>
@@ -3413,7 +3435,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                   <React.Fragment key={gid}>
                     {/* Chưa mở rộng: nền bình thường như sản phẩm khác, chỉ badge "N phiên bản" tô đậm.
                         Đã mở rộng: tô nền tím rõ hơn hẳn để thấy ngay đang xem đúng nhóm nào. */}
-                    <tr style={{ borderBottom: `1px dashed ${LINE}`, background: expanded ? `${PURPLE}1F` : undefined }} className="hover:bg-black/[0.02]">
+                    <tr style={{ borderBottom: `1px solid ${LINE}`, background: expanded ? `${PURPLE}1F` : undefined }} className="hover:bg-black/[0.02]">
                       <td className="px-3 py-3">
                         <input type="checkbox" checked={allSelected} onChange={() => setSelectedIds((prev) => { const n = new Set(prev); members.forEach((m) => (allSelected ? n.delete(m.id) : n.add(m.id))); return n; })} />
                       </td>
@@ -3437,15 +3459,15 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                         </button>
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap opacity-70" style={{ fontFamily: "'Inter', sans-serif" }}>{baseSku || "—"}</td>
-                      <td className="px-3 py-3" style={{ color: INK, minWidth: 260 }}>
+                      <td className="px-3 py-3" style={{ color: TEXT, minWidth: 260 }}>
                         <button onClick={() => toggleGroup(gid)} className="text-left hover:underline font-medium">{baseVariantName(rep)}</button>
                         <div className="flex gap-1.5 mt-1 flex-wrap">
-                          <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider font-bold" style={{ background: `${PURPLE}1A`, color: PURPLE }}><Layers size={10} /> {members.length} phiên bản</span>
+                          <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-md font-bold" style={{ background: `${PURPLE}1A`, color: PURPLE }}><Layers size={10} /> {members.length} phiên bản</span>
                         </div>
                       </td>
                       <td className="px-2 py-3 opacity-70 whitespace-nowrap">{rep.unit}</td>
                       {isService ? (
-                        <td colSpan={3} className="px-2 py-3 text-center opacity-40 text-xs">— không quản lý tồn kho —</td>
+                        <td colSpan={3} className="px-2 py-3 text-center opacity-60 text-xs">— không quản lý tồn kho —</td>
                       ) : (<>
                         <td className="px-2 py-3 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>{openingSum}</td>
                         <td className="px-2 py-3 text-right" style={{ fontFamily: "'Inter', sans-serif", color: FOREST }}>+{importedSum}</td>
@@ -3473,13 +3495,13 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                 );
               });
             })()}
-            {filtered.length === 0 && <tr><td colSpan={12} className="text-center py-8 opacity-50">Không có sản phẩm nào.</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={12} className="text-center py-8 opacity-60">Không có sản phẩm nào.</td></tr>}
           </tbody>
         </table>
       </div>
 
       {productGroups.length > 0 && (
-        <div className="flex items-center justify-between mt-2.5 text-xs" style={{ color: INK, opacity: 0.7 }}>
+        <div className="flex items-center justify-between mt-2.5 text-xs" style={{ color: TEXT, opacity: 0.7 }}>
           <span>
             {(productSafePage - 1) * PRODUCT_PAGE_SIZE + 1}–{Math.min(productSafePage * PRODUCT_PAGE_SIZE, productGroups.length)} / {productGroups.length} sản phẩm
             {isAdmin && pageAllSelected() && selectedIds.size < filtered.length && (
@@ -3498,7 +3520,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
 
       {addVariantFor && (
         <Modal title="Thêm phiên bản" onClose={() => setAddVariantFor(null)}>
-          <p className="text-sm mb-3" style={{ color: INK }}>{baseVariantName(addVariantFor.rep)}</p>
+          <p className="text-sm mb-3" style={{ color: TEXT }}>{baseVariantName(addVariantFor.rep)}</p>
           <div className="space-y-3">
             {addVariantFor.attrs.map((k, i) => (
               <Field key={k} label={k}>
@@ -3553,8 +3575,8 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                 </div>
               )}
               <div className="min-w-0">
-                <h4 style={{ color: INK }} className="text-xl leading-snug font-bold">{viewingProduct.name}</h4>
-                <p className="text-sm mt-1" style={{ color: INK, opacity: 0.6 }}>{[viewingProduct.category || "Chưa phân nhóm", viewingProduct.brand].filter(Boolean).join(" · ")}</p>
+                <h4 style={{ color: TEXT }} className="text-xl leading-snug font-bold">{viewingProduct.name}</h4>
+                <p className="text-sm mt-1" style={{ color: TEXT, opacity: 0.6 }}>{[viewingProduct.category || "Chưa phân nhóm", viewingProduct.brand].filter(Boolean).join(" · ")}</p>
             {viewingProduct.variantGroupId && (() => {
               const siblings = products.filter((p) => p.variantGroupId === viewingProduct.variantGroupId);
               if (siblings.length <= 1) return null;
@@ -3579,7 +3601,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                 <div className="flex gap-10 mt-4">
                   <div>
                     <p className="text-xs opacity-60">Giá bán</p>
-                    <p className="text-2xl font-bold" style={{ color: INK }}>{vnd(viewingProduct.retailPrice)}</p>
+                    <p className="text-2xl font-bold" style={{ color: TEXT }}>{vnd(viewingProduct.retailPrice)}</p>
                   </div>
                   <div>
                     <p className="text-xs opacity-60">Tồn kho</p>
@@ -3593,7 +3615,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
               {isAdmin && <button onClick={() => openIOFromDetail(viewingProduct, "in")} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm text-white" style={{ background: INK }}><ArrowDownToLine size={14} /> Nhập kho</button>}
               {!isCtv && <button onClick={() => openIOFromDetail(viewingProduct, "out")} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: INK, color: INK }}><ArrowUpFromLine size={14} /> Xuất kho</button>}
               {isAdmin && (
-                <button onClick={() => openEditFromDetail(viewingProduct)} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: LINE, color: INK }}><Pencil size={14} /> Sửa thông tin</button>
+                <button onClick={() => openEditFromDetail(viewingProduct)} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: LINE, color: TEXT }}><Pencil size={14} /> Sửa thông tin</button>
               )}
               {isAdmin && goToWebProduct && (
                 <button onClick={() => goToWebProduct(viewingProduct.id)} title="Sửa mô tả, ảnh, giá so sánh... của sản phẩm này trên website" className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: BLUE, color: BLUE }}><Globe size={14} /> Sửa trên Website</button>
@@ -3624,7 +3646,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
             )}
 
             <div className="mb-5">
-              <button onClick={() => setShowProductInfo((v) => !v)} className="w-full flex items-center justify-between px-4 py-3 mt-3 rounded-lg text-sm font-semibold" style={{ color: INK, background: PAPER }}>
+              <button onClick={() => setShowProductInfo((v) => !v)} className="w-full flex items-center justify-between px-4 py-3 mt-3 rounded-lg text-sm font-semibold" style={{ color: TEXT, background: PAPER }}>
                 Thông tin chi tiết
                 <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md text-white" style={{ background: INK }}>
                   {showProductInfo ? "Thu gọn" : "Xem thêm"}
@@ -3655,8 +3677,8 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                     ["Xuất trong kỳ", `-${stats.exportedQty}`],
                   ].map(([label, val]) => (
                     <div key={label} className="flex gap-4 py-2" style={{ borderTop: `1px solid ${LINE}` }}>
-                      <dt className="shrink-0 w-32" style={{ color: INK, opacity: 0.6 }}>{label}</dt>
-                      <dd className="font-medium" style={{ color: INK }}>{val}</dd>
+                      <dt className="shrink-0 w-32" style={{ color: TEXT, opacity: 0.6 }}>{label}</dt>
+                      <dd className="font-medium" style={{ color: TEXT }}>{val}</dd>
                     </div>
                   ))}
                 </dl>
@@ -3665,17 +3687,17 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
 
             {isAdmin && priceHistory.length > 0 && (
               <div className="mb-5">
-                <button onClick={() => setShowPriceHistory((v) => !v)} className="text-xs underline opacity-60 hover:opacity-100 mb-2" style={{ color: INK }}>
+                <button onClick={() => setShowPriceHistory((v) => !v)} className="text-xs underline opacity-60 hover:opacity-100 mb-2" style={{ color: TEXT }}>
                   {showPriceHistory ? "Ẩn" : "Xem"} lịch sử thay đổi giá ({priceHistory.length})
                 </button>
                 {showPriceHistory && (
                   <div className="rounded-md overflow-hidden" style={{ border: `1px solid ${LINE}` }}>
                     {priceHistory.map((h) => (
-                      <div key={h.id} className="flex items-center justify-between gap-3 px-3 py-2 text-xs flex-wrap" style={{ borderBottom: `1px dashed ${LINE}` }}>
-                        <span style={{ color: INK }}>
+                      <div key={h.id} className="flex items-center justify-between gap-3 px-3 py-2 text-xs flex-wrap" style={{ borderBottom: `1px solid ${LINE}` }}>
+                        <span style={{ color: TEXT }}>
                           <b>{h.field}</b>: {vnd(h.oldValue)} → <b style={{ color: h.newValue > h.oldValue ? RUST : FOREST }}>{vnd(h.newValue)}</b>
                         </span>
-                        <span className="opacity-50 whitespace-nowrap">{formatDateTime(h.date)} · {h.changedBy}</span>
+                        <span className="opacity-60 whitespace-nowrap">{formatDateTime(h.date)} · {h.changedBy}</span>
                       </div>
                     ))}
                   </div>
@@ -3686,8 +3708,8 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
 
             {viewingProduct.hasSeries && (
               <div>
-                <p className="text-xs uppercase tracking-wider mb-2 opacity-60">Danh sách series — {rows.filter((r) => r.status === "Còn tồn").length} còn tồn / {rows.length} tổng</p>
-                {rows.length === 0 ? <p className="text-sm opacity-50">Chưa có series nào — nhập kho để thêm.</p> : (
+                <p className="text-xs mb-2 opacity-60 font-medium">Danh sách series — {rows.filter((r) => r.status === "Còn tồn").length} còn tồn / {rows.length} tổng</p>
+                {rows.length === 0 ? <p className="text-sm opacity-60">Chưa có series nào — nhập kho để thêm.</p> : (
                   <div className="rounded-md overflow-hidden" style={{ border: `1px solid ${LINE}` }}>
                     <table className="w-full text-xs">
                       <thead style={{ background: PAPER }}><tr className="opacity-60">
@@ -3696,14 +3718,14 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                       </tr></thead>
                       <tbody>
                         {rows.map((r) => (
-                          <tr key={r.serial} style={{ borderTop: `1px dashed ${LINE}` }}>
+                          <tr key={r.serial} style={{ borderTop: `1px solid ${LINE}` }}>
                             <td className="py-1.5 px-2" style={{ fontFamily: "'Inter', sans-serif" }}>{r.serial}</td>
                             <td className="py-1.5 px-2">{r.importDoc && goToDoc ? <button onClick={() => goToDoc(r.importDoc)} className="hover:underline" style={{ color: BLUE }}>{r.importDoc}</button> : (r.importDoc || "—")}</td>
                             <td className="py-1.5 px-2">{r.importDate}</td>
                             <td className="py-1.5 px-2">{r.exportDoc && goToDoc ? <button onClick={() => goToDoc(r.exportDoc)} className="hover:underline" style={{ color: BLUE }}>{r.exportDoc}</button> : (r.exportDoc || "—")}</td>
                             <td className="py-1.5 px-2">{r.exportDate || "—"}</td>
                             <td className="py-1.5 px-2"><span style={{ color: r.status === "Còn tồn" ? FOREST : RUST }}>{r.status}</span></td>
-                            <td className="py-1.5 px-2">{r.status === "Còn tồn" ? <span style={{ color: FOREST }}>Có</span> : <span className="opacity-40">Không</span>}</td>
+                            <td className="py-1.5 px-2">{r.status === "Còn tồn" ? <span style={{ color: FOREST }}>Có</span> : <span className="opacity-60">Không</span>}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -3714,8 +3736,8 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
             )}
 
             <div className="mt-5">
-              <p className="text-xs uppercase tracking-wider mb-2 opacity-60">Lịch sử nhập / xuất / trả</p>
-              {viewingProduct.movements.length === 0 ? <p className="text-sm opacity-50">Chưa có bút toán nào.</p> : (() => {
+              <p className="text-xs mb-2 opacity-60 font-medium">Lịch sử nhập / xuất / trả</p>
+              {viewingProduct.movements.length === 0 ? <p className="text-sm opacity-60">Chưa có bút toán nào.</p> : (() => {
                 const allSorted = [...viewingProduct.movements].sort((a, b) => (a.date < b.date ? 1 : -1));
                 const filteredHistory = allSorted.filter((m) => {
                   if (historySearch.trim() && !(m.docNo || "").toLowerCase().includes(historySearch.trim().toLowerCase())) return false;
@@ -3743,7 +3765,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                         <input type="date" value={historyTo} onChange={(e) => { setHistoryTo(e.target.value); setHistoryPage(1); }} className="w-full border rounded-md py-1.5 px-2 text-xs" style={{ borderColor: LINE }} />
                       </label>
                       {(historySearch || historyFrom || historyTo) && (
-                        <button onClick={() => { setHistorySearch(""); setHistoryFrom(""); setHistoryTo(""); setHistoryPage(1); }} className="text-xs opacity-50 hover:opacity-100 underline mb-1.5">Xoá lọc</button>
+                        <button onClick={() => { setHistorySearch(""); setHistoryFrom(""); setHistoryTo(""); setHistoryPage(1); }} className="text-xs opacity-60 hover:opacity-100 underline mb-1.5">Xoá lọc</button>
                       )}
                     </div>
                     <div className="rounded-md overflow-x-auto min-w-0" style={{ border: `1px solid ${LINE}` }}>
@@ -3761,7 +3783,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                             else if (isPO) label = "Nhập hàng";
                             else if (isDH) label = "Xuất bán";
                             return (
-                              <tr key={m.id} style={{ borderTop: `1px dashed ${LINE}` }}>
+                              <tr key={m.id} style={{ borderTop: `1px solid ${LINE}` }}>
                                 <td className="py-1.5 px-2"><span style={{ color: m.type === "in" ? FOREST : RUST }}>{label}</span></td>
                                 <td className="py-1.5 px-2" style={{ fontFamily: "'Inter', sans-serif" }}>
                                   {m.docNo && goToDoc ? <button onClick={() => goToDoc(m.docNo)} className="hover:underline" style={{ color: BLUE }}>{m.docNo}</button> : <span style={{ color: BLUE }}>{m.docNo || "—"}</span>}
@@ -3772,16 +3794,16 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                               </tr>
                             );
                           })}
-                          {pageRows.length === 0 && <tr><td colSpan={5} className="text-center py-6 opacity-40">Không có bút toán phù hợp bộ lọc.</td></tr>}
+                          {pageRows.length === 0 && <tr><td colSpan={5} className="text-center py-6 opacity-60">Không có bút toán phù hợp bộ lọc.</td></tr>}
                         </tbody>
                       </table>
                     </div>
                     {totalPages > 1 && (
                       <div className="flex items-center justify-between mt-2">
-                        <span className="text-xs opacity-50">Trang {page}/{totalPages} · {filteredHistory.length} dòng</span>
+                        <span className="text-xs opacity-60">Trang {page}/{totalPages} · {filteredHistory.length} dòng</span>
                         <div className="flex gap-1.5">
-                          <button onClick={() => setHistoryPage((p2) => Math.max(1, p2 - 1))} disabled={page <= 1} className="text-xs px-2.5 py-1 rounded-md border disabled:opacity-30" style={{ borderColor: LINE, color: INK }}>‹ Trước</button>
-                          <button onClick={() => setHistoryPage((p2) => Math.min(totalPages, p2 + 1))} disabled={page >= totalPages} className="text-xs px-2.5 py-1 rounded-md border disabled:opacity-30" style={{ borderColor: LINE, color: INK }}>Sau ›</button>
+                          <button onClick={() => setHistoryPage((p2) => Math.max(1, p2 - 1))} disabled={page <= 1} className="text-xs px-2.5 py-1 rounded-md border disabled:opacity-30" style={{ borderColor: LINE, color: TEXT }}>‹ Trước</button>
+                          <button onClick={() => setHistoryPage((p2) => Math.min(totalPages, p2 + 1))} disabled={page >= totalPages} className="text-xs px-2.5 py-1 rounded-md border disabled:opacity-30" style={{ borderColor: LINE, color: TEXT }}>Sau ›</button>
                         </div>
                       </div>
                     )}
@@ -3882,7 +3904,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
             <Field label="Giá bán sỉ (đ)"><MoneyInput className={inputCls} style={{ borderColor: LINE }} value={form.wholesalePrice} onChange={(v) => setForm({ ...form, wholesalePrice: v })} /></Field>
           </div>
 
-          <label className="flex items-center gap-2 mb-1 text-sm p-2.5 rounded-md" style={{ color: INK, background: form.isService ? `${BLUE}0D` : "transparent", border: `1px solid ${form.isService ? BLUE : LINE}` }}>
+          <label className="flex items-center gap-2 mb-1 text-sm p-2.5 rounded-md" style={{ color: TEXT, background: form.isService ? `${BLUE}0D` : "transparent", border: `1px solid ${form.isService ? BLUE : LINE}` }}>
             <input type="checkbox" checked={!!form.isService} onChange={(e) => setForm({ ...form, isService: e.target.checked, hasSeries: e.target.checked ? false : form.hasSeries, openingQty: e.target.checked ? 0 : form.openingQty })} />
             Sản phẩm dịch vụ (VD: phí sửa chữa, phí IT Helpdesk...) — không quản lý tồn kho, không trừ kho khi bán
           </label>
@@ -3890,7 +3912,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           {!form.isService && (
             <div className="grid grid-cols-2 gap-4 items-end">
               <Field label="Tồn đầu kỳ (SL)"><input type="number" className={inputCls} style={{ borderColor: LINE }} value={form.openingQty} onChange={(e) => setForm({ ...form, openingQty: e.target.value })} /></Field>
-              <label className="flex items-center gap-2 mb-3 text-sm" style={{ color: INK }}>
+              <label className="flex items-center gap-2 mb-3 text-sm" style={{ color: TEXT }}>
                 <input type="checkbox" checked={!!form.hasSeries} onChange={(e) => setForm({ ...form, hasSeries: e.target.checked })} />
                 Quản lý theo số series
               </label>
@@ -3933,7 +3955,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
             </Field>
           )}
 
-          <div className="my-3" style={{ borderTop: `1px dashed ${LINE}` }} />
+          <div className="my-3" style={{ borderTop: `1px solid ${LINE}` }} />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Thuế giá trị gia tăng (VAT)">
@@ -3973,7 +3995,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
             <Field label="Hình ảnh sản phẩm" hint="Ảnh chính + tối đa 3 ảnh phụ — mỗi ảnh dưới 1.5MB">
               <div className="flex flex-wrap items-start gap-3">
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">Ảnh chính</p>
+                  <p className="text-xs opacity-60 mb-1 font-medium">Ảnh chính</p>
                   {form.image ? (
                     <div className="relative">
                       <img src={form.image} alt="Ảnh chính" onClick={() => setZoomImage({ images: [{ src: form.image, alt: "Ảnh chính" }, ...(form.images || []).map((im, i) => ({ src: im, alt: `Ảnh phụ ${i + 1}` }))], index: 0 })}
@@ -3985,15 +4007,15 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                     </div>
                   ) : (
                     <label className="w-16 h-16 rounded-md flex flex-col items-center justify-center cursor-pointer gap-0.5"
-                      style={{ background: PAPER, border: `1px dashed ${LINE}`, color: INK }}>
-                      <ImagePlus size={16} className="opacity-50" />
+                      style={{ background: PAPER, border: `1px dashed ${LINE}`, color: TEXT }}>
+                      <ImagePlus size={16} className="opacity-60" />
                       <input type="file" accept="image/*" className="hidden" onChange={onImagePick} />
                     </label>
                   )}
                 </div>
                 {[0, 1, 2].map((i) => (
                   <div key={i}>
-                    <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">Ảnh phụ {i + 1}</p>
+                    <p className="text-xs opacity-60 mb-1 font-medium">Ảnh phụ {i + 1}</p>
                     {(form.images || [])[i] ? (
                       <div className="relative">
                         <img src={form.images[i]} alt={`Ảnh phụ ${i + 1}`} onClick={() => setZoomImage({ images: [{ src: form.image, alt: "Ảnh chính" }, ...(form.images || []).map((im, idx) => ({ src: im, alt: `Ảnh phụ ${idx + 1}` }))].filter((x) => x.src), index: (form.image ? 1 : 0) + i })}
@@ -4005,21 +4027,21 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                       </div>
                     ) : (
                       <label className="w-16 h-16 rounded-md flex flex-col items-center justify-center cursor-pointer gap-0.5"
-                        style={{ background: PAPER, border: `1px dashed ${LINE}`, color: INK }}>
-                        <ImagePlus size={16} className="opacity-50" />
+                        style={{ background: PAPER, border: `1px dashed ${LINE}`, color: TEXT }}>
+                        <ImagePlus size={16} className="opacity-60" />
                         <input type="file" accept="image/*" className="hidden" onChange={(e) => onGalleryImagePick(i, e)} />
                       </label>
                     )}
                   </div>
                 ))}
               </div>
-              <span className="text-xs opacity-50 block mt-1.5">Bấm vào ảnh để phóng to, bấm ✕ để xoá / đổi ảnh khác.</span>
+              <span className="text-xs opacity-60 block mt-1.5">Bấm vào ảnh để phóng to, bấm ✕ để xoá / đổi ảnh khác.</span>
             </Field>
           </div>
 
           {/* ── Đăng lên website bán hàng ── */}
           <div className="mt-3 rounded-md p-3" style={{ border: `1px solid ${form.web?.published ? BLUE : LINE}`, background: form.web?.published ? `${BLUE}0D` : "transparent" }}>
-            <label className="flex items-center gap-2 text-sm font-medium" style={{ color: INK }}>
+            <label className="flex items-center gap-2 text-sm font-medium" style={{ color: TEXT }}>
               <input type="checkbox" checked={!!form.web?.published}
                 onChange={(e) => setForm({ ...form, web: { ...normalizeWeb(form.web), published: e.target.checked } })} />
               Đăng sản phẩm này lên website bán hàng
@@ -4065,8 +4087,8 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
 
           {!editing.id && (
             <>
-              <div className="my-3" style={{ borderTop: `1px dashed ${LINE}` }} />
-              <label className="flex items-center gap-2 mb-3 text-sm" style={{ color: INK }}>
+              <div className="my-3" style={{ borderTop: `1px solid ${LINE}` }} />
+              <label className="flex items-center gap-2 mb-3 text-sm" style={{ color: TEXT }}>
                 <input type="checkbox" checked={!!form.hasVariants} onChange={(e) => setForm({ ...form, hasVariants: e.target.checked })} />
                 Sản phẩm có nhiều phiên bản (màu sắc, kích cỡ…)
               </label>
@@ -4084,7 +4106,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                     </Field>
                   </div>
 
-                  <label className="flex items-center gap-2 my-3 text-sm" style={{ color: INK }}>
+                  <label className="flex items-center gap-2 my-3 text-sm" style={{ color: TEXT }}>
                     <input type="checkbox" checked={!!form.variantAttr2Enabled} onChange={(e) => setForm({ ...form, variantAttr2Enabled: e.target.checked })} />
                     Thêm thuộc tính thứ 2 (vd: kích cỡ)
                   </label>
@@ -4200,7 +4222,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
               className="px-4 py-2 rounded-md text-white text-sm shrink-0" style={{ background: INK }}>Thêm</button>
           </div>
           {categoryOptions.length === 0 ? (
-            <p className="text-sm opacity-50 text-center py-8">Chưa có nhóm hàng nào.</p>
+            <p className="text-sm opacity-60 text-center py-8">Chưa có nhóm hàng nào.</p>
           ) : (
             <div className="space-y-1.5 max-h-[50vh] overflow-y-auto">
               {categoryOptions.map((c) => {
@@ -4218,14 +4240,14 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                       />
                     ) : (
                       <div className="flex-1 min-w-0">
-                        <span className="text-sm" style={{ color: INK }}>{c}</span>
-                        <span className="text-xs opacity-50 ml-2">{usedCount > 0 ? `${usedCount} sản phẩm` : "Chưa có sản phẩm"}{brandCount > 0 ? ` · ${brandCount} nhãn hiệu` : ""}</span>
+                        <span className="text-sm" style={{ color: TEXT }}>{c}</span>
+                        <span className="text-xs opacity-60 ml-2">{usedCount > 0 ? `${usedCount} sản phẩm` : "Chưa có sản phẩm"}{brandCount > 0 ? ` · ${brandCount} nhãn hiệu` : ""}</span>
                       </div>
                     )}
                     <div className="flex items-center gap-0.5 shrink-0">
                       {!isEditing && (
                         <button onClick={() => { setEditingCategory(c); setEditCategoryInput(c); }} title="Đổi tên"
-                          className="p-1.5 rounded-md hover:bg-black/5 opacity-60" style={{ color: INK }}>
+                          className="p-1.5 rounded-md hover:bg-black/5 opacity-60" style={{ color: TEXT }}>
                           <Pencil size={13} />
                         </button>
                       )}
@@ -4260,7 +4282,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           <p className="text-xs opacity-60 mb-3">Mỗi nhãn hiệu thuộc về 1 nhóm hàng cụ thể (vd nhóm <b>Phần mềm</b> có nhãn MS, Adobe…; nhóm <b>Gia dụng</b> có Ergotek, NB…). Khi tạo sản phẩm, chọn nhóm hàng trước rồi mới chọn được đúng nhãn hiệu trong nhóm đó.</p>
 
           {categoryOptions.length === 0 ? (
-            <p className="text-sm opacity-50 text-center py-8">Chưa có nhóm hàng nào — vào "Quản lý nhóm hàng" để tạo trước, sau đó mới thêm được nhãn hiệu theo từng nhóm.</p>
+            <p className="text-sm opacity-60 text-center py-8">Chưa có nhóm hàng nào — vào "Quản lý nhóm hàng" để tạo trước, sau đó mới thêm được nhãn hiệu theo từng nhóm.</p>
           ) : (
             <div className="space-y-4 max-h-[60vh] overflow-y-auto">
               {categoryOptions.map((cat) => {
@@ -4275,9 +4297,9 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                 };
                 return (
                   <div key={cat} className="p-3 rounded-md" style={{ border: `1px solid ${LINE}` }}>
-                    <p className="text-sm font-medium mb-2" style={{ color: INK }}>{cat}</p>
+                    <p className="text-sm font-medium mb-2" style={{ color: TEXT }}>{cat}</p>
                     <div className="flex flex-wrap gap-1.5 mb-2">
-                      {catBrands.length === 0 && <span className="text-xs opacity-40">Chưa có nhãn hiệu nào trong nhóm này.</span>}
+                      {catBrands.length === 0 && <span className="text-xs opacity-60">Chưa có nhãn hiệu nào trong nhóm này.</span>}
                       {catBrands.map((b) => {
                         const usedCount = products.filter((p) => p.brand === b.name).length;
                         return (
@@ -4315,7 +4337,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                     <div className="space-y-1.5">
                       {unassigned.map((b) => (
                         <div key={b.id} className="flex items-center gap-2">
-                          <span className="text-sm flex-1" style={{ color: INK }}>{b.name}</span>
+                          <span className="text-sm flex-1" style={{ color: TEXT }}>{b.name}</span>
                           <select onChange={(e) => { if (e.target.value) { setBrands((brands || []).map((x) => (x.id === b.id ? { ...x, category: e.target.value } : x))); addLog("Gán nhóm hàng cho nhãn hiệu", `${b.name} → ${e.target.value}`); } }}
                             defaultValue="" className="border rounded-md py-1 px-2 text-xs" style={{ borderColor: LINE }}>
                             <option value="">— Gán vào nhóm hàng —</option>
@@ -4364,7 +4386,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
 
       {bulkDeleteOpen && (
         <Modal title={`Xoá ${selectedIds.size} sản phẩm đã chọn`} onClose={() => { setBulkDeleteOpen(false); setDeletePasswordInput(""); setDeletePasswordError(""); }}>
-          <p className="text-sm mb-3" style={{ color: INK }}>Hành động này không thể hoàn tác. Nhập mật khẩu quản trị viên để xác nhận xoá vĩnh viễn <b>{selectedIds.size}</b> sản phẩm đã chọn.</p>
+          <p className="text-sm mb-3" style={{ color: TEXT }}>Hành động này không thể hoàn tác. Nhập mật khẩu quản trị viên để xác nhận xoá vĩnh viễn <b>{selectedIds.size}</b> sản phẩm đã chọn.</p>
           <Field label="Mật khẩu">
             <input type="password" className={inputCls} style={{ borderColor: LINE }} value={deletePasswordInput}
               onChange={(e) => { setDeletePasswordInput(e.target.value); setDeletePasswordError(""); }}
@@ -4388,8 +4410,8 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
 // trong (kể cả input đang gõ), làm mất focus + chỉ gõ được 1 ký tự rồi phải bấm chuột lại.
 function BulkEditRow({ on, onToggle, label, children }) {
   return (
-    <div className="flex items-center gap-3 py-2" style={{ borderBottom: `1px dashed ${LINE}` }}>
-      <label className="flex items-center gap-2 w-[150px] shrink-0 text-sm" style={{ color: INK }}>
+    <div className="flex items-center gap-3 py-2" style={{ borderBottom: `1px solid ${LINE}` }}>
+      <label className="flex items-center gap-2 w-[150px] shrink-0 text-sm" style={{ color: TEXT }}>
         <input type="checkbox" checked={on} onChange={(e) => onToggle(e.target.checked)} />
         {label}
       </label>
@@ -4414,7 +4436,7 @@ function BulkEditModal({ count, suppliers, categoryOptions, brandOptions, brandO
   const brandChoices = form.category.on && form.category.value ? brandOptionsOf(form.category.value) : brandOptions;
 
   const submit = () => {
-    if (!anyOn) { alert("Bật ít nhất 1 mục cần đổi."); return; }
+    if (!anyOn) { notify("Bật ít nhất 1 mục cần đổi."); return; }
     if (!confirm(`Áp dụng thay đổi cho ${count} sản phẩm đã chọn?`)) return;
     onApply(form);
   };
@@ -4487,10 +4509,10 @@ function MergeVariantsModal({ products, onClose, onApply }) {
 
   const submit = () => {
     const name = attrName.trim();
-    if (!name) { alert('Nhập tên thuộc tính (VD: "Màu sắc").'); return; }
-    if (!products.every((p) => (values[p.id] || "").trim())) { alert("Điền đủ giá trị cho từng sản phẩm."); return; }
+    if (!name) { notify('Nhập tên thuộc tính (VD: "Màu sắc").'); return; }
+    if (!products.every((p) => (values[p.id] || "").trim())) { notify("Điền đủ giá trị cho từng sản phẩm."); return; }
     const norm = Object.values(values).map((v) => v.trim().toLowerCase());
-    if (new Set(norm).size !== products.length) { alert("Giá trị bị trùng giữa 2 sản phẩm — mỗi sản phẩm cần 1 giá trị khác nhau."); return; }
+    if (new Set(norm).size !== products.length) { notify("Giá trị bị trùng giữa 2 sản phẩm — mỗi sản phẩm cần 1 giá trị khác nhau."); return; }
     if (alreadyGrouped.length > 0 && !confirm(`${alreadyGrouped.length} sản phẩm đã thuộc 1 nhóm phiên bản khác — gộp tiếp sẽ tách chúng khỏi nhóm cũ. Tiếp tục?`)) return;
     const valuesById = {};
     products.forEach((p) => { valuesById[p.id] = values[p.id].trim(); });
@@ -4513,7 +4535,7 @@ function MergeVariantsModal({ products, onClose, onApply }) {
       <div className="mt-3 space-y-2 max-h-[45vh] overflow-y-auto">
         {products.map((p) => (
           <div key={p.id} className="flex items-start gap-3 p-2 rounded-md" style={{ border: `1px solid ${LINE}` }}>
-            <span className="flex-1 text-sm min-w-0 break-words" style={{ color: INK }} title={p.name}>{p.name}</span>
+            <span className="flex-1 text-sm min-w-0 break-words" style={{ color: TEXT }} title={p.name}>{p.name}</span>
             <input value={values[p.id] || ""} onChange={(e) => setVal(p.id, e.target.value)} placeholder="Giá trị (VD: Đen)" className="w-40 border rounded-md py-1.5 px-2 text-sm shrink-0" style={{ borderColor: LINE }} />
           </div>
         ))}
@@ -4645,12 +4667,12 @@ function WebCategoryMultiSelect({ webCats, value, onChange }) {
           placeholder={sel.length ? `${sel.length} danh mục đã chọn — gõ để tìm thêm…` : "Gõ để tìm danh mục…"}
           className="w-full border rounded-md py-1.5 pl-2.5 pr-7 text-sm" style={{ borderColor: LINE }}
         />
-        <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none" style={{ transform: `translateY(-50%) ${open ? "rotate(180deg)" : ""}`, transition: "transform .15s" }} />
+        <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 opacity-60 pointer-events-none" style={{ transform: `translateY(-50%) ${open ? "rotate(180deg)" : ""}`, transition: "transform .15s" }} />
       </div>
       {sel.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-1.5">
           {sel.map((name) => (
-            <span key={name} className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full" style={{ background: `${BLUE}1A`, color: BLUE }}>
+            <span key={name} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full" style={{ background: `${BLUE}1A`, color: BLUE }}>
               {name}
               <button type="button" onClick={() => toggle(name)} className="hover:opacity-70"><X size={10} /></button>
             </span>
@@ -4660,10 +4682,10 @@ function WebCategoryMultiSelect({ webCats, value, onChange }) {
       {open && (
         <div className="absolute z-50 mt-1 w-full max-h-72 overflow-y-auto rounded-md shadow-lg p-2" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           {groups.length === 0 ? (
-            <div className="px-1 py-2 text-xs opacity-50">Không tìm thấy</div>
+            <div className="px-1 py-2 text-xs opacity-60">Không tìm thấy</div>
           ) : groups.map(([group, subs]) => (
             <div key={group} className="mb-2 last:mb-0">
-              <div className="text-[11px] uppercase tracking-wider opacity-45 mb-1">{group}</div>
+              <div className="text-xs opacity-60 mb-1 font-medium">{group}</div>
               {subs.map((c) => {
                 const on = sel.includes(c.name);
                 return (
@@ -4693,7 +4715,7 @@ function ProductPicker({ products, onPick, onQuickCreate, brands }) {
 
   const startQuickCreate = () => { setNewForm({ code: "", name: query, unit: UNITS[0], brand: "", warrantyMonths: 0, vat: "VAT10", costPrice: 0 }); setCreatingNew(true); };
   const saveQuickCreate = () => {
-    if (!newForm.code.trim() || !newForm.name.trim()) { alert("Vui lòng nhập Mã vật tư và Tên vật tư."); return; }
+    if (!newForm.code.trim() || !newForm.name.trim()) { notify("Vui lòng nhập Mã vật tư và Tên vật tư."); return; }
     const newProduct = onQuickCreate(newForm);
     if (newProduct) { onPick(newProduct.id, newProduct); setQuery(""); setOpen(false); setCreatingNew(false); }
   };
@@ -4702,7 +4724,7 @@ function ProductPicker({ products, onPick, onQuickCreate, brands }) {
   return (
     <div className="relative" ref={boxRef}>
       <div className="relative">
-        <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 opacity-40" />
+        <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 opacity-60" />
         <input
           value={query}
           onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
@@ -4712,7 +4734,7 @@ function ProductPicker({ products, onPick, onQuickCreate, brands }) {
           style={{ borderColor: LINE, background: "#fff" }}
         />
         {(open || creatingNew) && (
-          <button type="button" onClick={() => { setOpen(false); setCreatingNew(false); }} title="Đóng bảng gợi ý" className="absolute right-2 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100" style={{ color: INK }}>
+          <button type="button" onClick={() => { setOpen(false); setCreatingNew(false); }} title="Đóng bảng gợi ý" className="absolute right-2 top-1/2 -translate-y-1/2 opacity-60 hover:opacity-100" style={{ color: TEXT }}>
             <X size={15} />
           </button>
         )}
@@ -4721,7 +4743,7 @@ function ProductPicker({ products, onPick, onQuickCreate, brands }) {
         <div className="absolute z-20 mt-1 w-full rounded-md shadow-lg overflow-hidden" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           {creatingNew ? (
             <div className="p-3 max-h-[70vh] overflow-y-auto">
-              <p className="text-xs uppercase tracking-wider opacity-50 mb-2">Tạo nhanh sản phẩm mới</p>
+              <p className="text-xs opacity-60 mb-2 font-medium">Tạo nhanh sản phẩm mới</p>
               <div className="grid grid-cols-2 gap-2 mb-2">
                 <input value={newForm.code} onChange={(e) => setNewForm({ ...newForm, code: e.target.value })} placeholder="Mã vật tư *" className="border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} />
                 <select value={newForm.unit} onChange={(e) => setNewForm({ ...newForm, unit: e.target.value })} className="border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
@@ -4734,7 +4756,7 @@ function ProductPicker({ products, onPick, onQuickCreate, brands }) {
                 <option value="">— Nhãn hiệu (không bắt buộc) —</option>
                 {[...new Set((brands || []).map((b) => (typeof b === "string" ? b : b.name)))].sort().map((b) => <option key={b} value={b}>{b}</option>)}
               </select>
-              <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">Bảo hành</p>
+              <p className="text-xs opacity-60 mb-1 font-medium">Bảo hành</p>
               <div className="flex gap-1.5 flex-wrap mb-2">
                 <button type="button" onClick={() => setNewForm({ ...newForm, warrantyMonths: 0 })} className="px-2 py-1 rounded-md text-xs border" style={{ borderColor: !newForm.warrantyMonths ? INK : LINE, background: !newForm.warrantyMonths ? INK : "transparent", color: !newForm.warrantyMonths ? "#fff" : INK }}>Không BH</button>
                 {WARRANTY_OPTIONS.map((m) => (
@@ -4742,14 +4764,14 @@ function ProductPicker({ products, onPick, onQuickCreate, brands }) {
                 ))}
                 <button type="button" onClick={() => setNewForm({ ...newForm, warrantyMonths: WARRANTY_LIFETIME })} className="px-2 py-1 rounded-md text-xs border" style={{ borderColor: Number(newForm.warrantyMonths) === WARRANTY_LIFETIME ? INK : LINE, background: Number(newForm.warrantyMonths) === WARRANTY_LIFETIME ? INK : "transparent", color: Number(newForm.warrantyMonths) === WARRANTY_LIFETIME ? "#fff" : INK }}>Vĩnh viễn</button>
               </div>
-              <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">VAT</p>
+              <p className="text-xs opacity-60 mb-1 font-medium">VAT</p>
               <div className="flex gap-1.5 flex-wrap mb-3">
                 {VAT_OPTIONS.map((v) => (
                   <button key={v.id} type="button" onClick={() => setNewForm({ ...newForm, vat: v.id })} className="px-2 py-1 rounded-md text-xs border" style={{ borderColor: newForm.vat === v.id ? INK : LINE, background: newForm.vat === v.id ? INK : "transparent", color: newForm.vat === v.id ? "#fff" : INK }}>{v.label}</button>
                 ))}
               </div>
               <div className="flex gap-2">
-                <button type="button" onClick={() => setCreatingNew(false)} className="flex-1 py-2 rounded-md text-sm border" style={{ borderColor: LINE, color: INK }}>Huỷ</button>
+                <button type="button" onClick={() => setCreatingNew(false)} className="flex-1 py-2 rounded-md text-sm border" style={{ borderColor: LINE, color: TEXT }}>Huỷ</button>
                 <button type="button" onClick={saveQuickCreate} className="flex-1 py-2 rounded-md text-sm text-white" style={{ background: INK }}>Tạo & thêm vào báo giá</button>
               </div>
             </div>
@@ -4763,13 +4785,13 @@ function ProductPicker({ products, onPick, onQuickCreate, brands }) {
               )}
               <div className="max-h-[220px] overflow-y-auto">
                 {matches.length === 0 ? (
-                  <p className="text-sm opacity-50 p-3">Không tìm thấy sản phẩm.</p>
+                  <p className="text-sm opacity-60 p-3">Không tìm thấy sản phẩm.</p>
                 ) : matches.map((p) => (
                   <button key={p.id} onMouseDown={() => { onPick(p.id); setQuery(""); setOpen(false); }}
                     className="w-full text-left px-3 py-2 text-sm hover:bg-black/5 flex items-center justify-between gap-3"
-                    style={{ borderBottom: `1px dashed ${LINE}` }}>
-                    <span style={{ color: INK }}>{p.name}</span>
-                    <span className="opacity-50 text-xs whitespace-nowrap shrink-0" style={{ fontFamily: "'Inter', sans-serif" }}>{p.code}{p.hasSeries ? " · series" : ""}</span>
+                    style={{ borderBottom: `1px solid ${LINE}` }}>
+                    <span style={{ color: TEXT }}>{p.name}</span>
+                    <span className="opacity-60 text-xs whitespace-nowrap shrink-0" style={{ fontFamily: "'Inter', sans-serif" }}>{p.code}{p.hasSeries ? " · series" : ""}</span>
                   </button>
                 ))}
               </div>
@@ -4797,12 +4819,12 @@ function ItemsTable({ items, products, onUpdate, onRemove, lockQtyPrice }) {
         </colgroup>
         <thead>
           <tr style={{ borderBottom: `1px solid ${LINE}`, background: PAPER }}>
-            <th className="text-left px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-50">#</th>
-            <th className="text-left px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-60">Sản phẩm</th>
-            <th className="text-center px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-60">SL</th>
-            <th className="text-right px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-60">Đơn giá</th>
-            <th className="text-center px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-40">VAT</th>
-            <th className="text-right px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-60">Thành tiền</th>
+            <th className="text-left px-2 py-2.5 text-xs opacity-60 font-medium">#</th>
+            <th className="text-left px-2 py-2.5 text-xs opacity-60 font-medium">Sản phẩm</th>
+            <th className="text-center px-2 py-2.5 text-xs opacity-60 font-medium">SL</th>
+            <th className="text-right px-2 py-2.5 text-xs opacity-60 font-medium">Đơn giá</th>
+            <th className="text-center px-2 py-2.5 text-xs opacity-60 font-medium">VAT</th>
+            <th className="text-right px-2 py-2.5 text-xs opacity-60 font-medium">Thành tiền</th>
             {onRemove && <th></th>}
           </tr>
         </thead>
@@ -4812,39 +4834,39 @@ function ItemsTable({ items, products, onUpdate, onRemove, lockQtyPrice }) {
             return (
               <React.Fragment key={it.productId}>
                 <tr style={{ borderBottom: p?.hasSeries ? "none" : `1px dashed ${LINE}` }}>
-                  <td className="px-2 py-3 text-xs opacity-40 align-top">{idx + 1}</td>
+                  <td className="px-2 py-3 text-xs opacity-60 align-top">{idx + 1}</td>
                   <td className="px-2 py-3 align-top">
-                    <div className="font-medium text-sm leading-snug" style={{ color: INK }}>{p?.name}</div>
-                    <div className="text-xs mt-0.5" style={{ color: INK, opacity: 0.55 }}>{p?.sku || p?.code}</div>
+                    <div className="font-medium text-sm leading-snug" style={{ color: TEXT }}>{p?.name}</div>
+                    <div className="text-xs mt-0.5" style={{ color: TEXT, opacity: 0.55 }}>{p?.sku || p?.code}</div>
                   </td>
                   <td className="px-1 py-3 align-top">
                     {lockQtyPrice ? (
-                      <span className="block text-center text-sm" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{it.qty}</span>
+                      <span className="block text-center text-sm" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{it.qty}</span>
                     ) : (
                       <input type="number" min={1} value={it.qty || ""} onChange={(e) => { const v = e.target.value; onUpdate(it.productId, { qty: v === "" ? "" : Math.max(0, Number(v)) }); }}
                         onBlur={() => { if (!it.qty || it.qty < 1) onUpdate(it.productId, { qty: 1 }); }}
-                        className="w-full border rounded-md py-2 px-1 text-center text-[15px] font-medium" style={{ borderColor: LINE }} />
+                        className="w-full border rounded-md py-2 px-1 text-center text-sm font-medium" style={{ borderColor: LINE }} />
                     )}
                   </td>
                   <td className="px-1 py-3 align-top">
                     {lockQtyPrice ? (
-                      <span className="block text-right text-sm whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(it.price)}</span>
+                      <span className="block text-right text-sm whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{vnd(it.price)}</span>
                     ) : (
                       <MoneyInput value={it.price} onChange={(v) => onUpdate(it.productId, { price: v === "" ? 0 : v })}
-                        className="w-full border rounded-md py-2 px-2 text-right text-[15px] font-medium" style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} />
+                        className="w-full border rounded-md py-2 px-2 text-right text-sm font-medium" style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} />
                     )}
                   </td>
                   <td className="px-1 py-3 align-top">
                     <select value={it.vat} onChange={(e) => onUpdate(it.productId, { vat: e.target.value })}
-                      className="text-[11px] border rounded-md py-1 px-1 opacity-70 w-full" style={{ borderColor: LINE }}>
+                      className="text-xs border rounded-md py-1 px-1 opacity-70 w-full" style={{ borderColor: LINE }}>
                       {VAT_OPTIONS.map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}
                     </select>
                   </td>
-                  <td className="px-2 py-3 text-right font-semibold text-sm whitespace-nowrap align-top" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(it.qty * it.price)}</td>
+                  <td className="px-2 py-3 text-right font-semibold text-sm whitespace-nowrap align-top" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{vnd(it.qty * it.price)}</td>
                   {onRemove && <td className="px-1 py-3 align-top"><button onClick={() => onRemove(it.productId)} style={{ color: RUST }}><X size={14} /></button></td>}
                 </tr>
                 {p?.hasSeries && (
-                  <tr style={{ borderBottom: `1px dashed ${LINE}` }}>
+                  <tr style={{ borderBottom: `1px solid ${LINE}` }}>
                     <td></td>
                     <td colSpan={colCount - 1} className="px-2 pb-3">
                       <span className="block opacity-60 mb-1 text-xs">Series ({(it.series || []).length}/{it.qty})</span>
@@ -4855,7 +4877,7 @@ function ItemsTable({ items, products, onUpdate, onRemove, lockQtyPrice }) {
               </React.Fragment>
             );
           })}
-          {items.length === 0 && <tr><td colSpan={colCount} className="text-center py-6 opacity-40 text-sm">Chưa có sản phẩm nào.</td></tr>}
+          {items.length === 0 && <tr><td colSpan={colCount} className="text-center py-6 opacity-60 text-sm">Chưa có sản phẩm nào.</td></tr>}
         </tbody>
       </table>
     </div>
@@ -4868,7 +4890,7 @@ function DocSteps({ steps }) {
       {steps.map((st, i) => (
         <React.Fragment key={i}>
           {i > 0 && <span className="w-5 h-px" style={{ background: LINE }} />}
-          <span className="inline-flex items-center gap-1.5" style={{ color: INK, opacity: st.done ? 1 : 0.45 }} title={st.done && st.at ? formatDateTime(st.at) : undefined}>
+          <span className="inline-flex items-center gap-1.5" style={{ color: TEXT, opacity: st.done ? 1 : 0.45 }} title={st.done && st.at ? formatDateTime(st.at) : undefined}>
             <span className="w-4 h-4 rounded-full flex items-center justify-center" style={{ background: st.done ? INK : "#fff", border: `1.5px solid ${st.done ? INK : LINE}` }}>
               {st.done && <Check size={10} color="#fff" />}
             </span>
@@ -4895,7 +4917,7 @@ function DocPager({ page, total, unit, onPage }) {
   if (total === 0) return null;
   const totalPages = Math.max(1, Math.ceil(total / DOC_PAGE_SIZE));
   return (
-    <div className="flex items-center justify-between mt-2.5 text-xs" style={{ color: INK, opacity: 0.7 }}>
+    <div className="flex items-center justify-between mt-2.5 text-xs" style={{ color: TEXT, opacity: 0.7 }}>
       <span>{(page - 1) * DOC_PAGE_SIZE + 1}–{Math.min(page * DOC_PAGE_SIZE, total)} / {total} {unit}</span>
       <div className="flex items-center gap-1">
         <button onClick={() => onPage(page - 1)} disabled={page <= 1} className="px-2 py-1 rounded-md disabled:opacity-30" style={{ border: `1px solid ${LINE}` }}><ChevronLeft size={14} /></button>
@@ -4921,7 +4943,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
 
   const openQuickAddSupplier = () => { setQuickSupplierForm({ code: nextSupplierCode(suppliers), name: "", taxCode: "", address: "", contactPerson: "", phone: "", email: "", paymentTerm: "cash", creditDays: 30 }); setQuickAddingSupplier(true); };
   const submitQuickAddSupplier = () => {
-    if (!quickSupplierForm.name?.trim()) { alert("Vui lòng nhập tên nhà cung cấp."); return; }
+    if (!quickSupplierForm.name?.trim()) { notify("Vui lòng nhập tên nhà cung cấp."); return; }
     const newSupplier = { ...quickSupplierForm, id: uid(), code: quickSupplierForm.code || nextSupplierCode(suppliers), creditDays: Number(quickSupplierForm.creditDays) || 0 };
     setSuppliers((prev) => [...prev, newSupplier]);
     addLog("Thêm nhà cung cấp", newSupplier.name);
@@ -4991,12 +5013,12 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
   const quickCreateProduct = (data) => {
     const code = data.code.trim();
     if (products.some((p) => p.code.toLowerCase() === code.toLowerCase())) {
-      alert(`Mã vật tư "${code}" đã tồn tại — vui lòng dùng mã khác.`);
+      notify(`Mã vật tư "${code}" đã tồn tại — vui lòng dùng mã khác.`);
       return null;
     }
     const newSku = nextSKU(products);
     const dupSku = products.find((p) => p.sku.toLowerCase() === newSku.toLowerCase());
-    if (dupSku) { alert(`SKU "${newSku}" đã dùng cho sản phẩm "${dupSku.name}" (${dupSku.code}) — vui lòng thử lại.`); return null; }
+    if (dupSku) { notify(`SKU "${newSku}" đã dùng cho sản phẩm "${dupSku.name}" (${dupSku.code}) — vui lòng thử lại.`); return null; }
     const newProduct = normalizeProduct({
       id: uid(), code, name: data.name.trim(), unit: data.unit || UNITS[0], brand: data.brand || "",
       warrantyMonths: Number(data.warrantyMonths) || 0, vat: data.vat || "VAT10", sku: newSku,
@@ -5021,18 +5043,18 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
   const total = form.items?.reduce((s, it) => s + it.qty * it.price, 0) || 0;
 
   const validateItems = (itemsRaw, excludeDocNo) => {
-    if (!itemsRaw || itemsRaw.length === 0) { alert("Chưa có sản phẩm nào trong đơn."); return null; }
+    if (!itemsRaw || itemsRaw.length === 0) { notify("Chưa có sản phẩm nào trong đơn."); return null; }
     const built = [];
     for (const it of itemsRaw) {
       const p = products.find((x) => x.id === it.productId);
       if (p.hasSeries && it.series.length !== it.qty) {
-        alert(`"${p.name}" quản lý theo series — cần đúng ${it.qty} số series (đang có ${it.series.length}). Vui lòng điền đủ số series trước khi nhập hàng.`);
+        notify(`"${p.name}" quản lý theo series — cần đúng ${it.qty} số series (đang có ${it.series.length}). Vui lòng điền đủ số series trước khi nhập hàng.`);
         return null;
       }
       if (p.hasSeries && it.series.length > 0) {
         const dups = findDuplicateSeries(p, it.series, excludeDocNo);
         if (dups.length > 0) {
-          alert(`"${p.name}" có số series bị trùng với phiếu nhập trước đó (số series phải là duy nhất cho mỗi sản phẩm): ${dups.join(", ")}. Vui lòng kiểm tra lại.`);
+          notify(`"${p.name}" có số series bị trùng với phiếu nhập trước đó (số series phải là duy nhất cho mỗi sản phẩm): ${dups.join(", ")}. Vui lòng kiểm tra lại.`);
           return null;
         }
       }
@@ -5049,7 +5071,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
   };
 
   const submit = (status) => {
-    if (!form.supplierId) { alert("Vui lòng chọn nhà cung cấp từ danh sách."); return; }
+    if (!form.supplierId) { notify("Vui lòng chọn nhà cung cấp từ danh sách."); return; }
     const items = validateItems(form.items);
     if (!items) return;
     const now = new Date().toISOString();
@@ -5116,13 +5138,13 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
     for (const it of editForm.items) {
       const p = products.find((x) => x.id === it.productId);
       if (p?.hasSeries && it.series.length !== it.qty) {
-        alert(`"${p.name}" cần đúng ${it.qty} số series (đang có ${it.series.length}).`);
+        notify(`"${p.name}" cần đúng ${it.qty} số series (đang có ${it.series.length}).`);
         return;
       }
       if (p?.hasSeries && it.series.length > 0) {
         const dups = findDuplicateSeries(p, it.series, viewingPO.code);
         if (dups.length > 0) {
-          alert(`"${p.name}" có số series bị trùng với phiếu nhập khác (số series phải là duy nhất cho mỗi sản phẩm): ${dups.join(", ")}.`);
+          notify(`"${p.name}" có số series bị trùng với phiếu nhập khác (số series phải là duy nhất cho mỗi sản phẩm): ${dups.join(", ")}.`);
           return;
         }
       }
@@ -5170,7 +5192,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
       {dueSoonPOs.length > 0 && (
         <div className="mb-4 p-3 rounded-md flex items-start gap-2.5" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44` }}>
           <AlertTriangle size={16} style={{ color: RUST }} className="mt-0.5 shrink-0" />
-          <div className="text-sm" style={{ color: INK }}>
+          <div className="text-sm" style={{ color: TEXT }}>
             <span className="font-medium" style={{ color: RUST }}>Công nợ NCC sắp/đã đến hạn: </span>
             {dueSoonPOs.map(({ po, due }) => `${po.code} (${po.supplier || "NCC"}) — ${due.overdue ? `quá hạn ${-due.daysLeft} ngày` : due.daysLeft === 0 ? "đến hạn hôm nay" : `còn ${due.daysLeft} ngày`}`).join(", ")}
           </div>
@@ -5179,7 +5201,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
       <div className="flex items-center justify-between mb-5">
         <p className="text-sm opacity-60">{purchaseOrders.length} đơn nhập hàng</p>
         <div className="flex gap-2">
-          <button onClick={openQuickAddSupplier} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: LINE, color: INK }}>
+          <button onClick={openQuickAddSupplier} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: LINE, color: TEXT }}>
             <Truck size={15} /> Thêm nhà cung cấp
           </button>
           <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white" style={{ background: INK }}>
@@ -5191,9 +5213,9 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
       <div key={poSafePage} className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 250px)" }}>
         <table className="w-full text-sm" style={{ minWidth: 720 }}>
           <thead className="sticky top-0" style={{ zIndex: 2 }}>
-            <tr style={{ borderBottom: `2px solid ${INK}` }}>
+            <tr style={{ borderBottom: `1px solid ${LINE}` }}>
               {["", "Mã đơn nhập", "Ngày nhập", "Trạng thái nhập", "Chi nhánh nhập", "Nhà cung cấp", "Số hoá đơn", "Nhân viên tạo", "Thanh toán", "Giá trị đơn", ""].map((h, hi) => (
-                <th key={hi} className="text-left px-3 py-2.5 text-xs uppercase tracking-wider whitespace-nowrap" style={{ color: INK, background: "#fff" }}>{h}</th>
+                <th key={hi} className="text-left px-3 py-2.5 text-xs whitespace-nowrap font-medium" style={{ color: TEXT, background: "#fff" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -5204,7 +5226,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
               const isOpen = expanded === po.id;
               return (
                 <React.Fragment key={po.id}>
-                  <tr style={{ borderBottom: `1px dashed ${LINE}` }} className="hover:bg-black/[0.02]">
+                  <tr style={{ borderBottom: `1px solid ${LINE}` }} className="hover:bg-black/[0.02]">
                     <td className="px-2 py-3">
                       <button onClick={() => setExpanded(isOpen ? null : po.id)} className="opacity-60 hover:opacity-100">
                         {isOpen ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
@@ -5215,25 +5237,25 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap opacity-80" style={{ fontFamily: "'Inter', sans-serif" }}>{formatDateTime(po.createdAt)}</td>
                     <td className="px-3 py-3">
-                      <span style={{ borderColor: s.color, color: s.color, fontFamily: "'Inter', sans-serif" }} className="inline-block border rounded-full px-2.5 py-0.5 text-[11px]">{s.label}</span>
+                      <span style={{ borderColor: s.color, color: s.color, fontFamily: "'Inter', sans-serif" }} className="inline-block border rounded-full px-2.5 py-0.5 text-xs">{s.label}</span>
                     </td>
                     <td className="px-3 py-3 opacity-70 whitespace-nowrap">{po.branch}</td>
                     <td className="px-3 py-3 opacity-70 whitespace-nowrap">{po.supplier || "—"}</td>
                     <td className="px-3 py-3 opacity-70 whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>{po.invoiceNo || "—"}</td>
                     <td className="px-3 py-3 opacity-70 whitespace-nowrap">{po.createdBy || "—"}</td>
                     <td className="px-3 py-3">
-                      <span className="inline-block rounded-full px-2.5 py-0.5 text-[11px] whitespace-nowrap"
+                      <span className="inline-block rounded-full px-2.5 py-0.5 text-xs whitespace-nowrap"
                         style={{ background: po.paid ? `${FOREST}1A` : `${BRASS}1A`, color: po.paid ? FOREST : BRASS }}>
                         {po.paid ? "Hoàn thành" : "Đang giao dịch"}
                       </span>
                     </td>
-                    <td className="px-3 py-3 text-right font-medium whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>
+                    <td className="px-3 py-3 text-right font-medium whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>
                       {vnd(total)}
-                      {(po.returns || []).length > 0 && <span className="block text-[10px] font-normal" style={{ color: RUST }}>đã trả {vnd(poReturnedValue(po))}</span>}
+                      {(po.returns || []).length > 0 && <span className="block text-xs font-normal" style={{ color: RUST }}>đã trả {vnd(poReturnedValue(po))}</span>}
                     </td>
                     <td className="px-3 py-3">
                       {po.status === "pending" && (
-                        <button onClick={() => confirmReceive(po)} className="text-[11px] px-2.5 py-1.5 rounded-md text-white whitespace-nowrap" style={{ background: FOREST }}>
+                        <button onClick={() => confirmReceive(po)} className="text-xs px-2.5 py-1.5 rounded-md text-white whitespace-nowrap" style={{ background: INK }}>
                           Xác nhận nhập hàng
                         </button>
                       )}
@@ -5241,7 +5263,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
                   </tr>
                   {isOpen && (
                     <tr>
-                      <td colSpan={11} className="px-6 py-3" style={{ background: PAPER, borderBottom: `1px dashed ${LINE}` }}>
+                      <td colSpan={11} className="px-6 py-3" style={{ background: PAPER, borderBottom: `1px solid ${LINE}` }}>
                         <table className="w-full text-xs">
                           <thead><tr className="opacity-60">
                             <th className="text-left py-1 pr-2">#</th><th className="text-left py-1">Sản phẩm</th><th className="text-left py-1">SL</th><th className="text-left py-1">Đơn giá</th><th className="text-left py-1">VAT</th><th className="text-left py-1">Thành tiền</th><th className="text-left py-1">Series</th>
@@ -5250,8 +5272,8 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
                             {po.items.map((it, i) => {
                               const p = products.find((x) => x.id === it.productId);
                               return (
-                                <tr key={i} style={{ borderTop: `1px dashed ${LINE}` }}>
-                                  <td className="py-1.5 pr-2 opacity-50">{i + 1}</td>
+                                <tr key={i} style={{ borderTop: `1px solid ${LINE}` }}>
+                                  <td className="py-1.5 pr-2 opacity-60">{i + 1}</td>
                                   <td className="py-1.5">{p?.name || "?"}</td>
                                   <td className="py-1.5">{it.qty}</td>
                                   <td className="py-1.5" style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(it.price)}</td>
@@ -5269,7 +5291,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
                 </React.Fragment>
               );
             })}
-            {purchaseOrders.length === 0 && <tr><td colSpan={11} className="text-center py-8 opacity-50">Chưa có đơn nhập hàng nào.</td></tr>}
+            {purchaseOrders.length === 0 && <tr><td colSpan={11} className="text-center py-8 opacity-60">Chưa có đơn nhập hàng nào.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -5299,7 +5321,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Field label="Nhân viên tạo">
-              <div className={inputCls} style={{ borderColor: LINE, background: "#F3F4F6", color: INK, display: "flex", alignItems: "center" }}>{form.createdBy}</div>
+              <div className={inputCls} style={{ borderColor: LINE, background: "#F3F4F6", color: TEXT, display: "flex", alignItems: "center" }}>{form.createdBy}</div>
             </Field>
             <Field label="Số hóa đơn" hint="Có thể điền sau">
               <input className={inputCls} style={{ borderColor: LINE }} value={form.invoiceNo} onChange={(e) => setForm({ ...form, invoiceNo: e.target.value })} placeholder="VD: HD0004521" />
@@ -5316,7 +5338,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
                 </button>
               ))}
               {form.paymentMethod === "credit" && (
-                <label className="flex items-center gap-1.5 text-xs ml-1" style={{ color: INK }}>
+                <label className="flex items-center gap-1.5 text-xs ml-1" style={{ color: TEXT }}>
                   Số ngày công nợ:
                   <input type="number" min={1} value={form.creditDays} onChange={(e) => setForm({ ...form, creditDays: e.target.value })} className="w-16 border rounded-md py-1 px-2 text-sm" style={{ borderColor: LINE }} />
                 </label>
@@ -5324,7 +5346,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
             </div>
           </Field>
 
-          <div className="my-4" style={{ borderTop: `1px dashed ${LINE}` }} />
+          <div className="my-4" style={{ borderTop: `1px solid ${LINE}` }} />
 
           <Field label="Thêm sản phẩm vào đơn">
             <ProductPicker products={products} onPick={addItem} onQuickCreate={quickCreateProduct} brands={brands} />
@@ -5333,15 +5355,15 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
           <ItemsTable items={form.items || []} products={products} onUpdate={updateItem} onRemove={removeItem} />
 
           <div className="flex justify-between items-center py-2 mb-1" style={{ borderTop: `2px solid ${INK}` }}>
-            <span className="text-sm uppercase tracking-wider opacity-60">Tổng giá trị đơn</span>
-            <span style={{ fontFamily: "'Inter', sans-serif", color: INK }} className="text-lg">{vnd(total)}</span>
+            <span className="text-sm opacity-60 font-medium">Tổng giá trị đơn</span>
+            <span style={{ fontFamily: "'Inter', sans-serif", color: TEXT }} className="text-lg">{vnd(total)}</span>
           </div>
 
           <TagsNotesCompact tags={form.tags} setTags={(arr) => setForm({ ...form, tags: arr })} notes={form.notes} setNotes={(v) => setForm({ ...form, notes: v })} />
 
           <div className="flex flex-col sm:flex-row gap-3 mt-4">
             <button onClick={() => submit("pending")} disabled={!form.supplierId || itemsInvalid(form.items)} className="flex-1 py-2.5 rounded-md text-sm border disabled:opacity-40" style={{ borderColor: BRASS, color: BRASS }}>Chờ giao</button>
-            <button onClick={() => submit("received")} disabled={!form.supplierId || itemsInvalid(form.items)} className="flex-1 py-2.5 rounded-md text-white text-sm disabled:opacity-40" style={{ background: FOREST }}>Nhập hàng</button>
+            <button onClick={() => submit("received")} disabled={!form.supplierId || itemsInvalid(form.items)} className="flex-1 py-2.5 rounded-md text-white text-sm disabled:opacity-40" style={{ background: INK }}>Nhập hàng</button>
           </div>
         </Modal>
       )}
@@ -5363,7 +5385,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
               </button>
             )}
             {viewingPO.status !== "pending" && (
-              <button onClick={() => setShowPOInfo((v) => !v)} className="px-3.5 py-1.5 rounded-md text-sm border inline-flex items-center gap-1.5" style={{ borderColor: LINE, color: INK }}>
+              <button onClick={() => setShowPOInfo((v) => !v)} className="px-3.5 py-1.5 rounded-md text-sm border inline-flex items-center gap-1.5" style={{ borderColor: LINE, color: TEXT }}>
                 <Pencil size={13} /> {showPOInfo ? "Ẩn thông tin" : "Sửa thông tin"}
               </button>
             )}
@@ -5377,7 +5399,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-lg mb-4" style={{ background: PAPER }}>
                 <div className="col-span-2 min-w-0">
                   <p className="text-xs opacity-60 mb-0.5">Nhà cung cấp</p>
-                  <p className="text-sm font-semibold" style={{ color: INK }}>{viewingPO.supplier || "—"}</p>
+                  <p className="text-sm font-semibold" style={{ color: TEXT }}>{viewingPO.supplier || "—"}</p>
                   <p className="text-xs opacity-60 mt-0.5">HĐ {viewingPO.invoiceNo || "—"} · {viewingPO.branch} · {viewingPO.createdBy}</p>
                 </div>
                 <div>
@@ -5387,7 +5409,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
                 </div>
                 <div className="md:text-right">
                   <p className="text-xs opacity-60 mb-0.5">Tổng giá trị</p>
-                  <p className="text-xl font-bold" style={{ color: INK }}>{vnd(editTotal)}</p>
+                  <p className="text-xl font-bold" style={{ color: TEXT }}>{vnd(editTotal)}</p>
                 </div>
               </div>
             );
@@ -5395,17 +5417,17 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
 
           {(viewingPO.returns || []).length > 0 && (
             <div className="mb-5 p-3 rounded-md" style={{ background: `${RUST}08`, border: `1px solid ${RUST}33` }}>
-              <p className="text-xs uppercase tracking-wider mb-2" style={{ color: RUST }}>Đã trả hàng NCC ({viewingPO.returns.length} phiếu · tổng {vnd(poReturnedValue(viewingPO))})</p>
+              <p className="text-xs mb-2 font-medium" style={{ color: RUST }}>Đã trả hàng NCC ({viewingPO.returns.length} phiếu · tổng {vnd(poReturnedValue(viewingPO))})</p>
               <div className="space-y-2">
                 {viewingPO.returns.map((r) => (
                   <div key={r.id} className="text-xs">
-                    <span style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{r.code}</span>
-                    <span className="opacity-50"> · {formatDateTime(r.createdAt)} · </span>
+                    <span style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{r.code}</span>
+                    <span className="opacity-60"> · {formatDateTime(r.createdAt)} · </span>
                     {r.items.map((it) => {
                       const p = products.find((x) => x.id === it.productId);
                       return `${p?.name || "?"} x${it.qty}`;
                     }).join(", ")}
-                    {r.note && <span className="opacity-50"> · Lý do: {r.note}</span>}
+                    {r.note && <span className="opacity-60"> · Lý do: {r.note}</span>}
                   </div>
                 ))}
               </div>
@@ -5434,7 +5456,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Field label="Nhân viên tạo">
-              <div className={inputCls} style={{ borderColor: LINE, background: "#F3F4F6", color: INK, display: "flex", alignItems: "center" }}>{editForm.createdBy}</div>
+              <div className={inputCls} style={{ borderColor: LINE, background: "#F3F4F6", color: TEXT, display: "flex", alignItems: "center" }}>{editForm.createdBy}</div>
             </Field>
             <Field label="Số hóa đơn">
               <input className={inputCls} style={{ borderColor: LINE }} value={editForm.invoiceNo} onChange={(e) => setEditForm({ ...editForm, invoiceNo: e.target.value })} placeholder="VD: HD0004521" />
@@ -5451,7 +5473,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
                 </button>
               ))}
               {editForm.paymentMethod === "credit" && (
-                <label className="flex items-center gap-1.5 text-xs ml-1" style={{ color: INK }}>
+                <label className="flex items-center gap-1.5 text-xs ml-1" style={{ color: TEXT }}>
                   Số ngày công nợ:
                   <input type="number" min={1} value={editForm.creditDays} onChange={(e) => setEditForm({ ...editForm, creditDays: e.target.value })} className="w-16 border rounded-md py-1 px-2 text-sm" style={{ borderColor: LINE }} />
                 </label>
@@ -5472,8 +5494,8 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
                 <TagsNotesCompact tags={editForm.tags} setTags={(arr) => setEditForm({ ...editForm, tags: arr })} notes={editForm.notes} setNotes={(v) => setEditForm({ ...editForm, notes: v })} />
               ) : null}
               <div className="flex flex-col sm:flex-row gap-3 mt-4">
-                <button onClick={savePendingItems} disabled={itemsInvalid(editForm.items)} className="flex-1 py-2.5 rounded-md text-sm border disabled:opacity-40" style={{ borderColor: LINE, color: INK }}>Lưu thay đổi</button>
-                <button onClick={confirmReceiveFromEdit} disabled={itemsInvalid(editForm.items)} className="flex-1 py-2.5 rounded-md text-white text-sm disabled:opacity-40" style={{ background: FOREST }}>Xác nhận nhập hàng</button>
+                <button onClick={savePendingItems} disabled={itemsInvalid(editForm.items)} className="flex-1 py-2.5 rounded-md text-sm border disabled:opacity-40" style={{ borderColor: LINE, color: TEXT }}>Lưu thay đổi</button>
+                <button onClick={confirmReceiveFromEdit} disabled={itemsInvalid(editForm.items)} className="flex-1 py-2.5 rounded-md text-white text-sm disabled:opacity-40" style={{ background: INK }}>Xác nhận nhập hàng</button>
               </div>
             </>
           ) : (
@@ -5483,7 +5505,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
                 <TagsNotesCompact tags={editForm.tags} setTags={(arr) => setEditForm({ ...editForm, tags: arr })} notes={editForm.notes} setNotes={(v) => setEditForm({ ...editForm, notes: v })} />
               ) : null}
               <div className="flex items-center justify-between gap-3 mt-3 flex-wrap">
-                <span className="text-xs" style={{ color: INK, opacity: 0.6 }}>
+                <span className="text-xs" style={{ color: TEXT, opacity: 0.6 }}>
                   Đã nhập kho nên chỉ sửa được series và VAT.
                   {!showPONotes && !editForm.notes && !(editForm.tags || []).length && <button onClick={() => setShowPONotes(true)} className="ml-2 underline">Thêm ghi chú</button>}
                 </span>
@@ -5512,8 +5534,8 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
                 <div key={it.productId} className="p-3 rounded-md" style={{ border: `1px solid ${LINE}` }}>
                   <div className="flex items-center justify-between gap-3 mb-2">
                     <div>
-                      <p className="text-sm font-medium" style={{ color: INK }}>{p?.name}</p>
-                      <p className="text-[11px] opacity-50">Đã nhập {po_it?.qty} · {already > 0 ? `Đã trả ${already} · ` : ""}Tối đa trả được {maxQty}</p>
+                      <p className="text-sm font-medium" style={{ color: TEXT }}>{p?.name}</p>
+                      <p className="text-xs opacity-60">Đã nhập {po_it?.qty} · {already > 0 ? `Đã trả ${already} · ` : ""}Tối đa trả được {maxQty}</p>
                     </div>
                     <input type="number" min={0} max={maxQty} value={it.qty || ""} onChange={(e) => {
                       const v = Math.max(0, Math.min(maxQty, Number(e.target.value) || 0));
@@ -5561,7 +5583,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
                 </button>
               ))}
               {quickSupplierForm.paymentTerm === "credit" && (
-                <label className="flex items-center gap-1.5 text-xs ml-1" style={{ color: INK }}>
+                <label className="flex items-center gap-1.5 text-xs ml-1" style={{ color: TEXT }}>
                   Số ngày công nợ:
                   <input type="number" min={1} value={quickSupplierForm.creditDays} onChange={(e) => setQuickSupplierForm({ ...quickSupplierForm, creditDays: e.target.value })} className="w-16 border rounded-md py-1 px-2 text-sm" style={{ borderColor: LINE }} />
                 </label>
@@ -5651,7 +5673,7 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
 
   // Xuất Excel toàn bộ công nợ NCC: 1 sheet tổng hợp theo từng NCC + 1 sheet chi tiết từng đơn nhập còn nợ (kèm số hoá đơn).
   const exportAllDebt = () => {
-    if (sortedDebt.length === 0) { alert("Không có công nợ nào để xuất."); return; }
+    if (sortedDebt.length === 0) { notify("Không có công nợ nào để xuất."); return; }
     const summaryRows = sortedDebt.map((d) => ({
       "Mã NCC": d.supplier.code, "Tên NCC": d.supplier.name, "Số đơn nợ": d.poCount, "Tổng nợ": d.total,
       "Hạn gần nhất": d.nearestDue ? (d.nearestDue.overdue ? `Quá hạn ${-d.nearestDue.daysLeft} ngày` : `Còn ${d.nearestDue.daysLeft} ngày`) : "",
@@ -5694,13 +5716,13 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
           <button onClick={() => setView("debt")} className="px-3.5 py-2.5 rounded-full text-sm border text-center relative"
             style={{ borderColor: view === "debt" ? INK : LINE, background: view === "debt" ? INK : "transparent", color: view === "debt" ? "#fff" : INK }}>
             Công nợ NCC
-            {debtList.length > 0 && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: view === "debt" ? "rgba(255,255,255,0.25)" : `${RUST}1A`, color: view === "debt" ? "#fff" : RUST }}>{debtList.length}</span>}
+            {debtList.length > 0 && <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded-full" style={{ background: view === "debt" ? "rgba(255,255,255,0.25)" : `${RUST}1A`, color: view === "debt" ? "#fff" : RUST }}>{debtList.length}</span>}
           </button>
         </div>
         {view === "list" && (
           <div className="flex items-center gap-3 flex-wrap">
             <div className="relative flex-1 max-w-xs">
-              <Search size={15} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50" />
+              <Search size={15} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-60" />
               <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm theo mã, tên hoặc người liên hệ…"
                 className="w-full pl-7 pr-2 py-2 text-sm rounded-md border outline-none" style={{ borderColor: LINE, background: "#fff" }} />
             </div>
@@ -5715,7 +5737,7 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
         <div>
           <div className="p-5 rounded-md mb-5 flex items-center justify-between flex-wrap gap-3" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
             <div>
-              <p className="text-xs uppercase tracking-wider opacity-55 mb-1">Tổng phải trả nhà cung cấp</p>
+              <p className="text-xs opacity-60 mb-1 font-medium">Tổng phải trả nhà cung cấp</p>
               <p className="text-2xl" style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>{vnd(grandTotal)}</p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -5729,23 +5751,23 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
             </div>
           </div>
           {sortedDebt.length === 0 ? (
-            <p className="text-sm opacity-50 text-center py-16">Không có nhà cung cấp nào đang nợ.</p>
+            <p className="text-sm opacity-60 text-center py-16">Không có nhà cung cấp nào đang nợ.</p>
           ) : (
             <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
               <table className="w-full text-sm" style={{ minWidth: 700 }}>
                 <thead>
-                  <tr style={{ borderBottom: `2px solid ${INK}` }}>
+                  <tr style={{ borderBottom: `1px solid ${LINE}` }}>
                     {["Nhà cung cấp", "Số đơn nợ", "Tổng nợ", "Hạn gần nhất", ""].map((h, i) => (
-                      <th key={i} className="text-left px-3 py-2.5 text-xs uppercase tracking-wider whitespace-nowrap" style={{ color: INK, opacity: 0.6 }}>{h}</th>
+                      <th key={i} className="text-left px-3 py-2.5 text-xs whitespace-nowrap font-medium" style={{ color: TEXT, opacity: 0.6 }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {sortedDebt.map((d) => (
-                    <tr key={d.supplier.id} style={{ borderBottom: `1px dashed ${LINE}` }} className="hover:bg-black/[0.02]">
+                    <tr key={d.supplier.id} style={{ borderBottom: `1px solid ${LINE}` }} className="hover:bg-black/[0.02]">
                       <td className="px-3 py-3">
-                        <p style={{ color: INK }}>{d.supplier.name}</p>
-                        <p className="text-xs opacity-50" style={{ fontFamily: "'Inter', sans-serif" }}>{d.supplier.code}</p>
+                        <p style={{ color: TEXT }}>{d.supplier.name}</p>
+                        <p className="text-xs opacity-60" style={{ fontFamily: "'Inter', sans-serif" }}>{d.supplier.code}</p>
                       </td>
                       <td className="px-3 py-3" style={{ fontFamily: "'Inter', sans-serif" }}>{d.poCount}</td>
                       <td className="px-3 py-3 font-medium" style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>{vnd(d.total)}</td>
@@ -5754,10 +5776,10 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
                           <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: d.nearestDue.nearDue ? `${RUST}1A` : PAPER, color: d.nearestDue.nearDue ? RUST : INK }}>
                             {d.nearestDue.overdue ? `Quá hạn ${-d.nearestDue.daysLeft} ngày` : d.nearestDue.daysLeft === 0 ? "Đến hạn hôm nay" : `Còn ${d.nearestDue.daysLeft} ngày`}
                           </span>
-                        ) : <span className="opacity-40">—</span>}
+                        ) : <span className="opacity-60">—</span>}
                       </td>
                       <td className="px-3 py-3 text-right">
-                        <button onClick={() => setDebtDetail(d)} className="text-xs px-2.5 py-1 rounded-md border whitespace-nowrap" style={{ borderColor: LINE, color: INK }}>Chi tiết</button>
+                        <button onClick={() => setDebtDetail(d)} className="text-xs px-2.5 py-1 rounded-md border whitespace-nowrap" style={{ borderColor: LINE, color: TEXT }}>Chi tiết</button>
                       </td>
                     </tr>
                   ))}
@@ -5770,23 +5792,23 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
       <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "65vh" }}>
         <table className="w-full text-sm" style={{ minWidth: 720 }}>
           <thead>
-            <tr style={{ borderBottom: `2px solid ${INK}` }}>
+            <tr style={{ borderBottom: `1px solid ${LINE}` }}>
               {["Mã NCC", "Tên NCC", "Mã số thuế", "Người liên hệ", "SĐT", "Địa chỉ", "Công nợ cấp", ""].map((h, hi) => (
-                <th key={hi} className="text-left px-3 py-2.5 text-xs uppercase tracking-wider whitespace-nowrap" style={{ color: INK, opacity: 0.6 }}>{h}</th>
+                <th key={hi} className="text-left px-3 py-2.5 text-xs whitespace-nowrap font-medium" style={{ color: TEXT, opacity: 0.6 }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filtered.map((s) => (
-              <tr key={s.id} style={{ borderBottom: `1px dashed ${LINE}` }} className="hover:bg-black/[0.02]">
+              <tr key={s.id} style={{ borderBottom: `1px solid ${LINE}` }} className="hover:bg-black/[0.02]">
                 <td className="px-3 py-3 font-medium whitespace-nowrap"><button onClick={() => setViewingSupplierId(s.id)} className="hover:underline" style={{ color: BLUE }}>{s.code}</button></td>
-                <td className="px-3 py-3"><button onClick={() => setViewingSupplierId(s.id)} className="text-left hover:underline" style={{ color: INK }}>{s.name}</button></td>
+                <td className="px-3 py-3"><button onClick={() => setViewingSupplierId(s.id)} className="text-left hover:underline" style={{ color: TEXT }}>{s.name}</button></td>
                 <td className="px-3 py-3 opacity-70 whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>{s.taxCode || "—"}</td>
                 <td className="px-3 py-3 opacity-70 whitespace-nowrap">{s.contactPerson || "—"}</td>
                 <td className="px-3 py-3 opacity-70 whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>{s.phone || "—"}</td>
                 <td className="px-3 py-3 opacity-70 max-w-[220px] truncate">{s.address || "—"}</td>
                 <td className="px-3 py-3 whitespace-nowrap">
-                  <span className="inline-block text-[11px] px-2 py-0.5 rounded-full" style={{ background: s.paymentTerm === "cash" ? `${FOREST}1A` : `${BRASS}1A`, color: s.paymentTerm === "cash" ? FOREST : BRASS }}>
+                  <span className="inline-block text-xs px-2 py-0.5 rounded-full" style={{ background: s.paymentTerm === "cash" ? `${FOREST}1A` : `${BRASS}1A`, color: s.paymentTerm === "cash" ? FOREST : BRASS }}>
                     {s.paymentTerm === "cash" ? "TM (Tiền mặt)" : `Công nợ ${s.creditDays} ngày`}
                   </span>
                 </td>
@@ -5800,7 +5822,7 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
                 </td>
               </tr>
             ))}
-            {filtered.length === 0 && <tr><td colSpan={8} className="text-center py-8 opacity-50">Chưa có nhà cung cấp nào.</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={8} className="text-center py-8 opacity-60">Chưa có nhà cung cấp nào.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -5824,13 +5846,13 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
                 ["Email", sup.email],
               ].map(([label, val]) => (
                 <div key={label} className="min-w-0">
-                  <dt className="text-xs" style={{ color: INK, opacity: 0.6 }}>{label}</dt>
-                  <dd className="font-medium break-words" style={{ color: INK }}>{val || "—"}</dd>
+                  <dt className="text-xs" style={{ color: TEXT, opacity: 0.6 }}>{label}</dt>
+                  <dd className="font-medium break-words" style={{ color: TEXT }}>{val || "—"}</dd>
                 </div>
               ))}
               <div className="col-span-2 sm:col-span-3">
-                <dt className="text-xs" style={{ color: INK, opacity: 0.6 }}>Địa chỉ</dt>
-                <dd className="font-medium" style={{ color: INK }}>{sup.address || "—"}</dd>
+                <dt className="text-xs" style={{ color: TEXT, opacity: 0.6 }}>Địa chỉ</dt>
+                <dd className="font-medium" style={{ color: TEXT }}>{sup.address || "—"}</dd>
               </div>
             </dl>
             <div className="grid grid-cols-3 gap-2 mb-5">
@@ -5854,7 +5876,7 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
                         <td className="px-3 py-2"><a href={`${window.location.pathname}?po=${encodeURIComponent(po.id)}`} target="_blank" rel="noopener" className="hover:underline" style={{ color: BLUE }}>{po.code}</a></td>
                         <td className="px-3 py-2 opacity-70 whitespace-nowrap">{formatDateTime(po.createdAt)}</td>
                         <td className="px-3 py-2" style={{ color: po.paid ? FOREST : BRASS }}>{po.paid ? "Đã thanh toán" : "Còn nợ"}</td>
-                        <td className="px-3 py-2 text-right font-medium whitespace-nowrap" style={{ color: INK }}>{vnd(poNetTotal(po))}</td>
+                        <td className="px-3 py-2 text-right font-medium whitespace-nowrap" style={{ color: TEXT }}>{vnd(poNetTotal(po))}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -5928,17 +5950,17 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
           <div className="rounded-md overflow-auto" style={{ border: `1px solid ${LINE}`, maxHeight: "55vh" }}>
             <table className="w-full text-sm">
               <thead style={{ background: PAPER, position: "sticky", top: 0 }}><tr>
-                <th className="text-left px-3 py-2 text-xs uppercase tracking-wider opacity-60">Mã đơn nhập</th>
-                <th className="text-left px-3 py-2 text-xs uppercase tracking-wider opacity-60">Số hoá đơn</th>
-                <th className="text-left px-3 py-2 text-xs uppercase tracking-wider opacity-60">Ngày nhập</th>
-                <th className="text-left px-3 py-2 text-xs uppercase tracking-wider opacity-60">Hạn công nợ</th>
-                <th className="text-right px-3 py-2 text-xs uppercase tracking-wider opacity-60">Giá trị</th>
+                <th className="text-left px-3 py-2 text-xs opacity-60 font-medium">Mã đơn nhập</th>
+                <th className="text-left px-3 py-2 text-xs opacity-60 font-medium">Số hoá đơn</th>
+                <th className="text-left px-3 py-2 text-xs opacity-60 font-medium">Ngày nhập</th>
+                <th className="text-left px-3 py-2 text-xs opacity-60 font-medium">Hạn công nợ</th>
+                <th className="text-right px-3 py-2 text-xs opacity-60 font-medium">Giá trị</th>
               </tr></thead>
               <tbody>
                 {debtDetail.unpaidPOs.map((po) => {
                   const due = poDueInfo(po);
                   return (
-                    <tr key={po.id} style={{ borderTop: `1px dashed ${LINE}` }}>
+                    <tr key={po.id} style={{ borderTop: `1px solid ${LINE}` }}>
                       <td className="px-3 py-2">
                         {goToDoc ? (
                           <a href={`${window.location.pathname}?po=${encodeURIComponent(po.id)}`} target="_blank" rel="noopener" className="hover:underline" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{po.code}</a>
@@ -5951,16 +5973,16 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
                           <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: due.nearDue ? `${RUST}1A` : PAPER, color: due.nearDue ? RUST : INK }}>
                             {due.overdue ? `Quá hạn ${-due.daysLeft} ngày` : due.daysLeft === 0 ? "Đến hạn hôm nay" : `Còn ${due.daysLeft} ngày`}
                           </span>
-                        ) : <span className="opacity-40">—</span>}
+                        ) : <span className="opacity-60">—</span>}
                       </td>
-                      <td className="px-3 py-2 text-right font-medium" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>
+                      <td className="px-3 py-2 text-right font-medium" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>
                         {vnd(poNetTotal(po))}
-                        {poReturnedValue(po) > 0 && <span className="block text-[10px] font-normal opacity-50">(đã trừ {vnd(poReturnedValue(po))} trả NCC)</span>}
+                        {poReturnedValue(po) > 0 && <span className="block text-xs font-normal opacity-60">(đã trừ {vnd(poReturnedValue(po))} trả NCC)</span>}
                       </td>
                     </tr>
                   );
                 })}
-                {debtDetail.unpaidPOs.length === 0 && <tr><td colSpan={5} className="text-center py-8 opacity-40">Không có đơn nào.</td></tr>}
+                {debtDetail.unpaidPOs.length === 0 && <tr><td colSpan={5} className="text-center py-8 opacity-60">Không có đơn nào.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -6011,7 +6033,7 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
 
   // Ghi nhận hàng NCC đã trả lại (thay thế hoặc đã sửa xong) — nhập thẳng vào Kho bảo hành của phiếu này, không đụng tới kho chính.
   const addReplacement = (ticket) => {
-    if (!replProductId) { alert("Vui lòng chọn sản phẩm NCC đã trả lại."); return; }
+    if (!replProductId) { notify("Vui lòng chọn sản phẩm NCC đã trả lại."); return; }
     const p = products.find((x) => x.id === replProductId);
     const entry = {
       id: uid(), productId: replProductId, productName: p?.name || "", productCode: p?.code || "",
@@ -6069,8 +6091,8 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
   const resetForm = () => { setForm(emptyForm()); setLines([]); setOrderQuery(""); setSelectedOrder(null); };
 
   const submitTicket = () => {
-    if (!form.customerName.trim()) { alert("Vui lòng nhập tên khách hàng."); return; }
-    if (lines.length === 0) { alert("Vui lòng thêm ít nhất 1 sản phẩm vào phiếu bảo hành."); return; }
+    if (!form.customerName.trim()) { notify("Vui lòng nhập tên khách hàng."); return; }
+    if (lines.length === 0) { notify("Vui lòng thêm ít nhất 1 sản phẩm vào phiếu bảo hành."); return; }
     const code = nextWarrantyCode(warrantyTickets);
     const ticket = normalizeWarrantyTicket({
       id: uid(), code, createdAt: new Date().toISOString(), createdBy: currentUser.fullName,
@@ -6104,9 +6126,9 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
   };
   // Xác nhận: phải chọn đổi sản phẩm (từ kho chính hoặc kho bảo hành) hoặc hoàn tiền kèm thông tin cụ thể trước khi lưu.
   const saveConfirm = (ticket) => {
-    if (resolutionType === "exchange" && exchangeSource === "main" && !exchangeProductId) { alert("Vui lòng chọn sản phẩm từ kho chính dùng để đổi cho khách."); return; }
-    if (resolutionType === "exchange" && exchangeSource === "warranty" && !selectedReplacementId) { alert("Chưa có hàng NCC trả lại trong Kho bảo hành cho phiếu này — vui lòng dùng nút \"Nhập hàng thay thế NCC\" trước, hoặc chọn nguồn Kho chính."); return; }
-    if (resolutionType === "refund" && (!refundAmount || refundAmount <= 0)) { alert("Vui lòng nhập số tiền hoàn lại cho khách."); return; }
+    if (resolutionType === "exchange" && exchangeSource === "main" && !exchangeProductId) { notify("Vui lòng chọn sản phẩm từ kho chính dùng để đổi cho khách."); return; }
+    if (resolutionType === "exchange" && exchangeSource === "warranty" && !selectedReplacementId) { notify("Chưa có hàng NCC trả lại trong Kho bảo hành cho phiếu này — vui lòng dùng nút \"Nhập hàng thay thế NCC\" trước, hoặc chọn nguồn Kho chính."); return; }
+    if (resolutionType === "refund" && (!refundAmount || refundAmount <= 0)) { notify("Vui lòng nhập số tiền hoàn lại cho khách."); return; }
     let patch;
     if (resolutionType === "exchange" && exchangeSource === "warranty") {
       const repl = (ticket.replacementReceived || []).find((r) => r.id === selectedReplacementId);
@@ -6134,7 +6156,7 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
   };
   // Từ chối bảo hành: bắt buộc ghi lý do.
   const saveReject = (ticket) => {
-    if (!rejectReason.trim()) { alert("Vui lòng nhập lý do từ chối bảo hành."); return; }
+    if (!rejectReason.trim()) { notify("Vui lòng nhập lý do từ chối bảo hành."); return; }
     const patch = { status: "rejected", rejectReason: rejectReason.trim() };
     setWarrantyTickets((prev) => prev.map((t) => (t.id === ticket.id ? { ...t, ...patch } : t)));
     addLog("Từ chối bảo hành", `${ticket.code} · Lý do: ${rejectReason.trim()}`);
@@ -6211,14 +6233,14 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
         <button onClick={() => { resetForm(); setView("history"); }} className="text-sm mb-4 opacity-60 hover:opacity-100">← Quay lại danh sách phiếu bảo hành</button>
 
         <div className="p-5 rounded-md mb-5" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-          <p className="text-xs uppercase tracking-wider mb-3 opacity-60">Liên kết đơn hàng (không bắt buộc)</p>
+          <p className="text-xs mb-3 opacity-60 font-medium">Liên kết đơn hàng (không bắt buộc)</p>
           <div className="relative mb-2">
             <input value={orderQuery} onChange={(e) => setOrderQuery(e.target.value)} placeholder="Tìm theo mã đơn hoặc tên khách hàng…"
               className="w-full border rounded-md py-2 px-3 text-sm" style={{ borderColor: LINE }} />
             {orderMatches.length > 0 && (
               <div className="absolute z-20 mt-1 w-full max-h-52 overflow-y-auto rounded-md shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
                 {orderMatches.map((o) => (
-                  <button key={o.id} onClick={() => pickOrder(o)} className="w-full text-left px-3 py-2 text-sm hover:bg-black/5 flex justify-between gap-3" style={{ borderBottom: `1px dashed ${LINE}` }}>
+                  <button key={o.id} onClick={() => pickOrder(o)} className="w-full text-left px-3 py-2 text-sm hover:bg-black/5 flex justify-between gap-3" style={{ borderBottom: `1px solid ${LINE}` }}>
                     <span style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{o.code}</span>
                     <span className="opacity-60 truncate">{customers.find((c) => c.id === o.customerId)?.name || "Khách lẻ"}</span>
                   </button>
@@ -6237,8 +6259,8 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
                   const p = products.find((x) => x.id === it.productId);
                   return (
                     <div key={it.productId} className="flex items-center justify-between gap-3 text-sm p-2 rounded-md" style={{ background: "#fff", border: `1px dashed ${LINE}` }}>
-                      <span className="truncate">{p?.name} <span className="opacity-50 text-xs">(đã mua {it.qty}{it.series?.length ? ` · series: ${it.series.join(", ")}` : ""})</span></span>
-                      <button onClick={() => addLineFromOrder(selectedOrder, it)} className="text-xs px-2.5 py-1 rounded-md border shrink-0" style={{ borderColor: LINE, color: INK }}>+ Thêm vào phiếu</button>
+                      <span className="truncate">{p?.name} <span className="opacity-60 text-xs">(đã mua {it.qty}{it.series?.length ? ` · series: ${it.series.join(", ")}` : ""})</span></span>
+                      <button onClick={() => addLineFromOrder(selectedOrder, it)} className="text-xs px-2.5 py-1 rounded-md border shrink-0" style={{ borderColor: LINE, color: TEXT }}>+ Thêm vào phiếu</button>
                     </div>
                   );
                 })}
@@ -6255,35 +6277,35 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
 
         <div className="p-5 rounded-md my-5" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           <div className="flex items-center justify-between mb-3">
-            <p className="text-xs uppercase tracking-wider opacity-60">Sản phẩm bảo hành ({lines.length})</p>
+            <p className="text-xs opacity-60 font-medium">Sản phẩm bảo hành ({lines.length})</p>
           </div>
           {lines.length > 0 && (
             <div className="rounded-md overflow-x-auto mb-3" style={{ border: `1px solid ${LINE}` }}>
               <table className="w-full text-sm" style={{ minWidth: 640 }}>
                 <thead><tr style={{ background: PAPER }}>
-                  <th className="text-left py-2 px-2 text-xs uppercase tracking-wider opacity-60">Sản phẩm</th>
-                  <th className="text-left py-2 px-2 text-xs uppercase tracking-wider opacity-60">Serial</th>
-                  <th className="text-right py-2 px-2 text-xs uppercase tracking-wider opacity-60">SL</th>
-                  <th className="text-right py-2 px-2 text-xs uppercase tracking-wider opacity-60">BH (tháng)</th>
-                  <th className="text-left py-2 px-2 text-xs uppercase tracking-wider opacity-60">Tình trạng</th>
+                  <th className="text-left py-2 px-2 text-xs opacity-60 font-medium">Sản phẩm</th>
+                  <th className="text-left py-2 px-2 text-xs opacity-60 font-medium">Serial</th>
+                  <th className="text-right py-2 px-2 text-xs opacity-60 font-medium">SL</th>
+                  <th className="text-right py-2 px-2 text-xs opacity-60 font-medium">BH (tháng)</th>
+                  <th className="text-left py-2 px-2 text-xs opacity-60 font-medium">Tình trạng</th>
                   <th className="py-2 px-2"></th>
                 </tr></thead>
                 <tbody>
                   {lines.map((l) => (
-                    <tr key={l.key} style={{ borderTop: `1px dashed ${LINE}` }}>
-                      <td className="py-2 px-2">{l.productName}{l.orderCode ? <span className="block text-[10px] opacity-40" style={{ fontFamily: "'Inter', sans-serif" }}>Đơn {l.orderCode}</span> : null}</td>
+                    <tr key={l.key} style={{ borderTop: `1px solid ${LINE}` }}>
+                      <td className="py-2 px-2">{l.productName}{l.orderCode ? <span className="block text-xs opacity-60" style={{ fontFamily: "'Inter', sans-serif" }}>Đơn {l.orderCode}</span> : null}</td>
                       <td className="py-2 px-2"><input value={l.seriesText} onChange={(e) => updateLine(l.key, { seriesText: e.target.value })} placeholder="Cách nhau bởi dấu phẩy" className="w-32 border rounded-md py-1 px-1.5 text-xs" style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} /></td>
                       <td className="py-2 px-2 text-right"><input type="number" min={1} value={l.qty} onChange={(e) => updateLine(l.key, { qty: Number(e.target.value) || 1 })} className="w-14 border rounded-md py-1 px-1.5 text-right text-sm" style={{ borderColor: LINE }} /></td>
                       <td className="py-2 px-2 text-right"><input type="number" min={0} value={l.warrantyMonths} onChange={(e) => updateLine(l.key, { warrantyMonths: Number(e.target.value) || 0 })} className="w-16 border rounded-md py-1 px-1.5 text-right text-sm" style={{ borderColor: LINE }} /></td>
                       <td className="py-2 px-2"><input value={l.condition} onChange={(e) => updateLine(l.key, { condition: e.target.value })} placeholder="VD: không lên nguồn…" className="w-40 border rounded-md py-1 px-1.5 text-xs" style={{ borderColor: LINE }} /></td>
-                      <td className="py-2 px-2 text-right"><button onClick={() => removeLine(l.key)} className="p-1 rounded-md hover:bg-black/5 opacity-50"><X size={13} /></button></td>
+                      <td className="py-2 px-2 text-right"><button onClick={() => removeLine(l.key)} className="p-1 rounded-md hover:bg-black/5 opacity-60"><X size={13} /></button></td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           )}
-          <p className="text-xs uppercase tracking-wider mb-2 opacity-60">Thêm sản phẩm thủ công (không qua đơn hàng)</p>
+          <p className="text-xs mb-2 opacity-60 font-medium">Thêm sản phẩm thủ công (không qua đơn hàng)</p>
           <ProductPicker products={products} onPick={addManualLine} />
         </div>
 
@@ -6306,27 +6328,27 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
       {warrantyStockList.length > 0 && (
         <div className="p-4 rounded-md mb-5" style={{ background: `${BRASS}0A`, border: `1px solid ${BRASS}44` }}>
           <button onClick={() => setShowWarrantyStock((v) => !v)} className="flex items-center justify-between w-full text-left">
-            <span className="text-xs uppercase tracking-wider" style={{ color: BRASS }}>Kho bảo hành — đang giữ, chờ xử lý với NCC ({warrantyStockList.reduce((s, w) => s + w.qty, 0)} sản phẩm)</span>
+            <span className="text-xs font-medium" style={{ color: BRASS }}>Kho bảo hành — đang giữ, chờ xử lý với NCC ({warrantyStockList.reduce((s, w) => s + w.qty, 0)} sản phẩm)</span>
             <span className="text-xs opacity-60">{showWarrantyStock ? "Thu gọn ▲" : "Xem chi tiết ▼"}</span>
           </button>
           {showWarrantyStock && (
             <div className="mt-3 rounded-md overflow-x-auto" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
               <table className="w-full text-sm" style={{ minWidth: 560 }}>
                 <thead><tr style={{ background: PAPER }}>
-                  <th className="text-left py-2 px-2 text-xs uppercase tracking-wider opacity-60">Sản phẩm</th>
-                  <th className="text-left py-2 px-2 text-xs uppercase tracking-wider opacity-60">Serial</th>
-                  <th className="text-right py-2 px-2 text-xs uppercase tracking-wider opacity-60">SL</th>
-                  <th className="text-left py-2 px-2 text-xs uppercase tracking-wider opacity-60">Nguồn</th>
-                  <th className="text-left py-2 px-2 text-xs uppercase tracking-wider opacity-60">Phiếu BH</th>
+                  <th className="text-left py-2 px-2 text-xs opacity-60 font-medium">Sản phẩm</th>
+                  <th className="text-left py-2 px-2 text-xs opacity-60 font-medium">Serial</th>
+                  <th className="text-right py-2 px-2 text-xs opacity-60 font-medium">SL</th>
+                  <th className="text-left py-2 px-2 text-xs opacity-60 font-medium">Nguồn</th>
+                  <th className="text-left py-2 px-2 text-xs opacity-60 font-medium">Phiếu BH</th>
                 </tr></thead>
                 <tbody>
                   {warrantyStockList.map((w) => (
-                    <tr key={w.key} style={{ borderTop: `1px dashed ${LINE}` }}>
-                      <td className="py-2 px-2">{w.productName}<span className="opacity-40 text-xs" style={{ fontFamily: "'Inter', sans-serif" }}> · {w.productCode}</span></td>
+                    <tr key={w.key} style={{ borderTop: `1px solid ${LINE}` }}>
+                      <td className="py-2 px-2">{w.productName}<span className="opacity-60 text-xs" style={{ fontFamily: "'Inter', sans-serif" }}> · {w.productCode}</span></td>
                       <td className="py-2 px-2" style={{ fontFamily: "'Inter', sans-serif" }}>{w.serial || "—"}</td>
                       <td className="py-2 px-2 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>{w.qty}</td>
                       <td className="py-2 px-2 whitespace-nowrap">
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider" style={{ background: w.source === "supplier" ? `${FOREST}1A` : `${BRASS}1A`, color: w.source === "supplier" ? FOREST : BRASS }}>
+                        <span className="text-xs px-1.5 py-0.5 rounded-md font-medium" style={{ background: w.source === "supplier" ? `${FOREST}1A` : `${BRASS}1A`, color: w.source === "supplier" ? FOREST : BRASS }}>
                           {w.source === "supplier" ? "NCC trả lại" : "Khách mang tới"}
                         </span>
                       </td>
@@ -6353,7 +6375,7 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
       </div>
 
       {filteredTickets.length === 0 ? (
-        <p className="text-sm opacity-50 text-center py-16">Chưa có phiếu bảo hành nào.</p>
+        <p className="text-sm opacity-60 text-center py-16">Chưa có phiếu bảo hành nào.</p>
       ) : (
         <div className="space-y-2.5">
           {filteredTickets.map((t) => {
@@ -6364,9 +6386,9 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div>
                     <p className="font-medium" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{t.code}</p>
-                    <p className="text-xs opacity-50">{t.customerName} · {t.items.length} sản phẩm · {formatDateTime(t.createdAt)}{relatedOrders.length > 0 ? ` · Đơn: ${relatedOrders.join(", ")}` : ""}</p>
+                    <p className="text-xs opacity-60">{t.customerName} · {t.items.length} sản phẩm · {formatDateTime(t.createdAt)}{relatedOrders.length > 0 ? ` · Đơn: ${relatedOrders.join(", ")}` : ""}</p>
                   </div>
-                  <span className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: `${st.color}1A`, color: st.color }}>{st.label}</span>
+                  <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: `${st.color}1A`, color: st.color }}>{st.label}</span>
                 </div>
               </button>
             );
@@ -6406,7 +6428,7 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
                       <option value="A5">Khổ A5</option>
                       <option value="A4">Khổ A4</option>
                     </select>
-                    <button onClick={() => doPrint(viewingTicket)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>
+                    <button onClick={() => doPrint(viewingTicket)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>
                       <Printer size={13} /> In phiếu tiếp nhận BH
                     </button>
                   </>
@@ -6438,7 +6460,7 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
           })()}
 
           {viewingTicket.xtbhCode && (
-            <p className="text-xs mb-4"><span className="opacity-50">Phiếu xuất trả bảo hành: </span><b style={{ color: FOREST, fontFamily: "'Inter', sans-serif" }}>{viewingTicket.xtbhCode}</b></p>
+            <p className="text-xs mb-4"><span className="opacity-60">Phiếu xuất trả bảo hành: </span><b style={{ color: FOREST, fontFamily: "'Inter', sans-serif" }}>{viewingTicket.xtbhCode}</b></p>
           )}
 
           {(viewingTicket.status === "pending" || viewingTicket.status === "confirmed") && (
@@ -6461,7 +6483,7 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
                       <input type="number" min={1} value={replQty} onChange={(e) => setReplQty(Number(e.target.value) || 1)} className="w-full border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
                     </label>
                   </div>
-                  <button onClick={() => addReplacement(viewingTicket)} className="w-full py-2 rounded-md text-white text-sm mt-3" style={{ background: FOREST }}>Ghi nhận vào Kho bảo hành</button>
+                  <button onClick={() => addReplacement(viewingTicket)} className="w-full py-2 rounded-md text-white text-sm mt-3" style={{ background: INK }}>Ghi nhận vào Kho bảo hành</button>
                 </div>
               )}
               {viewingTicket.replacementReceived && viewingTicket.replacementReceived.length > 0 && (
@@ -6476,7 +6498,7 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
 
           {statusDraft === "confirmed" && (
             <div className="p-4 rounded-md mb-4" style={{ background: `${BLUE}0A`, border: `1px solid ${BLUE}44` }}>
-              <p className="text-xs uppercase tracking-wider mb-3" style={{ color: BLUE }}>Xác nhận xử lý bảo hành</p>
+              <p className="text-xs mb-3 font-medium" style={{ color: BLUE }}>Xác nhận xử lý bảo hành</p>
               <div className="flex gap-2 mb-3">
                 <button onClick={() => setResolutionType("exchange")} className="px-3.5 py-1.5 rounded-md text-sm border"
                   style={{ borderColor: resolutionType === "exchange" ? INK : LINE, background: resolutionType === "exchange" ? INK : "transparent", color: resolutionType === "exchange" ? "#fff" : INK }}>
@@ -6489,7 +6511,7 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
               </div>
               {resolutionType === "exchange" ? (
                 <div className="space-y-2.5">
-                  <p className="text-[10px] uppercase tracking-wider opacity-50">Nguồn hàng đổi</p>
+                  <p className="text-xs opacity-60 font-medium">Nguồn hàng đổi</p>
                   <div className="flex gap-2 mb-1">
                     <button onClick={() => setExchangeSource("main")} className="px-3 py-1.5 rounded-md text-xs border"
                       style={{ borderColor: exchangeSource === "main" ? INK : LINE, background: exchangeSource === "main" ? INK : "transparent", color: exchangeSource === "main" ? "#fff" : INK }}>
@@ -6538,7 +6560,7 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
                 </label>
               )}
               <div className="flex gap-2 mt-3">
-                <button onClick={() => setStatusDraft(null)} className="flex-1 py-2 rounded-md text-sm border" style={{ borderColor: LINE, color: INK }}>Huỷ</button>
+                <button onClick={() => setStatusDraft(null)} className="flex-1 py-2 rounded-md text-sm border" style={{ borderColor: LINE, color: TEXT }}>Huỷ</button>
                 <button onClick={() => saveConfirm(viewingTicket)} className="flex-1 py-2 rounded-md text-white text-sm" style={{ background: BLUE }}>Lưu xác nhận</button>
               </div>
             </div>
@@ -6546,10 +6568,10 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
 
           {statusDraft === "rejected" && (
             <div className="p-4 rounded-md mb-4" style={{ background: `${RUST}0A`, border: `1px solid ${RUST}44` }}>
-              <p className="text-xs uppercase tracking-wider mb-3" style={{ color: RUST }}>Từ chối bảo hành</p>
+              <p className="text-xs mb-3 font-medium" style={{ color: RUST }}>Từ chối bảo hành</p>
               <textarea rows={2} className="w-full border rounded-md p-2 text-sm" style={{ borderColor: LINE }} value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="VD: sản phẩm ngoài phạm vi bảo hành, hết hạn bảo hành, lỗi do va đập/vào nước…" />
               <div className="flex gap-2 mt-3">
-                <button onClick={() => setStatusDraft(null)} className="flex-1 py-2 rounded-md text-sm border" style={{ borderColor: LINE, color: INK }}>Huỷ</button>
+                <button onClick={() => setStatusDraft(null)} className="flex-1 py-2 rounded-md text-sm border" style={{ borderColor: LINE, color: TEXT }}>Huỷ</button>
                 <button onClick={() => saveReject(viewingTicket)} className="flex-1 py-2 rounded-md text-white text-sm" style={{ background: RUST }}>Lưu từ chối</button>
               </div>
             </div>
@@ -6569,7 +6591,7 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
           )}
 
           {printBlockedUrl && (
-            <div className="mb-4 p-3 rounded-md text-xs" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44`, color: INK }}>
+            <div className="mb-4 p-3 rounded-md text-xs" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44`, color: TEXT }}>
               <p className="mb-2">Trình duyệt đã chặn cửa sổ in tự động. Bấm vào liên kết bên dưới để mở phiếu, sau đó tự bấm in (Ctrl+P / biểu tượng in) trong tab mới đó:</p>
               <a href={printBlockedUrl} target="_blank" rel="noreferrer" className="underline font-medium" style={{ color: BLUE }}>Mở phiếu bảo hành để in</a>
             </div>
@@ -6577,14 +6599,14 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 text-sm">
             <div>
-              <p><span className="opacity-50">Khách hàng: </span>{viewingTicket.customerName}</p>
-              <p><span className="opacity-50">SĐT: </span>{viewingTicket.customerPhone || "—"}</p>
-              <p><span className="opacity-50">Địa chỉ: </span>{viewingTicket.customerAddress || "—"}</p>
+              <p><span className="opacity-60">Khách hàng: </span>{viewingTicket.customerName}</p>
+              <p><span className="opacity-60">SĐT: </span>{viewingTicket.customerPhone || "—"}</p>
+              <p><span className="opacity-60">Địa chỉ: </span>{viewingTicket.customerAddress || "—"}</p>
             </div>
             <div>
-              <p><span className="opacity-50">Người lập: </span>{viewingTicket.createdBy}</p>
-              <p><span className="opacity-50">Ngày nhận: </span>{viewingTicket.receivedDate ? new Date(viewingTicket.receivedDate).toLocaleDateString("vi-VN") : "—"}</p>
-              <p><span className="opacity-50">Hẹn trả: </span>{viewingTicket.returnDate ? new Date(viewingTicket.returnDate).toLocaleDateString("vi-VN") : "—"}</p>
+              <p><span className="opacity-60">Người lập: </span>{viewingTicket.createdBy}</p>
+              <p><span className="opacity-60">Ngày nhận: </span>{viewingTicket.receivedDate ? new Date(viewingTicket.receivedDate).toLocaleDateString("vi-VN") : "—"}</p>
+              <p><span className="opacity-60">Hẹn trả: </span>{viewingTicket.returnDate ? new Date(viewingTicket.returnDate).toLocaleDateString("vi-VN") : "—"}</p>
             </div>
           </div>
 
@@ -6593,7 +6615,7 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
             if (relatedOrders.length === 0) return null;
             return (
               <p className="text-sm mb-4">
-                <span className="opacity-50">Đơn hàng liên quan: </span>
+                <span className="opacity-60">Đơn hàng liên quan: </span>
                 {relatedOrders.map((code, i) => (
                   <span key={code}>
                     {i > 0 && ", "}
@@ -6607,19 +6629,19 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
           <div className="rounded-md overflow-x-auto mb-4" style={{ border: `1px solid ${LINE}` }}>
             <table className="w-full text-sm" style={{ minWidth: 620 }}>
               <thead><tr style={{ background: PAPER }}>
-                <th className="text-left py-2 px-2 text-xs uppercase tracking-wider opacity-60">Sản phẩm</th>
-                <th className="text-left py-2 px-2 text-xs uppercase tracking-wider opacity-60">Đơn hàng</th>
-                <th className="text-left py-2 px-2 text-xs uppercase tracking-wider opacity-60">Serial</th>
-                <th className="text-right py-2 px-2 text-xs uppercase tracking-wider opacity-60">SL</th>
-                <th className="text-right py-2 px-2 text-xs uppercase tracking-wider opacity-60">Bảo hành</th>
-                <th className="text-left py-2 px-2 text-xs uppercase tracking-wider opacity-60">Tình trạng</th>
+                <th className="text-left py-2 px-2 text-xs opacity-60 font-medium">Sản phẩm</th>
+                <th className="text-left py-2 px-2 text-xs opacity-60 font-medium">Đơn hàng</th>
+                <th className="text-left py-2 px-2 text-xs opacity-60 font-medium">Serial</th>
+                <th className="text-right py-2 px-2 text-xs opacity-60 font-medium">SL</th>
+                <th className="text-right py-2 px-2 text-xs opacity-60 font-medium">Bảo hành</th>
+                <th className="text-left py-2 px-2 text-xs opacity-60 font-medium">Tình trạng</th>
               </tr></thead>
               <tbody>
                 {viewingTicket.items.map((it, i) => (
-                  <tr key={i} style={{ borderTop: `1px dashed ${LINE}` }}>
+                  <tr key={i} style={{ borderTop: `1px solid ${LINE}` }}>
                     <td className="py-2 px-2">{it.productName}</td>
                     <td className="py-2 px-2 whitespace-nowrap">
-                      {it.orderCode ? (goToDoc ? <button onClick={() => goToDoc(it.orderCode)} className="hover:underline" style={{ color: BLUE, fontFamily: "'Inter', sans-serif" }}>{it.orderCode}</button> : <span style={{ color: BLUE, fontFamily: "'Inter', sans-serif" }}>{it.orderCode}</span>) : <span className="opacity-40">—</span>}
+                      {it.orderCode ? (goToDoc ? <button onClick={() => goToDoc(it.orderCode)} className="hover:underline" style={{ color: BLUE, fontFamily: "'Inter', sans-serif" }}>{it.orderCode}</button> : <span style={{ color: BLUE, fontFamily: "'Inter', sans-serif" }}>{it.orderCode}</span>) : <span className="opacity-60">—</span>}
                     </td>
                     <td className="py-2 px-2" style={{ fontFamily: "'Inter', sans-serif" }}>{it.series.length ? it.series.join(", ") : "—"}</td>
                     <td className="py-2 px-2 text-right">{it.qty}</td>
@@ -6685,7 +6707,7 @@ function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, a
   const del = (p) => { if (window.confirm(`Xoá phiếu gửi hàng của "${p.company || p.recipientName}"?`)) setParcelLabels((prev) => prev.filter((x) => x.id !== p.id)); };
 
   const save = () => {
-    if (!form.company.trim() && !form.recipientName.trim()) { alert("Nhập tên công ty hoặc tên người nhận."); return; }
+    if (!form.company.trim() && !form.recipientName.trim()) { notify("Nhập tên công ty hoặc tên người nhận."); return; }
     if (editingId) {
       setParcelLabels((prev) => prev.map((x) => (x.id === editingId ? normalizeParcelLabel({ ...x, ...form }) : x)));
       addLog("Sửa phiếu gửi hàng", form.company || form.recipientName);
@@ -6712,14 +6734,14 @@ function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, a
         <button onClick={() => { setForm(blank()); setEditingId(null); setView("list"); }} className="text-sm mb-4 opacity-60 hover:opacity-100">← Quay lại danh sách phiếu gửi hàng</button>
 
         <div className="p-4 rounded-md mb-4" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-          <p className="text-xs uppercase tracking-wider mb-2 opacity-60">Điền nhanh từ khách hàng có sẵn (không bắt buộc)</p>
+          <p className="text-xs mb-2 opacity-60 font-medium">Điền nhanh từ khách hàng có sẵn (không bắt buộc)</p>
           <div className="relative">
             <input value={custQuery} onChange={(e) => setCustQuery(e.target.value)} placeholder="Tìm theo tên / SĐT khách…"
               className="w-full border rounded-md py-2 px-3 text-sm" style={{ borderColor: LINE }} />
             {custMatches.length > 0 && (
               <div className="absolute z-20 mt-1 w-full max-h-52 overflow-y-auto rounded-md shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
                 {custMatches.map((c) => (
-                  <button key={c.id} onClick={() => pickCust(c)} className="w-full text-left px-3 py-2 text-sm hover:bg-black/5 flex justify-between gap-3" style={{ borderBottom: `1px dashed ${LINE}` }}>
+                  <button key={c.id} onClick={() => pickCust(c)} className="w-full text-left px-3 py-2 text-sm hover:bg-black/5 flex justify-between gap-3" style={{ borderBottom: `1px solid ${LINE}` }}>
                     <span>{c.name}</span><span className="opacity-60">{c.phone}</span>
                   </button>
                 ))}
@@ -6729,7 +6751,7 @@ function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, a
         </div>
 
         <div className="p-4 rounded-md mb-4 space-y-4" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-          <p className="text-sm font-medium" style={{ color: INK }}>Bên nhận (khách)</p>
+          <p className="text-sm font-medium" style={{ color: TEXT }}>Bên nhận (khách)</p>
           <div className="grid sm:grid-cols-2 gap-4">
             <Field label="Tên công ty"><input className={inputCls} style={{ borderColor: LINE }} value={form.company} onChange={(e) => set("company", e.target.value)} placeholder="CÔNG TY TNHH …" /></Field>
             <Field label="Tên người nhận"><input className={inputCls} style={{ borderColor: LINE }} value={form.recipientName} onChange={(e) => set("recipientName", e.target.value)} placeholder="A Phương" /></Field>
@@ -6743,7 +6765,7 @@ function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, a
         </div>
 
         <details className="p-4 rounded-md mb-4" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-          <summary className="text-sm font-medium cursor-pointer" style={{ color: INK }}>Bên gửi (mặc định theo công ty — bấm để sửa)</summary>
+          <summary className="text-sm font-medium cursor-pointer" style={{ color: TEXT }}>Bên gửi (mặc định theo công ty — bấm để sửa)</summary>
           <div className="grid sm:grid-cols-2 gap-4 mt-3">
             <Field label="Tên bên gửi"><input className={inputCls} style={{ borderColor: LINE }} value={form.senderName} onChange={(e) => set("senderName", e.target.value)} /></Field>
             <Field label="SĐT bên gửi"><input className={inputCls} style={{ borderColor: LINE }} value={form.senderPhone} onChange={(e) => set("senderPhone", e.target.value)} /></Field>
@@ -6775,28 +6797,28 @@ function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, a
       </div>
 
       {list.length === 0 ? (
-        <p className="text-sm opacity-50 py-10 text-center">Chưa có phiếu gửi hàng nào. Bấm “+ Tạo phiếu gửi hàng”.</p>
+        <p className="text-sm opacity-60 py-10 text-center">Chưa có phiếu gửi hàng nào. Bấm “+ Tạo phiếu gửi hàng”.</p>
       ) : (
         <div className="space-y-2">
           {list.map((p) => (
             <div key={p.id} className="p-3 rounded-md flex items-start justify-between gap-3 flex-wrap" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
               <div className="min-w-0">
-                <p className="font-medium" style={{ color: INK }}>{p.company || p.recipientName || "—"}</p>
+                <p className="font-medium" style={{ color: TEXT }}>{p.company || p.recipientName || "—"}</p>
                 <p className="text-xs opacity-60">
                   {[p.recipientName, p.recipientPhone].filter(Boolean).join(" · ")}
                   {p.route ? ` · 🚛 ${p.route}` : ""}
                 </p>
-                <p className="text-xs opacity-50 truncate">{p.recipientAddress}</p>
+                <p className="text-xs opacity-60 truncate">{p.recipientAddress}</p>
                 {p.internalNote && (
-                  <p className="text-xs mt-1 px-2 py-1 rounded-md whitespace-pre-line" style={{ background: `${BRASS}14`, color: INK }} title="Ghi chú nội bộ — không in ra nhãn">
+                  <p className="text-xs mt-1 px-2 py-1 rounded-md whitespace-pre-line" style={{ background: `${BRASS}14`, color: TEXT }} title="Ghi chú nội bộ — không in ra nhãn">
                     📝 {p.internalNote}
                   </p>
                 )}
               </div>
               <div className="flex gap-1.5 shrink-0">
                 <button onClick={() => { setPrintFor(p); setPrintOpts({ copies: 2, boxes: 1, paper: "A4" }); }} className="text-xs px-2.5 py-1.5 rounded-md text-white" style={{ background: BLUE }}>🖨 In nhãn</button>
-                <button onClick={() => openEdit(p)} className="text-xs px-2 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>Sửa</button>
-                <button onClick={() => dup(p)} className="text-xs px-2 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>Nhân bản</button>
+                <button onClick={() => openEdit(p)} className="text-xs px-2 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>Sửa</button>
+                <button onClick={() => dup(p)} className="text-xs px-2 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>Nhân bản</button>
                 <button onClick={() => del(p)} className="text-xs px-2 py-1.5" style={{ color: RUST }}>Xoá</button>
               </div>
             </div>
@@ -6817,7 +6839,7 @@ function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, a
                 </select>
               </Field>
             </div>
-            <p className="text-xs opacity-55">
+            <p className="text-xs opacity-60">
               In <b>nằm ngang</b> · tổng {printOpts.boxes * printOpts.copies} nhãn ({printOpts.paper === "A5" ? 1 : 2}/trang).
               {printOpts.boxes > 1 ? ` Mỗi kiện đánh số 1/${printOpts.boxes} … ${printOpts.boxes}/${printOpts.boxes}.` : ""}
               {" "}Trong hộp thoại in, chọn <b>Layout: Landscape</b> nếu trình duyệt chưa tự nhận.
@@ -6885,7 +6907,7 @@ function Shipping({ shippingTickets, setShippingTickets, parcelLabels, setParcel
 
   const openEditInfo = (ticket) => { setForm({ ...ticket }); setEditingId(ticket.id); setView("new"); };
   const submitTicket = () => {
-    if (!form.recipientName.trim()) { alert("Vui lòng nhập tên người nhận."); return; }
+    if (!form.recipientName.trim()) { notify("Vui lòng nhập tên người nhận."); return; }
     if (editingId) {
       setShippingTickets((prev) => prev.map((t) => (t.id === editingId ? normalizeShippingTicket({ ...t, ...form }) : t)));
       addLog("Sửa thông tin phiếu vận chuyển", `${form.orderCode || form.recipientName}`);
@@ -6941,14 +6963,14 @@ function Shipping({ shippingTickets, setShippingTickets, parcelLabels, setParcel
         <button onClick={() => { setForm(emptyForm()); setEditingId(null); setView("history"); }} className="text-sm mb-4 opacity-60 hover:opacity-100">← Quay lại danh sách vận đơn</button>
 
         <div className="p-5 rounded-md mb-5" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-          <p className="text-xs uppercase tracking-wider mb-3 opacity-60">Liên kết đơn hàng (không bắt buộc)</p>
+          <p className="text-xs mb-3 opacity-60 font-medium">Liên kết đơn hàng (không bắt buộc)</p>
           <div className="relative mb-2">
             <input value={orderQuery} onChange={(e) => setOrderQuery(e.target.value)} placeholder="Tìm theo mã đơn hoặc tên khách hàng…"
               className="w-full border rounded-md py-2 px-3 text-sm" style={{ borderColor: LINE }} />
             {orderMatches.length > 0 && (
               <div className="absolute z-20 mt-1 w-full max-h-52 overflow-y-auto rounded-md shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
                 {orderMatches.map((o) => (
-                  <button key={o.id} onClick={() => pickOrder(o)} className="w-full text-left px-3 py-2 text-sm hover:bg-black/5 flex justify-between gap-3" style={{ borderBottom: `1px dashed ${LINE}` }}>
+                  <button key={o.id} onClick={() => pickOrder(o)} className="w-full text-left px-3 py-2 text-sm hover:bg-black/5 flex justify-between gap-3" style={{ borderBottom: `1px solid ${LINE}` }}>
                     <span style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{o.code}</span>
                     <span className="opacity-60 truncate">{customers.find((c) => c.id === o.customerId)?.name || "Khách lẻ"}</span>
                   </button>
@@ -6970,7 +6992,7 @@ function Shipping({ shippingTickets, setShippingTickets, parcelLabels, setParcel
         </div>
         <Field label="Địa chỉ nhận hàng"><input className={inputCls} style={{ borderColor: LINE }} value={form.recipientAddress} onChange={(e) => setForm({ ...form, recipientAddress: e.target.value })} /></Field>
 
-        <div className="my-3" style={{ borderTop: `1px dashed ${LINE}` }} />
+        <div className="my-3" style={{ borderTop: `1px solid ${LINE}` }} />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <Field label="Đơn vị vận chuyển">
             <select className={inputCls} style={{ borderColor: LINE }} value={form.carrier} onChange={(e) => setForm({ ...form, carrier: e.target.value })}>
@@ -7002,7 +7024,7 @@ function Shipping({ shippingTickets, setShippingTickets, parcelLabels, setParcel
     <div>
       {subTabBar}
       <div className="mb-4 p-3 rounded-md flex items-center gap-3 flex-wrap" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-        <span className="text-xs uppercase tracking-wider opacity-60">Kết nối GHN</span>
+        <span className="text-xs opacity-60 font-medium">Kết nối GHN</span>
         <button onClick={testGhn} disabled={ghnPing?.loading} className="text-xs px-3 py-1.5 rounded-md border disabled:opacity-50" style={{ borderColor: BLUE, color: BLUE }}>
           {ghnPing?.loading ? "Đang kiểm tra…" : "Kiểm tra kết nối GHN"}
         </button>
@@ -7013,7 +7035,7 @@ function Shipping({ shippingTickets, setShippingTickets, parcelLabels, setParcel
               : `Lỗi: ${ghnPing.message || ghnPing.ghnMessage || "không kết nối được"}`}
           </span>
         )}
-        <span className="text-[11px] opacity-40 ml-auto">Token GHN đặt ở Environment Variables của Vercel, không nằm trong web.</span>
+        <span className="text-xs opacity-60 ml-auto">Token GHN đặt ở Environment Variables của Vercel, không nằm trong web.</span>
       </div>
       <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
         <div className="flex gap-2 flex-wrap items-center">
@@ -7032,7 +7054,7 @@ function Shipping({ shippingTickets, setShippingTickets, parcelLabels, setParcel
       </div>
 
       {filtered.length === 0 ? (
-        <p className="text-sm opacity-50 text-center py-16">Chưa có phiếu vận chuyển nào.</p>
+        <p className="text-sm opacity-60 text-center py-16">Chưa có phiếu vận chuyển nào.</p>
       ) : (
         <div className="space-y-2.5">
           {filtered.map((t) => {
@@ -7041,12 +7063,12 @@ function Shipping({ shippingTickets, setShippingTickets, parcelLabels, setParcel
               <button key={t.id} onClick={() => { setViewingTicket(t); setPrintBlockedUrl(null); }} className="w-full text-left p-4 rounded-md hover:bg-black/[0.02]" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div>
-                    <p className="font-medium" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{t.code}{t.orderCode ? <span className="opacity-50 font-normal"> · Đơn {t.orderCode}</span> : null}</p>
-                    <p className="text-xs opacity-50">{t.recipientName} · {t.carrier}{t.trackingCode ? ` · ${t.trackingCode}` : ""} · {formatDateTime(t.createdAt)}</p>
+                    <p className="font-medium" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{t.code}{t.orderCode ? <span className="opacity-60 font-normal"> · Đơn {t.orderCode}</span> : null}</p>
+                    <p className="text-xs opacity-60">{t.recipientName} · {t.carrier}{t.trackingCode ? ` · ${t.trackingCode}` : ""} · {formatDateTime(t.createdAt)}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    {t.codAmount > 0 && <span className="text-[11px] px-2 py-1 rounded-md" style={{ background: `${BRASS}1A`, color: BRASS }}>COD {vnd(t.codAmount)}</span>}
-                    <span className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: `${st.color}1A`, color: st.color }}>{st.label}</span>
+                    {t.codAmount > 0 && <span className="text-xs px-2 py-1 rounded-md" style={{ background: `${BRASS}1A`, color: BRASS }}>COD {vnd(t.codAmount)}</span>}
+                    <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: `${st.color}1A`, color: st.color }}>{st.label}</span>
                   </div>
                 </div>
               </button>
@@ -7073,46 +7095,46 @@ function Shipping({ shippingTickets, setShippingTickets, parcelLabels, setParcel
               <option value="A5">Khổ A5</option>
               <option value="A4">Khổ A4</option>
             </select>
-            <button onClick={() => doPrint(viewingTicket)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>
+            <button onClick={() => doPrint(viewingTicket)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>
               <Printer size={13} /> In phiếu vận chuyển
             </button>
           </div>
 
           {printBlockedUrl && (
-            <div className="mb-4 p-3 rounded-md text-xs" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44`, color: INK }}>
+            <div className="mb-4 p-3 rounded-md text-xs" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44`, color: TEXT }}>
               <p className="mb-2">Trình duyệt đã chặn cửa sổ in tự động. Bấm vào liên kết bên dưới để mở phiếu, sau đó tự bấm in (Ctrl+P / biểu tượng in) trong tab mới đó:</p>
               <a href={printBlockedUrl} target="_blank" rel="noreferrer" className="underline font-medium" style={{ color: BLUE }}>Mở phiếu vận chuyển để in</a>
             </div>
           )}
 
-          {viewingTicket.orderCode && <p className="text-sm mb-3"><span className="opacity-50">Đơn hàng: </span><b style={{ color: BLUE }}>{viewingTicket.orderCode}</b></p>}
+          {viewingTicket.orderCode && <p className="text-sm mb-3"><span className="opacity-60">Đơn hàng: </span><b style={{ color: BLUE }}>{viewingTicket.orderCode}</b></p>}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 text-sm">
             <div>
-              <p><span className="opacity-50">Người nhận: </span>{viewingTicket.recipientName}</p>
-              <p><span className="opacity-50">SĐT: </span>{viewingTicket.recipientPhone || "—"}</p>
-              <p><span className="opacity-50">Địa chỉ: </span>{viewingTicket.recipientAddress || "—"}</p>
+              <p><span className="opacity-60">Người nhận: </span>{viewingTicket.recipientName}</p>
+              <p><span className="opacity-60">SĐT: </span>{viewingTicket.recipientPhone || "—"}</p>
+              <p><span className="opacity-60">Địa chỉ: </span>{viewingTicket.recipientAddress || "—"}</p>
             </div>
             <div>
-              <p><span className="opacity-50">Đơn vị VC: </span>{viewingTicket.carrier}</p>
-              <p><span className="opacity-50">Mã vận đơn: </span>{viewingTicket.trackingCode || "—"}</p>
-              <p><span className="opacity-50">Người lập: </span>{viewingTicket.createdBy}</p>
+              <p><span className="opacity-60">Đơn vị VC: </span>{viewingTicket.carrier}</p>
+              <p><span className="opacity-60">Mã vận đơn: </span>{viewingTicket.trackingCode || "—"}</p>
+              <p><span className="opacity-60">Người lập: </span>{viewingTicket.createdBy}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-4 mb-4 text-sm">
-            <div><p className="opacity-50 text-xs mb-1">Đóng gói</p><p>{viewingTicket.packDate ? new Date(viewingTicket.packDate).toLocaleDateString("vi-VN") : "—"}</p></div>
-            <div><p className="opacity-50 text-xs mb-1">Lấy hàng</p><p>{viewingTicket.pickupDate ? new Date(viewingTicket.pickupDate).toLocaleDateString("vi-VN") : "—"}</p></div>
-            <div><p className="opacity-50 text-xs mb-1">Giao hàng</p><p>{viewingTicket.deliveredDate ? new Date(viewingTicket.deliveredDate).toLocaleDateString("vi-VN") : "—"}</p></div>
+            <div><p className="opacity-60 text-xs mb-1">Đóng gói</p><p>{viewingTicket.packDate ? new Date(viewingTicket.packDate).toLocaleDateString("vi-VN") : "—"}</p></div>
+            <div><p className="opacity-60 text-xs mb-1">Lấy hàng</p><p>{viewingTicket.pickupDate ? new Date(viewingTicket.pickupDate).toLocaleDateString("vi-VN") : "—"}</p></div>
+            <div><p className="opacity-60 text-xs mb-1">Giao hàng</p><p>{viewingTicket.deliveredDate ? new Date(viewingTicket.deliveredDate).toLocaleDateString("vi-VN") : "—"}</p></div>
           </div>
 
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <p className="text-xs opacity-50 mb-1">Phí giao hàng</p>
+              <p className="text-xs opacity-60 mb-1">Phí giao hàng</p>
               <p className="font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(viewingTicket.shippingFee)}</p>
             </div>
             <div>
-              <p className="text-xs opacity-50 mb-1">Tiền thu hộ (COD)</p>
+              <p className="text-xs opacity-60 mb-1">Tiền thu hộ (COD)</p>
               <p className="font-medium" style={{ fontFamily: "'Inter', sans-serif", color: viewingTicket.codAmount > 0 ? BRASS : INK }}>{vnd(viewingTicket.codAmount)}</p>
             </div>
           </div>
@@ -7185,7 +7207,7 @@ function Stocktake({ products, setProducts, stocktakes, setStocktakes, currentUs
   const diffCount = lineList.filter((l) => l.countedQty !== l.systemQty).length;
 
   const finishStocktake = () => {
-    if (lineList.length === 0) { alert("Chưa kiểm sản phẩm nào."); return; }
+    if (lineList.length === 0) { notify("Chưa kiểm sản phẩm nào."); return; }
     const code = nextStocktakeCode(stocktakes);
     setProducts((prev) => prev.map((p) => {
       const line = lines[p.id];
@@ -7224,7 +7246,7 @@ function Stocktake({ products, setProducts, stocktakes, setStocktakes, currentUs
           </button>
         </div>
         {stocktakes.length === 0 ? (
-          <p className="text-sm opacity-50 text-center py-16">Chưa có phiếu kiểm kê nào.</p>
+          <p className="text-sm opacity-60 text-center py-16">Chưa có phiếu kiểm kê nào.</p>
         ) : (
           <div className="space-y-2.5">
             {stocktakes.map((s) => {
@@ -7234,10 +7256,10 @@ function Stocktake({ products, setProducts, stocktakes, setStocktakes, currentUs
                   <div className="flex items-center justify-between gap-3 flex-wrap">
                     <div>
                       <p className="font-medium" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{s.code}</p>
-                      <p className="text-xs opacity-50">{formatDateTime(s.createdAt)} · {s.createdBy}</p>
+                      <p className="text-xs opacity-60">{formatDateTime(s.createdAt)} · {s.createdBy}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm" style={{ color: INK }}>{s.lines.length} sản phẩm kiểm</p>
+                      <p className="text-sm" style={{ color: TEXT }}>{s.lines.length} sản phẩm kiểm</p>
                       <p className="text-xs" style={{ color: diffLines.length > 0 ? RUST : FOREST }}>{diffLines.length > 0 ? `${diffLines.length} sản phẩm lệch` : "Khớp sổ sách"}{s.warnings.length > 0 ? ` · ${s.warnings.length} cảnh báo` : ""}</p>
                     </div>
                   </div>
@@ -7249,19 +7271,19 @@ function Stocktake({ products, setProducts, stocktakes, setStocktakes, currentUs
 
         {viewingStocktake && (
           <Modal title={`Phiếu kiểm kê ${viewingStocktake.code}`} onClose={() => setViewingStocktake(null)} size="xl">
-            <p className="text-xs opacity-50 mb-4">{formatDateTime(viewingStocktake.createdAt)} · Thực hiện bởi {viewingStocktake.createdBy}{viewingStocktake.note ? ` · Ghi chú: ${viewingStocktake.note}` : ""}</p>
+            <p className="text-xs opacity-60 mb-4">{formatDateTime(viewingStocktake.createdAt)} · Thực hiện bởi {viewingStocktake.createdBy}{viewingStocktake.note ? ` · Ghi chú: ${viewingStocktake.note}` : ""}</p>
             <div className="rounded-md overflow-x-auto mb-4" style={{ border: `1px solid ${LINE}` }}>
               <table className="w-full text-sm" style={{ minWidth: 480 }}>
                 <thead><tr style={{ background: PAPER }}>
-                  <th className="text-left py-2 px-2 text-xs uppercase tracking-wider opacity-60">Sản phẩm</th>
-                  <th className="text-right py-2 px-2 text-xs uppercase tracking-wider opacity-60">Sổ sách</th>
-                  <th className="text-right py-2 px-2 text-xs uppercase tracking-wider opacity-60">Đã đếm</th>
-                  <th className="text-right py-2 px-2 text-xs uppercase tracking-wider opacity-60">Chênh lệch</th>
+                  <th className="text-left py-2 px-2 text-xs opacity-60 font-medium">Sản phẩm</th>
+                  <th className="text-right py-2 px-2 text-xs opacity-60 font-medium">Sổ sách</th>
+                  <th className="text-right py-2 px-2 text-xs opacity-60 font-medium">Đã đếm</th>
+                  <th className="text-right py-2 px-2 text-xs opacity-60 font-medium">Chênh lệch</th>
                 </tr></thead>
                 <tbody>
                   {viewingStocktake.lines.map((l, i) => (
-                    <tr key={i} style={{ borderTop: `1px dashed ${LINE}` }}>
-                      <td className="py-2 px-2">{l.productName}<span className="opacity-40 text-xs" style={{ fontFamily: "'Inter', sans-serif" }}> · {l.productCode}</span></td>
+                    <tr key={i} style={{ borderTop: `1px solid ${LINE}` }}>
+                      <td className="py-2 px-2">{l.productName}<span className="opacity-60 text-xs" style={{ fontFamily: "'Inter', sans-serif" }}> · {l.productCode}</span></td>
                       <td className="py-2 px-2 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>{l.systemQty}</td>
                       <td className="py-2 px-2 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>{l.countedQty}</td>
                       <td className="py-2 px-2 text-right font-medium" style={{ fontFamily: "'Inter', sans-serif", color: l.diff === 0 ? INK : l.diff > 0 ? FOREST : RUST }}>{l.diff > 0 ? `+${l.diff}` : l.diff}</td>
@@ -7272,7 +7294,7 @@ function Stocktake({ products, setProducts, stocktakes, setStocktakes, currentUs
             </div>
             {viewingStocktake.warnings.length > 0 && (
               <div className="p-3 rounded-md" style={{ background: `${RUST}0D`, border: `1px solid ${RUST}44` }}>
-                <p className="text-xs uppercase tracking-wider mb-2" style={{ color: RUST }}>Cảnh báo trong phiên kiểm kê này</p>
+                <p className="text-xs mb-2 font-medium" style={{ color: RUST }}>Cảnh báo trong phiên kiểm kê này</p>
                 <ul className="space-y-1">
                   {viewingStocktake.warnings.map((w, i) => <li key={i} className="text-xs opacity-80">• {w}</li>)}
                 </ul>
@@ -7290,7 +7312,7 @@ function Stocktake({ products, setProducts, stocktakes, setStocktakes, currentUs
       <button onClick={() => { resetSession(); setView("history"); }} className="text-sm mb-4 opacity-60 hover:opacity-100">← Quay lại lịch sử kiểm kê</button>
 
       <div className="p-5 rounded-md mb-5" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-        <p className="text-xs uppercase tracking-wider mb-3 opacity-60">Chế độ đếm</p>
+        <p className="text-xs mb-3 opacity-60 font-medium">Chế độ đếm</p>
         <div className="flex gap-2 mb-4 flex-wrap">
           {[{ id: "series", label: "Quét Series" }, { id: "barcode", label: "Quét Barcode" }, { id: "manual", label: "Nhập tay số lượng" }].map((m) => (
             <button key={m.id} onClick={() => { setMode(m.id); setScanInput(""); }} className="px-3.5 py-1.5 rounded-full text-sm border"
@@ -7306,7 +7328,7 @@ function Stocktake({ products, setProducts, stocktakes, setStocktakes, currentUs
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleScan(); } }}
               placeholder={mode === "series" ? "Quét hoặc gõ số series rồi Enter…" : "Quét hoặc gõ mã vạch rồi Enter…"}
               className="w-full border rounded-md py-2.5 px-3 text-sm" style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} />
-            <p className="text-xs opacity-50 mt-1.5">{mode === "series" ? "Mỗi số series quét được sẽ cộng 1 vào tồn đếm của đúng sản phẩm sở hữu series đó." : "Mỗi lần quét trùng 1 mã vạch sẽ cộng thêm 1 vào số lượng đếm của sản phẩm có mã vạch đó."}</p>
+            <p className="text-xs opacity-60 mt-1.5">{mode === "series" ? "Mỗi số series quét được sẽ cộng 1 vào tồn đếm của đúng sản phẩm sở hữu series đó." : "Mỗi lần quét trùng 1 mã vạch sẽ cộng thêm 1 vào số lượng đếm của sản phẩm có mã vạch đó."}</p>
           </div>
         )}
         {mode === "manual" && (
@@ -7316,7 +7338,7 @@ function Stocktake({ products, setProducts, stocktakes, setStocktakes, currentUs
 
       {warnings.length > 0 && (
         <div className="p-4 rounded-md mb-5" style={{ background: `${RUST}0D`, border: `1px solid ${RUST}44` }}>
-          <p className="text-xs uppercase tracking-wider mb-2" style={{ color: RUST }}>Cảnh báo cần kiểm tra thủ công ({warnings.length})</p>
+          <p className="text-xs mb-2 font-medium" style={{ color: RUST }}>Cảnh báo cần kiểm tra thủ công ({warnings.length})</p>
           <ul className="space-y-1 max-h-40 overflow-y-auto">
             {warnings.map((w) => <li key={w.id} className="text-xs opacity-80">• {w.message}</li>)}
           </ul>
@@ -7325,26 +7347,26 @@ function Stocktake({ products, setProducts, stocktakes, setStocktakes, currentUs
 
       <div className="p-5 rounded-md mb-5" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
         <div className="flex items-center justify-between mb-3">
-          <p className="text-xs uppercase tracking-wider opacity-60">Kết quả kiểm kê ({lineList.length} sản phẩm{diffCount > 0 ? ` · ${diffCount} lệch` : ""})</p>
+          <p className="text-xs opacity-60 font-medium">Kết quả kiểm kê ({lineList.length} sản phẩm{diffCount > 0 ? ` · ${diffCount} lệch` : ""})</p>
         </div>
         {lineList.length === 0 ? (
-          <p className="text-sm opacity-50 text-center py-10">Chưa có sản phẩm nào được đếm — bắt đầu quét hoặc chọn sản phẩm ở trên.</p>
+          <p className="text-sm opacity-60 text-center py-10">Chưa có sản phẩm nào được đếm — bắt đầu quét hoặc chọn sản phẩm ở trên.</p>
         ) : (
           <div className="rounded-md overflow-x-auto" style={{ border: `1px solid ${LINE}` }}>
             <table className="w-full text-sm" style={{ minWidth: 520 }}>
               <thead><tr style={{ background: PAPER }}>
-                <th className="text-left py-2 px-2 text-xs uppercase tracking-wider opacity-60">Sản phẩm</th>
-                <th className="text-right py-2 px-2 text-xs uppercase tracking-wider opacity-60">Sổ sách</th>
-                <th className="text-right py-2 px-2 text-xs uppercase tracking-wider opacity-60">Đã đếm</th>
-                <th className="text-right py-2 px-2 text-xs uppercase tracking-wider opacity-60">Chênh lệch</th>
+                <th className="text-left py-2 px-2 text-xs opacity-60 font-medium">Sản phẩm</th>
+                <th className="text-right py-2 px-2 text-xs opacity-60 font-medium">Sổ sách</th>
+                <th className="text-right py-2 px-2 text-xs opacity-60 font-medium">Đã đếm</th>
+                <th className="text-right py-2 px-2 text-xs opacity-60 font-medium">Chênh lệch</th>
                 <th className="py-2 px-2"></th>
               </tr></thead>
               <tbody>
                 {lineList.map((l) => {
                   const diff = l.countedQty - l.systemQty;
                   return (
-                    <tr key={l.productId} style={{ borderTop: `1px dashed ${LINE}` }}>
-                      <td className="py-2 px-2">{l.productName}<span className="opacity-40 text-xs" style={{ fontFamily: "'Inter', sans-serif" }}> · {l.productCode}</span></td>
+                    <tr key={l.productId} style={{ borderTop: `1px solid ${LINE}` }}>
+                      <td className="py-2 px-2">{l.productName}<span className="opacity-60 text-xs" style={{ fontFamily: "'Inter', sans-serif" }}> · {l.productCode}</span></td>
                       <td className="py-2 px-2 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>{l.systemQty}</td>
                       <td className="py-2 px-2 text-right">
                         {mode === "manual" ? (
@@ -7355,7 +7377,7 @@ function Stocktake({ products, setProducts, stocktakes, setStocktakes, currentUs
                         )}
                       </td>
                       <td className="py-2 px-2 text-right font-medium" style={{ fontFamily: "'Inter', sans-serif", color: diff === 0 ? INK : diff > 0 ? FOREST : RUST }}>{diff > 0 ? `+${diff}` : diff}</td>
-                      <td className="py-2 px-2 text-right"><button onClick={() => removeLine(l.productId)} className="p-1 rounded-md hover:bg-black/5 opacity-50"><X size={13} /></button></td>
+                      <td className="py-2 px-2 text-right"><button onClick={() => removeLine(l.productId)} className="p-1 rounded-md hover:bg-black/5 opacity-60"><X size={13} /></button></td>
                     </tr>
                   );
                 })}
@@ -7396,8 +7418,8 @@ function RepairTickets({ repairTickets, setRepairTickets, currentUser, addLog })
     setView("new");
   };
   const submitTicket = () => {
-    if (!form.customerName.trim()) { alert("Vui lòng nhập tên khách hàng."); return; }
-    if (!form.deviceName.trim()) { alert("Vui lòng nhập tên thiết bị/sản phẩm cần sửa."); return; }
+    if (!form.customerName.trim()) { notify("Vui lòng nhập tên khách hàng."); return; }
+    if (!form.deviceName.trim()) { notify("Vui lòng nhập tên thiết bị/sản phẩm cần sửa."); return; }
     if (editingId) {
       setRepairTickets((prev) => prev.map((t) => (t.id === editingId ? normalizeRepairTicket({ ...t, ...form }) : t)));
       addLog("Sửa thông tin phiếu sửa chữa", `${form.customerName} · ${form.deviceName}`);
@@ -7438,7 +7460,7 @@ function RepairTickets({ repairTickets, setRepairTickets, currentUser, addLog })
           <Field label="Số điện thoại"><input className={inputCls} style={{ borderColor: LINE }} value={form.customerPhone} onChange={(e) => setForm({ ...form, customerPhone: e.target.value })} /></Field>
         </div>
         <Field label="Địa chỉ khách hàng"><input className={inputCls} style={{ borderColor: LINE }} value={form.customerAddress} onChange={(e) => setForm({ ...form, customerAddress: e.target.value })} /></Field>
-        <div className="my-3" style={{ borderTop: `1px dashed ${LINE}` }} />
+        <div className="my-3" style={{ borderTop: `1px solid ${LINE}` }} />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <Field label="Tên thiết bị / sản phẩm"><input className={inputCls} style={{ borderColor: LINE }} value={form.deviceName} onChange={(e) => setForm({ ...form, deviceName: e.target.value })} placeholder="VD: PC Gaming, Laptop Dell..." /></Field>
           <Field label="Hãng / thương hiệu"><input className={inputCls} style={{ borderColor: LINE }} value={form.deviceBrand} onChange={(e) => setForm({ ...form, deviceBrand: e.target.value })} /></Field>
@@ -7485,7 +7507,7 @@ function RepairTickets({ repairTickets, setRepairTickets, currentUser, addLog })
         </button>
       </div>
       {filtered.length === 0 ? (
-        <p className="text-sm opacity-50 text-center py-16">Chưa có phiếu dịch vụ sửa chữa nào.</p>
+        <p className="text-sm opacity-60 text-center py-16">Chưa có phiếu dịch vụ sửa chữa nào.</p>
       ) : (
         <div className="space-y-2.5">
           {filtered.map((t) => {
@@ -7495,9 +7517,9 @@ function RepairTickets({ repairTickets, setRepairTickets, currentUser, addLog })
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div>
                     <p className="font-medium" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{t.code}</p>
-                    <p className="text-xs opacity-50">{t.customerName} · {t.deviceName} · {formatDateTime(t.createdAt)}</p>
+                    <p className="text-xs opacity-60">{t.customerName} · {t.deviceName} · {formatDateTime(t.createdAt)}</p>
                   </div>
-                  <span className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: `${st.color}1A`, color: st.color }}>{st.label}</span>
+                  <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: `${st.color}1A`, color: st.color }}>{st.label}</span>
                 </div>
               </button>
             );
@@ -7521,13 +7543,13 @@ function RepairTickets({ repairTickets, setRepairTickets, currentUser, addLog })
               <option value="A5">Khổ A5</option>
               <option value="A4">Khổ A4</option>
             </select>
-            <button onClick={() => doPrintReceipt(viewingTicket)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>
+            <button onClick={() => doPrintReceipt(viewingTicket)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>
               <Printer size={13} /> {viewingTicket.status === "received" ? "In phiếu tiếp nhận & báo giá" : "In phiếu báo giá thực tế"}
             </button>
           </div>
 
           {printBlockedUrl && (
-            <div className="mb-4 p-3 rounded-md text-xs" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44`, color: INK }}>
+            <div className="mb-4 p-3 rounded-md text-xs" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44`, color: TEXT }}>
               <p className="mb-2">Trình duyệt đã chặn cửa sổ in tự động. Bấm vào liên kết bên dưới để mở phiếu, sau đó tự bấm in (Ctrl+P / biểu tượng in) trong tab mới đó:</p>
               <a href={printBlockedUrl} target="_blank" rel="noreferrer" className="underline font-medium" style={{ color: BLUE }}>Mở phiếu tiếp nhận để in</a>
             </div>
@@ -7535,27 +7557,27 @@ function RepairTickets({ repairTickets, setRepairTickets, currentUser, addLog })
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 text-sm">
             <div>
-              <p><span className="opacity-50">Khách hàng: </span>{viewingTicket.customerName}</p>
-              <p><span className="opacity-50">SĐT: </span>{viewingTicket.customerPhone || "—"}</p>
-              <p><span className="opacity-50">Địa chỉ: </span>{viewingTicket.customerAddress || "—"}</p>
+              <p><span className="opacity-60">Khách hàng: </span>{viewingTicket.customerName}</p>
+              <p><span className="opacity-60">SĐT: </span>{viewingTicket.customerPhone || "—"}</p>
+              <p><span className="opacity-60">Địa chỉ: </span>{viewingTicket.customerAddress || "—"}</p>
             </div>
             <div>
-              <p><span className="opacity-50">Người lập: </span>{viewingTicket.createdBy}</p>
-              <p><span className="opacity-50">Ngày nhận: </span>{viewingTicket.receivedDate ? new Date(viewingTicket.receivedDate).toLocaleDateString("vi-VN") : "—"}</p>
-              <p><span className="opacity-50">Hẹn trả: </span>{viewingTicket.returnDate ? new Date(viewingTicket.returnDate).toLocaleDateString("vi-VN") : "—"}</p>
+              <p><span className="opacity-60">Người lập: </span>{viewingTicket.createdBy}</p>
+              <p><span className="opacity-60">Ngày nhận: </span>{viewingTicket.receivedDate ? new Date(viewingTicket.receivedDate).toLocaleDateString("vi-VN") : "—"}</p>
+              <p><span className="opacity-60">Hẹn trả: </span>{viewingTicket.returnDate ? new Date(viewingTicket.returnDate).toLocaleDateString("vi-VN") : "—"}</p>
             </div>
           </div>
           <div className="p-3 rounded-md mb-4 text-sm" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
-            <p><span className="opacity-50">Thiết bị: </span><b>{viewingTicket.deviceName}</b>{viewingTicket.deviceBrand ? ` · ${viewingTicket.deviceBrand}` : ""}{viewingTicket.serial ? ` · SN: ${viewingTicket.serial}` : ""}</p>
-            <p className="mt-1"><span className="opacity-50">Tình trạng/lỗi: </span>{viewingTicket.issueDescription || "—"}</p>
+            <p><span className="opacity-60">Thiết bị: </span><b>{viewingTicket.deviceName}</b>{viewingTicket.deviceBrand ? ` · ${viewingTicket.deviceBrand}` : ""}{viewingTicket.serial ? ` · SN: ${viewingTicket.serial}` : ""}</p>
+            <p className="mt-1"><span className="opacity-60">Tình trạng/lỗi: </span>{viewingTicket.issueDescription || "—"}</p>
           </div>
           <div className="grid grid-cols-2 gap-4 mb-2">
             <div>
-              <p className="text-xs opacity-50 mb-1">Chi phí dự kiến</p>
+              <p className="text-xs opacity-60 mb-1">Chi phí dự kiến</p>
               <p className="font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(viewingTicket.estimatedCost)}</p>
             </div>
             <div>
-              <p className="text-xs opacity-50 mb-1">Chi phí thực tế{viewingTicket.status !== "received" ? " (có thể sửa)" : ""}</p>
+              <p className="text-xs opacity-60 mb-1">Chi phí thực tế{viewingTicket.status !== "received" ? " (có thể sửa)" : ""}</p>
               {viewingTicket.status !== "received" ? (
                 <MoneyInput className={inputCls} style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} value={viewingTicket.actualCost} onChange={(v) => updateTicketField(viewingTicket, "actualCost", v)} />
               ) : (
@@ -7563,7 +7585,7 @@ function RepairTickets({ repairTickets, setRepairTickets, currentUser, addLog })
               )}
             </div>
           </div>
-          <p className="text-xs opacity-50 mb-4">
+          <p className="text-xs opacity-60 mb-4">
             VAT: <b>{VAT_OPTIONS.find((v) => v.id === viewingTicket.vat)?.label}</b>
             {viewingTicket.actualCost > 0 && viewingTicket.vat !== "KCT" && ` · trong đó thuế GTGT: ${vnd(Math.round(viewingTicket.actualCost * vatPercent(viewingTicket.vat) / (100 + vatPercent(viewingTicket.vat))))}`}
           </p>
@@ -7594,8 +7616,8 @@ function HelpdeskTickets({ helpdeskTickets, setHelpdeskTickets, products, setPro
     setView("new");
   };
   const submitTicket = () => {
-    if (!form.customerName.trim()) { alert("Vui lòng nhập tên khách hàng / đơn vị yêu cầu."); return; }
-    if (!form.description.trim()) { alert("Vui lòng mô tả yêu cầu hỗ trợ."); return; }
+    if (!form.customerName.trim()) { notify("Vui lòng nhập tên khách hàng / đơn vị yêu cầu."); return; }
+    if (!form.description.trim()) { notify("Vui lòng mô tả yêu cầu hỗ trợ."); return; }
     if (editingId) {
       setHelpdeskTickets((prev) => prev.map((t) => (t.id === editingId ? normalizeHelpdeskTicket({ ...t, ...form }) : t)));
       addLog("Sửa thông tin phiếu IT Helpdesk", `${form.customerName} · ${form.requestType}`);
@@ -7629,7 +7651,7 @@ function HelpdeskTickets({ helpdeskTickets, setHelpdeskTickets, products, setPro
   // chuyển báo giá thành đơn hàng. Mỗi phiếu chỉ chuyển được 1 lần (convertedOrderId).
   const convertToOrder = (ticket) => {
     if (ticket.convertedOrderId) return;
-    if (!ticket.price || ticket.price <= 0) { alert("Vui lòng nhập giá dịch vụ trước khi chuyển thành đơn bán."); return; }
+    if (!ticket.price || ticket.price <= 0) { notify("Vui lòng nhập giá dịch vụ trước khi chuyển thành đơn bán."); return; }
     let customerId = "";
     const normName = (s) => (s || "").trim().toLowerCase();
     const existingCust = customers.find((c) => normName(c.name) === normName(ticket.customerName) && (!ticket.customerPhone || !c.phone || normalizePhone(c.phone) === normalizePhone(ticket.customerPhone)));
@@ -7671,7 +7693,7 @@ function HelpdeskTickets({ helpdeskTickets, setHelpdeskTickets, products, setPro
           <Field label="Số điện thoại"><input className={inputCls} style={{ borderColor: LINE }} value={form.customerPhone} onChange={(e) => setForm({ ...form, customerPhone: e.target.value })} /></Field>
         </div>
         <Field label="Địa chỉ"><input className={inputCls} style={{ borderColor: LINE }} value={form.customerAddress} onChange={(e) => setForm({ ...form, customerAddress: e.target.value })} /></Field>
-        <div className="my-3" style={{ borderTop: `1px dashed ${LINE}` }} />
+        <div className="my-3" style={{ borderTop: `1px solid ${LINE}` }} />
         <Field label="Loại yêu cầu">
           <div className="flex gap-2 flex-wrap">
             {HELPDESK_TYPES.map((tp) => (
@@ -7729,7 +7751,7 @@ function HelpdeskTickets({ helpdeskTickets, setHelpdeskTickets, products, setPro
         </button>
       </div>
       {filtered.length === 0 ? (
-        <p className="text-sm opacity-50 text-center py-16">Chưa có phiếu IT Helpdesk nào.</p>
+        <p className="text-sm opacity-60 text-center py-16">Chưa có phiếu IT Helpdesk nào.</p>
       ) : (
         <div className="space-y-2.5">
           {filtered.map((t) => {
@@ -7739,9 +7761,9 @@ function HelpdeskTickets({ helpdeskTickets, setHelpdeskTickets, products, setPro
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div>
                     <p className="font-medium" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{t.code}</p>
-                    <p className="text-xs opacity-50">{t.customerName} · {t.requestType}{t.assignee ? ` · Người xử lý: ${t.assignee}` : ""} · {formatDateTime(t.createdAt)}</p>
+                    <p className="text-xs opacity-60">{t.customerName} · {t.requestType}{t.assignee ? ` · Người xử lý: ${t.assignee}` : ""} · {formatDateTime(t.createdAt)}</p>
                   </div>
-                  <span className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: `${st.color}1A`, color: st.color }}>{st.label}</span>
+                  <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: `${st.color}1A`, color: st.color }}>{st.label}</span>
                 </div>
               </button>
             );
@@ -7765,13 +7787,13 @@ function HelpdeskTickets({ helpdeskTickets, setHelpdeskTickets, products, setPro
               <option value="A5">Khổ A5</option>
               <option value="A4">Khổ A4</option>
             </select>
-            <button onClick={() => doPrint(viewingTicket)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>
+            <button onClick={() => doPrint(viewingTicket)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>
               <Printer size={13} /> In phiếu
             </button>
           </div>
 
           {printBlockedUrl && (
-            <div className="mb-4 p-3 rounded-md text-xs" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44`, color: INK }}>
+            <div className="mb-4 p-3 rounded-md text-xs" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44`, color: TEXT }}>
               <p className="mb-2">Trình duyệt đã chặn cửa sổ in tự động. Bấm vào liên kết bên dưới để mở phiếu, sau đó tự bấm in (Ctrl+P / biểu tượng in) trong tab mới đó:</p>
               <a href={printBlockedUrl} target="_blank" rel="noreferrer" className="underline font-medium" style={{ color: BLUE }}>Mở phiếu IT Helpdesk để in</a>
             </div>
@@ -7779,23 +7801,23 @@ function HelpdeskTickets({ helpdeskTickets, setHelpdeskTickets, products, setPro
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 text-sm">
             <div>
-              <p><span className="opacity-50">Khách hàng/Đơn vị: </span>{viewingTicket.customerName}</p>
-              <p><span className="opacity-50">SĐT: </span>{viewingTicket.customerPhone || "—"}</p>
-              <p><span className="opacity-50">Địa chỉ: </span>{viewingTicket.customerAddress || "—"}</p>
+              <p><span className="opacity-60">Khách hàng/Đơn vị: </span>{viewingTicket.customerName}</p>
+              <p><span className="opacity-60">SĐT: </span>{viewingTicket.customerPhone || "—"}</p>
+              <p><span className="opacity-60">Địa chỉ: </span>{viewingTicket.customerAddress || "—"}</p>
             </div>
             <div>
-              <p><span className="opacity-50">Người lập: </span>{viewingTicket.createdBy}</p>
-              <p><span className="opacity-50">Người xử lý: </span>{viewingTicket.assignee || "—"}</p>
-              <p><span className="opacity-50">Ngày tiếp nhận: </span>{viewingTicket.receivedDate ? new Date(viewingTicket.receivedDate).toLocaleDateString("vi-VN") : "—"}</p>
+              <p><span className="opacity-60">Người lập: </span>{viewingTicket.createdBy}</p>
+              <p><span className="opacity-60">Người xử lý: </span>{viewingTicket.assignee || "—"}</p>
+              <p><span className="opacity-60">Ngày tiếp nhận: </span>{viewingTicket.receivedDate ? new Date(viewingTicket.receivedDate).toLocaleDateString("vi-VN") : "—"}</p>
             </div>
           </div>
           <div className="p-3 rounded-md mb-4 text-sm" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
-            <p><span className="opacity-50">Loại yêu cầu: </span><b>{viewingTicket.requestType}</b></p>
-            <p className="mt-1"><span className="opacity-50">Mô tả: </span>{viewingTicket.description || "—"}</p>
+            <p><span className="opacity-60">Loại yêu cầu: </span><b>{viewingTicket.requestType}</b></p>
+            <p className="mt-1"><span className="opacity-60">Mô tả: </span>{viewingTicket.description || "—"}</p>
           </div>
           <div className="flex items-end gap-3 mb-4 flex-wrap">
             <div className="flex-1 min-w-[160px]">
-              <p className="text-xs opacity-50 mb-1">Giá dịch vụ</p>
+              <p className="text-xs opacity-60 mb-1">Giá dịch vụ</p>
               {viewingTicket.convertedOrderId ? (
                 <p className="font-medium" style={{ fontFamily: "'Inter', sans-serif", color: FOREST }}>{vnd(viewingTicket.price)}</p>
               ) : (
@@ -7805,7 +7827,7 @@ function HelpdeskTickets({ helpdeskTickets, setHelpdeskTickets, products, setPro
             {viewingTicket.convertedOrderId ? (
               <span className="text-xs px-3 py-2 rounded-md" style={{ background: `${FOREST}1A`, color: FOREST }}>Đã chuyển thành đơn bán</span>
             ) : (
-              <button onClick={() => convertToOrder(viewingTicket)} disabled={!viewingTicket.price || viewingTicket.price <= 0} className="flex items-center gap-1.5 text-sm px-3.5 py-2 rounded-md text-white disabled:opacity-40" style={{ background: FOREST }}>
+              <button onClick={() => convertToOrder(viewingTicket)} disabled={!viewingTicket.price || viewingTicket.price <= 0} className="flex items-center gap-1.5 text-sm px-3.5 py-2 rounded-md text-white disabled:opacity-40" style={{ background: INK }}>
                 <ArrowUpFromLine size={14} /> Chuyển thành đơn bán
               </button>
             )}
@@ -7899,7 +7921,7 @@ function ProductsSection({ products, setProducts, purchaseOrders, setPurchaseOrd
       {missingMoves.length > 0 && (
         <div className="mb-4 p-3 rounded-md flex items-start gap-2.5 flex-wrap" style={{ background: `${RUST}0D`, border: `1px solid ${RUST}55` }}>
           <AlertTriangle size={16} style={{ color: RUST }} className="mt-0.5 shrink-0" />
-          <p className="text-sm flex-1" style={{ color: INK }}>
+          <p className="text-sm flex-1" style={{ color: TEXT }}>
             <span className="font-medium" style={{ color: RUST }}>{missingMoves.length} phiếu kho bị thiếu so với chứng từ (tồn kho đang sai): </span>
             {missingMoves.slice(0, 6).map((x) => `${x.mv.type === "in" ? "nhập" : "xuất"} ${x.docNo} — ${x.productName}`).join(", ")}{missingMoves.length > 6 ? ` +${missingMoves.length - 6} phiếu khác` : ""}
           </p>
@@ -7909,7 +7931,7 @@ function ProductsSection({ products, setProducts, purchaseOrders, setPurchaseOrd
       {incompleteProducts.length > 0 && (
         <div className="mb-4 p-3 rounded-md flex items-start gap-2.5 flex-wrap" style={{ background: `${BRASS}10`, border: `1px solid ${BRASS}44` }}>
           <AlertTriangle size={16} style={{ color: BRASS }} className="mt-0.5 shrink-0" />
-          <p className="text-sm flex-1" style={{ color: INK }}>
+          <p className="text-sm flex-1" style={{ color: TEXT }}>
             <span className="font-medium" style={{ color: BRASS }}>{incompleteProducts.length} sản phẩm thiếu thông tin: </span>
             {incompleteProducts.slice(0, 5).map((p) => p.name).join(", ")}{incompleteProducts.length > 5 ? ` +${incompleteProducts.length - 5} sản phẩm khác` : ""} — cần bổ sung nhóm hàng/nhãn hiệu/giá nhập/giá lẻ.
           </p>
@@ -7959,21 +7981,21 @@ function ProvinceSelect({ value, onChange }) {
 
   return (
     <div className="relative" ref={boxRef}>
-      <button type="button" onClick={() => setOpen((o) => !o)} className="w-full text-left border-b-2 outline-none py-1.5 px-1 text-[15px]" style={{ borderColor: LINE, color: value ? INK : "#999" }}>
+      <button type="button" onClick={() => setOpen((o) => !o)} className="w-full text-left border-b-2 outline-none py-1.5 px-1 text-sm" style={{ borderColor: LINE, color: value ? INK : "#999" }}>
         {value || "Chọn Tỉnh/Thành phố"}
       </button>
       {open && (
         <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto rounded-md shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           <div className="p-2 sticky top-0 flex items-center gap-2" style={{ background: "#fff", borderBottom: `1px solid ${LINE}` }}>
             <div className="relative flex-1">
-              <Search size={13} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-40" />
+              <Search size={13} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-60" />
               <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm kiếm tỉnh/thành…"
                 className="w-full pl-7 pr-2 py-1.5 text-sm rounded-md border outline-none" style={{ borderColor: LINE }} />
             </div>
-            <button type="button" onClick={() => { setOpen(false); setQuery(""); }} title="Đóng" className="shrink-0 opacity-60 hover:opacity-100 p-1" style={{ color: INK }}><X size={16} /></button>
+            <button type="button" onClick={() => { setOpen(false); setQuery(""); }} title="Đóng" className="shrink-0 opacity-60 hover:opacity-100 p-1" style={{ color: TEXT }}><X size={16} /></button>
           </div>
-          {matches.length === 0 ? <p className="text-sm opacity-50 p-3">Không tìm thấy.</p> : matches.map((p) => (
-            <button key={p} onClick={() => { onChange(p); setQuery(""); setOpen(false); }} className="w-full text-left px-3 py-2 text-sm hover:bg-black/5" style={{ borderBottom: `1px dashed ${LINE}`, color: INK }}>{p}</button>
+          {matches.length === 0 ? <p className="text-sm opacity-60 p-3">Không tìm thấy.</p> : matches.map((p) => (
+            <button key={p} onClick={() => { onChange(p); setQuery(""); setOpen(false); }} className="w-full text-left px-3 py-2 text-sm hover:bg-black/5" style={{ borderBottom: `1px solid ${LINE}`, color: TEXT }}>{p}</button>
           ))}
         </div>
       )}
@@ -7991,26 +8013,26 @@ function WardSelect({ province, value, onChange }) {
   const boxRef = useClickAway(open, () => { setOpen(false); setQuery(""); });
 
   if (!province) {
-    return <p className="text-sm py-1.5 px-1 opacity-40 border-b-2" style={{ borderColor: LINE }}>Chọn Tỉnh/Thành phố trước</p>;
+    return <p className="text-sm py-1.5 px-1 opacity-60 border-b-2" style={{ borderColor: LINE }}>Chọn Tỉnh/Thành phố trước</p>;
   }
 
   return (
     <div className="relative" ref={boxRef}>
-      <button type="button" onClick={() => setOpen((o) => !o)} className="w-full text-left border-b-2 outline-none py-1.5 px-1 text-[15px]" style={{ borderColor: LINE, color: value ? INK : "#999" }}>
+      <button type="button" onClick={() => setOpen((o) => !o)} className="w-full text-left border-b-2 outline-none py-1.5 px-1 text-sm" style={{ borderColor: LINE, color: value ? INK : "#999" }}>
         {value || "Chọn Phường/Xã"}
       </button>
       {open && (
         <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto rounded-md shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           <div className="p-2 sticky top-0 flex items-center gap-2" style={{ background: "#fff", borderBottom: `1px solid ${LINE}` }}>
             <div className="relative flex-1">
-              <Search size={13} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-40" />
+              <Search size={13} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-60" />
               <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm kiếm phường/xã…"
                 className="w-full pl-7 pr-2 py-1.5 text-sm rounded-md border outline-none" style={{ borderColor: LINE }} />
             </div>
-            <button type="button" onClick={() => { setOpen(false); setQuery(""); }} title="Đóng" className="shrink-0 opacity-60 hover:opacity-100 p-1" style={{ color: INK }}><X size={16} /></button>
+            <button type="button" onClick={() => { setOpen(false); setQuery(""); }} title="Đóng" className="shrink-0 opacity-60 hover:opacity-100 p-1" style={{ color: TEXT }}><X size={16} /></button>
           </div>
-          {matches.length === 0 ? <p className="text-sm opacity-50 p-3">Không tìm thấy.</p> : matches.map((w) => (
-            <button key={w} onClick={() => { onChange(w); setQuery(""); setOpen(false); }} className="w-full text-left px-3 py-2 text-sm hover:bg-black/5" style={{ borderBottom: `1px dashed ${LINE}`, color: INK }}>{w}</button>
+          {matches.length === 0 ? <p className="text-sm opacity-60 p-3">Không tìm thấy.</p> : matches.map((w) => (
+            <button key={w} onClick={() => { onChange(w); setQuery(""); setOpen(false); }} className="w-full text-left px-3 py-2 text-sm hover:bg-black/5" style={{ borderBottom: `1px solid ${LINE}`, color: TEXT }}>{w}</button>
           ))}
         </div>
       )}
@@ -8037,8 +8059,8 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
   const pointsOf = (customer) => pointsForPhone(customer.phone, { orders, customers, pointAdjustments }, loyaltyCfg);
   const submitAdjust = (customer) => {
     const amount = Number(adjustAmount);
-    if (!amount) { alert("Nhập số điểm cần cộng (dương) hoặc trừ (âm)."); return; }
-    if (!adjustReason.trim()) { alert("Vui lòng nhập lý do điều chỉnh."); return; }
+    if (!amount) { notify("Nhập số điểm cần cộng (dương) hoặc trừ (âm)."); return; }
+    if (!adjustReason.trim()) { notify("Vui lòng nhập lý do điều chỉnh."); return; }
     setPointAdjustments((prev) => [...prev, {
       id: uid(), phone: normalizePhone(customer.phone), amount, reason: adjustReason.trim(),
       createdAt: new Date().toISOString(), createdBy: currentUser.fullName,
@@ -8092,7 +8114,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
   const openNewAddress = (customer) => setAddrForm({ customerId: customer.id, label: "Địa chỉ giao hàng", recipientName: customer.name, recipientPhone: customer.phone, province: "", ward: "", addressDetail: "", isDefault: false });
   const openEditAddress = (customer, addr) => setAddrForm({ customerId: customer.id, ...addr });
   const submitAddress = () => {
-    if (!addrForm.addressDetail && !addrForm.province) { alert("Vui lòng nhập ít nhất Tỉnh/Thành hoặc địa chỉ cụ thể."); return; }
+    if (!addrForm.addressDetail && !addrForm.province) { notify("Vui lòng nhập ít nhất Tỉnh/Thành hoặc địa chỉ cụ thể."); return; }
     setCustomers((prev) => prev.map((c) => {
       if (c.id !== addrForm.customerId) return c;
       const list = Array.isArray(c.addresses) ? c.addresses : [];
@@ -8142,7 +8164,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
 
   // Xuất Excel danh sách khách hàng (theo đúng bộ lọc/tìm kiếm đang áp dụng) kèm số liệu tổng hợp.
   const exportCustomerList = () => {
-    if (filtered.length === 0) { alert("Không có khách hàng nào để xuất."); return; }
+    if (filtered.length === 0) { notify("Không có khách hàng nào để xuất."); return; }
     const rows = filtered.map((c) => {
       const s = customerStats(c.id);
       const g = CUSTOMER_GROUPS.find((x) => x.id === c.group) || CUSTOMER_GROUPS[0];
@@ -8210,7 +8232,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
         addLog("Nhập khách hàng từ Excel", `${newCustomers.length} khách hàng mới${skipped.length > 0 ? ` · Bỏ qua ${skipped.length} mã đã tồn tại` : ""}`);
         setImportResult({ added: newCustomers.length, skipped });
       } catch (err) {
-        alert("Không đọc được file Excel — vui lòng dùng đúng file đã tải từ nút \"Xuất Excel\" (chỉ thêm dòng mới, không đổi tên cột) rồi thử lại.");
+        notify("Không đọc được file Excel — vui lòng dùng đúng file đã tải từ nút \"Xuất Excel\" (chỉ thêm dòng mới, không đổi tên cột) rồi thử lại.");
       }
       if (importFileRef.current) importFileRef.current.value = "";
     };
@@ -8220,7 +8242,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
   // Xuất Excel lịch sử mua hàng chi tiết của 1 khách cụ thể: từng đơn + từng sản phẩm trong đơn.
   const exportCustomerHistory = (cust) => {
     const s = customerStats(cust.id);
-    if (s.custOrders.length === 0) { alert("Khách hàng này chưa có đơn hàng nào."); return; }
+    if (s.custOrders.length === 0) { notify("Khách hàng này chưa có đơn hàng nào."); return; }
     const orderRows = s.custOrders.map((o) => {
       const c = orderCalc(o);
       const returns = o.returns || [];
@@ -8302,13 +8324,13 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
           <button onClick={() => setView("debt")} className="px-3.5 py-2.5 rounded-full text-sm border text-center relative whitespace-nowrap"
             style={{ borderColor: view === "debt" ? INK : LINE, background: view === "debt" ? INK : "transparent", color: view === "debt" ? "#fff" : INK }}>
             Công nợ khách hàng
-            {debtList.length > 0 && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: view === "debt" ? "rgba(255,255,255,0.25)" : `${RUST}1A`, color: view === "debt" ? "#fff" : RUST }}>{debtList.length}</span>}
+            {debtList.length > 0 && <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded-full" style={{ background: view === "debt" ? "rgba(255,255,255,0.25)" : `${RUST}1A`, color: view === "debt" ? "#fff" : RUST }}>{debtList.length}</span>}
           </button>
         </div>
         {view === "list" && (
           <div className="flex gap-2 flex-wrap">
             <div className="relative flex-1 max-w-xs">
-              <Search size={15} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50" />
+              <Search size={15} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-60" />
               <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm mã, tên, SĐT, MST, phụ trách…"
                 className="w-full pl-7 pr-2 py-2 text-sm rounded-md border outline-none" style={{ borderColor: LINE, background: "#fff" }} />
             </div>
@@ -8328,7 +8350,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
         <div>
           <div className="p-5 rounded-md mb-5 flex items-center justify-between flex-wrap gap-3" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
             <div>
-              <p className="text-xs uppercase tracking-wider opacity-55 mb-1">Tổng phải thu khách hàng</p>
+              <p className="text-xs opacity-60 mb-1 font-medium">Tổng phải thu khách hàng</p>
               <p className="text-2xl" style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>{vnd(grandDebtTotal)}</p>
             </div>
             <div className="flex gap-1.5">
@@ -8337,23 +8359,23 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
             </div>
           </div>
           {sortedDebt.length === 0 ? (
-            <p className="text-sm opacity-50 text-center py-16">Không có khách hàng nào đang nợ.</p>
+            <p className="text-sm opacity-60 text-center py-16">Không có khách hàng nào đang nợ.</p>
           ) : (
             <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
               <table className="w-full text-sm" style={{ minWidth: 700 }}>
                 <thead>
-                  <tr style={{ borderBottom: `2px solid ${INK}` }}>
+                  <tr style={{ borderBottom: `1px solid ${LINE}` }}>
                     {["Khách hàng", "Số đơn nợ", "Tổng nợ", "Hạn gần nhất"].map((h, i) => (
-                      <th key={i} className="text-left px-3 py-2.5 text-xs uppercase tracking-wider whitespace-nowrap" style={{ color: INK, opacity: 0.6 }}>{h}</th>
+                      <th key={i} className="text-left px-3 py-2.5 text-xs whitespace-nowrap font-medium" style={{ color: TEXT, opacity: 0.6 }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {sortedDebt.map((d) => (
-                    <tr key={d.customer.id} style={{ borderBottom: `1px dashed ${LINE}` }} className="hover:bg-black/[0.02] cursor-pointer" onClick={() => setViewingId(d.customer.id)}>
+                    <tr key={d.customer.id} style={{ borderBottom: `1px solid ${LINE}` }} className="hover:bg-black/[0.02] cursor-pointer" onClick={() => setViewingId(d.customer.id)}>
                       <td className="px-3 py-3">
-                        <p style={{ color: INK }}>{d.customer.name}</p>
-                        <p className="text-xs opacity-50" style={{ fontFamily: "'Inter', sans-serif" }}>{d.customer.code}</p>
+                        <p style={{ color: TEXT }}>{d.customer.name}</p>
+                        <p className="text-xs opacity-60" style={{ fontFamily: "'Inter', sans-serif" }}>{d.customer.code}</p>
                       </td>
                       <td className="px-3 py-3" style={{ fontFamily: "'Inter', sans-serif" }}>{d.orderCount}</td>
                       <td className="px-3 py-3 font-medium" style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>{vnd(d.debt)}</td>
@@ -8362,7 +8384,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
                           <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: d.nearestDue.overdue3 ? `${RUST}1A` : PAPER, color: d.nearestDue.overdue3 ? RUST : INK }}>
                             {d.nearestDue.overdue ? `Quá hạn ${-d.nearestDue.daysLeft} ngày` : d.nearestDue.daysLeft === 0 ? "Đến hạn hôm nay" : `Còn ${d.nearestDue.daysLeft} ngày`}
                           </span>
-                        ) : <span className="opacity-40">Không có hạn công nợ</span>}
+                        ) : <span className="opacity-60">Không có hạn công nợ</span>}
                       </td>
                     </tr>
                   ))}
@@ -8377,9 +8399,9 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
       <div className="rounded-md overflow-x-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
         <table className="w-full text-sm" style={{ minWidth: 760 }}>
           <thead>
-            <tr style={{ borderBottom: `2px solid ${INK}` }}>
+            <tr style={{ borderBottom: `1px solid ${LINE}` }}>
               {(isAdmin ? ["Mã KH", "Tên khách hàng", "SĐT", "Nhóm khách hàng", "Phụ trách", "Công nợ", "Tổng chi tiêu", "Tổng SL đơn", ""] : ["Mã KH", "Tên khách hàng", "SĐT", "Nhóm khách hàng", "Công nợ", "Tổng chi tiêu", "Tổng SL đơn", ""]).map((h, hi) => (
-                <th key={hi} className="text-left px-3 py-2.5 text-xs uppercase tracking-wider whitespace-nowrap" style={{ color: INK, opacity: 0.6 }}>{h}</th>
+                <th key={hi} className="text-left px-3 py-2.5 text-xs whitespace-nowrap font-medium" style={{ color: TEXT, opacity: 0.6 }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -8388,20 +8410,20 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
               const s = customerStats(c.id);
               const g = CUSTOMER_GROUPS.find((x) => x.id === c.group) || CUSTOMER_GROUPS[0];
               return (
-                <tr key={c.id} style={{ borderBottom: `1px dashed ${LINE}` }} className="hover:bg-black/[0.02]">
+                <tr key={c.id} style={{ borderBottom: `1px solid ${LINE}` }} className="hover:bg-black/[0.02]">
                   <td className="px-3 py-3 font-medium whitespace-nowrap">
                     <button onClick={() => setViewingId(c.id)} className="hover:underline" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{c.code}</button>
                   </td>
-                  <td className="px-3 py-3 whitespace-nowrap"><button onClick={() => setViewingId(c.id)} className="text-left hover:underline" style={{ color: INK }}>{c.name}</button></td>
+                  <td className="px-3 py-3 whitespace-nowrap"><button onClick={() => setViewingId(c.id)} className="text-left hover:underline" style={{ color: TEXT }}>{c.name}</button></td>
                   <td className="px-3 py-3 whitespace-nowrap opacity-70" style={{ fontFamily: "'Inter', sans-serif" }}>{c.phone || "—"}</td>
                   <td className="px-3 py-3 whitespace-nowrap">
-                    <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: `${BLUE}15`, color: BLUE }}>{g.label}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: `${BLUE}15`, color: BLUE }}>{g.label}</span>
                   </td>
                   {isAdmin && (
-                    <td className="px-3 py-3 whitespace-nowrap text-sm opacity-70">{c.assignedTo || <span className="opacity-40">—</span>}</td>
+                    <td className="px-3 py-3 whitespace-nowrap text-sm opacity-70">{c.assignedTo || <span className="opacity-60">—</span>}</td>
                   )}
                   <td className="px-3 py-3 text-right whitespace-nowrap font-medium" style={{ fontFamily: "'Inter', sans-serif", color: s.debt > 0 ? RUST : "inherit", opacity: s.debt > 0 ? 1 : 0.4 }}>{vnd(s.debt)}</td>
-                  <td className="px-3 py-3 text-right whitespace-nowrap font-medium" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(s.totalSpent)}</td>
+                  <td className="px-3 py-3 text-right whitespace-nowrap font-medium" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{vnd(s.totalSpent)}</td>
                   <td className="px-3 py-3 text-right whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>{s.orderCount}</td>
                   <td className="px-3 py-3">
                     {isAdmin && (
@@ -8416,7 +8438,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
                 </tr>
               );
             })}
-            {filtered.length === 0 && <tr><td colSpan={isAdmin ? 9 : 8} className="text-center py-10 opacity-50">Không có khách hàng nào.</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={isAdmin ? 9 : 8} className="text-center py-10 opacity-60">Không có khách hàng nào.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -8446,10 +8468,10 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
         return (
           <Modal title={viewingCustomer.name} onClose={() => { setViewingId(null); setDetailTab("orders"); }} size="xl">
             <div className="flex items-center gap-2 mb-4 flex-wrap">
-              <span className="text-xs px-2 py-1 rounded-md" style={{ background: PAPER, color: INK }}>{g.label}</span>
-              <span className="text-sm" style={{ color: INK, opacity: 0.6 }}>{viewingCustomer.code}</span>
+              <span className="text-xs px-2 py-1 rounded-md" style={{ background: PAPER, color: TEXT }}>{g.label}</span>
+              <span className="text-sm" style={{ color: TEXT, opacity: 0.6 }}>{viewingCustomer.code}</span>
               <div className="flex-1" />
-              <button onClick={() => exportCustomerHistory(viewingCustomer)} className="text-sm px-3 py-1.5 rounded-md border flex items-center gap-1.5" style={{ borderColor: LINE, color: INK }}><FileSpreadsheet size={14} /> Xuất Excel</button>
+              <button onClick={() => exportCustomerHistory(viewingCustomer)} className="text-sm px-3 py-1.5 rounded-md border flex items-center gap-1.5" style={{ borderColor: LINE, color: TEXT }}><FileSpreadsheet size={14} /> Xuất Excel</button>
               {isAdmin && (
                 <button onClick={() => { setViewingId(null); openEdit(viewingCustomer); }} className="text-sm px-3 py-1.5 rounded-md text-white flex items-center gap-1.5" style={{ background: INK }}><Pencil size={14} /> Sửa</button>
               )}
@@ -8465,18 +8487,18 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
                 ["Đại diện", [viewingCustomer.representativeName, viewingCustomer.representativeTitle].filter(Boolean).join(" · ")],
               ].map(([label, val]) => (
                 <div key={label} className="flex gap-4 py-2.5 min-w-0" style={{ borderTop: `1px solid ${LINE}` }}>
-                  <dt className="shrink-0 w-28" style={{ color: INK, opacity: 0.6 }}>{label}</dt>
-                  <dd className="font-medium truncate min-w-0" style={{ color: INK }} title={val || ""}>{val || "—"}</dd>
+                  <dt className="shrink-0 w-28" style={{ color: TEXT, opacity: 0.6 }}>{label}</dt>
+                  <dd className="font-medium truncate min-w-0" style={{ color: TEXT }} title={val || ""}>{val || "—"}</dd>
                 </div>
               ))}
               <div className="sm:col-span-2 flex gap-4 py-2.5" style={{ borderTop: `1px solid ${LINE}` }}>
-                <dt className="shrink-0 w-28" style={{ color: INK, opacity: 0.6 }}>Địa chỉ</dt>
-                <dd className="font-medium" style={{ color: INK }}>{fullAddress(viewingCustomer) || "—"}</dd>
+                <dt className="shrink-0 w-28" style={{ color: TEXT, opacity: 0.6 }}>Địa chỉ</dt>
+                <dd className="font-medium" style={{ color: TEXT }}>{fullAddress(viewingCustomer) || "—"}</dd>
               </div>
               {viewingCustomer.note && (
                 <div className="sm:col-span-2 flex gap-4 py-2.5" style={{ borderTop: `1px solid ${LINE}` }}>
-                  <dt className="shrink-0 w-28" style={{ color: INK, opacity: 0.6 }}>Ghi chú</dt>
-                  <dd style={{ color: INK }}>{viewingCustomer.note}</dd>
+                  <dt className="shrink-0 w-28" style={{ color: TEXT, opacity: 0.6 }}>Ghi chú</dt>
+                  <dd style={{ color: TEXT }}>{viewingCustomer.note}</dd>
                 </div>
               )}
             </dl>
@@ -8484,11 +8506,11 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
             <div className={"grid grid-cols-2 gap-2 mb-5 " + (loyaltyOn ? "sm:grid-cols-5" : "sm:grid-cols-4")}>
               <div className="px-3 py-2.5 rounded-lg" style={{ background: PAPER }}>
                 <p className="text-xs opacity-60 mb-0.5">Tổng chi tiêu</p>
-                <p className="text-base font-bold" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(s.totalSpent)}</p>
+                <p className="text-base font-bold" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{vnd(s.totalSpent)}</p>
               </div>
               <div className="px-3 py-2.5 rounded-lg" style={{ background: PAPER }}>
                 <p className="text-xs opacity-60 mb-0.5">Tổng SL đơn</p>
-                <p className="text-base font-bold" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{s.orderCount}</p>
+                <p className="text-base font-bold" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{s.orderCount}</p>
               </div>
               <div className="px-3 py-2.5 rounded-lg" style={{ background: PAPER }}>
                 <p className="text-xs opacity-60 mb-0.5">Công nợ hiện tại</p>
@@ -8496,7 +8518,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
               </div>
               <div className="px-3 py-2.5 rounded-lg" style={{ background: PAPER }}>
                 <p className="text-xs opacity-60 mb-0.5">Mua gần nhất</p>
-                <p className="text-base font-bold" style={{ color: INK }}>{s.lastOrderAt ? new Date(s.lastOrderAt).toLocaleDateString("vi-VN") : "—"}</p>
+                <p className="text-base font-bold" style={{ color: TEXT }}>{s.lastOrderAt ? new Date(s.lastOrderAt).toLocaleDateString("vi-VN") : "—"}</p>
               </div>
               {loyaltyOn && (() => {
                 const pts = pointsOf(viewingCustomer);
@@ -8534,13 +8556,13 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
                     <button onClick={() => submitAdjust(viewingCustomer)} className="px-3 py-1.5 rounded-md text-sm text-white" style={{ background: INK }}>Lưu</button>
                   </div>
                   {history.length > 0 && (
-                    <div className="space-y-1 pt-2" style={{ borderTop: `1px dashed ${LINE}` }}>
+                    <div className="space-y-1 pt-2" style={{ borderTop: `1px solid ${LINE}` }}>
                       {history.map((a) => (
                         <div key={a.id} className="flex items-center gap-2 text-xs">
                           <span style={{ color: a.amount > 0 ? FOREST : RUST, fontFamily: "'Inter', sans-serif" }}>{a.amount > 0 ? "+" : ""}{a.amount}</span>
                           <span className="opacity-70">{a.reason}</span>
-                          <span className="opacity-40">· {new Date(a.createdAt).toLocaleDateString("vi-VN")} · {a.createdBy}</span>
-                          <button onClick={() => removeAdjust(a)} className="ml-auto opacity-40 hover:opacity-100" title="Xoá"><X size={12} /></button>
+                          <span className="opacity-60">· {new Date(a.createdAt).toLocaleDateString("vi-VN")} · {a.createdBy}</span>
+                          <button onClick={() => removeAdjust(a)} className="ml-auto opacity-60 hover:opacity-100" title="Xoá"><X size={12} /></button>
                         </div>
                       ))}
                     </div>
@@ -8564,13 +8586,13 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
                     {s.custOrders.map((o) => {
                       const oc = orderCalc(o);
                       return (
-                        <tr key={o.id} style={{ borderTop: `1px dashed ${LINE}` }}>
+                        <tr key={o.id} style={{ borderTop: `1px solid ${LINE}` }}>
                           <td className="py-1.5 px-2" style={{ fontFamily: "'Inter', sans-serif" }}>
                             {goToDoc ? <button onClick={() => goToDoc(o.code)} className="hover:underline" style={{ color: BLUE }}>{o.code}</button> : <span style={{ color: BLUE }}>{o.code}</span>}
                           </td>
                           <td className="py-1.5 px-2"><Stamp status={o.status} /></td>
                           <td className="py-1.5 px-2 whitespace-nowrap">
-                            {o.status === "cancelled" ? <span className="opacity-40">—</span> : o.invoiceStatus === "issued" ? (
+                            {o.status === "cancelled" ? <span className="opacity-60">—</span> : o.invoiceStatus === "issued" ? (
                               <span style={{ color: FOREST, fontFamily: "'Inter', sans-serif" }}>{o.invoiceNo || "Đã xuất"}</span>
                             ) : <span style={{ color: RUST, opacity: 0.8 }}>Chờ</span>}
                           </td>
@@ -8580,7 +8602,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
                         </tr>
                       );
                     })}
-                    {s.custOrders.length === 0 && <tr><td colSpan={6} className="text-center py-6 opacity-40">Chưa có đơn hàng nào.</td></tr>}
+                    {s.custOrders.length === 0 && <tr><td colSpan={6} className="text-center py-6 opacity-60">Chưa có đơn hàng nào.</td></tr>}
                   </tbody>
                 </table>
               </div>
@@ -8594,21 +8616,21 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
                   </button>
                 </div>
                 {addresses.length === 0 ? (
-                  <p className="text-sm opacity-50 text-center py-10">Chưa có địa chỉ nào — khách hàng có thể có nhiều địa chỉ (giao hàng, hoá đơn, chi nhánh…).</p>
+                  <p className="text-sm opacity-60 text-center py-10">Chưa có địa chỉ nào — khách hàng có thể có nhiều địa chỉ (giao hàng, hoá đơn, chi nhánh…).</p>
                 ) : (
                   <div className="space-y-2.5">
                     {addresses.map((a) => (
                       <div key={a.id} className="p-3 rounded-md flex items-start justify-between gap-3 flex-wrap" style={{ border: `1px solid ${a.isDefault ? BLUE : LINE}`, background: a.isDefault ? `${BLUE}08` : "#fff" }}>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 flex-wrap mb-1">
-                            <span className="text-sm font-medium" style={{ color: INK }}>{a.label || "Địa chỉ"}</span>
-                            {a.isDefault && <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${BLUE}1A`, color: BLUE }}>Mặc định</span>}
+                            <span className="text-sm font-medium" style={{ color: TEXT }}>{a.label || "Địa chỉ"}</span>
+                            {a.isDefault && <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: `${BLUE}1A`, color: BLUE }}>Mặc định</span>}
                           </div>
-                          <p className="text-sm" style={{ color: INK }}>{a.recipientName || viewingCustomer.name}{a.recipientPhone ? ` · ${a.recipientPhone}` : ""}</p>
+                          <p className="text-sm" style={{ color: TEXT }}>{a.recipientName || viewingCustomer.name}{a.recipientPhone ? ` · ${a.recipientPhone}` : ""}</p>
                           <p className="text-sm opacity-70">{fullAddressOf(a) || "—"}</p>
                         </div>
                         <div className="flex gap-1.5 shrink-0">
-                          {!a.isDefault && <button onClick={() => setDefaultAddress(viewingCustomer, a.id)} className="text-xs px-2.5 py-1 rounded-md border" style={{ borderColor: LINE, color: INK }}>Đặt mặc định</button>}
+                          {!a.isDefault && <button onClick={() => setDefaultAddress(viewingCustomer, a.id)} className="text-xs px-2.5 py-1 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>Đặt mặc định</button>}
                           <button onClick={() => (a.isPrimary ? (() => { setViewingId(null); openEdit(viewingCustomer); })() : openEditAddress(viewingCustomer, a))} title={a.isPrimary ? "Sửa trong thông tin khách hàng" : "Sửa địa chỉ"} className="p-1.5 rounded-md hover:bg-black/5 opacity-60"><Pencil size={13} /></button>
                           {!a.isPrimary && <button onClick={() => removeAddress(viewingCustomer, a.id)} className="p-1.5 rounded-md hover:bg-black/5 opacity-60" style={{ color: RUST }}><Trash2 size={13} /></button>}
                         </div>
@@ -8641,7 +8663,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
             </Field>
           </div>
           <Field label="Địa chỉ cụ thể"><input className={inputCls} style={{ borderColor: LINE }} value={addrForm.addressDetail} onChange={(e) => setAddrForm({ ...addrForm, addressDetail: e.target.value })} placeholder="Số nhà, tên đường, thôn/khu vực…" /></Field>
-          <label className="flex items-center gap-2 text-sm mb-3 mt-1" style={{ color: INK }}>
+          <label className="flex items-center gap-2 text-sm mb-3 mt-1" style={{ color: TEXT }}>
             <input type="checkbox" checked={!!addrForm.isDefault} onChange={(e) => setAddrForm({ ...addrForm, isDefault: e.target.checked })} />
             Đặt làm địa chỉ mặc định
           </label>
@@ -8702,8 +8724,8 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
             </div>
           )}
 
-          <div className="my-3" style={{ borderTop: `1px dashed ${LINE}` }} />
-          <p className="text-xs uppercase tracking-wider mb-2 opacity-60">Địa chỉ</p>
+          <div className="my-3" style={{ borderTop: `1px solid ${LINE}` }} />
+          <p className="text-xs mb-2 opacity-60 font-medium">Địa chỉ</p>
           <div className="grid grid-cols-2 gap-4">
             <Field label="Tỉnh/Thành phố">
               <ProvinceSelect value={form.province} onChange={(v) => setForm({ ...form, province: v, ward: v !== form.province ? "" : form.ward })} />
@@ -8752,7 +8774,7 @@ function CustomerPicker({ customers, setCustomers, onPick, placeholder, currentU
   return (
     <div className="relative" ref={boxRef}>
       <div className="relative">
-        <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 opacity-40" />
+        <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 opacity-60" />
         <input
           value={query} onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
@@ -8760,7 +8782,7 @@ function CustomerPicker({ customers, setCustomers, onPick, placeholder, currentU
           className="w-full pl-8 pr-8 py-2.5 text-sm rounded-md border outline-none" style={{ borderColor: LINE, background: "#fff" }}
         />
         {(open || creatingNew) && (
-          <button type="button" onClick={() => { setOpen(false); setCreatingNew(false); }} title="Đóng bảng" className="absolute right-2 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100" style={{ color: INK }}>
+          <button type="button" onClick={() => { setOpen(false); setCreatingNew(false); }} title="Đóng bảng" className="absolute right-2 top-1/2 -translate-y-1/2 opacity-60 hover:opacity-100" style={{ color: TEXT }}>
             <X size={15} />
           </button>
         )}
@@ -8769,31 +8791,31 @@ function CustomerPicker({ customers, setCustomers, onPick, placeholder, currentU
         <div className="absolute z-20 mt-1 w-full max-h-72 overflow-y-auto rounded-md shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           {creatingNew ? (
             <div className="p-3">
-              <p className="text-xs uppercase tracking-wider mb-2 opacity-60">Tạo khách hàng mới</p>
+              <p className="text-xs mb-2 opacity-60 font-medium">Tạo khách hàng mới</p>
               <input autoFocus value={newForm.name} onChange={(e) => setNewForm({ ...newForm, name: e.target.value })} placeholder="Tên khách hàng"
                 className="w-full border rounded-md py-2 px-2.5 text-sm mb-2" style={{ borderColor: LINE }} />
               <input value={newForm.phone} onChange={(e) => setNewForm({ ...newForm, phone: e.target.value.replace(/\D/g, "") })} placeholder="Số điện thoại" inputMode="numeric"
                 className="w-full border rounded-md py-2 px-2.5 text-sm mb-3" style={{ borderColor: LINE }} />
               <div className="flex gap-2">
-                <button onMouseDown={cancelNew} className="flex-1 py-1.5 rounded-md text-sm border" style={{ borderColor: LINE, color: INK }}>Huỷ</button>
+                <button onMouseDown={cancelNew} className="flex-1 py-1.5 rounded-md text-sm border" style={{ borderColor: LINE, color: TEXT }}>Huỷ</button>
                 <button onMouseDown={saveNew} className="flex-1 py-1.5 rounded-md text-sm text-white" style={{ background: INK }}>Lưu &amp; chọn</button>
               </div>
             </div>
           ) : (
             <>
-              <button onMouseDown={startCreate} className="w-full text-left px-3 py-2 text-sm hover:bg-black/5 flex items-center gap-1.5 font-medium" style={{ borderBottom: `1px dashed ${LINE}`, color: BLUE }}>
+              <button onMouseDown={startCreate} className="w-full text-left px-3 py-2 text-sm hover:bg-black/5 flex items-center gap-1.5 font-medium" style={{ borderBottom: `1px solid ${LINE}`, color: BLUE }}>
                 <Plus size={14} /> Tạo khách hàng mới
               </button>
-              <button onMouseDown={() => { onPick(null); setQuery(""); setOpen(false); }} className="w-full text-left px-3 py-2 text-sm hover:bg-black/5 opacity-70" style={{ borderBottom: `1px dashed ${LINE}` }}>
+              <button onMouseDown={() => { onPick(null); setQuery(""); setOpen(false); }} className="w-full text-left px-3 py-2 text-sm hover:bg-black/5 opacity-70" style={{ borderBottom: `1px solid ${LINE}` }}>
                 Khách lẻ (không chọn khách hàng)
               </button>
               {matches.length === 0 ? (
-                <p className="text-sm opacity-50 p-3">Không tìm thấy khách hàng.</p>
+                <p className="text-sm opacity-60 p-3">Không tìm thấy khách hàng.</p>
               ) : matches.map((c) => (
                 <button key={c.id} onMouseDown={() => { onPick(c.id); setQuery(""); setOpen(false); }}
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-black/5 flex items-center justify-between gap-3" style={{ borderBottom: `1px dashed ${LINE}` }}>
-                  <span style={{ color: INK }}>{c.name}</span>
-                  <span className="opacity-50 text-xs whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>{c.phone}</span>
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-black/5 flex items-center justify-between gap-3" style={{ borderBottom: `1px solid ${LINE}` }}>
+                  <span style={{ color: TEXT }}>{c.name}</span>
+                  <span className="opacity-60 text-xs whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>{c.phone}</span>
                 </button>
               ))}
             </>
@@ -8840,7 +8862,7 @@ function SeriesPicker({ available, selected, setSelected, need, growable }) {
       )}
       <div className="relative" ref={boxRef}>
         <div className="relative">
-          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 opacity-40" />
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 opacity-60" />
           <input
             value={query} onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
             onFocus={() => setOpen(true)}
@@ -8848,7 +8870,7 @@ function SeriesPicker({ available, selected, setSelected, need, growable }) {
             className="w-full pl-8 pr-8 py-2 text-xs rounded-md border outline-none" style={{ borderColor: LINE, background: "#fff" }}
           />
           {open && (
-            <button type="button" onClick={() => setOpen(false)} title="Đóng" className="absolute right-2 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100" style={{ color: INK }}>
+            <button type="button" onClick={() => setOpen(false)} title="Đóng" className="absolute right-2 top-1/2 -translate-y-1/2 opacity-60 hover:opacity-100" style={{ color: TEXT }}>
               <X size={13} />
             </button>
           )}
@@ -8856,9 +8878,9 @@ function SeriesPicker({ available, selected, setSelected, need, growable }) {
         {open && (
           <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto rounded-md shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
             {matches.length === 0 ? (
-              <p className="text-xs opacity-50 p-2">Không tìm thấy series phù hợp.</p>
+              <p className="text-xs opacity-60 p-2">Không tìm thấy series phù hợp.</p>
             ) : (<>
-              <div className="sticky top-0 flex items-center justify-between px-3 py-1.5 text-[11px]" style={{ background: PAPER, borderBottom: `1px solid ${LINE}` }}>
+              <div className="sticky top-0 flex items-center justify-between px-3 py-1.5 text-xs" style={{ background: PAPER, borderBottom: `1px solid ${LINE}` }}>
                 <span className="opacity-60">Đã chọn {selected.length}/{need}</span>
                 {!full && <button type="button" onMouseDown={(e) => { e.preventDefault(); pickAll(); }} className="underline" style={{ color: BLUE }}>{growable ? `Chọn tất cả ${matches.filter((s) => !selected.includes(s.serial)).length} series` : `Chọn nhanh ${Math.min(need - selected.length, matches.filter((s) => !selected.includes(s.serial)).length)} series đầu`}</button>}
               </div>
@@ -8868,7 +8890,7 @@ function SeriesPicker({ available, selected, setSelected, need, growable }) {
                 return (
                   <label key={s.serial} onMouseDown={(e) => e.preventDefault()}
                     className={"flex items-center gap-2 px-3 py-1.5 text-xs " + (disabled ? "opacity-40" : "cursor-pointer hover:bg-black/5")}
-                    style={{ fontFamily: "'Inter', sans-serif", borderBottom: `1px dashed ${LINE}`, background: on ? `${BLUE}0D` : undefined }}>
+                    style={{ fontFamily: "'Inter', sans-serif", borderBottom: `1px solid ${LINE}`, background: on ? `${BLUE}0D` : undefined }}>
                     <input type="checkbox" checked={on} disabled={disabled} onChange={() => toggle(s.serial)} />
                     {s.serial}
                   </label>
@@ -8896,10 +8918,10 @@ function SalesItemsTable({ items, products, onUpdate, onRemove, role }) {
         </colgroup>
         <thead>
           <tr style={{ borderBottom: `1px solid ${LINE}`, background: PAPER }}>
-            <th colSpan={2} className="text-left px-3 py-2.5 text-[11px] uppercase tracking-wider opacity-60">Sản phẩm</th>
-            <th className="text-center px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-60">SL</th>
-            <th className="text-right pl-2 pr-4 py-2.5 text-[11px] uppercase tracking-wider opacity-60">Đơn giá</th>
-            <th className="text-right px-3 py-2.5 text-[11px] uppercase tracking-wider opacity-60">Thành tiền</th>
+            <th colSpan={2} className="text-left px-3 py-2.5 text-xs opacity-60 font-medium">Sản phẩm</th>
+            <th className="text-center px-2 py-2.5 text-xs opacity-60 font-medium">SL</th>
+            <th className="text-right pl-2 pr-4 py-2.5 text-xs opacity-60 font-medium">Đơn giá</th>
+            <th className="text-right px-3 py-2.5 text-xs opacity-60 font-medium">Thành tiền</th>
             <th></th>
           </tr>
         </thead>
@@ -8919,8 +8941,8 @@ function SalesItemsTable({ items, products, onUpdate, onRemove, role }) {
                   </td>
                   <td className="px-2 py-3 align-top">
                     <div className="min-h-[36px] flex flex-col justify-center">
-                      <div className="font-medium text-[13px] leading-snug" style={{ color: INK }}>{p?.name}</div>
-                      <div className="text-xs opacity-50">{p?.sku || p?.code}</div>
+                      <div className="font-medium text-[13px] leading-snug" style={{ color: TEXT }}>{p?.name}</div>
+                      <div className="text-xs opacity-60">{p?.sku || p?.code}</div>
                     </div>
                   </td>
                   <td className="px-1 py-3 align-top">
@@ -8932,14 +8954,14 @@ function SalesItemsTable({ items, products, onUpdate, onRemove, role }) {
                     <MoneyInput value={it.price} onChange={(v) => onUpdate(it.productId, { price: v === "" ? 0 : v })}
                       className="w-full border rounded-md h-9 px-3 text-right text-sm" style={{ borderColor: belowFloor ? RUST : LINE, fontFamily: "'Inter', sans-serif", color: belowFloor ? RUST : INK }} />
                     {p && (
-                      <div className="flex justify-end gap-2.5 mt-1 text-[11px]">
+                      <div className="flex justify-end gap-2.5 mt-1 text-xs">
                         <button type="button" onClick={() => onUpdate(it.productId, { price: p.wholesalePrice })} className="hover:underline" style={{ color: BLUE }}>Giá sỉ</button>
                         <button type="button" onClick={() => onUpdate(it.productId, { price: p.retailPrice })} className="hover:underline" style={{ color: BLUE }}>Giá lẻ</button>
                       </div>
                     )}
-                    {belowFloor && <span className="block text-[10px] mt-0.5" style={{ color: RUST }}>Dưới giá niêm yết tối thiểu ({vnd(floor)})</span>}
+                    {belowFloor && <span className="block text-xs mt-0.5" style={{ color: RUST }}>Dưới giá niêm yết tối thiểu ({vnd(floor)})</span>}
                   </td>
-                  <td className="px-3 py-3 align-top"><div className="h-9 flex items-center justify-end text-sm font-semibold whitespace-nowrap" style={{ color: INK }}>{vnd(orderLineTotal(it))}</div></td>
+                  <td className="px-3 py-3 align-top"><div className="h-9 flex items-center justify-end text-sm font-semibold whitespace-nowrap" style={{ color: TEXT }}>{vnd(orderLineTotal(it))}</div></td>
                   <td className="px-1 py-3 align-top"><button onClick={() => onRemove(it.productId)} title="Xoá dòng" className="h-9 flex items-center opacity-60 hover:opacity-100" style={{ color: RUST }}><X size={14} /></button></td>
                 </tr>
                 {p?.hasSeries && (
@@ -8947,7 +8969,7 @@ function SalesItemsTable({ items, products, onUpdate, onRemove, role }) {
                     <td></td>
                     <td colSpan={4} className="px-2 pb-3">
                       <div className="flex items-center gap-2 mb-1 text-xs">
-                        <span style={{ color: INK, opacity: 0.6 }}>Series {it.series.length}/{it.qty} · còn tồn {available.length}</span>
+                        <span style={{ color: TEXT, opacity: 0.6 }}>Series {it.series.length}/{it.qty} · còn tồn {available.length}</span>
                         {it.series.length < it.qty && (
                           <span title="Vẫn tạo được đơn, bổ sung series sau khi nhập hàng về" style={{ color: BRASS }}>· Chờ hàng</span>
                         )}
@@ -8959,7 +8981,7 @@ function SalesItemsTable({ items, products, onUpdate, onRemove, role }) {
               </React.Fragment>
             );
           })}
-          {items.length === 0 && <tr><td colSpan={6} className="text-center py-8 opacity-40 text-sm">Chưa có thông tin sản phẩm.</td></tr>}
+          {items.length === 0 && <tr><td colSpan={6} className="text-center py-8 opacity-60 text-sm">Chưa có thông tin sản phẩm.</td></tr>}
         </tbody>
       </table>
     </div>
@@ -8973,8 +8995,8 @@ function OrderProgressStepper({ order }) {
         <span className="w-6 h-6 rounded-full flex items-center justify-center shrink-0" style={{ background: RUST }}><X size={13} color="#fff" /></span>
         <div>
           <p className="text-sm font-medium" style={{ color: RUST }}>Đã huỷ</p>
-          {order.cancelledAt && <p className="text-[11px] opacity-60" style={{ fontFamily: "'Inter', sans-serif" }}>{formatDateTime(order.cancelledAt)}</p>}
-          {order.cancelReason && <p className="text-[11px] opacity-70 mt-0.5">Lý do: {order.cancelReason}</p>}
+          {order.cancelledAt && <p className="text-xs opacity-60" style={{ fontFamily: "'Inter', sans-serif" }}>{formatDateTime(order.cancelledAt)}</p>}
+          {order.cancelReason && <p className="text-xs opacity-70 mt-0.5">Lý do: {order.cancelReason}</p>}
         </div>
       </div>
     );
@@ -10033,10 +10055,10 @@ function QuoteItemsTable({ items, products, onUpdate, onRemove }) {
         <colgroup><col /><col style={{ width: 70 }} /><col style={{ width: 130 }} /><col style={{ width: 120 }} /><col style={{ width: 32 }} /></colgroup>
         <thead>
           <tr style={{ borderBottom: `1px solid ${LINE}`, background: PAPER }}>
-            <th className="text-left px-3 py-2.5 text-[11px] uppercase tracking-wider opacity-60">Sản phẩm</th>
-            <th className="text-center px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-60">SL</th>
-            <th className="text-right pl-2 pr-4 py-2.5 text-[11px] uppercase tracking-wider opacity-60">Đơn giá</th>
-            <th className="text-right px-3 py-2.5 text-[11px] uppercase tracking-wider opacity-60">Thành tiền</th>
+            <th className="text-left px-3 py-2.5 text-xs opacity-60 font-medium">Sản phẩm</th>
+            <th className="text-center px-2 py-2.5 text-xs opacity-60 font-medium">SL</th>
+            <th className="text-right pl-2 pr-4 py-2.5 text-xs opacity-60 font-medium">Đơn giá</th>
+            <th className="text-right px-3 py-2.5 text-xs opacity-60 font-medium">Thành tiền</th>
             <th></th>
           </tr>
         </thead>
@@ -10047,8 +10069,8 @@ function QuoteItemsTable({ items, products, onUpdate, onRemove }) {
               <tr key={it.productId} style={{ borderBottom: `1px solid ${LINE}` }}>
                 <td className="px-3 py-3 align-top">
                   <div className="min-h-[36px] flex flex-col justify-center">
-                    <div className="font-medium text-[13px] leading-snug" style={{ color: INK }}>{p?.name}</div>
-                    <div className="text-xs opacity-50">{p?.sku || p?.code}</div>
+                    <div className="font-medium text-[13px] leading-snug" style={{ color: TEXT }}>{p?.name}</div>
+                    <div className="text-xs opacity-60">{p?.sku || p?.code}</div>
                   </div>
                 </td>
                 <td className="px-1 py-3 align-top">
@@ -10060,12 +10082,12 @@ function QuoteItemsTable({ items, products, onUpdate, onRemove }) {
                   <MoneyInput value={it.price} onChange={(v) => onUpdate(it.productId, { price: v === "" ? 0 : v })}
                     className="w-full border rounded-md h-9 px-3 text-right text-sm" style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} />
                 </td>
-                <td className="px-3 py-3 align-top"><div className="h-9 flex items-center justify-end text-sm font-semibold whitespace-nowrap" style={{ color: INK }}>{vnd(it.qty * it.price)}</div></td>
+                <td className="px-3 py-3 align-top"><div className="h-9 flex items-center justify-end text-sm font-semibold whitespace-nowrap" style={{ color: TEXT }}>{vnd(it.qty * it.price)}</div></td>
                 <td className="px-1 py-3 align-top"><button onClick={() => onRemove(it.productId)} title="Xoá dòng" className="h-9 flex items-center opacity-60 hover:opacity-100" style={{ color: RUST }}><X size={14} /></button></td>
               </tr>
             );
           })}
-          {items.length === 0 && <tr><td colSpan={5} className="text-center py-8 opacity-40 text-sm">Chưa có thông tin sản phẩm.</td></tr>}
+          {items.length === 0 && <tr><td colSpan={5} className="text-center py-8 opacity-60 text-sm">Chưa có thông tin sản phẩm.</td></tr>}
         </tbody>
       </table>
     </div>
@@ -10132,12 +10154,12 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
   const quickCreateProduct = (data) => {
     const code = data.code.trim();
     if (products.some((p) => p.code.toLowerCase() === code.toLowerCase())) {
-      alert(`Mã vật tư "${code}" đã tồn tại — vui lòng dùng mã khác.`);
+      notify(`Mã vật tư "${code}" đã tồn tại — vui lòng dùng mã khác.`);
       return null;
     }
     const newSku = nextSKU(products);
     const dupSku = products.find((p) => p.sku.toLowerCase() === newSku.toLowerCase());
-    if (dupSku) { alert(`SKU "${newSku}" đã dùng cho sản phẩm "${dupSku.name}" (${dupSku.code}) — vui lòng thử lại.`); return null; }
+    if (dupSku) { notify(`SKU "${newSku}" đã dùng cho sản phẩm "${dupSku.name}" (${dupSku.code}) — vui lòng thử lại.`); return null; }
     const newProduct = normalizeProduct({
       id: uid(), code, name: data.name.trim(), unit: data.unit || UNITS[0], brand: data.brand || "",
       warrantyMonths: Number(data.warrantyMonths) || 0, vat: data.vat || "VAT10", sku: newSku,
@@ -10152,7 +10174,7 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
   const calc = quoteCalc({ items: form.items || [], vat: form.vat, orderDiscount: form.orderDiscount, discountType: form.discountType, shippingFee: form.shippingFee });
 
   const submit = () => {
-    if (!form.items || form.items.length === 0) { alert("Vui lòng thêm ít nhất một sản phẩm."); return; }
+    if (!form.items || form.items.length === 0) { notify("Vui lòng thêm ít nhất một sản phẩm."); return; }
     const cust = customers.find((c) => c.id === form.customerId);
     const custAddress = cust ? [cust.addressDetail, cust.ward, cust.province].filter(Boolean).join(", ") : "";
     if (editingQuoteId) {
@@ -10245,7 +10267,7 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
     <div>
       <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
         <div className="relative flex-1 max-w-xs">
-          <Search size={15} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50" />
+          <Search size={15} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-60" />
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm theo mã hoặc tên khách…"
             className="w-full pl-7 pr-2 py-2 text-sm rounded-md border outline-none" style={{ borderColor: LINE, background: "#fff" }} />
         </div>
@@ -10257,9 +10279,9 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
       <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "65vh" }}>
         <table className="w-full text-sm" style={{ minWidth: 920 }}>
           <thead>
-            <tr style={{ borderBottom: `2px solid ${INK}` }}>
+            <tr style={{ borderBottom: `1px solid ${LINE}` }}>
               {["Mã BG", "Ngày tạo", "Khách hàng", "Hạn hiệu lực", "Tổng tiền", "Trạng thái", "Đơn hàng", ""].map((h, hi) => (
-                <th key={hi} className="text-left px-4 py-3 text-xs uppercase tracking-wider whitespace-nowrap" style={{ color: INK, opacity: 0.6 }}>{h}</th>
+                <th key={hi} className="text-left px-4 py-3 text-xs whitespace-nowrap font-medium" style={{ color: TEXT, opacity: 0.6 }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -10270,14 +10292,14 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
               const effectiveStatus = q.status === "active" && exp.expired ? "expired" : q.status;
               const convertedOrder = q.convertedOrderId ? orders.find((o) => o.id === q.convertedOrderId) : null;
               return (
-                <tr key={q.id} style={{ borderBottom: `1px dashed ${LINE}` }} className="hover:bg-black/[0.02]">
+                <tr key={q.id} style={{ borderBottom: `1px solid ${LINE}` }} className="hover:bg-black/[0.02]">
                   <td className="px-4 py-3.5 font-medium whitespace-nowrap"><button onClick={() => setViewingId(q.id)} className="hover:underline" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{q.code}</button></td>
                   <td className="px-4 py-3.5 whitespace-nowrap opacity-80" style={{ fontFamily: "'Inter', sans-serif" }}>{formatDateTime(q.createdAt)}</td>
                   <td className="px-4 py-3.5 whitespace-nowrap">{q.customerName || "—"}</td>
                   <td className="px-4 py-3.5 whitespace-nowrap" style={{ color: exp.expired ? RUST : INK }}>{new Date(q.expiryDate).toLocaleDateString("vi-VN")}</td>
-                  <td className="px-4 py-3.5 text-right whitespace-nowrap font-medium" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(c.total)}</td>
+                  <td className="px-4 py-3.5 text-right whitespace-nowrap font-medium" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{vnd(c.total)}</td>
                   <td className="px-4 py-3.5 whitespace-nowrap">
-                    <span className="text-[11px] px-2 py-0.5 rounded-full" style={{
+                    <span className="text-xs px-2 py-0.5 rounded-full" style={{
                       background: effectiveStatus === "converted" ? `${FOREST}1A` : effectiveStatus === "cancelled" ? "rgba(0,0,0,0.08)" : effectiveStatus === "expired" ? `${RUST}1A` : `${BLUE}1A`,
                       color: effectiveStatus === "converted" ? FOREST : effectiveStatus === "cancelled" ? INK : effectiveStatus === "expired" ? RUST : BLUE,
                     }}>
@@ -10291,13 +10313,13 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
                   </td>
                   <td className="px-4 py-3.5 text-right">
                     {q.status === "active" && !exp.expired && (
-                      <button onClick={() => convertToOrder(q)} className="text-xs px-2.5 py-1 rounded-md text-white whitespace-nowrap" style={{ background: FOREST }}>Chuyển đơn hàng</button>
+                      <button onClick={() => convertToOrder(q)} className="text-xs px-2.5 py-1 rounded-md text-white whitespace-nowrap" style={{ background: INK }}>Chuyển đơn hàng</button>
                     )}
                   </td>
                 </tr>
               );
             })}
-            {filtered.length === 0 && <tr><td colSpan={8} className="text-center py-10 opacity-50">Chưa có báo giá nào.</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={8} className="text-center py-10 opacity-60">Chưa có báo giá nào.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -10308,7 +10330,7 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
             <div className="lg:col-span-2 space-y-4 min-w-0">
               <div className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-                <p className="text-sm font-semibold mb-3" style={{ color: INK }}>Khách hàng</p>
+                <p className="text-sm font-semibold mb-3" style={{ color: TEXT }}>Khách hàng</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Khách hàng">
               <FilterSearchSelect
@@ -10321,7 +10343,7 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
               />
             </Field>
             <Field label="Bán bởi">
-              <div className={inputCls} style={{ borderColor: LINE, background: "#F3F4F6", color: INK, display: "flex", alignItems: "center" }}>{form.seller}</div>
+              <div className={inputCls} style={{ borderColor: LINE, background: "#F3F4F6", color: TEXT, display: "flex", alignItems: "center" }}>{form.seller}</div>
             </Field>
           </div>
           {!form.customerId && (
@@ -10333,7 +10355,7 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
 
               </div>
               <div className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-                <p className="text-sm font-semibold mb-3" style={{ color: INK }}>Sản phẩm</p>
+                <p className="text-sm font-semibold mb-3" style={{ color: TEXT }}>Sản phẩm</p>
             <ProductPicker products={products} onPick={addItem} onQuickCreate={quickCreateProduct} brands={brands} />
                 <div className="mt-3">
           <QuoteItemsTable items={form.items || []} products={products} onUpdate={updateItem} onRemove={removeItem} />
@@ -10342,7 +10364,7 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
             </div>
             <div className="space-y-4 min-w-0 lg:sticky lg:top-0 self-start">
               <div className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-                <p className="text-sm font-semibold mb-3" style={{ color: INK }}>Thanh toán</p>
+                <p className="text-sm font-semibold mb-3" style={{ color: TEXT }}>Thanh toán</p>
             <Field label="Hiệu lực báo giá (số ngày)">
               <input type="number" min={1} value={form.validDays ?? 7}
                 onChange={(e) => setForm({ ...form, validDays: e.target.value === "" ? "" : Math.max(1, Number(e.target.value)) })}
@@ -10361,7 +10383,7 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
             <Field label="Phí giao hàng"><MoneyInput value={form.shippingFee} onChange={(v) => setForm({ ...form, shippingFee: v })} className={inputCls} style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} /></Field>
           <div className="p-3 rounded-md space-y-1.5 mb-3" style={{ background: PAPER }}>
             <div className="flex justify-between text-sm"><span className="opacity-60">Tạm tính</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(calc.subtotal)}</span></div>
-            <div className="flex justify-between text-sm font-semibold" style={{ color: INK }}><span>Tổng cộng</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(calc.total)}</span></div>
+            <div className="flex justify-between text-sm font-semibold" style={{ color: TEXT }}><span>Tổng cộng</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(calc.total)}</span></div>
           </div>
 
               </div>
@@ -10382,11 +10404,11 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
         return (
           <Modal title={`Báo giá ${viewingQuote.code}`} onClose={() => setViewingId(null)} size="xl">
             <div className="flex items-center gap-2 mb-4 flex-wrap">
-              <span className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: isExpired ? `${RUST}1A` : `${BLUE}1A`, color: isExpired ? RUST : BLUE }}>
+              <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: isExpired ? `${RUST}1A` : `${BLUE}1A`, color: isExpired ? RUST : BLUE }}>
                 Hiệu lực đến {new Date(viewingQuote.expiryDate).toLocaleDateString("vi-VN")}{isExpired ? " — đã hết hiệu lực" : ` (còn ${exp.daysLeft} ngày)`}
               </span>
-              {viewingQuote.status === "converted" && <span className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: `${FOREST}1A`, color: FOREST }}>Đã chuyển đơn hàng</span>}
-              {viewingQuote.status === "cancelled" && <span className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: "rgba(0,0,0,0.08)", color: INK }}>Đã huỷ</span>}
+              {viewingQuote.status === "converted" && <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: `${FOREST}1A`, color: FOREST }}>Đã chuyển đơn hàng</span>}
+              {viewingQuote.status === "cancelled" && <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: "rgba(0,0,0,0.08)", color: TEXT }}>Đã huỷ</span>}
             </div>
             <p className="text-sm mb-1"><b>Khách hàng:</b> {viewingQuote.customerName || "—"}{viewingQuote.customerPhone ? ` · ${viewingQuote.customerPhone}` : ""}</p>
             {viewingQuote.customerAddress && <p className="text-sm mb-1"><b>Địa chỉ:</b> {viewingQuote.customerAddress}</p>}
@@ -10396,7 +10418,7 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
             <div className="p-3 rounded-md space-y-1.5 my-4" style={{ background: PAPER }}>
               <div className="flex justify-between text-sm"><span className="opacity-60">Tạm tính</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(c.subtotal)}</span></div>
               {viewingQuote.orderDiscount > 0 && <div className="flex justify-between text-sm"><span className="opacity-60">Chiết khấu</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(c.discountAmount)}</span></div>}
-              <div className="flex justify-between text-sm font-semibold" style={{ color: INK }}><span>Tổng cộng</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(c.total)}</span></div>
+              <div className="flex justify-between text-sm font-semibold" style={{ color: TEXT }}><span>Tổng cộng</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(c.total)}</span></div>
             </div>
 
             {/* Báo giá hết hiệu lực: chỉ quản trị viên được kích hoạt lại hoặc sửa đổi */}
@@ -10409,10 +10431,10 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
                     <input type="number" min={1} value={reactivateDays} onChange={(e) => setReactivateDays(Math.max(1, Number(e.target.value) || 1))}
                       className="w-16 border rounded-md py-1 px-2 text-sm text-center" style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} />
                     <span className="text-xs opacity-70">ngày</span>
-                    <button onClick={() => reactivateQuote(viewingQuote, reactivateDays)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md text-white" style={{ background: FOREST }}>
+                    <button onClick={() => reactivateQuote(viewingQuote, reactivateDays)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md text-white" style={{ background: INK }}>
                       <RotateCcw size={13} /> Kích hoạt lại
                     </button>
-                    <button onClick={() => openEdit(viewingQuote)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>
+                    <button onClick={() => openEdit(viewingQuote)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>
                       <Pencil size={13} /> Sửa báo giá
                     </button>
                   </div>
@@ -10423,16 +10445,16 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
             )}
 
             <div className="flex gap-2 flex-wrap">
-              <button onClick={() => { setPrintPaperSize("A4"); setPrintBlockedUrl(null); setPrintModalOpen(true); }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>
+              <button onClick={() => { setPrintPaperSize("A4"); setPrintBlockedUrl(null); setPrintModalOpen(true); }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>
                 <Printer size={13} /> In báo giá
               </button>
               {viewingQuote.status === "active" && !exp.expired && (
-                <button onClick={() => convertToOrder(viewingQuote)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md text-white" style={{ background: FOREST }}>
+                <button onClick={() => convertToOrder(viewingQuote)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md text-white" style={{ background: INK }}>
                   <Check size={13} /> Chuyển thành đơn hàng
                 </button>
               )}
               {viewingQuote.status === "active" && (
-                <button onClick={() => openEdit(viewingQuote)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>
+                <button onClick={() => openEdit(viewingQuote)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>
                   <Pencil size={13} /> Sửa báo giá
                 </button>
               )}
@@ -10465,7 +10487,7 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
                   <Printer size={14} /> In ngay
                 </button>
                 {printBlockedUrl && (
-                  <div className="mt-3 p-3 rounded-md text-xs" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44`, color: INK }}>
+                  <div className="mt-3 p-3 rounded-md text-xs" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44`, color: TEXT }}>
                     <p className="mb-2">Trình duyệt đã chặn cửa sổ in tự động. Bấm vào liên kết bên dưới:</p>
                     <a href={printBlockedUrl} target="_blank" rel="noreferrer" className="underline font-medium" style={{ color: BLUE }}>Mở phiếu báo giá để in</a>
                   </div>
@@ -10616,7 +10638,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
   };
 
   const submit = () => {
-    if (itemsInvalid()) { alert("Vui lòng thêm ít nhất một sản phẩm vào đơn."); return; }
+    if (itemsInvalid()) { notify("Vui lòng thêm ít nhất một sản phẩm vào đơn."); return; }
     const now = new Date().toISOString();
     const itemsWithFulfilled = form.items.map((it) => {
       const p = products.find((x) => x.id === it.productId);
@@ -10697,16 +10719,16 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
     if (order && order.status === "cancelled") return;
     if (status === "shipping" || status === "delivered" || status === "done") {
       if (order && order.items.some((it) => !it.fulfilled)) {
-        alert("Đơn còn sản phẩm chờ hàng (chưa đủ số series) — vui lòng bổ sung series trước khi chuyển sang giao hàng.");
+        notify("Đơn còn sản phẩm chờ hàng (chưa đủ số series) — vui lòng bổ sung series trước khi chuyển sang giao hàng.");
         return;
       }
       if (order && order.approvalStatus === "pending") {
-        alert("Đơn này do CTV tạo và đang chờ quản trị viên duyệt — chưa thể chuyển sang giao hàng.");
+        notify("Đơn này do CTV tạo và đang chờ quản trị viên duyệt — chưa thể chuyển sang giao hàng.");
         return;
       }
     }
     if (status === "done" && order && orderCalc(order).remaining > 0) {
-      alert("Chỉ có thể chuyển sang \"Hoàn thành\" khi khách đã thanh toán đủ.");
+      notify("Chỉ có thể chuyển sang \"Hoàn thành\" khi khách đã thanh toán đủ.");
       return;
     }
     const now = new Date().toISOString();
@@ -11004,7 +11026,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
       if (newStatus === "done" && orderCalc(o).remaining > 0) { skipped++; return; }
       eligible.push(o.id);
     });
-    if (eligible.length === 0) { alert("Không có đơn nào đủ điều kiện để chuyển trạng thái."); return; }
+    if (eligible.length === 0) { notify("Không có đơn nào đủ điều kiện để chuyển trạng thái."); return; }
     const now = new Date().toISOString();
     setOrders((prev) => prev.map((o) => {
       if (!eligible.includes(o.id)) return o;
@@ -11016,14 +11038,14 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
     }));
     addLog("Đổi trạng thái đơn (hàng loạt)", `${eligible.length} đơn → ${STATUSES.find((s) => s.id === newStatus)?.label}${skipped > 0 ? ` · Bỏ qua ${skipped} đơn không đủ điều kiện` : ""}`);
     setSelectedIds(new Set());
-    if (skipped > 0) alert(`Đã chuyển ${eligible.length} đơn. Bỏ qua ${skipped} đơn không đủ điều kiện (còn sản phẩm chờ hàng / chưa duyệt / chưa thanh toán đủ / đã huỷ / trạng thái không hợp lệ).`);
+    if (skipped > 0) notify(`Đã chuyển ${eligible.length} đơn. Bỏ qua ${skipped} đơn không đủ điều kiện (còn sản phẩm chờ hàng / chưa duyệt / chưa thanh toán đủ / đã huỷ / trạng thái không hợp lệ).`);
   };
 
   // Xuất Excel: nếu có chọn dòng thì xuất đúng các dòng đã chọn, không thì xuất theo danh sách đang lọc/hiển thị hiện tại
   // (đã áp dụng sẵn: khoảng ngày, khách hàng, sản phẩm, nhân viên, trạng thái... qua bộ lọc phía trên).
   const exportOrders = () => {
     const list = selectedIds.size > 0 ? orders.filter((o) => selectedIds.has(o.id)) : visible;
-    if (list.length === 0) { alert("Không có đơn hàng nào để xuất."); return; }
+    if (list.length === 0) { notify("Không có đơn hàng nào để xuất."); return; }
     const summaryRows = list.map((o) => {
       const cust = customers.find((c) => c.id === o.customerId);
       const c = orderCalc(o);
@@ -11081,14 +11103,14 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
 
       <div className="flex items-center gap-2 mb-5 flex-wrap">
         <div className="relative flex-1 min-w-[220px] max-w-sm">
-          <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 opacity-40" />
+          <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 opacity-60" />
           <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Tìm theo mã đơn, tên hoặc số điện thoại khách…"
             className="w-full pl-8 pr-2 py-2 text-sm rounded-md border outline-none" style={{ borderColor: LINE, background: "#fff" }} />
         </div>
-        <button onClick={() => setShowFilters((s) => !s)} className="flex items-center gap-1.5 text-sm px-3.5 py-2 rounded-md border" style={{ borderColor: activeFilterCount ? INK : LINE, color: INK, background: showFilters ? PAPER : "#fff" }}>
-          <Filter size={14} /> Bộ lọc {activeFilterCount > 0 && <span className="text-[10px] px-1.5 rounded-full text-white" style={{ background: INK }}>{activeFilterCount}</span>}
+        <button onClick={() => setShowFilters((s) => !s)} className="flex items-center gap-1.5 text-sm px-3.5 py-2 rounded-md border" style={{ borderColor: activeFilterCount ? INK : LINE, color: TEXT, background: showFilters ? PAPER : "#fff" }}>
+          <Filter size={14} /> Bộ lọc {activeFilterCount > 0 && <span className="text-xs px-1.5 rounded-full text-white" style={{ background: INK }}>{activeFilterCount}</span>}
         </button>
-        {activeFilterCount > 0 && <button onClick={clearFilters} className="text-xs opacity-50 hover:opacity-100 underline">Xoá bộ lọc</button>}
+        {activeFilterCount > 0 && <button onClick={clearFilters} className="text-xs opacity-60 hover:opacity-100 underline">Xoá bộ lọc</button>}
       </div>
 
       {showFilters && (
@@ -11154,10 +11176,10 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
       <div key={orderSafePage} className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 300px)" }}>
         <table className="w-full text-sm" style={{ minWidth: 900 }}>
           <thead className="sticky top-0" style={{ zIndex: 2 }}>
-            <tr style={{ borderBottom: `2px solid ${INK}` }}>
+            <tr style={{ borderBottom: `1px solid ${LINE}` }}>
               <th className="px-3 py-2.5" style={{ background: "#fff" }}><input type="checkbox" title="Chọn tất cả đơn trong trang này" checked={pageAllSelected} onChange={toggleSelectAll} /></th>
               {["Mã đơn", "Ngày tạo", "Khách hàng", "Bán tại", "Trạng thái giao", "Xuất hoá đơn", "Tổng tiền", "Còn phải trả", ""].map((h, hi) => (
-                <th key={hi} className="text-left px-3 py-2.5 text-xs uppercase tracking-wider whitespace-nowrap" style={{ color: INK, opacity: 0.6, background: "#fff" }}>{h}</th>
+                <th key={hi} className="text-left px-3 py-2.5 text-xs whitespace-nowrap font-medium" style={{ color: TEXT, opacity: 0.6, background: "#fff" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -11166,7 +11188,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
               const cust = customers.find((c) => c.id === o.customerId);
               const c = orderCalc(o);
               return (
-                <tr key={o.id} style={{ borderBottom: `1px dashed ${LINE}` }} className="hover:bg-black/[0.02]">
+                <tr key={o.id} style={{ borderBottom: `1px solid ${LINE}` }} className="hover:bg-black/[0.02]">
                   <td className="px-3 py-3"><input type="checkbox" checked={selectedIds.has(o.id)} onChange={() => toggleSelect(o.id)} /></td>
                   <td className="px-3 py-3 font-medium whitespace-nowrap">
                     <button onClick={() => { setViewingId(o.id); setPayInput(""); }} className="hover:underline" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{o.code}</button>
@@ -11177,29 +11199,29 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-1.5">
                       <Stamp status={o.status} />
-                      {o.status !== "cancelled" && o.items.some((it) => !it.fulfilled) && <span className="text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider" style={{ background: `${BRASS}1A`, color: BRASS }}>Chờ hàng</span>}
-                      {o.status !== "cancelled" && o.approvalStatus === "pending" && <span className="text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider" style={{ background: `${RUST}1A`, color: RUST }}>Chờ duyệt</span>}
-                      {o.status !== "cancelled" && o.cancelRequest && <span className="text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider" style={{ background: `${RUST}1A`, color: RUST }}>Yêu cầu huỷ</span>}
-                      {o.status !== "cancelled" && o.returnRequest && <span className="text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider" style={{ background: `${BRASS}1A`, color: BRASS }}>Yêu cầu đổi trả</span>}
+                      {o.status !== "cancelled" && o.items.some((it) => !it.fulfilled) && <span className="text-xs px-1.5 py-0.5 rounded-md font-medium" style={{ background: `${BRASS}1A`, color: BRASS }}>Chờ hàng</span>}
+                      {o.status !== "cancelled" && o.approvalStatus === "pending" && <span className="text-xs px-1.5 py-0.5 rounded-md font-medium" style={{ background: `${RUST}1A`, color: RUST }}>Chờ duyệt</span>}
+                      {o.status !== "cancelled" && o.cancelRequest && <span className="text-xs px-1.5 py-0.5 rounded-md font-medium" style={{ background: `${RUST}1A`, color: RUST }}>Yêu cầu huỷ</span>}
+                      {o.status !== "cancelled" && o.returnRequest && <span className="text-xs px-1.5 py-0.5 rounded-md font-medium" style={{ background: `${BRASS}1A`, color: BRASS }}>Yêu cầu đổi trả</span>}
                     </div>
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap">
-                    <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: o.status === "cancelled" ? "rgba(0,0,0,0.08)" : o.invoiceStatus === "issued" ? `${FOREST}1A` : `${RUST}1A`, color: o.status === "cancelled" ? INK : o.invoiceStatus === "issued" ? FOREST : RUST, opacity: o.status === "cancelled" ? 0.6 : 1 }}>
+                    <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: o.status === "cancelled" ? "rgba(0,0,0,0.08)" : o.invoiceStatus === "issued" ? `${FOREST}1A` : `${RUST}1A`, color: o.status === "cancelled" ? INK : o.invoiceStatus === "issued" ? FOREST : RUST, opacity: o.status === "cancelled" ? 0.6 : 1 }}>
                       {o.status === "cancelled" ? "Huỷ" : o.invoiceStatus === "issued" ? `Đã xuất${o.invoiceNo ? ` · ${o.invoiceNo}` : ""}` : "Chờ xuất"}
                     </span>
                   </td>
-                  <td className="px-3 py-3 text-right whitespace-nowrap font-medium" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(c.payable)}</td>
+                  <td className="px-3 py-3 text-right whitespace-nowrap font-medium" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{vnd(c.payable)}</td>
                   <td className="px-3 py-3 text-right whitespace-nowrap font-medium" style={{ fontFamily: "'Inter', sans-serif", color: c.remaining > 0 ? RUST : FOREST }}>{vnd(c.remaining)}</td>
                   <td className="px-3 py-3">
                     {/* Chỉ tài khoản CHỦ (isOwner) mới xoá được đơn — QTV thường không thấy nút này */}
                     {currentUser.isOwner && (
-                      <button onClick={() => setDeletingOrder(o)} title="Xoá đơn hàng" className="opacity-50 hover:opacity-100" style={{ color: RUST }}><Trash2 size={14} /></button>
+                      <button onClick={() => setDeletingOrder(o)} title="Xoá đơn hàng" className="opacity-60 hover:opacity-100" style={{ color: RUST }}><Trash2 size={14} /></button>
                     )}
                   </td>
                 </tr>
               );
             })}
-            {visible.length === 0 && <tr><td colSpan={10} className="text-center py-10 opacity-50">Không có đơn hàng nào.</td></tr>}
+            {visible.length === 0 && <tr><td colSpan={10} className="text-center py-10 opacity-60">Không có đơn hàng nào.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -11211,7 +11233,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
             <div className="lg:col-span-2 space-y-5 min-w-0">
               <div className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-                <p className="text-sm font-semibold mb-3" style={{ color: INK }}>Khách hàng</p>
+                <p className="text-sm font-semibold mb-3" style={{ color: TEXT }}>Khách hàng</p>
                 <CustomerPicker customers={customers} setCustomers={setCustomers} currentUser={currentUser} onPick={(id) => {
                   const cust = customers.find((c) => c.id === id);
                   const def = customerDefaultAddress(cust);
@@ -11225,15 +11247,15 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                   return (
                     <div className="mt-2.5 p-3 rounded-md flex items-center justify-between" style={{ background: `${FOREST}0F`, border: `1px solid ${FOREST}44` }}>
                       <div>
-                        <p className="text-[10px] uppercase tracking-wider opacity-60 mb-0.5">Khách hàng</p>
-                        <p className="text-sm font-semibold" style={{ color: INK }}>{cust?.name}</p>
+                        <p className="text-xs opacity-60 mb-0.5 font-medium">Khách hàng</p>
+                        <p className="text-sm font-semibold" style={{ color: TEXT }}>{cust?.name}</p>
                         {cust?.phone && <p className="text-xs opacity-60 mt-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>{cust.phone}</p>}
                       </div>
-                      <button onClick={() => setForm({ ...form, customerId: "", shippingAddress: null })} className="text-xs opacity-50 hover:opacity-100 underline shrink-0">Bỏ chọn</button>
+                      <button onClick={() => setForm({ ...form, customerId: "", shippingAddress: null })} className="text-xs opacity-60 hover:opacity-100 underline shrink-0">Bỏ chọn</button>
                     </div>
                   );
                 })()}
-                {!form.customerId && <p className="text-sm mt-2 opacity-50">Khách lẻ (chưa chọn khách hàng)</p>}
+                {!form.customerId && <p className="text-sm mt-2 opacity-60">Khách lẻ (chưa chọn khách hàng)</p>}
 
                 {form.customerId && (() => {
                   const cust = customers.find((c) => c.id === form.customerId);
@@ -11242,18 +11264,18 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                   return (
                     <div className="mt-2.5 p-3 rounded-md" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
                       <div className="flex items-center justify-between mb-1">
-                        <p className="text-[10px] uppercase tracking-wider opacity-60">Địa chỉ giao hàng</p>
+                        <p className="text-xs opacity-60 font-medium">Địa chỉ giao hàng</p>
                         {customerAddressBook(cust).length > 1 && (
                           <button type="button" onClick={() => setPickingAddress(true)} className="text-xs underline" style={{ color: BLUE }}>Thay đổi</button>
                         )}
                       </div>
                       {hasAddr ? (
                         <>
-                          <p className="text-sm" style={{ color: INK }}>{addr.recipientName || cust?.name || "—"}{addr.recipientPhone ? ` · ${addr.recipientPhone}` : ""}</p>
+                          <p className="text-sm" style={{ color: TEXT }}>{addr.recipientName || cust?.name || "—"}{addr.recipientPhone ? ` · ${addr.recipientPhone}` : ""}</p>
                           <p className="text-sm opacity-70">{[addr.addressDetail, addr.ward, addr.province].filter(Boolean).join(", ")}</p>
                         </>
                       ) : (
-                        <p className="text-sm opacity-50">Khách hàng chưa có địa chỉ nào — có thể thêm trong hồ sơ khách hàng (mục Khách hàng &gt; Địa chỉ).</p>
+                        <p className="text-sm opacity-60">Khách hàng chưa có địa chỉ nào — có thể thêm trong hồ sơ khách hàng (mục Khách hàng &gt; Địa chỉ).</p>
                       )}
                     </div>
                   );
@@ -11261,7 +11283,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
               </div>
 
               <div className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-                <p className="text-sm font-semibold mb-3" style={{ color: INK }}>Thông tin xuất hàng</p>
+                <p className="text-sm font-semibold mb-3" style={{ color: TEXT }}>Thông tin xuất hàng</p>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-x-3">
                   <Field label="Bán tại">
                     <select className={inputCls} style={{ borderColor: LINE }} value={form.branch} onChange={(e) => setForm({ ...form, branch: e.target.value })}>
@@ -11269,7 +11291,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                     </select>
                   </Field>
                   <Field label="Bán bởi">
-                    <div className={inputCls} style={{ borderColor: LINE, background: "#F3F4F6", color: INK, display: "flex", alignItems: "center" }}>{form.seller}</div>
+                    <div className={inputCls} style={{ borderColor: LINE, background: "#F3F4F6", color: TEXT, display: "flex", alignItems: "center" }}>{form.seller}</div>
                   </Field>
                   <Field label="Mã đơn"><input disabled className={inputCls} style={{ borderColor: LINE, opacity: 0.5 }} value={nextOrderCode(orders)} /></Field>
                   <Field label="Nguồn">
@@ -11295,7 +11317,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
               {belowListPriceItems.length > 0 && (
                 <div className="p-3 rounded-md flex items-start gap-2.5" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44` }}>
                   <AlertTriangle size={15} style={{ color: RUST }} className="mt-0.5 shrink-0" />
-                  <p className="text-xs" style={{ color: INK }}>
+                  <p className="text-xs" style={{ color: TEXT }}>
                     <span className="font-medium" style={{ color: RUST }}>Có sản phẩm bán dưới giá niêm yết: </span>
                     {belowListPriceItems.map((it) => products.find((p) => p.id === it.productId)?.name).join(", ")}.
                     {isAdmin ? " (Admin — vẫn tạo đơn bình thường)" : " Đơn sẽ cần Quản trị viên duyệt trước khi giao."}
@@ -11304,7 +11326,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
               )}
 
               <div className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-                <p className="text-sm font-semibold mb-3" style={{ color: INK }}>Sản phẩm</p>
+                <p className="text-sm font-semibold mb-3" style={{ color: TEXT }}>Sản phẩm</p>
                 <ProductPicker products={products} onPick={addItem} />
                 <div className="mt-3">
                   <SalesItemsTable items={form.items || []} products={products} onUpdate={updateItem} onRemove={removeItem} role={currentUser.role} />
@@ -11315,7 +11337,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
             <div className="space-y-4 min-w-0 lg:sticky lg:top-0 self-start">
               <div className="p-4 rounded-md space-y-2.5" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
                 <div className="text-sm">
-                  <div className="flex justify-between mb-1.5"><span className="opacity-60">Tổng tiền ({form.items?.length || 0} sản phẩm)</span><span style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(calc.subtotal)}</span></div>
+                  <div className="flex justify-between mb-1.5"><span className="opacity-60">Tổng tiền ({form.items?.length || 0} sản phẩm)</span><span style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{vnd(calc.subtotal)}</span></div>
                   <span className="opacity-60 block mb-1.5">VAT</span>
                   <div className="flex gap-1.5 flex-wrap">
                     {VAT_OPTIONS.map((v) => (
@@ -11332,25 +11354,25 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                   <span className="opacity-60">Chiết khấu</span>
                   <div className="flex items-center gap-1.5">
                     <div className="flex rounded-md border overflow-hidden" style={{ borderColor: LINE }}>
-                      <button type="button" onClick={() => setForm({ ...form, discountType: "amount" })} className="px-2 py-1 text-[11px]" style={{ background: (form.discountType || "amount") === "amount" ? INK : "transparent", color: (form.discountType || "amount") === "amount" ? "#fff" : INK }}>đ</button>
-                      <button type="button" onClick={() => setForm({ ...form, discountType: "percent" })} className="px-2 py-1 text-[11px]" style={{ background: form.discountType === "percent" ? INK : "transparent", color: form.discountType === "percent" ? "#fff" : INK }}>%</button>
+                      <button type="button" onClick={() => setForm({ ...form, discountType: "amount" })} className="px-2 py-1 text-xs" style={{ background: (form.discountType || "amount") === "amount" ? INK : "transparent", color: (form.discountType || "amount") === "amount" ? "#fff" : INK }}>đ</button>
+                      <button type="button" onClick={() => setForm({ ...form, discountType: "percent" })} className="px-2 py-1 text-xs" style={{ background: form.discountType === "percent" ? INK : "transparent", color: form.discountType === "percent" ? "#fff" : INK }}>%</button>
                     </div>
                     <MoneyInput value={form.orderDiscount} onChange={(v) => setForm({ ...form, orderDiscount: v })} className="w-20 border rounded-md py-1 px-2 text-right text-sm" style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} />
                   </div>
                 </div>
                 {calc.discountAmount > 0 && form.discountType === "percent" && (
-                  <div className="flex justify-between text-xs opacity-50"><span>Số tiền chiết khấu</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(calc.discountAmount)}</span></div>
+                  <div className="flex justify-between text-xs opacity-60"><span>Số tiền chiết khấu</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(calc.discountAmount)}</span></div>
                 )}
                 <div className="flex justify-between items-center text-sm">
                   <span className="opacity-60">Phí giao hàng</span>
                   <MoneyInput value={form.shippingFee} onChange={(v) => setForm({ ...form, shippingFee: v })} className="w-28 border rounded-md py-1 px-2 text-right text-sm" style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} />
                 </div>
-                <div className="flex justify-between text-sm font-semibold pt-2" style={{ borderTop: `1px dashed ${LINE}`, color: INK }}><span>Khách phải trả</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(calc.payable)}</span></div>
+                <div className="flex justify-between text-sm font-semibold pt-2" style={{ borderTop: `1px solid ${LINE}`, color: TEXT }}><span>Khách phải trả</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(calc.payable)}</span></div>
                 <div className="flex justify-between items-center text-sm">
                   <span className="opacity-60">Khách đã trả</span>
                   <MoneyInput value={form.paidAmount} onChange={(v) => setForm({ ...form, paidAmount: v })} className="w-28 border rounded-md py-1 px-2 text-right text-sm" style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} />
                 </div>
-                <div className="flex justify-between text-sm font-semibold pt-2" style={{ borderTop: `1px dashed ${LINE}`, color: calc.remaining > 0 ? RUST : FOREST }}><span>Còn phải trả</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(calc.remaining)}</span></div>
+                <div className="flex justify-between text-sm font-semibold pt-2" style={{ borderTop: `1px solid ${LINE}`, color: calc.remaining > 0 ? RUST : FOREST }}><span>Còn phải trả</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(calc.remaining)}</span></div>
               </div>
 
               <button onClick={submit} disabled={itemsInvalid()} className="w-full py-3 rounded-md text-white text-sm font-medium disabled:opacity-40" style={{ background: INK }}>{editingOrderId ? "Lưu thay đổi" : "Tạo đơn hàng"}</button>
@@ -11368,7 +11390,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
         return (
           <Modal title="Chọn địa chỉ giao hàng" onClose={() => setPickingAddress(false)}>
             {addrs.length === 0 ? (
-              <p className="text-sm opacity-50 text-center py-8">Khách hàng này chưa có địa chỉ nào trong sổ địa chỉ.</p>
+              <p className="text-sm opacity-60 text-center py-8">Khách hàng này chưa có địa chỉ nào trong sổ địa chỉ.</p>
             ) : (
               <div className="space-y-2">
                 {addrs.map((a) => (
@@ -11377,10 +11399,10 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                     setPickingAddress(false);
                   }} className="w-full text-left p-3 rounded-md border hover:bg-black/5" style={{ borderColor: LINE }}>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-medium" style={{ color: INK }}>{a.label || "Địa chỉ"}</span>
-                      {a.isDefault && <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${BLUE}1A`, color: BLUE }}>Mặc định</span>}
+                      <span className="text-sm font-medium" style={{ color: TEXT }}>{a.label || "Địa chỉ"}</span>
+                      {a.isDefault && <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: `${BLUE}1A`, color: BLUE }}>Mặc định</span>}
                     </div>
-                    <p className="text-sm" style={{ color: INK }}>{a.recipientName || cust.name}{a.recipientPhone ? ` · ${a.recipientPhone}` : ""}</p>
+                    <p className="text-sm" style={{ color: TEXT }}>{a.recipientName || cust.name}{a.recipientPhone ? ` · ${a.recipientPhone}` : ""}</p>
                     <p className="text-sm opacity-70">{[a.addressDetail, a.ward, a.province].filter(Boolean).join(", ")}</p>
                   </button>
                 ))}
@@ -11399,13 +11421,13 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
           <Modal title={`Đơn hàng ${viewingOrder.code}`} onClose={() => setViewingId(null)} size="2xl">
             <OrderProgressStepper order={viewingOrder} />
 
-            <p className="text-xs mb-3 flex items-center gap-1.5 flex-wrap" style={{ color: INK, opacity: 0.65 }}>
+            <p className="text-xs mb-3 flex items-center gap-1.5 flex-wrap" style={{ color: TEXT, opacity: 0.65 }}>
               <ch.icon size={13} /> {ch.label} · {formatDateTime(viewingOrder.createdAt)} · {viewingOrder.branch} · {viewingOrder.seller}{viewingOrder.deliveryDate ? ` · Hẹn giao ${viewingOrder.deliveryDate}` : ""}
             </p>
 
             <div className="flex flex-wrap gap-1.5 mb-1.5">
               {viewingOrder.status === "cancelled" ? (
-                <span className="text-[11px] px-2.5 py-1.5 rounded-md opacity-50" style={{ background: PAPER, color: RUST }}>Đơn đã huỷ — không thể đổi trạng thái giao hàng</span>
+                <span className="text-xs px-2.5 py-1.5 rounded-md opacity-60" style={{ background: PAPER, color: RUST }}>Đơn đã huỷ — không thể đổi trạng thái giao hàng</span>
               ) : STATUSES.filter((s) => s.id !== "cancelled").map((s) => {
                 const rank = { pending: 0, shipping: 1, delivered: 2, done: 3 };
                 const isPast = rank[s.id] < rank[viewingOrder.status];
@@ -11413,7 +11435,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                 if (s.id === "done") {
                   const blocked = orderCalc(viewingOrder).remaining > 0 || isPast;
                   return (
-                    <button key={s.id} onClick={() => setStatus(viewingOrder.id, s.id)} disabled={blocked} className="text-[11px] px-2.5 py-1.5 rounded-md disabled:opacity-35"
+                    <button key={s.id} onClick={() => setStatus(viewingOrder.id, s.id)} disabled={blocked} className="text-xs px-2.5 py-1.5 rounded-md disabled:opacity-35"
                       style={{ background: s.id === viewingOrder.status ? `${s.color}22` : PAPER, color: s.color }}
                       title={isPast ? "Đã qua bước này — không thể quay lại" : blocked ? "Chỉ hoàn thành được khi khách đã thanh toán đủ" : undefined}>{s.label}</button>
                   );
@@ -11422,27 +11444,27 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                 const blockedByPaid = viewingOrder.paidAmount > 0;
                 const blocked = blockedByFlow || blockedByPaid || isPast;
                 return (
-                  <button key={s.id} onClick={() => setStatus(viewingOrder.id, s.id)} disabled={blocked} className="text-[11px] px-2.5 py-1.5 rounded-md disabled:opacity-35"
+                  <button key={s.id} onClick={() => setStatus(viewingOrder.id, s.id)} disabled={blocked} className="text-xs px-2.5 py-1.5 rounded-md disabled:opacity-35"
                     style={{ background: s.id === viewingOrder.status ? `${s.color}22` : PAPER, color: s.color }}
                     title={isPast ? "Đã qua bước này — không thể quay lại" : blockedByPaid ? "Đơn đã ghi nhận thanh toán — chỉ có thể chuyển sang Hoàn thành" : blockedByFlow ? "Còn sản phẩm chờ hàng hoặc đơn chưa được duyệt" : undefined}>{s.label}</button>
                 );
               })}
             </div>
             {viewingOrder.items.some((it) => !it.fulfilled) && (
-              <p className="text-[11px] mb-1" style={{ color: BRASS }}>⚠ Còn sản phẩm chờ hàng — bổ sung series bên dưới trước khi chuyển "Đang giao"/"Đã giao".</p>
+              <p className="text-xs mb-1" style={{ color: BRASS }}>⚠ Còn sản phẩm chờ hàng — bổ sung series bên dưới trước khi chuyển "Đang giao"/"Đã giao".</p>
             )}
             {viewingOrder.paidAmount > 0 && viewingOrder.status !== "cancelled" && viewingOrder.status !== "done" && (
-              <p className="text-[11px] mb-1" style={{ color: FOREST }}>✓ Đơn đã có thanh toán — Chờ xử lý/Đang giao/Đã giao đã khoá, dùng nút "Hoàn thành" khi đã thanh toán đủ.</p>
+              <p className="text-xs mb-1" style={{ color: FOREST }}>✓ Đơn đã có thanh toán — Chờ xử lý/Đang giao/Đã giao đã khoá, dùng nút "Hoàn thành" khi đã thanh toán đủ.</p>
             )}
             {viewingOrder.approvalStatus === "pending" && (
               <div className="flex items-center gap-2 mb-3 p-3 rounded-md flex-wrap" style={{ background: `${RUST}0D`, border: `1px solid ${RUST}44` }}>
-                <span className="text-[11px]" style={{ color: RUST }}>⚠ Đơn cần duyệt{viewingOrder.approvalReason ? ` — Lý do: ${viewingOrder.approvalReason}` : ""} — đang chờ quản trị viên duyệt.</span>
+                <span className="text-xs" style={{ color: RUST }}>⚠ Đơn cần duyệt{viewingOrder.approvalReason ? ` — Lý do: ${viewingOrder.approvalReason}` : ""} — đang chờ quản trị viên duyệt.</span>
                 {isAdmin && (
                   <div className="flex gap-2 ml-auto">
-                    <button onClick={() => rejectOrder(viewingOrder)} className="text-[11px] px-3 py-1.5 rounded-md border flex items-center gap-1" style={{ borderColor: RUST, color: RUST }}>
+                    <button onClick={() => rejectOrder(viewingOrder)} className="text-xs px-3 py-1.5 rounded-md border flex items-center gap-1" style={{ borderColor: RUST, color: RUST }}>
                       <XCircle size={12} /> Không duyệt
                     </button>
-                    <button onClick={() => approveOrder(viewingOrder)} className="text-[11px] px-3 py-1.5 rounded-md text-white flex items-center gap-1" style={{ background: FOREST }}>
+                    <button onClick={() => approveOrder(viewingOrder)} className="text-xs px-3 py-1.5 rounded-md text-white flex items-center gap-1" style={{ background: INK }}>
                       <ShieldCheck size={12} /> Duyệt đơn
                     </button>
                   </div>
@@ -11452,14 +11474,14 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
 
             {viewingOrder.cancelRequest && (
               <div className="flex items-center gap-2 mb-3 p-3 rounded-md flex-wrap" style={{ background: `${RUST}0D`, border: `1px solid ${RUST}44` }}>
-                <span className="text-[11px]" style={{ color: RUST }}>
+                <span className="text-xs" style={{ color: RUST }}>
                   ⚠ {viewingOrder.cancelRequest.requestedByName} ({ACCOUNT_ROLES.find((r) => r.id === viewingOrder.cancelRequest.requestedByRole)?.label}) yêu cầu huỷ đơn
                   {viewingOrder.cancelRequest.reason ? ` — Lý do: ${viewingOrder.cancelRequest.reason}` : ""}. Đang chờ quản trị viên duyệt.
                 </span>
                 {isAdmin && (
                   <div className="flex gap-2 ml-auto">
-                    <button onClick={() => rejectCancelRequest(viewingOrder)} className="text-[11px] px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>Từ chối</button>
-                    <button onClick={() => approveCancelRequest(viewingOrder)} className="text-[11px] px-3 py-1.5 rounded-md text-white flex items-center gap-1" style={{ background: RUST }}>
+                    <button onClick={() => rejectCancelRequest(viewingOrder)} className="text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>Từ chối</button>
+                    <button onClick={() => approveCancelRequest(viewingOrder)} className="text-xs px-3 py-1.5 rounded-md text-white flex items-center gap-1" style={{ background: RUST }}>
                       <XCircle size={12} /> Duyệt huỷ
                     </button>
                   </div>
@@ -11469,14 +11491,14 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
 
             {viewingOrder.returnRequest && (
               <div className="flex items-center gap-2 mb-3 p-3 rounded-md flex-wrap" style={{ background: `${BRASS}0D`, border: `1px solid ${BRASS}44` }}>
-                <span className="text-[11px]" style={{ color: BRASS }}>
+                <span className="text-xs" style={{ color: BRASS }}>
                   ⚠ {viewingOrder.returnRequest.requestedByName} ({ACCOUNT_ROLES.find((r) => r.id === viewingOrder.returnRequest.requestedByRole)?.label}) yêu cầu {viewingOrder.returnRequest.type === "exchange" ? "đổi hàng" : "hoàn tiền"}
                   {viewingOrder.returnRequest.note ? ` — Lý do: ${viewingOrder.returnRequest.note}` : ""}. Đang chờ quản trị viên duyệt.
                 </span>
                 {isAdmin && (
                   <div className="flex gap-2 ml-auto">
-                    <button onClick={() => rejectReturnRequest(viewingOrder)} className="text-[11px] px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>Từ chối</button>
-                    <button onClick={() => approveReturnRequest(viewingOrder)} className="text-[11px] px-3 py-1.5 rounded-md text-white flex items-center gap-1" style={{ background: BRASS }}>
+                    <button onClick={() => rejectReturnRequest(viewingOrder)} className="text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>Từ chối</button>
+                    <button onClick={() => approveReturnRequest(viewingOrder)} className="text-xs px-3 py-1.5 rounded-md text-white flex items-center gap-1" style={{ background: BRASS }}>
                       <RotateCcw size={12} /> Duyệt đổi trả
                     </button>
                   </div>
@@ -11486,7 +11508,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
 
             <div className="flex flex-wrap gap-2 mb-4">
               {!isCtv && (
-                <button onClick={() => { setPrintDocType("invoice"); setPrintPaperSize(printSettings?.defaultPaperSize || "A4"); setPrintBlockedUrl(null); setPrintModalOpen(true); }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>
+                <button onClick={() => { setPrintDocType("invoice"); setPrintPaperSize(printSettings?.defaultPaperSize || "A4"); setPrintBlockedUrl(null); setPrintModalOpen(true); }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>
                   <Printer size={13} /> In đơn hàng
                 </button>
               )}
@@ -11509,14 +11531,14 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
             <div className="grid md:grid-cols-[1fr_300px] gap-4 p-4 rounded-lg mb-4" style={{ background: PAPER }}>
               <div className="min-w-0">
                 <p className="text-xs opacity-60 mb-0.5">Khách hàng</p>
-                <p className="text-sm font-semibold" style={{ color: INK }}>{cust?.name || "Khách lẻ"}</p>
+                <p className="text-sm font-semibold" style={{ color: TEXT }}>{cust?.name || "Khách lẻ"}</p>
                 {viewingOrder.shippingAddress && (viewingOrder.shippingAddress.addressDetail || viewingOrder.shippingAddress.province || viewingOrder.shippingAddress.ward) && (
-                  <p className="text-xs mt-1" style={{ color: INK, opacity: 0.7 }}>
+                  <p className="text-xs mt-1" style={{ color: TEXT, opacity: 0.7 }}>
                     {viewingOrder.shippingAddress.recipientName && viewingOrder.shippingAddress.recipientName !== cust?.name ? `${viewingOrder.shippingAddress.recipientName} · ` : ""}{viewingOrder.shippingAddress.recipientPhone ? `${viewingOrder.shippingAddress.recipientPhone} · ` : ""}
                     {[viewingOrder.shippingAddress.addressDetail, viewingOrder.shippingAddress.ward, viewingOrder.shippingAddress.province].filter(Boolean).join(", ")}
                   </p>
                 )}
-                {viewingOrder.notes && <p className="text-xs mt-1" title={viewingOrder.notes} style={{ color: INK, opacity: 0.7, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>Ghi chú: {viewingOrder.notes}</p>}
+                {viewingOrder.notes && <p className="text-xs mt-1" title={viewingOrder.notes} style={{ color: TEXT, opacity: 0.7, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>Ghi chú: {viewingOrder.notes}</p>}
               </div>
               <div>
                 <p className="text-xs opacity-60 mb-1">Hoá đơn</p>
@@ -11526,27 +11548,27 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                   <p className="text-xs" style={{ color: BRASS }}>Đơn đang chờ duyệt, tạm khoá hoá đơn và thanh toán.</p>
                 ) : !isCtv ? (
                   <div className="flex items-center gap-1.5">
-                    <button onClick={() => setInvoiceStatus(viewingOrder.id, "pending")} className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: viewingOrder.invoiceStatus === "pending" ? `${RUST}1A` : "transparent", color: RUST, border: `1px solid ${viewingOrder.invoiceStatus === "pending" ? RUST : LINE}` }}>Chờ xuất</button>
-                    <button onClick={() => setInvoiceStatus(viewingOrder.id, "issued", viewingOrder.invoiceNo)} className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: viewingOrder.invoiceStatus === "issued" ? `${FOREST}1A` : "transparent", color: FOREST, border: `1px solid ${viewingOrder.invoiceStatus === "issued" ? FOREST : LINE}` }}>Đã xuất</button>
+                    <button onClick={() => setInvoiceStatus(viewingOrder.id, "pending")} className="text-xs px-2.5 py-1 rounded-full" style={{ background: viewingOrder.invoiceStatus === "pending" ? `${RUST}1A` : "transparent", color: RUST, border: `1px solid ${viewingOrder.invoiceStatus === "pending" ? RUST : LINE}` }}>Chờ xuất</button>
+                    <button onClick={() => setInvoiceStatus(viewingOrder.id, "issued", viewingOrder.invoiceNo)} className="text-xs px-2.5 py-1 rounded-full" style={{ background: viewingOrder.invoiceStatus === "issued" ? `${FOREST}1A` : "transparent", color: FOREST, border: `1px solid ${viewingOrder.invoiceStatus === "issued" ? FOREST : LINE}` }}>Đã xuất</button>
                     {viewingOrder.invoiceStatus === "issued" && (
                       <input key={viewingOrder.id} defaultValue={viewingOrder.invoiceNo} onBlur={(e) => setInvoiceStatus(viewingOrder.id, "issued", e.target.value)} placeholder="Số HĐ"
                         className="text-xs border rounded-md py-1 px-2 w-20 flex-1 min-w-0 bg-white" style={{ borderColor: LINE }} />
                     )}
                   </div>
-                ) : <p className="text-sm" style={{ color: INK }}>{viewingOrder.invoiceStatus === "issued" ? `Đã xuất ${viewingOrder.invoiceNo || ""}` : "Chờ xuất"}</p>}
+                ) : <p className="text-sm" style={{ color: TEXT }}>{viewingOrder.invoiceStatus === "issued" ? `Đã xuất ${viewingOrder.invoiceNo || ""}` : "Chờ xuất"}</p>}
               </div>
             </div>
 
-            <p className="text-xs uppercase tracking-wider mb-2 opacity-60">Thông tin sản phẩm</p>
+            <p className="text-xs mb-2 opacity-60 font-medium">Thông tin sản phẩm</p>
             <div className="rounded-md overflow-x-auto mb-4" style={{ border: `1px solid ${LINE}` }}>
               <table className="w-full text-sm" style={{ minWidth: isAdmin && viewingOrder.approvalStatus === "pending" ? 720 : 520 }}>
                 <thead><tr className="opacity-60" style={{ background: PAPER }}>
-                  <th className="text-left py-2 px-2 text-xs uppercase tracking-wider whitespace-nowrap">Sản phẩm</th><th className="text-right py-2 px-2 text-xs uppercase tracking-wider whitespace-nowrap">SL</th><th className="text-right py-2 px-2 text-xs uppercase tracking-wider whitespace-nowrap">Đơn giá</th><th className="text-right py-2 px-2 text-xs uppercase tracking-wider whitespace-nowrap">Thành tiền</th>
+                  <th className="text-left py-2 px-2 text-xs whitespace-nowrap font-medium">Sản phẩm</th><th className="text-right py-2 px-2 text-xs whitespace-nowrap font-medium">SL</th><th className="text-right py-2 px-2 text-xs whitespace-nowrap font-medium">Đơn giá</th><th className="text-right py-2 px-2 text-xs whitespace-nowrap font-medium">Thành tiền</th>
                   {isAdmin && viewingOrder.approvalStatus === "pending" && (<>
-                    <th className="text-right py-2 px-2 text-xs uppercase tracking-wider whitespace-nowrap" style={{ color: RUST }}>Giá nhập</th>
-                    <th className="text-right py-2 px-2 text-xs uppercase tracking-wider whitespace-nowrap" style={{ color: RUST }}>Lời/Lỗ</th>
+                    <th className="text-right py-2 px-2 text-xs whitespace-nowrap font-medium" style={{ color: RUST }}>Giá nhập</th>
+                    <th className="text-right py-2 px-2 text-xs whitespace-nowrap font-medium" style={{ color: RUST }}>Lời/Lỗ</th>
                   </>)}
-                  <th className="text-left py-2 px-2 text-xs uppercase tracking-wider whitespace-nowrap">Series</th>
+                  <th className="text-left py-2 px-2 text-xs whitespace-nowrap font-medium">Series</th>
                 </tr></thead>
                 <tbody>
                   {viewingOrder.items.map((it, i) => {
@@ -11555,17 +11577,17 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                     const cost = p?.costPrice || 0;
                     const profitPct = cost > 0 ? ((it.price - cost) / cost) * 100 : null;
                     return (
-                      <tr key={i} style={{ borderTop: `1px dashed ${LINE}` }}>
+                      <tr key={i} style={{ borderTop: `1px solid ${LINE}` }}>
                         <td className="py-2.5 px-2">
-                          <span className="font-medium" style={{ color: INK }}>{p?.name || "?"}</span>
-                          {returnedQty > 0 && <span className="ml-1.5 text-[10px] whitespace-nowrap" style={{ color: RUST }}>(đã trả {returnedQty})</span>}
-                          {!it.fulfilled && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider whitespace-nowrap" style={{ background: `${BRASS}1A`, color: BRASS }}>Chờ hàng</span>}
+                          <span className="font-medium" style={{ color: TEXT }}>{p?.name || "?"}</span>
+                          {returnedQty > 0 && <span className="ml-1.5 text-xs whitespace-nowrap" style={{ color: RUST }}>(đã trả {returnedQty})</span>}
+                          {!it.fulfilled && <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded-md whitespace-nowrap font-medium" style={{ background: `${BRASS}1A`, color: BRASS }}>Chờ hàng</span>}
                         </td>
-                        <td className="py-2.5 px-2 text-right whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{it.qty}</td>
-                        <td className="py-2.5 px-2 text-right whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(it.price)}</td>
-                        <td className="py-2.5 px-2 text-right font-semibold whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(orderLineTotal(it))}</td>
+                        <td className="py-2.5 px-2 text-right whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{it.qty}</td>
+                        <td className="py-2.5 px-2 text-right whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{vnd(it.price)}</td>
+                        <td className="py-2.5 px-2 text-right font-semibold whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{vnd(orderLineTotal(it))}</td>
                         {isAdmin && viewingOrder.approvalStatus === "pending" && (<>
-                          <td className="py-2.5 px-2 text-right whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: INK, opacity: 0.75 }}>{cost > 0 ? vnd(cost) : "—"}</td>
+                          <td className="py-2.5 px-2 text-right whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: TEXT, opacity: 0.75 }}>{cost > 0 ? vnd(cost) : "—"}</td>
                           <td className="py-2.5 px-2 text-right font-semibold whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: profitPct === null ? INK : profitPct >= 0 ? FOREST : RUST }}>
                             {profitPct === null ? "—" : `${profitPct >= 0 ? "+" : ""}${profitPct.toFixed(1)}%`}
                           </td>
@@ -11592,8 +11614,8 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                     return (
                       <div key={it.productId} className="p-3 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
                         <div className="flex items-center justify-between text-sm mb-2">
-                          <span style={{ color: INK }} className="font-medium">{p?.name}</span>
-                          <span className="text-xs opacity-50">cần {it.qty} · còn tồn hiện tại {hasSeries ? available.length : closing}</span>
+                          <span style={{ color: TEXT }} className="font-medium">{p?.name}</span>
+                          <span className="text-xs opacity-60">cần {it.qty} · còn tồn hiện tại {hasSeries ? available.length : closing}</span>
                         </div>
                         {hasSeries ? (
                           <>
@@ -11601,16 +11623,16 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                             <button
                               onClick={() => { fulfillPendingItem(viewingOrder, it.productId, draft); setPendingFulfillDraft((d) => { const n = { ...d }; delete n[it.productId]; return n; }); }}
                               disabled={draft.length !== it.qty}
-                              className="mt-2 text-xs px-3 py-1.5 rounded-md text-white disabled:opacity-40" style={{ background: FOREST }}>
+                              className="mt-2 text-xs px-3 py-1.5 rounded-md text-white disabled:opacity-40" style={{ background: INK }}>
                               Xác nhận đã có hàng — xuất kho
                             </button>
                           </>
                         ) : (
                           <>
-                            {it.qty > closing && <p className="text-[11px] mb-1.5" style={{ color: RUST }}>Tồn hiện tại ({closing}) chưa đủ {it.qty} — xuất kho ngay sẽ tạo tồn âm.</p>}
+                            {it.qty > closing && <p className="text-xs mb-1.5" style={{ color: RUST }}>Tồn hiện tại ({closing}) chưa đủ {it.qty} — xuất kho ngay sẽ tạo tồn âm.</p>}
                             <button
                               onClick={() => fulfillPendingItem(viewingOrder, it.productId, [])}
-                              className="text-xs px-3 py-1.5 rounded-md text-white" style={{ background: FOREST }}>
+                              className="text-xs px-3 py-1.5 rounded-md text-white" style={{ background: INK }}>
                               Xác nhận đã có hàng — xuất kho
                             </button>
                           </>
@@ -11624,7 +11646,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
 
             {viewingOrder.returns?.length > 0 && (
               <div className="mb-4">
-                <p className="text-xs uppercase tracking-wider mb-2 opacity-60">Lịch sử đổi trả</p>
+                <p className="text-xs mb-2 opacity-60 font-medium">Lịch sử đổi trả</p>
                 <div className="space-y-2">
                   {viewingOrder.returns.map((r) => {
                     const rTotal = r.returnedItems.reduce((s, it) => s + returnLineTotal(it), 0);
@@ -11632,10 +11654,10 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                       <button key={r.id} onClick={() => setViewingReturnId(r.id)} className="w-full flex items-center justify-between px-4 py-3 rounded-md text-left hover:brightness-95" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
                         <div>
                           <span className="text-sm font-medium" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{r.code}</span>
-                          <span className="ml-2 text-[11px] px-2 py-0.5 rounded-full" style={{ background: r.type === "exchange" ? `${FOREST}1A` : `${BRASS}1A`, color: r.type === "exchange" ? FOREST : BRASS }}>{r.type === "exchange" ? "Đổi hàng" : "Hoàn tiền"}</span>
-                          <p className="text-xs opacity-50 mt-1">{formatDateTime(r.createdAt)}</p>
+                          <span className="ml-2 text-xs px-2 py-0.5 rounded-full" style={{ background: r.type === "exchange" ? `${FOREST}1A` : `${BRASS}1A`, color: r.type === "exchange" ? FOREST : BRASS }}>{r.type === "exchange" ? "Đổi hàng" : "Hoàn tiền"}</span>
+                          <p className="text-xs opacity-60 mt-1">{formatDateTime(r.createdAt)}</p>
                         </div>
-                        <span className="text-sm font-medium" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(rTotal)}</span>
+                        <span className="text-sm font-medium" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{vnd(rTotal)}</span>
                       </button>
                     );
                   })}
@@ -11650,9 +11672,9 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
               <div className="flex justify-between text-sm"><span className="opacity-60">Phí giao hàng</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(viewingOrder.shippingFee)}</span></div>
               {c.returnedValue > 0 && <div className="flex justify-between text-sm"><span className="opacity-60">Giá trị hàng trả</span><span style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>-{vnd(c.returnedValue)}</span></div>}
               {c.exchangeValue > 0 && <div className="flex justify-between text-sm"><span className="opacity-60">Giá trị hàng đổi</span><span style={{ fontFamily: "'Inter', sans-serif", color: FOREST }}>+{vnd(c.exchangeValue)}</span></div>}
-              <div className="flex justify-between text-sm font-semibold pt-2" style={{ borderTop: `1px dashed ${LINE}`, color: INK }}><span>Khách phải trả</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(c.payable)}</span></div>
+              <div className="flex justify-between text-sm font-semibold pt-2" style={{ borderTop: `1px solid ${LINE}`, color: TEXT }}><span>Khách phải trả</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(c.payable)}</span></div>
               <div className="flex justify-between text-sm"><span className="opacity-60">Khách đã trả</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(viewingOrder.paidAmount)}</span></div>
-              <div className="flex justify-between text-sm font-semibold pt-2" style={{ borderTop: `1px dashed ${LINE}`, color: c.remaining > 0 ? RUST : FOREST }}>
+              <div className="flex justify-between text-sm font-semibold pt-2" style={{ borderTop: `1px solid ${LINE}`, color: c.remaining > 0 ? RUST : FOREST }}>
                 <span>{c.remaining >= 0 ? "Còn phải trả" : "Cần hoàn lại cho khách"}</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(Math.abs(c.remaining))}</span>
               </div>
             </div>
@@ -11661,14 +11683,14 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
               <div className="flex gap-2">
                 <MoneyInput value={payInput === "" ? "" : Number(payInput)} onChange={(v) => setPayInput(v)} placeholder="Số tiền khách trả thêm"
                   className="flex-1 border rounded-md py-2 px-3 text-sm" style={{ borderColor: LINE }} />
-                <button onClick={addPayment} className="px-4 py-2 rounded-md text-white text-sm" style={{ background: FOREST }}>Ghi nhận thanh toán</button>
+                <button onClick={addPayment} className="px-4 py-2 rounded-md text-white text-sm" style={{ background: INK }}>Ghi nhận thanh toán</button>
               </div>
             )}
             {viewingOrder.status !== "cancelled" && viewingOrder.approvalStatus !== "pending" && c.remaining < 0 && (
               <div className="flex gap-2">
                 <MoneyInput value={refundInput === "" ? "" : Number(refundInput)} onChange={(v) => setRefundInput(v)} placeholder="Số tiền đã hoàn cho khách"
                   className="flex-1 border rounded-md py-2 px-3 text-sm" style={{ borderColor: LINE }} />
-                <button onClick={addRefund} className="px-4 py-2 rounded-md text-white text-sm" style={{ background: FOREST }}>Ghi nhận hoàn tiền</button>
+                <button onClick={addRefund} className="px-4 py-2 rounded-md text-white text-sm" style={{ background: INK }}>Ghi nhận hoàn tiền</button>
               </div>
             )}
           </Modal>
@@ -11692,7 +11714,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
             </div>
           </Field>
 
-          <p className="text-xs uppercase tracking-wider mb-2 mt-3 opacity-60">Sản phẩm khách trả lại</p>
+          <p className="text-xs mb-2 mt-3 opacity-60 font-medium">Sản phẩm khách trả lại</p>
           <div className="space-y-3 mb-4">
             {viewingOrder.items.map((orig) => {
               const p = products.find((x) => x.id === orig.productId);
@@ -11704,8 +11726,8 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
               return (
                 <div key={orig.productId} className="p-3 rounded-md" style={{ border: `1px solid ${LINE}` }}>
                   <div className="flex items-center justify-between text-sm mb-2">
-                    <span style={{ color: INK }} className="font-medium">{p?.name}</span>
-                    <span className="text-xs opacity-50">Đã mua {orig.qty}{already > 0 ? ` · đã trả ${already}` : ""} · tối đa {maxReturnable}</span>
+                    <span style={{ color: TEXT }} className="font-medium">{p?.name}</span>
+                    <span className="text-xs opacity-60">Đã mua {orig.qty}{already > 0 ? ` · đã trả ${already}` : ""} · tối đa {maxReturnable}</span>
                   </div>
                   <label className="text-xs">
                     <span className="block opacity-60 mb-1">Số lượng trả</span>
@@ -11741,8 +11763,8 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
 
           {returnForm.type === "exchange" && (
             <>
-              <div className="my-3" style={{ borderTop: `1px dashed ${LINE}` }} />
-              <p className="text-xs uppercase tracking-wider mb-2 opacity-60">Sản phẩm đổi lấy</p>
+              <div className="my-3" style={{ borderTop: `1px solid ${LINE}` }} />
+              <p className="text-xs mb-2 opacity-60 font-medium">Sản phẩm đổi lấy</p>
               <ProductPicker products={products} onPick={addExchangeItem} />
               <div className="mt-3">
                 <SalesItemsTable items={returnForm.exchangeItems} products={products} onUpdate={updateExchangeItem} onRemove={removeExchangeItem} role={currentUser.role} />
@@ -11767,14 +11789,14 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
         return (
           <Modal title={`Phiếu đổi trả ${viewingReturn.code}`} onClose={() => setViewingReturnId(null)} size="lg">
             <div className="flex items-center gap-2 mb-4">
-              <span className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: viewingReturn.type === "exchange" ? `${FOREST}1A` : `${BRASS}1A`, color: viewingReturn.type === "exchange" ? FOREST : BRASS }}>
+              <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: viewingReturn.type === "exchange" ? `${FOREST}1A` : `${BRASS}1A`, color: viewingReturn.type === "exchange" ? FOREST : BRASS }}>
                 {viewingReturn.type === "exchange" ? "Đổi hàng" : "Hoàn tiền"}
               </span>
-              <span className="text-xs opacity-50" style={{ fontFamily: "'Inter', sans-serif" }}>{formatDateTime(viewingReturn.createdAt)}</span>
-              <span className="text-xs opacity-40">· thuộc đơn {viewingReturnOrder.code}</span>
+              <span className="text-xs opacity-60" style={{ fontFamily: "'Inter', sans-serif" }}>{formatDateTime(viewingReturn.createdAt)}</span>
+              <span className="text-xs opacity-60">· thuộc đơn {viewingReturnOrder.code}</span>
             </div>
 
-            <p className="text-xs uppercase tracking-wider mb-2 opacity-60">Sản phẩm trả lại</p>
+            <p className="text-xs mb-2 opacity-60 font-medium">Sản phẩm trả lại</p>
             <div className="rounded-md overflow-x-auto mb-4" style={{ border: `1px solid ${LINE}` }}>
               <table className="w-full text-xs" style={{ minWidth: 380 }}>
                 <thead style={{ background: PAPER }}><tr className="opacity-60">
@@ -11784,7 +11806,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                   {viewingReturn.returnedItems.map((it, i) => {
                     const p = products.find((x) => x.id === it.productId);
                     return (
-                      <tr key={i} style={{ borderTop: `1px dashed ${LINE}` }}>
+                      <tr key={i} style={{ borderTop: `1px solid ${LINE}` }}>
                         <td className="py-1.5 px-2">{p?.name || "?"}</td>
                         <td className="py-1.5 px-2">{it.qty}</td>
                         <td className="py-1.5 px-2 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(it.price)}</td>
@@ -11799,7 +11821,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
 
             {viewingReturn.type === "exchange" && viewingReturn.exchangeItems.length > 0 && (
               <>
-                <p className="text-xs uppercase tracking-wider mb-2 opacity-60">Sản phẩm đổi lấy</p>
+                <p className="text-xs mb-2 opacity-60 font-medium">Sản phẩm đổi lấy</p>
                 <div className="rounded-md overflow-x-auto mb-2" style={{ border: `1px solid ${LINE}` }}>
                   <table className="w-full text-xs" style={{ minWidth: 380 }}>
                     <thead style={{ background: PAPER }}><tr className="opacity-60">
@@ -11809,7 +11831,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                       {viewingReturn.exchangeItems.map((it, i) => {
                         const p = products.find((x) => x.id === it.productId);
                         return (
-                          <tr key={i} style={{ borderTop: `1px dashed ${LINE}` }}>
+                          <tr key={i} style={{ borderTop: `1px solid ${LINE}` }}>
                             <td className="py-1.5 px-2">{p?.name || "?"}</td>
                             <td className="py-1.5 px-2">{it.qty}</td>
                             <td className="py-1.5 px-2 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(it.price)}</td>
@@ -11827,7 +11849,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
             <Field label="Ghi chú">
               <textarea rows={2} className="w-full border rounded-md p-2 text-sm" style={{ borderColor: LINE }} defaultValue={viewingReturn.note} onBlur={(e) => saveReturnNote(e.target.value)} placeholder="Lý do đổi trả…" />
             </Field>
-            <p className="text-xs opacity-40 mt-1">Số lượng/sản phẩm trong phiếu đã khoá vì đã cập nhật tồn kho — chỉ có thể sửa ghi chú.</p>
+            <p className="text-xs opacity-60 mt-1">Số lượng/sản phẩm trong phiếu đã khoá vì đã cập nhật tồn kho — chỉ có thể sửa ghi chú.</p>
           </Modal>
         );
       })()}
@@ -11846,7 +11868,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
       {/* Modal xác nhận xoá đơn hàng — chỉ admin, cần nhập mật khẩu */}
       {deletingOrder && (
         <Modal title={`Xoá đơn hàng ${deletingOrder.code}`} onClose={() => { setDeletingOrder(null); setDeletePasswordInput(""); setDeletePasswordError(""); }}>
-          <p className="text-sm mb-3" style={{ color: INK }}>Hành động này không thể hoàn tác. Nhập mật khẩu quản trị viên để xác nhận xoá vĩnh viễn đơn <b>{deletingOrder.code}</b>.</p>
+          <p className="text-sm mb-3" style={{ color: TEXT }}>Hành động này không thể hoàn tác. Nhập mật khẩu quản trị viên để xác nhận xoá vĩnh viễn đơn <b>{deletingOrder.code}</b>.</p>
           <Field label="Mật khẩu">
             <input type="password" className={inputCls} style={{ borderColor: LINE }} value={deletePasswordInput}
               onChange={(e) => { setDeletePasswordInput(e.target.value); setDeletePasswordError(""); }}
@@ -11891,7 +11913,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
             const cust = customers.find((c) => c.id === viewingOrder.customerId);
             const missingRep = cust && (cust.group === "b2b" || cust.group === "enterprise") && !cust.representativeName;
             return (
-              <p className="text-[11px] opacity-60 -mt-2 mb-3">
+              <p className="text-xs opacity-60 -mt-2 mb-3">
                 Bên B (Hilitek) và Bên A lấy tự động từ hồ sơ khách hàng.
                 {missingRep ? " Khách hàng này chưa có thông tin Đại diện/Chức vụ — vào Khách hàng để bổ sung, nếu không phần này sẽ để trống trên biên bản." : ""}
               </p>
@@ -11915,12 +11937,12 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                 ["showAmountInWords", "Số tiền bằng chữ"],
                 ["showSignatures", "Khối chữ ký"],
               ].map(([key, label]) => (
-                <label key={key} className="flex items-center gap-2 text-xs" style={{ color: INK }}>
+                <label key={key} className="flex items-center gap-2 text-xs" style={{ color: TEXT }}>
                   <input type="checkbox" checked={!!printSettings[key]} onChange={(e) => setPrintSettings((s) => ({ ...s, [key]: e.target.checked }))} />
                   {label}
                 </label>
               ))}
-              <p className="text-[11px] opacity-50 pt-1">Các tuỳ chỉnh này áp dụng chung cho mọi lần in sau, không phải riêng đơn này.</p>
+              <p className="text-xs opacity-60 pt-1">Các tuỳ chỉnh này áp dụng chung cho mọi lần in sau, không phải riêng đơn này.</p>
             </div>
           )}
 
@@ -11929,7 +11951,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
           </button>
 
           {printBlockedUrl && (
-            <div className="mt-3 p-3 rounded-md text-xs" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44`, color: INK }}>
+            <div className="mt-3 p-3 rounded-md text-xs" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44`, color: TEXT }}>
               <p className="mb-2">Trình duyệt đã chặn cửa sổ in tự động. Bấm vào liên kết bên dưới để mở hoá đơn, sau đó tự bấm in (Ctrl+P / biểu tượng in) trong tab mới đó:</p>
               <a href={printBlockedUrl} target="_blank" rel="noreferrer" className="underline font-medium" style={{ color: BLUE }}>Mở hoá đơn để in</a>
             </div>
@@ -11983,23 +12005,23 @@ function FilterSearchSelect({ options, value, onChange, placeholder, onFreeText,
         className="w-full border rounded-md py-1.5 pl-2 pr-6 text-sm" style={{ borderColor: LINE }}
       />
       {(selected || freeText) && !open && (
-        <button type="button" onClick={clearAll} title="Bỏ chọn" className="absolute right-1.5 top-1/2 -translate-y-1/2 opacity-40 hover:opacity-100"><X size={12} /></button>
+        <button type="button" onClick={clearAll} title="Bỏ chọn" className="absolute right-1.5 top-1/2 -translate-y-1/2 opacity-60 hover:opacity-100"><X size={12} /></button>
       )}
       {open && (
-        <button type="button" onClick={() => setOpen(false)} title="Đóng" className="absolute right-1.5 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100" style={{ color: INK }}><X size={13} /></button>
+        <button type="button" onClick={() => setOpen(false)} title="Đóng" className="absolute right-1.5 top-1/2 -translate-y-1/2 opacity-60 hover:opacity-100" style={{ color: TEXT }}><X size={13} /></button>
       )}
       {open && (
         <div className="absolute z-50 mt-1 w-full max-h-52 overflow-y-auto rounded-md shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           {(value || freeText) && (
-            <button type="button" onClick={() => { clearAll(); setOpen(false); }} className="w-full text-left px-2.5 py-1.5 text-xs opacity-50 hover:bg-black/5" style={{ borderBottom: `1px dashed ${LINE}` }}>✕ Bỏ chọn</button>
+            <button type="button" onClick={() => { clearAll(); setOpen(false); }} className="w-full text-left px-2.5 py-1.5 text-xs opacity-60 hover:bg-black/5" style={{ borderBottom: `1px solid ${LINE}` }}>✕ Bỏ chọn</button>
           )}
           {onFreeText && query.trim() && !exactMatch && (
             <button type="button" onMouseDown={(e) => { e.preventDefault(); onChange(""); onFreeText(query.trim()); setQuery(""); setOpen(false); }}
-              className="w-full text-left px-2.5 py-1.5 text-sm hover:bg-black/5 font-medium" style={{ borderBottom: `1px dashed ${LINE}`, color: BLUE }}>
+              className="w-full text-left px-2.5 py-1.5 text-sm hover:bg-black/5 font-medium" style={{ borderBottom: `1px solid ${LINE}`, color: BLUE }}>
               + Dùng “{query.trim()}” làm tên khách
             </button>
           )}
-          {filtered.length === 0 && !onFreeText && <div className="px-2.5 py-2 text-xs opacity-50">Không tìm thấy</div>}
+          {filtered.length === 0 && !onFreeText && <div className="px-2.5 py-2 text-xs opacity-60">Không tìm thấy</div>}
           {filtered.map((o) => (
             <button key={o.id} type="button" onClick={() => { onChange(o.id); onFreeText && onFreeText(""); setQuery(""); setOpen(false); }}
               className="w-full text-left px-2.5 py-1.5 text-sm hover:bg-black/5 truncate" style={{ color: o.id === value ? BLUE : INK }}>
@@ -12040,7 +12062,7 @@ function ActivityLog({ log, accounts }) {
     <div>
       <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
         <p className="text-sm opacity-60">{filtered.length}/{log.length} hoạt động — ghi lại mọi thao tác quan trọng để admin theo dõi (đóng vai trò như thông báo).</p>
-        {hasFilter && <button onClick={clearFilters} className="text-xs opacity-50 hover:opacity-100 underline">Xoá lọc</button>}
+        {hasFilter && <button onClick={clearFilters} className="text-xs opacity-60 hover:opacity-100 underline">Xoá lọc</button>}
       </div>
       <div className="flex items-end gap-2 mb-5 flex-wrap">
         <label className="text-xs">
@@ -12066,27 +12088,27 @@ function ActivityLog({ log, accounts }) {
       <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "70vh" }}>
         <table className="w-full text-sm" style={{ minWidth: 640 }}>
           <thead className="sticky top-0" style={{ zIndex: 2 }}>
-            <tr style={{ borderBottom: `2px solid ${INK}` }}>
+            <tr style={{ borderBottom: `1px solid ${LINE}` }}>
               {["Thời gian", "Nhân sự", "Vai trò", "Hoạt động", "Chi tiết"].map((h, hi) => (
-                <th key={hi} className="text-left px-3 py-2.5 text-xs uppercase tracking-wider whitespace-nowrap" style={{ color: INK, opacity: 0.6, background: "#fff" }}>{h}</th>
+                <th key={hi} className="text-left px-3 py-2.5 text-xs whitespace-nowrap font-medium" style={{ color: TEXT, opacity: 0.6, background: "#fff" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filtered.map((l) => (
-              <tr key={l.id} style={{ borderBottom: `1px dashed ${LINE}` }}>
+              <tr key={l.id} style={{ borderBottom: `1px solid ${LINE}` }}>
                 <td className="px-3 py-2.5 whitespace-nowrap opacity-70" style={{ fontFamily: "'Inter', sans-serif" }}>{formatDateTime(l.at)}</td>
-                <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: INK }}>{l.userName}</td>
+                <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: TEXT }}>{l.userName}</td>
                 <td className="px-3 py-2.5 whitespace-nowrap">
-                  <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: l.role === "admin" ? `${BRASS}1A` : l.role === "ctv" ? `${RUST}1A` : `${BLUE}15`, color: l.role === "admin" ? BRASS : l.role === "ctv" ? RUST : BLUE }}>
+                  <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: l.role === "admin" ? `${BRASS}1A` : l.role === "ctv" ? `${RUST}1A` : `${BLUE}15`, color: l.role === "admin" ? BRASS : l.role === "ctv" ? RUST : BLUE }}>
                     {ACCOUNT_ROLES.find((r) => r.id === l.role)?.label || l.role}
                   </span>
                 </td>
-                <td className="px-3 py-2.5 whitespace-nowrap font-medium" style={{ color: INK }}>{l.action}</td>
+                <td className="px-3 py-2.5 whitespace-nowrap font-medium" style={{ color: TEXT }}>{l.action}</td>
                 <td className="px-3 py-2.5 opacity-70">{l.detail}</td>
               </tr>
             ))}
-            {filtered.length === 0 && <tr><td colSpan={5} className="text-center py-10 opacity-50">Chưa có hoạt động nào.</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={5} className="text-center py-10 opacity-60">Chưa có hoạt động nào.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -12115,8 +12137,8 @@ function Plans({ plans, setPlans, orders, purchaseOrders, products, employeeName
   const submit = () => {
     if (!form.month || !form.targetValue) return;
     if (!isDailyType) {
-      if (form.scope === "category" && !form.targetCategory) { alert("Vui lòng chọn nhóm hàng."); return; }
-      if (form.scope === "product" && !form.targetProductId) { alert("Vui lòng chọn sản phẩm."); return; }
+      if (form.scope === "category" && !form.targetCategory) { notify("Vui lòng chọn nhóm hàng."); return; }
+      if (form.scope === "product" && !form.targetProductId) { notify("Vui lòng chọn sản phẩm."); return; }
     }
     const payload = isDailyType
       ? { month: form.month, targetValue: Number(form.targetValue), note: form.note, sellerName: form.sellerName || "", scope: "company", targetCategory: "", targetProductId: "", metric: "qty_per_day" }
@@ -12179,7 +12201,7 @@ function Plans({ plans, setPlans, orders, purchaseOrders, products, employeeName
       </div>
 
       <div className="p-5 rounded-md mb-6" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-        <h4 className="text-sm uppercase tracking-wider mb-4" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>
+        <h4 className="text-sm mb-4 font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>
           Xu hướng 6 tháng — mục tiêu so với thực tế {sub === "sales" ? "(toàn công ty, theo giá trị)" : sub === "purchase" ? "(theo giá trị)" : sub === "stock" ? "(số mã mới thêm vào kho)" : "(số mã đăng lên website)"}
         </h4>
         <ResponsiveContainer width="100%" height={220}>
@@ -12205,7 +12227,7 @@ function Plans({ plans, setPlans, orders, purchaseOrders, products, employeeName
       </div>
 
       {list.length === 0 ? (
-        <p className="text-sm opacity-50 text-center py-12">Chưa có kế hoạch nào.</p>
+        <p className="text-sm opacity-60 text-center py-12">Chưa có kế hoạch nào.</p>
       ) : (
         <div className="space-y-4">
           {list.map((p) => {
@@ -12221,16 +12243,16 @@ function Plans({ plans, setPlans, orders, purchaseOrders, products, employeeName
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-medium" style={{ color: INK, fontFamily: "'Inter', sans-serif", fontWeight: 700 }}>{monthLabel(p.month)}</p>
+                      <p className="font-medium" style={{ color: TEXT, fontFamily: "'Inter', sans-serif", fontWeight: 700 }}>{monthLabel(p.month)}</p>
                       {p.sellerName ? (
-                        <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: `${PURPLE}1A`, color: PURPLE }}>{p.sellerName}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: `${PURPLE}1A`, color: PURPLE }}>{p.sellerName}</span>
                       ) : (
-                        <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: PAPER, color: INK, opacity: 0.6 }}>Toàn công ty (chưa giao riêng)</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: PAPER, color: TEXT, opacity: 0.6 }}>Toàn công ty (chưa giao riêng)</span>
                       )}
-                      <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: `${BLUE}1A`, color: BLUE }}>{scopeLabel(p)}</span>
-                      <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: `${statusColor}1A`, color: statusColor }}>{statusLabel}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: `${BLUE}1A`, color: BLUE }}>{scopeLabel(p)}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: `${statusColor}1A`, color: statusColor }}>{statusLabel}</span>
                     </div>
-                    {p.note && <p className="text-xs opacity-50 mt-1">{p.note}</p>}
+                    {p.note && <p className="text-xs opacity-60 mt-1">{p.note}</p>}
                   </div>
                   <div className="flex gap-1.5 shrink-0">
                     <button onClick={() => openEdit(p)} className="p-1.5 rounded-md hover:bg-black/5 opacity-60"><Pencil size={14} /></button>
@@ -12238,9 +12260,9 @@ function Plans({ plans, setPlans, orders, purchaseOrders, products, employeeName
                   </div>
                 </div>
                 <div className="flex justify-between items-baseline text-sm mb-1.5">
-                  <span className="opacity-60">Thực tế: <span style={{ fontFamily: "'Inter', sans-serif", color: INK, fontWeight: 600 }}>{fmtValue(p, actual)}</span></span>
+                  <span className="opacity-60">Thực tế: <span style={{ fontFamily: "'Inter', sans-serif", color: TEXT, fontWeight: 600 }}>{fmtValue(p, actual)}</span></span>
                   <span className="opacity-60">
-                    Mục tiêu: <span style={{ fontFamily: "'Inter', sans-serif", color: INK }}>
+                    Mục tiêu: <span style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>
                       {p.metric === "qty_per_day" ? `${p.targetValue.toLocaleString("vi-VN")} mã/ngày (~${effTarget.toLocaleString("vi-VN")} mã/tháng)` : fmtValue(p, p.targetValue)}
                     </span>
                   </span>
@@ -12383,7 +12405,7 @@ function SalesRanking({ orders, products, accounts }) {
   const maxRevenue = Math.max(1, ...ranking.map((r) => r.revenue));
 
   const exportRanking = () => {
-    if (ranking.length === 0) { alert("Không có dữ liệu để xuất."); return; }
+    if (ranking.length === 0) { notify("Không có dữ liệu để xuất."); return; }
     const rows = ranking.map((r, i) => ({
       "Hạng": i + 1, "Nhân viên / CTV": r.name, "Vai trò": ACCOUNT_ROLES.find((x) => x.id === r.role)?.label || "—",
       "Số đơn": r.orderCount, "Tổng SL bán": r.qty, "Doanh số": r.revenue,
@@ -12419,10 +12441,10 @@ function SalesRanking({ orders, products, accounts }) {
       </div>
 
       {ranking.length === 0 ? (
-        <p className="text-sm opacity-50 text-center py-14">Chưa có dữ liệu bán hàng trong khoảng thời gian này.</p>
+        <p className="text-sm opacity-60 text-center py-14">Chưa có dữ liệu bán hàng trong khoảng thời gian này.</p>
       ) : (
         <div className="p-5 sm:p-6 rounded-md mb-6" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-          <h4 className="text-sm uppercase tracking-wider mb-5" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Biểu đồ xếp hạng doanh số</h4>
+          <h4 className="text-sm mb-5 font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Biểu đồ xếp hạng doanh số</h4>
           <ResponsiveContainer width="100%" height={Math.max(220, ranking.length * 42)}>
             <BarChart data={ranking} layout="vertical" margin={{ left: 8, right: 24 }}>
               <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={LINE} />
@@ -12448,21 +12470,21 @@ function SalesRanking({ orders, products, accounts }) {
                   <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold shrink-0"
                     style={{ background: i === 0 ? `${BRASS}25` : PAPER, color: i === 0 ? BRASS : INK }}>{i + 1}</span>
                   <div className="min-w-0">
-                    <p className="font-medium truncate" style={{ color: INK }}>{r.name}</p>
-                    <p className="text-[11px] opacity-50">{ACCOUNT_ROLES.find((x) => x.id === r.role)?.label || "—"} · {r.orderCount} đơn · {r.qty} sản phẩm</p>
+                    <p className="font-medium truncate" style={{ color: TEXT }}>{r.name}</p>
+                    <p className="text-xs opacity-60">{ACCOUNT_ROLES.find((x) => x.id === r.role)?.label || "—"} · {r.orderCount} đơn · {r.qty} sản phẩm</p>
                     <div className="flex gap-1.5 mt-1 flex-wrap">
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider" style={{ background: r.cancelRate >= 15 ? `${RUST}1A` : PAPER, color: r.cancelRate >= 15 ? RUST : INK, opacity: r.cancelRate >= 15 ? 1 : 0.6 }}>
+                      <span className="text-xs px-1.5 py-0.5 rounded-md font-medium" style={{ background: r.cancelRate >= 15 ? `${RUST}1A` : PAPER, color: r.cancelRate >= 15 ? RUST : INK, opacity: r.cancelRate >= 15 ? 1 : 0.6 }}>
                         Huỷ {r.cancelRate.toFixed(1)}% ({r.cancelledCount}/{r.totalOrderCount})
                       </span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider" style={{ background: r.returnRate >= 15 ? `${RUST}1A` : PAPER, color: r.returnRate >= 15 ? RUST : INK, opacity: r.returnRate >= 15 ? 1 : 0.6 }}>
+                      <span className="text-xs px-1.5 py-0.5 rounded-md font-medium" style={{ background: r.returnRate >= 15 ? `${RUST}1A` : PAPER, color: r.returnRate >= 15 ? RUST : INK, opacity: r.returnRate >= 15 ? 1 : 0.6 }}>
                         Đổi trả {r.returnRate.toFixed(1)}% ({r.returnedCount}/{r.totalOrderCount})
                       </span>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(r.revenue)}</span>
-                  <button onClick={() => setDetailSeller(r)} className="text-xs px-2.5 py-1 rounded-md border" style={{ borderColor: LINE, color: INK }}>Chi tiết</button>
+                  <span className="text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{vnd(r.revenue)}</span>
+                  <button onClick={() => setDetailSeller(r)} className="text-xs px-2.5 py-1 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>Chi tiết</button>
                 </div>
               </div>
               <div className="h-2 rounded-full" style={{ background: PAPER }}>
@@ -12484,19 +12506,19 @@ function SalesRanking({ orders, products, accounts }) {
           <div className="rounded-md overflow-auto" style={{ border: `1px solid ${LINE}`, maxHeight: "50vh" }}>
             <table className="w-full text-sm">
               <thead style={{ background: PAPER, position: "sticky", top: 0 }}><tr>
-                <th className="text-left px-3 py-2 text-xs uppercase tracking-wider opacity-60">Sản phẩm</th>
-                <th className="text-right px-3 py-2 text-xs uppercase tracking-wider opacity-60">SL bán</th>
-                <th className="text-right px-3 py-2 text-xs uppercase tracking-wider opacity-60">Doanh số</th>
+                <th className="text-left px-3 py-2 text-xs opacity-60 font-medium">Sản phẩm</th>
+                <th className="text-right px-3 py-2 text-xs opacity-60 font-medium">SL bán</th>
+                <th className="text-right px-3 py-2 text-xs opacity-60 font-medium">Doanh số</th>
               </tr></thead>
               <tbody>
                 {productBreakdown(detailSeller.orders).map((p, i) => (
-                  <tr key={i} style={{ borderTop: `1px dashed ${LINE}` }}>
-                    <td className="px-3 py-2" style={{ color: INK }}>{p.name}<span className="opacity-40 text-xs" style={{ fontFamily: "'Inter', sans-serif" }}> · {p.code}</span></td>
+                  <tr key={i} style={{ borderTop: `1px solid ${LINE}` }}>
+                    <td className="px-3 py-2" style={{ color: TEXT }}>{p.name}<span className="opacity-60 text-xs" style={{ fontFamily: "'Inter', sans-serif" }}> · {p.code}</span></td>
                     <td className="px-3 py-2 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>{p.qty}</td>
-                    <td className="px-3 py-2 text-right font-medium" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(p.revenue)}</td>
+                    <td className="px-3 py-2 text-right font-medium" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{vnd(p.revenue)}</td>
                   </tr>
                 ))}
-                {productBreakdown(detailSeller.orders).length === 0 && <tr><td colSpan={3} className="text-center py-8 opacity-40">Chưa có sản phẩm nào.</td></tr>}
+                {productBreakdown(detailSeller.orders).length === 0 && <tr><td colSpan={3} className="text-center py-8 opacity-60">Chưa có sản phẩm nào.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -12546,21 +12568,21 @@ function DebtOverviewReport({ orders, customers }) {
 
   return (
     <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-      <h4 className="text-sm uppercase tracking-wider mb-5" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Công nợ phải thu</h4>
+      <h4 className="text-sm mb-5 font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Công nợ phải thu</h4>
 
       <div className="grid grid-cols-2 gap-4 mb-6 max-w-md">
         <div>
-          <p className="text-xs opacity-50 mb-1">Tổng công nợ phải thu</p>
+          <p className="text-xs opacity-60 mb-1">Tổng công nợ phải thu</p>
           <p className="text-xl font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>{vnd(totalDebt)}</p>
         </div>
         <div>
-          <p className="text-xs opacity-50 mb-1">Số khách đang nợ</p>
-          <p className="text-xl font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{debtByCustomer.length}</p>
+          <p className="text-xs opacity-60 mb-1">Số khách đang nợ</p>
+          <p className="text-xl font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{debtByCustomer.length}</p>
         </div>
       </div>
 
-      <p className="text-xs uppercase tracking-wider mb-3 opacity-60">Top 10 khách nợ nhiều nhất</p>
-      {top10Debt.length === 0 ? <p className="text-sm opacity-50 text-center py-10">Không có khách hàng nào đang nợ.</p> : (
+      <p className="text-xs mb-3 opacity-60 font-medium">Top 10 khách nợ nhiều nhất</p>
+      {top10Debt.length === 0 ? <p className="text-sm opacity-60 text-center py-10">Không có khách hàng nào đang nợ.</p> : (
         <ResponsiveContainer width="100%" height={Math.max(200, top10Debt.length * 34)}>
           <BarChart data={top10Debt} layout="vertical" margin={{ left: 8, right: 24 }}>
             <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={LINE} />
@@ -12575,7 +12597,7 @@ function DebtOverviewReport({ orders, customers }) {
       )}
 
       <div className="mt-7">
-        <p className="text-xs uppercase tracking-wider mb-3 opacity-60">Công nợ theo ngày phát sinh đơn (30 ngày gần nhất)</p>
+        <p className="text-xs mb-3 opacity-60 font-medium">Công nợ theo ngày phát sinh đơn (30 ngày gần nhất)</p>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={debtByOriginDate} barCategoryGap="30%">
             <CartesianGrid vertical={false} strokeDasharray="3 3" stroke={LINE} />
@@ -12685,8 +12707,8 @@ function CashFlowReport({ orders, purchaseOrders, customers }) {
 
   return (
     <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-      <h4 className="text-sm uppercase tracking-wider mb-1" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Dòng tiền thu / chi</h4>
-      <p className="text-xs opacity-50 mb-4">Thu = tiền khách thanh toán (trừ hoàn tiền) · Chi = đơn nhập hàng đã thanh toán cho NCC · Bấm vào 1 cột để xem từng khoản</p>
+      <h4 className="text-sm mb-1 font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Dòng tiền thu / chi</h4>
+      <p className="text-xs opacity-60 mb-4">Thu = tiền khách thanh toán (trừ hoàn tiền) · Chi = đơn nhập hàng đã thanh toán cho NCC · Bấm vào 1 cột để xem từng khoản</p>
 
       <div className="flex flex-wrap gap-1.5 mb-4">
         {PRESETS.map((p) => (
@@ -12712,15 +12734,15 @@ function CashFlowReport({ orders, purchaseOrders, customers }) {
 
       <div className="grid grid-cols-3 gap-4 mb-5 max-w-lg">
         <div>
-          <p className="text-xs opacity-50 mb-1">Tổng thu</p>
+          <p className="text-xs opacity-60 mb-1">Tổng thu</p>
           <p className="text-lg font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: FOREST }}>{vnd(totalIn)}</p>
         </div>
         <div>
-          <p className="text-xs opacity-50 mb-1">Tổng chi</p>
+          <p className="text-xs opacity-60 mb-1">Tổng chi</p>
           <p className="text-lg font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>{vnd(totalOut)}</p>
         </div>
         <div>
-          <p className="text-xs opacity-50 mb-1">Chênh lệch</p>
+          <p className="text-xs opacity-60 mb-1">Chênh lệch</p>
           <p className="text-lg font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: totalIn - totalOut >= 0 ? FOREST : RUST }}>{vnd(totalIn - totalOut)}</p>
         </div>
       </div>
@@ -12748,12 +12770,12 @@ function CashFlowReport({ orders, purchaseOrders, customers }) {
       {detailBucket && (
         <Modal title={`Chi tiết ${detailBucket.label}`} onClose={() => setDetailBucket(null)}>
           <div className="mb-4">
-            <p className="text-xs uppercase tracking-wider mb-2" style={{ color: FOREST, opacity: 0.8 }}>Thu ({detail.thu.length})</p>
-            {detail.thu.length === 0 ? <p className="text-sm opacity-50">Không có khoản thu nào.</p> : (
+            <p className="text-xs mb-2 font-medium" style={{ color: FOREST, opacity: 0.8 }}>Thu ({detail.thu.length})</p>
+            {detail.thu.length === 0 ? <p className="text-sm opacity-60">Không có khoản thu nào.</p> : (
               <div className="space-y-1.5">
                 {detail.thu.map((r, i) => (
-                  <div key={i} className="flex items-center justify-between text-sm py-1.5" style={{ borderBottom: `1px dashed ${LINE}` }}>
-                    <span style={{ color: INK }}>{r.code} · {r.name}{r.isReturn ? " (hoàn tiền)" : ""}</span>
+                  <div key={i} className="flex items-center justify-between text-sm py-1.5" style={{ borderBottom: `1px solid ${LINE}` }}>
+                    <span style={{ color: TEXT }}>{r.code} · {r.name}{r.isReturn ? " (hoàn tiền)" : ""}</span>
                     <span className="font-medium whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: r.amount < 0 ? RUST : FOREST }}>{vnd(r.amount)}</span>
                   </div>
                 ))}
@@ -12761,12 +12783,12 @@ function CashFlowReport({ orders, purchaseOrders, customers }) {
             )}
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wider mb-2" style={{ color: RUST, opacity: 0.8 }}>Chi ({detail.chi.length})</p>
-            {detail.chi.length === 0 ? <p className="text-sm opacity-50">Không có khoản chi nào.</p> : (
+            <p className="text-xs mb-2 font-medium" style={{ color: RUST, opacity: 0.8 }}>Chi ({detail.chi.length})</p>
+            {detail.chi.length === 0 ? <p className="text-sm opacity-60">Không có khoản chi nào.</p> : (
               <div className="space-y-1.5">
                 {detail.chi.map((r, i) => (
-                  <div key={i} className="flex items-center justify-between text-sm py-1.5" style={{ borderBottom: `1px dashed ${LINE}` }}>
-                    <span style={{ color: INK }}>{r.code} · {r.name}</span>
+                  <div key={i} className="flex items-center justify-between text-sm py-1.5" style={{ borderBottom: `1px solid ${LINE}` }}>
+                    <span style={{ color: TEXT }}>{r.code} · {r.name}</span>
                     <span className="font-medium whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>{vnd(r.amount)}</span>
                   </div>
                 ))}
@@ -12806,7 +12828,7 @@ function DeadStockReport({ products }) {
   return (
     <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
       <div className="flex items-center justify-between mb-1 flex-wrap gap-3">
-        <h4 className="text-sm uppercase tracking-wider" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Hàng tồn kho lâu ngày ("hàng chết")</h4>
+        <h4 className="text-sm font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Hàng tồn kho lâu ngày ("hàng chết")</h4>
         <div className="flex gap-1.5">
           {[30, 60, 90, 180].map((d) => (
             <button key={d} onClick={() => setThreshold(d)} className="text-xs px-3 py-1.5 rounded-full border whitespace-nowrap"
@@ -12816,27 +12838,27 @@ function DeadStockReport({ products }) {
           ))}
         </div>
       </div>
-      <p className="text-xs opacity-50 mb-4">Sản phẩm còn tồn kho nhưng không bán được (hoặc chưa từng bán) trong khoảng thời gian đã chọn</p>
+      <p className="text-xs opacity-60 mb-4">Sản phẩm còn tồn kho nhưng không bán được (hoặc chưa từng bán) trong khoảng thời gian đã chọn</p>
 
       <div className="mb-5">
-        <p className="text-xs opacity-50 mb-1">Tổng vốn bị đọng</p>
+        <p className="text-xs opacity-60 mb-1">Tổng vốn bị đọng</p>
         <p className="text-xl font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>{vnd(totalDeadValue)}</p>
       </div>
 
-      {deadStock.length === 0 ? <p className="text-sm opacity-50 text-center py-10">Không có sản phẩm nào tồn đọng quá lâu — tốt!</p> : (
+      {deadStock.length === 0 ? <p className="text-sm opacity-60 text-center py-10">Không có sản phẩm nào tồn đọng quá lâu — tốt!</p> : (
         <div className="rounded-md overflow-x-auto" style={{ border: `1px solid ${LINE}`, maxHeight: 360, overflowY: "auto" }}>
           <table className="w-full text-sm" style={{ minWidth: 560 }}>
             <thead><tr style={{ background: PAPER, position: "sticky", top: 0 }}>
-              <th className="text-left py-2 px-2 text-xs uppercase tracking-wider opacity-60">Sản phẩm</th>
-              <th className="text-right py-2 px-2 text-xs uppercase tracking-wider opacity-60">Tồn kho</th>
-              <th className="text-right py-2 px-2 text-xs uppercase tracking-wider opacity-60">Vốn tồn đọng</th>
-              <th className="text-left py-2 px-2 text-xs uppercase tracking-wider opacity-60">Bán gần nhất</th>
-              <th className="text-left py-2 px-2 text-xs uppercase tracking-wider opacity-60">Không bán</th>
+              <th className="text-left py-2 px-2 text-xs opacity-60 font-medium">Sản phẩm</th>
+              <th className="text-right py-2 px-2 text-xs opacity-60 font-medium">Tồn kho</th>
+              <th className="text-right py-2 px-2 text-xs opacity-60 font-medium">Vốn tồn đọng</th>
+              <th className="text-left py-2 px-2 text-xs opacity-60 font-medium">Bán gần nhất</th>
+              <th className="text-left py-2 px-2 text-xs opacity-60 font-medium">Không bán</th>
             </tr></thead>
             <tbody>
               {deadStock.map((p, i) => (
-                <tr key={i} style={{ borderTop: `1px dashed ${LINE}` }}>
-                  <td className="py-2 px-2">{p.name}<span className="opacity-40 text-xs" style={{ fontFamily: "'Inter', sans-serif" }}> · {p.code}</span></td>
+                <tr key={i} style={{ borderTop: `1px solid ${LINE}` }}>
+                  <td className="py-2 px-2">{p.name}<span className="opacity-60 text-xs" style={{ fontFamily: "'Inter', sans-serif" }}> · {p.code}</span></td>
                   <td className="py-2 px-2 text-right whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>{p.qty}</td>
                   <td className="py-2 px-2 text-right font-medium whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>{vnd(p.value)}</td>
                   <td className="py-2 px-2 whitespace-nowrap">{p.lastSold ? new Date(p.lastSold).toLocaleDateString("vi-VN") : "Chưa từng bán"}</td>
@@ -12894,7 +12916,7 @@ function InventoryTurnoverReport({ orders, products }) {
   return (
     <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
       <div className="flex items-center justify-between mb-1 flex-wrap gap-3">
-        <h4 className="text-sm uppercase tracking-wider" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Vòng quay tồn kho</h4>
+        <h4 className="text-sm font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Vòng quay tồn kho</h4>
         <div className="flex gap-1.5">
           {PERIODS.map((p) => (
             <button key={p.d} onClick={() => setPeriodDays(p.d)} className="text-xs px-3 py-1.5 rounded-full border whitespace-nowrap"
@@ -12904,11 +12926,11 @@ function InventoryTurnoverReport({ orders, products }) {
           ))}
         </div>
       </div>
-      <p className="text-xs opacity-50 mb-5">Số ngày ước tính để bán hết tồn kho hiện tại, theo tốc độ bán trung bình trong khoảng thời gian đã chọn</p>
+      <p className="text-xs opacity-60 mb-5">Số ngày ước tính để bán hết tồn kho hiện tại, theo tốc độ bán trung bình trong khoảng thời gian đã chọn</p>
 
       {byCategory.length > 0 && (
         <>
-          <p className="text-xs uppercase tracking-wider mb-3 opacity-60">Theo nhóm hàng</p>
+          <p className="text-xs mb-3 opacity-60 font-medium">Theo nhóm hàng</p>
           <ResponsiveContainer width="100%" height={Math.max(160, byCategory.length * 34)}>
             <BarChart data={byCategory} layout="vertical" margin={{ left: 8, right: 24 }}>
               <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={LINE} />
@@ -12923,18 +12945,18 @@ function InventoryTurnoverReport({ orders, products }) {
         </>
       )}
 
-      <p className="text-xs uppercase tracking-wider mb-3 mt-7 opacity-60">10 sản phẩm quay vòng chậm nhất</p>
-      {slowestProducts.length === 0 ? <p className="text-sm opacity-50 text-center py-8">Chưa đủ dữ liệu bán hàng trong khoảng thời gian này.</p> : (
+      <p className="text-xs mb-3 mt-7 opacity-60 font-medium">10 sản phẩm quay vòng chậm nhất</p>
+      {slowestProducts.length === 0 ? <p className="text-sm opacity-60 text-center py-8">Chưa đủ dữ liệu bán hàng trong khoảng thời gian này.</p> : (
         <div className="space-y-1.5">
           {slowestProducts.map((p, i) => (
             <div key={i} className="flex items-center justify-between text-sm p-2 rounded-md" style={{ border: `1px dashed ${LINE}` }}>
-              <span className="truncate" style={{ color: INK }}>{i + 1}. {p.name}</span>
+              <span className="truncate" style={{ color: TEXT }}>{i + 1}. {p.name}</span>
               <span className="whitespace-nowrap font-medium ml-2" style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>~{Math.round(p.turnoverDays)} ngày</span>
             </div>
           ))}
         </div>
       )}
-      {neverSoldCount > 0 && <p className="text-xs opacity-50 mt-4">Còn {neverSoldCount} sản phẩm còn tồn kho nhưng chưa bán được lần nào trong khoảng thời gian này — xem chi tiết ở mục "Hàng tồn kho lâu ngày" bên trên.</p>}
+      {neverSoldCount > 0 && <p className="text-xs opacity-60 mt-4">Còn {neverSoldCount} sản phẩm còn tồn kho nhưng chưa bán được lần nào trong khoảng thời gian này — xem chi tiết ở mục "Hàng tồn kho lâu ngày" bên trên.</p>}
     </div>
   );
 }
@@ -12980,23 +13002,23 @@ function WarrantyRateReport({ orders, products, warrantyTickets }) {
 
   return (
     <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-      <h4 className="text-sm uppercase tracking-wider mb-1" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Sản phẩm có tỷ lệ bảo hành cao</h4>
-      <p className="text-xs opacity-50 mb-5">Tỷ lệ = tổng số lượng yêu cầu bảo hành ÷ số lượng đã bán × 100% · giúp phát hiện sản phẩm lỗi/chất lượng kém qua tỷ lệ khách mang bảo hành</p>
+      <h4 className="text-sm mb-1 font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Sản phẩm có tỷ lệ bảo hành cao</h4>
+      <p className="text-xs opacity-60 mb-5">Tỷ lệ = tổng số lượng yêu cầu bảo hành ÷ số lượng đã bán × 100% · giúp phát hiện sản phẩm lỗi/chất lượng kém qua tỷ lệ khách mang bảo hành</p>
 
       <div className="grid grid-cols-2 gap-4 mb-6 max-w-md">
         <div>
-          <p className="text-xs opacity-50 mb-1">Tổng lượt bảo hành</p>
+          <p className="text-xs opacity-60 mb-1">Tổng lượt bảo hành</p>
           <p className="text-xl font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>{totalWarranty}</p>
         </div>
         <div>
-          <p className="text-xs opacity-50 mb-1">Đã xác nhận lỗi thực sự</p>
-          <p className="text-xl font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{totalConfirmedDefect}</p>
+          <p className="text-xs opacity-60 mb-1">Đã xác nhận lỗi thực sự</p>
+          <p className="text-xl font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{totalConfirmedDefect}</p>
         </div>
       </div>
 
       {chartData.length > 0 && (
         <>
-          <p className="text-xs uppercase tracking-wider mb-3 opacity-60">Top 10 theo tỷ lệ bảo hành</p>
+          <p className="text-xs mb-3 opacity-60 font-medium">Top 10 theo tỷ lệ bảo hành</p>
           <ResponsiveContainer width="100%" height={Math.max(200, chartData.length * 34)}>
             <BarChart data={chartData} layout="vertical" margin={{ left: 8, right: 24 }}>
               <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={LINE} />
@@ -13011,24 +13033,24 @@ function WarrantyRateReport({ orders, products, warrantyTickets }) {
         </>
       )}
 
-      <p className="text-xs uppercase tracking-wider mb-3 mt-7 opacity-60">Chi tiết đầy đủ theo sản phẩm</p>
-      {data.length === 0 ? <p className="text-sm opacity-50 text-center py-10">Chưa có phiếu bảo hành nào.</p> : (
+      <p className="text-xs mb-3 mt-7 opacity-60 font-medium">Chi tiết đầy đủ theo sản phẩm</p>
+      {data.length === 0 ? <p className="text-sm opacity-60 text-center py-10">Chưa có phiếu bảo hành nào.</p> : (
         <div className="rounded-md overflow-x-auto" style={{ border: `1px solid ${LINE}` }}>
           <table className="w-full text-sm" style={{ minWidth: 720 }}>
             <thead><tr style={{ background: PAPER }}>
-              <th className="text-left py-2 px-2 text-xs uppercase tracking-wider opacity-60">Sản phẩm</th>
-              <th className="text-right py-2 px-2 text-xs uppercase tracking-wider opacity-60">SL đã bán</th>
-              <th className="text-right py-2 px-2 text-xs uppercase tracking-wider opacity-60">SL yêu cầu BH</th>
-              <th className="text-right py-2 px-2 text-xs uppercase tracking-wider opacity-60">Tỷ lệ</th>
-              <th className="text-right py-2 px-2 text-xs uppercase tracking-wider opacity-60">Đang xử lý</th>
-              <th className="text-right py-2 px-2 text-xs uppercase tracking-wider opacity-60">Đã xác nhận lỗi</th>
-              <th className="text-right py-2 px-2 text-xs uppercase tracking-wider opacity-60">Từ chối BH</th>
-              <th className="text-right py-2 px-2 text-xs uppercase tracking-wider opacity-60">Tổng tiền hoàn</th>
+              <th className="text-left py-2 px-2 text-xs opacity-60 font-medium">Sản phẩm</th>
+              <th className="text-right py-2 px-2 text-xs opacity-60 font-medium">SL đã bán</th>
+              <th className="text-right py-2 px-2 text-xs opacity-60 font-medium">SL yêu cầu BH</th>
+              <th className="text-right py-2 px-2 text-xs opacity-60 font-medium">Tỷ lệ</th>
+              <th className="text-right py-2 px-2 text-xs opacity-60 font-medium">Đang xử lý</th>
+              <th className="text-right py-2 px-2 text-xs opacity-60 font-medium">Đã xác nhận lỗi</th>
+              <th className="text-right py-2 px-2 text-xs opacity-60 font-medium">Từ chối BH</th>
+              <th className="text-right py-2 px-2 text-xs opacity-60 font-medium">Tổng tiền hoàn</th>
             </tr></thead>
             <tbody>
               {data.map((d) => (
-                <tr key={d.productId} style={{ borderTop: `1px dashed ${LINE}` }}>
-                  <td className="py-2 px-2">{d.name}<span className="opacity-40 text-xs" style={{ fontFamily: "'Inter', sans-serif" }}> · {d.code}</span></td>
+                <tr key={d.productId} style={{ borderTop: `1px solid ${LINE}` }}>
+                  <td className="py-2 px-2">{d.name}<span className="opacity-60 text-xs" style={{ fontFamily: "'Inter', sans-serif" }}> · {d.code}</span></td>
                   <td className="py-2 px-2 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>{d.sold}</td>
                   <td className="py-2 px-2 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>{d.total}</td>
                   <td className="py-2 px-2 text-right font-medium" style={{ fontFamily: "'Inter', sans-serif", color: d.rate === null ? INK : d.rate >= 10 ? RUST : d.rate >= 3 ? BRASS : FOREST }}>{d.rate === null ? "—" : `${d.rate.toFixed(1)}%`}</td>
@@ -13070,9 +13092,9 @@ function TopReturnedProductsReport({ orders, products }) {
 
   return (
     <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-      <h4 className="text-sm uppercase tracking-wider mb-1" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Sản phẩm bị trả lại nhiều nhất</h4>
-      <p className="text-xs opacity-50 mb-5">Giúp phát hiện sản phẩm lỗi/chất lượng kém · Tỷ lệ trả = số lượng trả ÷ số lượng đã bán</p>
-      {data.length === 0 ? <p className="text-sm opacity-50 text-center py-14">Chưa có dữ liệu đổi/trả hàng.</p> : (
+      <h4 className="text-sm mb-1 font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Sản phẩm bị trả lại nhiều nhất</h4>
+      <p className="text-xs opacity-60 mb-5">Giúp phát hiện sản phẩm lỗi/chất lượng kém · Tỷ lệ trả = số lượng trả ÷ số lượng đã bán</p>
+      {data.length === 0 ? <p className="text-sm opacity-60 text-center py-14">Chưa có dữ liệu đổi/trả hàng.</p> : (
         <div className="grid lg:grid-cols-2 gap-6">
           <ResponsiveContainer width="100%" height={Math.max(200, data.length * 34)}>
             <BarChart data={data} layout="vertical" margin={{ left: 8, right: 24 }}>
@@ -13088,7 +13110,7 @@ function TopReturnedProductsReport({ orders, products }) {
           <div className="space-y-1.5 pt-1">
             {data.map((p, i) => (
               <div key={i} className="flex items-center justify-between text-sm p-2.5 rounded-md" style={{ border: `1px dashed ${LINE}` }}>
-                <span className="truncate" style={{ color: INK }}>{i + 1}. {p.name}</span>
+                <span className="truncate" style={{ color: TEXT }}>{i + 1}. {p.name}</span>
                 <span className="opacity-70 whitespace-nowrap ml-2 text-xs">{p.qty} trả / {p.sold} bán{p.rate !== null ? ` · ${p.rate.toFixed(1)}%` : ""}</span>
               </div>
             ))}
@@ -13139,7 +13161,7 @@ function ProfitMarginReport({ orders, products }) {
   return (
     <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
       <div className="flex items-center justify-between mb-1 flex-wrap gap-3">
-        <h4 className="text-sm uppercase tracking-wider" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Biên lợi nhuận gộp theo nhóm hàng / sản phẩm</h4>
+        <h4 className="text-sm font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Biên lợi nhuận gộp theo nhóm hàng / sản phẩm</h4>
         <div className="flex gap-1.5">
           {PERIODS.map((p) => (
             <button key={p.d} onClick={() => setPeriodDays(p.d)} className="text-xs px-3 py-1.5 rounded-full border whitespace-nowrap"
@@ -13149,11 +13171,11 @@ function ProfitMarginReport({ orders, products }) {
           ))}
         </div>
       </div>
-      <p className="text-xs opacity-50 mb-5">Biên lợi nhuận gộp = (giá bán − giá nhập) ÷ doanh thu × 100% · bảng bên dưới sắp theo doanh thu để dễ so sánh "bán nhiều — lời ít"</p>
+      <p className="text-xs opacity-60 mb-5">Biên lợi nhuận gộp = (giá bán − giá nhập) ÷ doanh thu × 100% · bảng bên dưới sắp theo doanh thu để dễ so sánh "bán nhiều — lời ít"</p>
 
       {byCategory.length > 0 && (
         <>
-          <p className="text-xs uppercase tracking-wider mb-3 opacity-60">Biên lợi nhuận theo nhóm hàng</p>
+          <p className="text-xs mb-3 opacity-60 font-medium">Biên lợi nhuận theo nhóm hàng</p>
           <ResponsiveContainer width="100%" height={Math.max(160, byCategory.length * 34)}>
             <BarChart data={byCategory} layout="vertical" margin={{ left: 8, right: 24 }}>
               <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={LINE} />
@@ -13168,19 +13190,19 @@ function ProfitMarginReport({ orders, products }) {
         </>
       )}
 
-      <p className="text-xs uppercase tracking-wider mb-3 mt-7 opacity-60">Sản phẩm bán chạy nhất — kèm biên lợi nhuận</p>
-      {topByRevenue.length === 0 ? <p className="text-sm opacity-50 text-center py-8">Chưa có dữ liệu bán hàng trong khoảng thời gian này.</p> : (
+      <p className="text-xs mb-3 mt-7 opacity-60 font-medium">Sản phẩm bán chạy nhất — kèm biên lợi nhuận</p>
+      {topByRevenue.length === 0 ? <p className="text-sm opacity-60 text-center py-8">Chưa có dữ liệu bán hàng trong khoảng thời gian này.</p> : (
         <div className="rounded-md overflow-x-auto" style={{ border: `1px solid ${LINE}` }}>
           <table className="w-full text-sm" style={{ minWidth: 520 }}>
             <thead><tr style={{ background: PAPER }}>
-              <th className="text-left py-2 px-2 text-xs uppercase tracking-wider opacity-60">Sản phẩm</th>
-              <th className="text-right py-2 px-2 text-xs uppercase tracking-wider opacity-60">Doanh thu</th>
-              <th className="text-right py-2 px-2 text-xs uppercase tracking-wider opacity-60">Lợi nhuận gộp</th>
-              <th className="text-right py-2 px-2 text-xs uppercase tracking-wider opacity-60">Biên LN</th>
+              <th className="text-left py-2 px-2 text-xs opacity-60 font-medium">Sản phẩm</th>
+              <th className="text-right py-2 px-2 text-xs opacity-60 font-medium">Doanh thu</th>
+              <th className="text-right py-2 px-2 text-xs opacity-60 font-medium">Lợi nhuận gộp</th>
+              <th className="text-right py-2 px-2 text-xs opacity-60 font-medium">Biên LN</th>
             </tr></thead>
             <tbody>
               {topByRevenue.map((p, i) => (
-                <tr key={i} style={{ borderTop: `1px dashed ${LINE}` }}>
+                <tr key={i} style={{ borderTop: `1px solid ${LINE}` }}>
                   <td className="py-2 px-2">{p.name}</td>
                   <td className="py-2 px-2 text-right whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(p.revenue)}</td>
                   <td className="py-2 px-2 text-right whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: p.profit >= 0 ? FOREST : RUST }}>{vnd(p.profit)}</td>
@@ -13244,7 +13266,7 @@ function PeriodComparisonReport({ orders, products }) {
   return (
     <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
       <div className="flex items-center justify-between mb-1 flex-wrap gap-3">
-        <h4 className="text-sm uppercase tracking-wider" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>So sánh kỳ này với kỳ trước</h4>
+        <h4 className="text-sm font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>So sánh kỳ này với kỳ trước</h4>
         <div className="flex gap-1.5">
           {MODES.map((m) => (
             <button key={m.id} onClick={() => setMode(m.id)} className="text-xs px-3 py-1.5 rounded-full border whitespace-nowrap"
@@ -13254,7 +13276,7 @@ function PeriodComparisonReport({ orders, products }) {
           ))}
         </div>
       </div>
-      <p className="text-xs opacity-50 mb-5">{ranges.curLabel} (tính đến hôm nay) so với toàn bộ {ranges.prevLabel.toLowerCase()}</p>
+      <p className="text-xs opacity-60 mb-5">{ranges.curLabel} (tính đến hôm nay) so với toàn bộ {ranges.prevLabel.toLowerCase()}</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {metrics.map((m) => {
@@ -13262,13 +13284,13 @@ function PeriodComparisonReport({ orders, products }) {
           const up = change >= 0;
           return (
             <div key={m.key} className="p-4 rounded-md" style={{ border: `1px solid ${LINE}` }}>
-              <p className="text-xs opacity-50 mb-1.5">{m.label}</p>
-              <p className="text-xl font-semibold mb-1" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{m.format(m.cur)}</p>
+              <p className="text-xs opacity-60 mb-1.5">{m.label}</p>
+              <p className="text-xl font-semibold mb-1" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{m.format(m.cur)}</p>
               <div className="flex items-center gap-1.5 text-xs">
                 <span className="px-1.5 py-0.5 rounded-md font-medium" style={{ background: up ? `${FOREST}1A` : `${RUST}1A`, color: up ? FOREST : RUST }}>
                   {up ? "▲" : "▼"} {Math.abs(change).toFixed(1)}%
                 </span>
-                <span className="opacity-50">so với {m.format(m.prev)}</span>
+                <span className="opacity-60">so với {m.format(m.prev)}</span>
               </div>
             </div>
           );
@@ -13358,8 +13380,8 @@ function BusinessActivityChart({ orders, products, onBarClick }) {
 
   return (
     <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-      <h4 className="text-sm uppercase tracking-wider mb-1" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Hoạt động kinh doanh</h4>
-      <p className="text-xs opacity-50 mb-4">Ghi nhận theo ngày giao hàng thành công · Lợi nhuận gộp = (giá bán − giá nhập) × số lượng{onBarClick && " · Bấm vào 1 cột để xem đơn hàng đúng khoảng đó"}</p>
+      <h4 className="text-sm mb-1 font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Hoạt động kinh doanh</h4>
+      <p className="text-xs opacity-60 mb-4">Ghi nhận theo ngày giao hàng thành công · Lợi nhuận gộp = (giá bán − giá nhập) × số lượng{onBarClick && " · Bấm vào 1 cột để xem đơn hàng đúng khoảng đó"}</p>
 
       <div className="flex flex-wrap gap-1.5 mb-4">
         {PRESETS.map((p) => (
@@ -13385,15 +13407,15 @@ function BusinessActivityChart({ orders, products, onBarClick }) {
 
       <div className="grid grid-cols-3 gap-4 mb-5 max-w-2xl">
         <div>
-          <p className="text-xs opacity-50 mb-1">Tổng doanh thu</p>
+          <p className="text-xs opacity-60 mb-1">Tổng doanh thu</p>
           <p className="text-xl font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{vnd(totalRevenue)}</p>
         </div>
         <div>
-          <p className="text-xs opacity-50 mb-1">Tổng lợi nhuận gộp</p>
+          <p className="text-xs opacity-60 mb-1">Tổng lợi nhuận gộp</p>
           <p className="text-xl font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: "#C97F0F" }}>{vnd(totalProfit)}</p>
         </div>
         <div>
-          <p className="text-xs opacity-50 mb-1">Tỉ lệ lợi nhuận</p>
+          <p className="text-xs opacity-60 mb-1">Tỉ lệ lợi nhuận</p>
           <p className="text-xl font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: FOREST }}>{totalRevenue > 0 ? `${((totalProfit / totalRevenue) * 100).toFixed(1)}%` : "—"}</p>
         </div>
       </div>
@@ -13530,8 +13552,8 @@ function ProductAdditionReport({ products, employeeNames, onBarClick }) {
 
   return (
     <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-      <h4 className="text-sm uppercase tracking-wider mb-1" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Tốc độ thêm mã sản phẩm mới</h4>
-      <p className="text-xs opacity-50 mb-4">Số mã sản phẩm mới thêm vào kho và số mã đăng lên website — so với chỉ tiêu ở màn "Kế hoạch"{onBarClick && " · Bấm vào 1 cột để xem đúng sản phẩm khoảng đó"}</p>
+      <h4 className="text-sm mb-1 font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Tốc độ thêm mã sản phẩm mới</h4>
+      <p className="text-xs opacity-60 mb-4">Số mã sản phẩm mới thêm vào kho và số mã đăng lên website — so với chỉ tiêu ở màn "Kế hoạch"{onBarClick && " · Bấm vào 1 cột để xem đúng sản phẩm khoảng đó"}</p>
 
       <div className="flex flex-wrap gap-1.5 mb-4">
         {GRANULARITIES.map(([id, label]) => (
@@ -13544,11 +13566,11 @@ function ProductAdditionReport({ products, employeeNames, onBarClick }) {
 
       <div className="grid grid-cols-2 gap-4 mb-5 max-w-md">
         <div>
-          <p className="text-xs opacity-50 mb-1">Tổng mã mới vào kho</p>
+          <p className="text-xs opacity-60 mb-1">Tổng mã mới vào kho</p>
           <p className="text-xl font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: FOREST }}>{totalAdded.toLocaleString("vi-VN")}</p>
         </div>
         <div>
-          <p className="text-xs opacity-50 mb-1">Tổng mã đăng web</p>
+          <p className="text-xs opacity-60 mb-1">Tổng mã đăng web</p>
           <p className="text-xl font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{totalPublished.toLocaleString("vi-VN")}</p>
         </div>
       </div>
@@ -13567,11 +13589,11 @@ function ProductAdditionReport({ products, employeeNames, onBarClick }) {
 
       {employeeBreakdown.length > 0 && (
         <div className="mt-6 pt-5" style={{ borderTop: `1px solid ${LINE}` }}>
-          <h5 className="text-xs uppercase tracking-wider mb-3" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Theo nhân viên — tháng {monthLabel(monthKey)}</h5>
+          <h5 className="text-xs mb-3 font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Theo nhân viên — tháng {monthLabel(monthKey)}</h5>
           <div className="space-y-2">
             {employeeBreakdown.map((r) => (
-              <div key={r.name} className="flex items-center justify-between text-sm py-1.5" style={{ borderBottom: `1px dashed ${LINE}` }}>
-                <span style={{ color: INK }}>{r.name}</span>
+              <div key={r.name} className="flex items-center justify-between text-sm py-1.5" style={{ borderBottom: `1px solid ${LINE}` }}>
+                <span style={{ color: TEXT }}>{r.name}</span>
                 <span className="flex gap-4">
                   <span style={{ color: FOREST }}>{r.added} mã kho</span>
                   <span style={{ color: BLUE }}>{r.published} mã web</span>
@@ -13688,7 +13710,7 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
 
       <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
         <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
-          <h4 className="text-sm uppercase tracking-wider" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Top 10 sản phẩm bán chạy nhất</h4>
+          <h4 className="text-sm font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Top 10 sản phẩm bán chạy nhất</h4>
           <div className="flex gap-1.5">
             {PRODUCT_PERIODS.map((p) => (
               <button key={p.months} onClick={() => setTop10Period(p.months)} className="text-xs px-3 py-1.5 rounded-full border whitespace-nowrap"
@@ -13698,14 +13720,14 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
             ))}
           </div>
         </div>
-        {top10Products.length === 0 ? <p className="text-sm opacity-50 text-center py-14">Chưa có dữ liệu bán hàng trong khoảng thời gian này.</p> : (
+        {top10Products.length === 0 ? <p className="text-sm opacity-60 text-center py-14">Chưa có dữ liệu bán hàng trong khoảng thời gian này.</p> : (
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-3.5 pt-1">
               {top10Products.map((p, i) => (
                 <div key={i}>
                   <div className="flex justify-between items-baseline gap-3 mb-1">
-                    <span className="text-sm truncate" style={{ color: INK }}>{i + 1}. {p.name}</span>
-                    <span className="text-sm font-medium whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{p.qty} SP</span>
+                    <span className="text-sm truncate" style={{ color: TEXT }}>{i + 1}. {p.name}</span>
+                    <span className="text-sm font-medium whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{p.qty} SP</span>
                   </div>
                   <div className="h-1.5 rounded-full" style={{ background: PAPER }}>
                     <div className="h-1.5 rounded-full" style={{ width: `${(p.qty / top10Products[0].qty) * 100}%`, background: chartColors[i % chartColors.length] }} />
@@ -13727,7 +13749,7 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
 
       <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
         <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
-          <h4 className="text-sm uppercase tracking-wider" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Top sản phẩm bán chạy theo nhóm hàng</h4>
+          <h4 className="text-sm font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Top sản phẩm bán chạy theo nhóm hàng</h4>
           <div className="flex gap-1.5">
             {PRODUCT_PERIODS.map((p) => (
               <button key={p.months} onClick={() => setCatPeriod(p.months)} className="text-xs px-3 py-1.5 rounded-full border whitespace-nowrap"
@@ -13738,7 +13760,7 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
           </div>
         </div>
         {productCategoryOptions.length === 0 ? (
-          <p className="text-sm opacity-50 text-center py-14">Chưa có nhóm hàng nào — vào mục Sản phẩm để tạo nhóm hàng trước.</p>
+          <p className="text-sm opacity-60 text-center py-14">Chưa có nhóm hàng nào — vào mục Sản phẩm để tạo nhóm hàng trước.</p>
         ) : (
           <>
             <div className="mb-5">
@@ -13746,14 +13768,14 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
                 {productCategoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
-            {topCategoryProducts.length === 0 ? <p className="text-sm opacity-50 text-center py-14">Chưa có dữ liệu bán hàng cho nhóm hàng này trong khoảng thời gian đã chọn.</p> : (
+            {topCategoryProducts.length === 0 ? <p className="text-sm opacity-60 text-center py-14">Chưa có dữ liệu bán hàng cho nhóm hàng này trong khoảng thời gian đã chọn.</p> : (
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-3.5 pt-1">
                   {topCategoryProducts.map((p, i) => (
                     <div key={i}>
                       <div className="flex justify-between items-baseline gap-3 mb-1">
-                        <span className="text-sm truncate" style={{ color: INK }}>{i + 1}. {p.name}</span>
-                        <span className="text-sm font-medium whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{p.qty} SP</span>
+                        <span className="text-sm truncate" style={{ color: TEXT }}>{i + 1}. {p.name}</span>
+                        <span className="text-sm font-medium whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{p.qty} SP</span>
                       </div>
                       <div className="h-1.5 rounded-full" style={{ background: PAPER }}>
                         <div className="h-1.5 rounded-full" style={{ width: `${(p.qty / topCategoryProducts[0].qty) * 100}%`, background: chartColors[i % chartColors.length] }} />
@@ -13777,8 +13799,8 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
 
       <div className="grid lg:grid-cols-2 gap-6">
         <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-          <h4 className="text-sm uppercase tracking-wider mb-5" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Doanh số xuất theo nhóm hàng</h4>
-          {byCategory.length === 0 ? <p className="text-sm opacity-50 text-center py-14">Chưa có dữ liệu.</p> : (
+          <h4 className="text-sm mb-5 font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Doanh số xuất theo nhóm hàng</h4>
+          {byCategory.length === 0 ? <p className="text-sm opacity-60 text-center py-14">Chưa có dữ liệu.</p> : (
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={byCategory} layout="vertical" margin={{ left: 8 }}>
                 <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={LINE} />
@@ -13794,14 +13816,14 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
         </div>
 
         <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-          <h4 className="text-sm uppercase tracking-wider mb-5" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Khách hàng chi tiêu nhiều nhất</h4>
-          {topCustomers.length === 0 ? <p className="text-sm opacity-50 text-center py-14">Chưa có dữ liệu bán hàng.</p> : (
+          <h4 className="text-sm mb-5 font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Khách hàng chi tiêu nhiều nhất</h4>
+          {topCustomers.length === 0 ? <p className="text-sm opacity-60 text-center py-14">Chưa có dữ liệu bán hàng.</p> : (
             <div className="space-y-3.5 pt-1">
               {topCustomers.map((c, i) => (
                 <div key={i}>
                   <div className="flex justify-between items-baseline mb-1">
-                    <span className="text-sm" style={{ color: INK }}>{i + 1}. {c.name}</span>
-                    <span className="text-sm font-medium" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(c.total)}</span>
+                    <span className="text-sm" style={{ color: TEXT }}>{i + 1}. {c.name}</span>
+                    <span className="text-sm font-medium" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{vnd(c.total)}</span>
                   </div>
                   <div className="h-1.5 rounded-full" style={{ background: PAPER }}>
                     <div className="h-1.5 rounded-full" style={{ width: `${(c.total / topCustomers[0].total) * 100}%`, background: chartColors[i % chartColors.length] }} />
@@ -13814,21 +13836,21 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
       </div>
 
       <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-        <h4 className="text-sm uppercase tracking-wider mb-5" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Doanh thu mảng dịch vụ</h4>
+        <h4 className="text-sm mb-5 font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Doanh thu mảng dịch vụ</h4>
         {serviceRevenue.items.length === 0 ? (
-          <p className="text-sm opacity-50 text-center py-14">Chưa có doanh thu dịch vụ nào — chuyển phiếu sửa chữa/IT Helpdesk đã hoàn thành thành đơn bán để tính vào đây.</p>
+          <p className="text-sm opacity-60 text-center py-14">Chưa có doanh thu dịch vụ nào — chuyển phiếu sửa chữa/IT Helpdesk đã hoàn thành thành đơn bán để tính vào đây.</p>
         ) : (
           <>
             <div className="flex items-baseline gap-2 mb-5">
-              <span className="text-2xl font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(serviceRevenue.total)}</span>
-              <span className="text-sm opacity-50">· {serviceRevenue.count} lượt dịch vụ</span>
+              <span className="text-2xl font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{vnd(serviceRevenue.total)}</span>
+              <span className="text-sm opacity-60">· {serviceRevenue.count} lượt dịch vụ</span>
             </div>
             <div className="space-y-3.5">
               {serviceRevenue.items.map((s, i) => (
                 <div key={i}>
                   <div className="flex justify-between items-baseline gap-3 mb-1">
-                    <span className="text-sm truncate" style={{ color: INK }}>{s.name}</span>
-                    <span className="text-sm font-medium whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(s.total)} · {s.count} lượt</span>
+                    <span className="text-sm truncate" style={{ color: TEXT }}>{s.name}</span>
+                    <span className="text-sm font-medium whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{vnd(s.total)} · {s.count} lượt</span>
                   </div>
                   <div className="h-1.5 rounded-full" style={{ background: PAPER }}>
                     <div className="h-1.5 rounded-full" style={{ width: `${(s.total / serviceRevenue.items[0].total) * 100}%`, background: chartColors[i % chartColors.length] }} />
@@ -13841,18 +13863,18 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
       </div>
 
       <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-        <h4 className="text-sm uppercase tracking-wider mb-5" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Giá trị tồn kho theo mã VT</h4>
-        {stockAging.length === 0 ? <p className="text-sm opacity-50 text-center py-8">Chưa có sản phẩm.</p> : (
+        <h4 className="text-sm mb-5 font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Giá trị tồn kho theo mã VT</h4>
+        {stockAging.length === 0 ? <p className="text-sm opacity-60 text-center py-8">Chưa có sản phẩm.</p> : (
           <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
             {stockAging.map((s) => {
               const negative = s.giaTri < 0;
               return (
                 <div key={s.code}>
                   <div className="flex justify-between items-baseline mb-1 gap-3">
-                    <span className="text-sm truncate" style={{ color: INK }}>
+                    <span className="text-sm truncate" style={{ color: TEXT }}>
                       <span style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{s.code}</span>
-                      <span className="opacity-50"> · {s.name}</span>
-                      <span className="opacity-40"> ({s.ton} đvt)</span>
+                      <span className="opacity-60"> · {s.name}</span>
+                      <span className="opacity-60"> ({s.ton} đvt)</span>
                     </span>
                     <span className="text-sm font-medium shrink-0" style={{ fontFamily: "'Inter', sans-serif", color: negative ? RUST : INK }}>{vnd(s.giaTri)}</span>
                   </div>
@@ -13911,7 +13933,7 @@ function LoginScreen({ accounts, onLogin, onUpgradeHash }) {
       <div className="w-full max-w-md p-9 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
         <div className="flex items-center gap-3.5 mb-2">
           <HiliLogo size={52} />
-          <h1 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, color: INK }} className="text-2xl leading-tight">Quản lý bán hàng Hilitek</h1>
+          <h1 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, color: TEXT }} className="text-2xl leading-tight">Quản lý bán hàng Hilitek</h1>
         </div>
         <p className="text-xs uppercase tracking-widest mb-8" style={{ color: BRASS }}>đăng nhập để tiếp tục</p>
 
@@ -13923,7 +13945,7 @@ function LoginScreen({ accounts, onLogin, onUpgradeHash }) {
           <div className="relative">
             <input type={showPassword ? "text" : "password"} className={inputCls} style={{ borderColor: LINE, paddingRight: 28 }} value={password} onChange={(e) => setPassword(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") submit(); }} placeholder="••••••••" />
-            <button type="button" onClick={() => setShowPassword((s) => !s)} className="absolute right-0 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100" style={{ color: INK }}>
+            <button type="button" onClick={() => setShowPassword((s) => !s)} className="absolute right-0 top-1/2 -translate-y-1/2 opacity-60 hover:opacity-100" style={{ color: TEXT }}>
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
@@ -13974,10 +13996,10 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
   const submit = async () => {
     const username = form.username.trim().toLowerCase();
     if (!username || !form.fullName) return;
-    if (!editing.id && !form.password) { alert("Vui lòng đặt mật khẩu cho tài khoản mới."); return; }
-    if (accounts.some((a) => a.username === username && a.id !== editing.id)) { alert("Tên đăng nhập đã tồn tại."); return; }
-    if (editing.id && !canManage(editing)) { alert("Bạn không có quyền sửa tài khoản này."); return; }
-    if (form.password && form.password.length < 6) { alert("Mật khẩu tối thiểu 6 ký tự."); return; }
+    if (!editing.id && !form.password) { notify("Vui lòng đặt mật khẩu cho tài khoản mới."); return; }
+    if (accounts.some((a) => a.username === username && a.id !== editing.id)) { notify("Tên đăng nhập đã tồn tại."); return; }
+    if (editing.id && !canManage(editing)) { notify("Bạn không có quyền sửa tài khoản này."); return; }
+    if (form.password && form.password.length < 6) { notify("Mật khẩu tối thiểu 6 ký tự."); return; }
     const passFields = form.password ? await makePasswordFields(form.password) : {};
     const perms = { ...EMPTY_PERMS, ...form.perms };
     if (editing.id) {
@@ -13994,13 +14016,13 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
     setEditing(null);
   };
   const toggleActive = (a) => {
-    if (a.isOwner) { alert("Không thể khoá tài khoản chủ."); return; }
-    if (a.id === currentUser.id) { alert("Không thể tự khoá tài khoản đang đăng nhập."); return; }
+    if (a.isOwner) { notify("Không thể khoá tài khoản chủ."); return; }
+    if (a.id === currentUser.id) { notify("Không thể tự khoá tài khoản đang đăng nhập."); return; }
     setAccounts((prev) => prev.map((x) => (x.id === a.id ? { ...x, active: !x.active } : x)));
   };
   const remove = (a) => {
-    if (a.isOwner) { alert("Không thể xoá tài khoản chủ."); return; }
-    if (a.id === currentUser.id) { alert("Không thể xoá tài khoản đang đăng nhập."); return; }
+    if (a.isOwner) { notify("Không thể xoá tài khoản chủ."); return; }
+    if (a.id === currentUser.id) { notify("Không thể xoá tài khoản đang đăng nhập."); return; }
     if (!canManage(a)) return;
     setAccounts((prev) => prev.filter((x) => x.id !== a.id));
     addLog && addLog("Xoá tài khoản", a.username);
@@ -14018,9 +14040,9 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
       <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "65vh" }}>
         <table className="w-full text-sm" style={{ minWidth: 620 }}>
           <thead>
-            <tr style={{ borderBottom: `2px solid ${INK}` }}>
+            <tr style={{ borderBottom: `1px solid ${LINE}` }}>
               {["Tên đăng nhập", "Họ tên", "Vai trò", "Trạng thái", ""].map((h, hi) => (
-                <th key={hi} className="text-left px-3 py-2.5 text-xs uppercase tracking-wider whitespace-nowrap" style={{ color: INK, opacity: 0.6 }}>{h}</th>
+                <th key={hi} className="text-left px-3 py-2.5 text-xs whitespace-nowrap font-medium" style={{ color: TEXT, opacity: 0.6 }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -14029,24 +14051,24 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
               const role = ACCOUNT_ROLES.find((r) => r.id === a.role);
               const locked = !canManage(a);
               return (
-                <tr key={a.id} style={{ borderBottom: `1px dashed ${LINE}` }} className="hover:bg-black/[0.02]">
-                  <td className="px-3 py-3 font-medium whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>
+                <tr key={a.id} style={{ borderBottom: `1px solid ${LINE}` }} className="hover:bg-black/[0.02]">
+                  <td className="px-3 py-3 font-medium whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>
                     {a.isOwner && <Crown size={13} className="inline mr-1 -mt-0.5" style={{ color: BRASS }} />}
-                    {a.username}{a.id === currentUser.id && <span className="ml-1.5 text-[10px] opacity-40">(bạn)</span>}
+                    {a.username}{a.id === currentUser.id && <span className="ml-1.5 text-xs opacity-60">(bạn)</span>}
                   </td>
-                  <td className="px-3 py-3 whitespace-nowrap" style={{ color: INK }}>{a.fullName}</td>
+                  <td className="px-3 py-3 whitespace-nowrap" style={{ color: TEXT }}>{a.fullName}</td>
                   <td className="px-3 py-3 whitespace-nowrap">
-                    <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: a.role === "admin" ? `${BRASS}1A` : `${BLUE}15`, color: a.role === "admin" ? BRASS : BLUE }}>{a.isOwner ? "Chủ sở hữu" : role.label}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: a.role === "admin" ? `${BRASS}1A` : `${BLUE}15`, color: a.role === "admin" ? BRASS : BLUE }}>{a.isOwner ? "Chủ sở hữu" : role.label}</span>
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap">
-                    <button onClick={() => toggleActive(a)} disabled={a.isOwner} className="text-[11px] px-2 py-0.5 rounded-full disabled:opacity-60 disabled:cursor-default" style={{ background: a.active ? `${FOREST}1A` : `${RUST}1A`, color: a.active ? FOREST : RUST }}>
+                    <button onClick={() => toggleActive(a)} disabled={a.isOwner} className="text-xs px-2 py-0.5 rounded-full disabled:opacity-60 disabled:cursor-default" style={{ background: a.active ? `${FOREST}1A` : `${RUST}1A`, color: a.active ? FOREST : RUST }}>
                       {a.active ? "Đang hoạt động" : "Đã khoá"}
                     </button>
                   </td>
                   <td className="px-3 py-3">
                     <div className="flex gap-1.5 justify-end whitespace-nowrap">
                       {locked ? (
-                        <span className="text-[10px] opacity-40 pr-1">Chỉ chính chủ</span>
+                        <span className="text-xs opacity-60 pr-1">Chỉ chính chủ</span>
                       ) : (
                         <>
                           {!a.isOwner && onKickAccount && (
@@ -14079,7 +14101,7 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
 
       {onDownloadBackup && (
         <div className="mt-8 p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-          <p className="text-sm font-medium mb-1" style={{ color: INK }}>Sao lưu &amp; phục hồi</p>
+          <p className="text-sm font-medium mb-1" style={{ color: TEXT }}>Sao lưu &amp; phục hồi</p>
           <p className="text-xs opacity-70 mb-3">
             Tải toàn bộ dữ liệu (sản phẩm, đơn hàng, khách hàng, kho, tài khoản, cấu hình web…) xuống máy dưới dạng 1 file <code>.json</code> —
             bản sao ngoài hệ thống, nên tải định kỳ và cất nơi an toàn. Ngoài ra hệ thống tự sao lưu hằng ngày lên Supabase
@@ -14207,8 +14229,8 @@ function MyProfile({ currentUser, setAccounts, addLog }) {
     <div className="max-w-xl flex flex-col gap-5">
       <div className="p-5 rounded-md" style={card}>
         <div className="flex items-center gap-2 mb-4">
-          <UserCircle size={20} style={{ color: INK }} />
-          <h3 className="text-base" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, color: INK }}>Thông tin cá nhân</h3>
+          <UserCircle size={20} style={{ color: TEXT }} />
+          <h3 className="text-base" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, color: TEXT }}>Thông tin cá nhân</h3>
         </div>
         <div className="grid grid-cols-2 gap-3 mb-3">
           <Field label="Tên đăng nhập">
@@ -14227,8 +14249,8 @@ function MyProfile({ currentUser, setAccounts, addLog }) {
 
       <div className="p-5 rounded-md" style={card}>
         <div className="flex items-center gap-2 mb-4">
-          <KeyRound size={18} style={{ color: INK }} />
-          <h3 className="text-base" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, color: INK }}>Đổi mật khẩu</h3>
+          <KeyRound size={18} style={{ color: TEXT }} />
+          <h3 className="text-base" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, color: TEXT }}>Đổi mật khẩu</h3>
         </div>
         <Field label="Mật khẩu hiện tại">
           <input type={showPw ? "text" : "password"} className={inputCls} style={{ borderColor: LINE }} value={curPw} onChange={(e) => setCurPw(e.target.value)} />
@@ -14272,13 +14294,13 @@ function NotificationBell({ notifications, markRead, markAllRead, onGoto }) {
       <button onClick={() => setOpen((o) => !o)} className="w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm relative" style={{ color: "rgba(255,255,255,0.75)", background: open ? "rgba(255,255,255,0.08)" : "transparent" }}>
         <Bell size={18} />
         Thông báo
-        {unread.length > 0 && <span className="ml-auto text-[10px] w-5 h-5 rounded-full flex items-center justify-center text-white font-semibold" style={{ background: RUST }}>{unread.length > 99 ? "99+" : unread.length}</span>}
+        {unread.length > 0 && <span className="ml-auto text-xs w-5 h-5 rounded-full flex items-center justify-center text-white font-semibold" style={{ background: RUST }}>{unread.length > 99 ? "99+" : unread.length}</span>}
       </button>
       {open && (
         <div className="mt-1 rounded-md p-2.5 max-h-[45vh] overflow-y-auto" style={{ background: "rgba(0,0,0,0.18)", border: "1px solid rgba(255,255,255,0.1)" }}>
           <div className="flex items-center justify-between mb-2 px-0.5">
-            <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>{unread.length} chưa đọc · tự xoá sau 3 ngày</span>
-            {unread.length > 0 && <button onClick={markAllRead} className="text-[11px] underline" style={{ color: "rgba(255,255,255,0.6)" }}>Đánh dấu tất cả</button>}
+            <span className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>{unread.length} chưa đọc · tự xoá sau 3 ngày</span>
+            {unread.length > 0 && <button onClick={markAllRead} className="text-xs underline" style={{ color: "rgba(255,255,255,0.6)" }}>Đánh dấu tất cả</button>}
           </div>
           {sorted.length === 0 ? <p className="text-xs text-center py-6" style={{ color: "rgba(255,255,255,0.4)" }}>Không có thông báo nào.</p> : (
             <div className="space-y-1.5">
@@ -14292,7 +14314,7 @@ function NotificationBell({ notifications, markRead, markAllRead, onGoto }) {
                       {n.read && <Check size={11} color="#fff" />}
                     </button>
                     <button onClick={() => { if (nav) { onGoto(n); setOpen(false); } }} disabled={!nav} className="min-w-0 text-left" style={{ cursor: nav ? "pointer" : "default" }}>
-                      <p className="text-[10px] uppercase tracking-wider font-medium" style={{ color: cat?.color || "rgba(255,255,255,0.7)" }}>{cat?.label}</p>
+                      <p className="text-xs font-medium" style={{ color: cat?.color || "rgba(255,255,255,0.7)" }}>{cat?.label}</p>
                       <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.85)", textDecoration: nav ? "underline" : "none", textDecorationColor: "rgba(255,255,255,0.25)" }}>{n.detail}</p>
                     </button>
                   </div>
@@ -14491,12 +14513,12 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
     <div>
       <div className="flex items-center gap-1.5 mb-3 flex-wrap">
         <div className="relative flex-1 min-w-[220px] max-w-md">
-          <Search size={15} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50" />
+          <Search size={15} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-60" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm tên / SKU…"
             className="w-full pl-7 pr-2 py-1.5 text-sm rounded-md border-2 outline-none" style={{ borderColor: INK, background: "#fff" }} />
         </div>
-        <button onClick={() => setShowFilters((s) => !s)} className="flex items-center gap-1.5 text-sm px-3.5 py-1.5 rounded-md border shrink-0" style={{ borderColor: activeFilterCount ? INK : LINE, color: INK, background: showFilters ? PAPER : "#fff" }}>
-          <Filter size={14} /> Bộ lọc {activeFilterCount > 0 && <span className="text-[10px] px-1.5 rounded-full text-white" style={{ background: INK }}>{activeFilterCount}</span>}
+        <button onClick={() => setShowFilters((s) => !s)} className="flex items-center gap-1.5 text-sm px-3.5 py-1.5 rounded-md border shrink-0" style={{ borderColor: activeFilterCount ? INK : LINE, color: TEXT, background: showFilters ? PAPER : "#fff" }}>
+          <Filter size={14} /> Bộ lọc {activeFilterCount > 0 && <span className="text-xs px-1.5 rounded-full text-white" style={{ background: INK }}>{activeFilterCount}</span>}
         </button>
         {activeFilterCount > 0 && (
           <button onClick={() => { setFilterCategory(""); setFilterBrand(""); }} className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full font-medium shrink-0" style={{ background: `${RUST}1A`, color: RUST }}>
@@ -14552,7 +14574,7 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 && <tr><td colSpan={7} className="text-center py-8 opacity-50">Không có sản phẩm.</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={7} className="text-center py-8 opacity-60">Không có sản phẩm.</td></tr>}
             {(() => {
               const renderRow = (p, indent) => {
                 const st = productStats(p);
@@ -14579,10 +14601,10 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
                         )}
                         <div>
                           <a href={`/quanlybanhang?webproduct=${p.id}`} onClick={(e) => { if (e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); setEditId(p.id); }}
-                            className="font-medium leading-tight hover:underline" style={{ color: INK }}>
-                            {indent ? (vLabel || p.name) : p.name}{!indent && vLabel && <span className="opacity-50"> — {vLabel}</span>}
+                            className="font-medium leading-tight hover:underline" style={{ color: TEXT }}>
+                            {indent ? (vLabel || p.name) : p.name}{!indent && vLabel && <span className="opacity-60"> — {vLabel}</span>}
                           </a>
-                          <div className="text-[11px] opacity-50" style={{ fontFamily: "'Inter', sans-serif" }}>{p.sku}</div>
+                          <div className="text-xs opacity-60" style={{ fontFamily: "'Inter', sans-serif" }}>{p.sku}</div>
                         </div>
                       </div>
                     </td>
@@ -14596,11 +14618,11 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
                     </td>
                     <td className="px-3 py-2.5 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>
                       {p.web?.virtualStock
-                        ? <span style={{ color: BLUE }} title="Tồn kho ảo bán online">{p.web.virtualStockQty || 8} <span className="text-[10px] opacity-60">ảo</span></span>
+                        ? <span style={{ color: BLUE }} title="Tồn kho ảo bán online">{p.web.virtualStockQty || 8} <span className="text-xs opacity-60">ảo</span></span>
                         : <span style={{ color: st.closingQty <= 0 ? RUST : INK }}>{st.closingQty}</span>}
                     </td>
                     <td className="px-3 py-2.5 text-right">
-                      <button onClick={() => setEditId(p.id)} className="text-xs px-2.5 py-1 rounded-md border" style={{ borderColor: LINE, color: INK }}>
+                      <button onClick={() => setEditId(p.id)} className="text-xs px-2.5 py-1 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>
                         Sửa
                       </button>
                     </td>
@@ -14637,10 +14659,10 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
                           )}
                           <div>
                             <a href={`/quanlybanhang?webproduct=${rep.id}`} onClick={(e) => { if (e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); setEditId(rep.id); }}
-                              className="font-medium leading-tight hover:underline" style={{ color: INK }}>
+                              className="font-medium leading-tight hover:underline" style={{ color: TEXT }}>
                               {baseVariantName(rep)}
                             </a>
-                            <div className="text-[11px] mt-0.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md uppercase tracking-wider" style={{ background: `${PURPLE}1A`, color: PURPLE }}><Layers size={9} /> {members.length} phiên bản</div>
+                            <div className="text-xs mt-0.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md font-medium" style={{ background: `${PURPLE}1A`, color: PURPLE }}><Layers size={9} /> {members.length} phiên bản</div>
                           </div>
                         </div>
                       </td>
@@ -14654,7 +14676,7 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
                       </td>
                       <td className="px-3 py-2.5 text-right" style={{ fontFamily: "'Inter', sans-serif", color: stockSum <= 0 ? RUST : INK }}>{stockSum}</td>
                       <td className="px-3 py-2.5 text-right">
-                        <button onClick={() => setEditId(rep.id)} className="text-xs px-2.5 py-1 rounded-md border" style={{ borderColor: LINE, color: INK }}>
+                        <button onClick={() => setEditId(rep.id)} className="text-xs px-2.5 py-1 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>
                           Sửa
                         </button>
                       </td>
@@ -14668,7 +14690,7 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
         </table>
       </div>
       {webGroups.length > 0 && (
-        <div className="flex items-center justify-between mt-2.5 text-xs" style={{ color: INK, opacity: 0.7 }}>
+        <div className="flex items-center justify-between mt-2.5 text-xs" style={{ color: TEXT, opacity: 0.7 }}>
           <span>
             {(webSafePage - 1) * WEB_PAGE_SIZE + 1}–{Math.min(webSafePage * WEB_PAGE_SIZE, webGroups.length)} / {webGroups.length} sản phẩm
           </span>
@@ -14681,7 +14703,7 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
           </div>
         </div>
       )}
-      <p className="text-xs opacity-50 mt-3">Thay đổi tự lưu. Web khách cập nhật khi tải lại trang.</p>
+      <p className="text-xs opacity-60 mt-3">Thay đổi tự lưu. Web khách cập nhật khi tải lại trang.</p>
     </div>
   );
 }
@@ -14737,7 +14759,7 @@ function CopyWebInfoButton({ product, products, setWeb }) {
   return (
     <>
       <button type="button" onClick={() => setOpen(true)}
-        className="text-xs px-2.5 py-1.5 rounded-md border inline-flex items-center gap-1.5" style={{ borderColor: LINE, color: INK }}>
+        className="text-xs px-2.5 py-1.5 rounded-md border inline-flex items-center gap-1.5" style={{ borderColor: LINE, color: TEXT }}>
         <Copy size={13} /> Sao chép từ sản phẩm khác
       </button>
       {open && (
@@ -14747,12 +14769,12 @@ function CopyWebInfoButton({ product, products, setWeb }) {
               <input value={q} onChange={(e) => setQ(e.target.value)} autoFocus placeholder="Tìm tên / SKU sản phẩm nguồn…"
                 className="w-full border rounded-md py-2 px-3 text-sm mb-2" style={{ borderColor: LINE }} />
               <div className="max-h-64 overflow-y-auto space-y-1">
-                {q.trim() && matches.length === 0 && <p className="text-xs opacity-50 py-4 text-center">Không tìm thấy sản phẩm nào.</p>}
+                {q.trim() && matches.length === 0 && <p className="text-xs opacity-60 py-4 text-center">Không tìm thấy sản phẩm nào.</p>}
                 {matches.map((x) => (
                   <button key={x.id} onClick={() => setPicked(x)}
                     className="w-full text-left px-3 py-2 rounded-md text-sm hover:bg-black/5 flex items-center justify-between gap-3" style={{ border: `1px solid ${LINE}` }}>
                     <span className="truncate">{x.name}</span>
-                    <span className="opacity-50 text-xs shrink-0" style={{ fontFamily: "'Inter', sans-serif" }}>{x.sku}</span>
+                    <span className="opacity-60 text-xs shrink-0" style={{ fontFamily: "'Inter', sans-serif" }}>{x.sku}</span>
                   </button>
                 ))}
               </div>
@@ -14760,7 +14782,7 @@ function CopyWebInfoButton({ product, products, setWeb }) {
           ) : (
             <div>
               <div className="flex items-center justify-between p-2.5 rounded-md text-sm mb-3" style={{ background: PAPER }}>
-                <span><b>{picked.name}</b> <span className="opacity-50">({picked.sku})</span></span>
+                <span><b>{picked.name}</b> <span className="opacity-60">({picked.sku})</span></span>
                 <button onClick={() => setPicked(null)} className="text-xs underline opacity-60 shrink-0">Đổi</button>
               </div>
               <p className="text-xs opacity-60 mb-2">Chọn phần muốn sao chép sang sản phẩm này (sẽ ghi đè phần đang có):</p>
@@ -14889,7 +14911,7 @@ function AIWriteFromUrl({ onApply, product, products, setProducts, addLog }) {
       <p className="text-base font-bold mb-1 flex items-center gap-1.5" style={{ color: RUST }}>
         <Sparkles size={15} /> Viết bằng AI từ link hãng
       </p>
-      <p className="text-[11px] opacity-50 mb-2">
+      <p className="text-xs opacity-60 mb-2">
         Dán link trang sản phẩm của hãng/NCC (tối đa {AI_WRITE_MAX_URLS} link để AI đối chiếu chéo, viết đủ hơn) — AI đọc nội dung
         rồi tự viết lại mô tả, thông số kỹ thuật và các trường SEO (slug, tiêu đề, mô tả) điền vào bản nháp bên dưới.
         Tự bỏ qua tên/địa chỉ/hotline của các shop khác nếu có trong trang. Luôn xem & sửa lại trước khi bấm <b>Lưu</b>.
@@ -14902,12 +14924,12 @@ function AIWriteFromUrl({ onApply, product, products, setProducts, addLog }) {
               className="flex-1 min-w-[220px] border rounded-md px-2 py-1.5 text-sm" style={{ borderColor: LINE }}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), fetchInfo())} />
             {urls.length > 1 && (
-              <button type="button" onClick={() => removeUrl(i)} disabled={busy} title="Bỏ link này" className="px-2 rounded-md border shrink-0" style={{ borderColor: LINE, color: INK }}>
+              <button type="button" onClick={() => removeUrl(i)} disabled={busy} title="Bỏ link này" className="px-2 rounded-md border shrink-0" style={{ borderColor: LINE, color: TEXT }}>
                 <X size={13} />
               </button>
             )}
             {i === urls.length - 1 && urls.length < AI_WRITE_MAX_URLS && (
-              <button type="button" onClick={addUrl} disabled={busy} className="text-xs px-2.5 py-1.5 rounded-md border shrink-0 inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK }}>
+              <button type="button" onClick={addUrl} disabled={busy} className="text-xs px-2.5 py-1.5 rounded-md border shrink-0 inline-flex items-center gap-1" style={{ borderColor: LINE, color: TEXT }}>
                 <Plus size={13} /> Thêm link
               </button>
             )}
@@ -14920,11 +14942,11 @@ function AIWriteFromUrl({ onApply, product, products, setProducts, addLog }) {
           </div>
         ))}
       </div>
-      {msg && <p className="text-[12px] mt-1.5" style={{ color: /Lỗi|không/i.test(msg) ? RUST : BLUE }}>{msg}</p>}
+      {msg && <p className="text-xs mt-1.5" style={{ color: /Lỗi|không/i.test(msg) ? RUST : BLUE }}>{msg}</p>}
 
       {preview && (
         <div className="mt-3 p-3 rounded-md space-y-2" style={{ background: PAPER, border: `1px dashed ${LINE}` }}>
-          <p className="text-xs font-medium truncate" style={{ color: INK }}>Đã viết từ: <span className="opacity-60 font-normal">{preview.title || preview.sourceUrl}</span></p>
+          <p className="text-xs font-medium truncate" style={{ color: TEXT }}>Đã viết từ: <span className="opacity-60 font-normal">{preview.title || preview.sourceUrl}</span></p>
           <label className="flex items-start gap-2 text-xs cursor-pointer">
             <input type="checkbox" checked={pick.description} disabled={!preview.description} onChange={(e) => setPick((v) => ({ ...v, description: e.target.checked }))} />
             <span>Nội dung mô tả {preview.description ? `(${preview.description.length} ký tự)` : "— AI không viết được"}</span>
@@ -14951,7 +14973,7 @@ function AIWriteFromUrl({ onApply, product, products, setProducts, addLog }) {
           </label>
           <div className="flex gap-2 pt-1">
             <button type="button" onClick={apply} disabled={busy} className="px-3 py-1.5 rounded-md text-white text-xs disabled:opacity-50" style={{ background: INK }}>Điền vào bản nháp</button>
-            <button type="button" onClick={() => { setPreview(null); setMsg(""); }} className="px-3 py-1.5 rounded-md border text-xs" style={{ borderColor: LINE, color: INK }}>Bỏ qua</button>
+            <button type="button" onClick={() => { setPreview(null); setMsg(""); }} className="px-3 py-1.5 rounded-md border text-xs" style={{ borderColor: LINE, color: TEXT }}>Bỏ qua</button>
           </div>
         </div>
       )}
@@ -15011,7 +15033,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
     const mySlug = effSlugOf({ ...p, web: draft });
     const clash = products.find((x) => x.id !== p.id && effSlugOf(x) === mySlug);
     if (clash) {
-      alert(`Đường dẫn SEO "${mySlug}" đang trùng với sản phẩm "${clash.name}" (${clash.sku}). Đổi slug khác cho 1 trong 2 rồi lưu lại — trùng đường dẫn sẽ khiến khách không bấm chuyển được giữa các phiên bản/sản phẩm trên web.`);
+      notify(`Đường dẫn SEO "${mySlug}" đang trùng với sản phẩm "${clash.name}" (${clash.sku}). Đổi slug khác cho 1 trong 2 rồi lưu lại — trùng đường dẫn sẽ khiến khách không bấm chuyển được giữa các phiên bản/sản phẩm trên web.`);
       return;
     }
     const stampPublish = (x, nw) => { if (nw.published && !x.web?.publishedAt) { nw.publishedAt = new Date().toISOString(); nw.publishedBy = currentUser.fullName; } return nw; };
@@ -15104,15 +15126,15 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
     <div>
       <div className="sticky top-0 z-10 pt-1 pb-3 mb-3 -mt-1" style={{ background: PAPER, borderBottom: `1px solid ${LINE}` }}>
       <div className="flex items-center gap-3 flex-wrap">
-        <button onClick={handleBack} title="Danh sách sản phẩm web" className="w-8 h-8 rounded-md border inline-flex items-center justify-center shrink-0" style={{ borderColor: LINE, color: INK, background: "#fff" }}>
+        <button onClick={handleBack} title="Danh sách sản phẩm web" className="w-8 h-8 rounded-md border inline-flex items-center justify-center shrink-0" style={{ borderColor: LINE, color: TEXT, background: "#fff" }}>
           <ChevronLeft size={16} />
         </button>
         <div className="min-w-0 flex-1">
-          <h3 className="text-base font-semibold truncate" style={{ color: INK }} title={p.name}>{p.name}</h3>
-          <div className="text-xs opacity-55 truncate">{p.sku} · {p.category || "—"}</div>
+          <h3 className="text-base font-semibold truncate" style={{ color: TEXT }} title={p.name}>{p.name}</h3>
+          <div className="text-xs opacity-60 truncate">{p.sku} · {p.category || "—"}</div>
         </div>
         {dirty && <span className="text-xs font-medium" style={{ color: BRASS }}>● Chưa lưu</span>}
-        <button onClick={doDiscard} disabled={!dirty} className="text-xs px-3 py-1.5 rounded-md border disabled:opacity-40" style={{ borderColor: LINE, color: INK, background: "#fff" }}>
+        <button onClick={doDiscard} disabled={!dirty} className="text-xs px-3 py-1.5 rounded-md border disabled:opacity-40" style={{ borderColor: LINE, color: TEXT, background: "#fff" }}>
           Huỷ
         </button>
         <button onClick={doSave} disabled={!dirty} className="text-xs px-3.5 py-1.5 rounded-md text-white disabled:opacity-40 inline-flex items-center gap-1.5" style={{ background: INK }}>
@@ -15123,7 +15145,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
       {otherEditor && (
         <div className="mt-2 p-2.5 rounded-md flex items-start gap-2" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44` }}>
           <AlertTriangle size={15} style={{ color: RUST }} className="mt-0.5 shrink-0" />
-          <p className="text-xs" style={{ color: INK }}>
+          <p className="text-xs" style={{ color: TEXT }}>
             <span className="font-medium" style={{ color: RUST }}>{otherEditor.by}</span> cũng đang sửa sản phẩm này (từ {formatDateTime(otherEditor.at)}). Ai bấm Lưu sau sẽ đè thay đổi của người trước.
           </p>
         </div>
@@ -15147,7 +15169,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
                 const active = s.id === p.id;
                 return (
                   <button key={s.id} onClick={() => switchTo(s.id)} className="text-xs px-3 py-1.5 rounded-md border"
-                    style={active ? { background: INK, borderColor: INK, color: "#fff" } : { borderColor: LINE, color: INK, background: "#fff" }}>
+                    style={active ? { background: INK, borderColor: INK, color: "#fff" } : { borderColor: LINE, color: TEXT, background: "#fff" }}>
                     {label || s.name}
                   </button>
                 );
@@ -15168,7 +15190,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
               goToInventoryProductEdit(p.id);
             }}
             title="Sửa mã VT, giá nhập/bán, tồn kho... của sản phẩm này"
-            className="text-xs inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK, background: "#fff" }}
+            className="text-xs inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT, background: "#fff" }}
           >
             <Package size={13} /> Tồn kho
           </button>
@@ -15205,7 +15227,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
           </div>
 
           <div className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-            <p className="text-base font-bold mb-2" style={{ color: RUST }}>Ảnh sản phẩm trên web <span className="text-xs font-normal opacity-50">(tối đa 10, chất lượng cao — bỏ trống = dùng ảnh ở form sản phẩm chính)</span></p>
+            <p className="text-base font-bold mb-2" style={{ color: RUST }}>Ảnh sản phẩm trên web <span className="text-xs font-normal opacity-60">(tối đa 10, chất lượng cao — bỏ trống = dùng ảnh ở form sản phẩm chính)</span></p>
             <WebImageGrid images={w.images} onChange={(imgs) => setWeb({ images: imgs })} max={10} />
           </div>
 
@@ -15213,11 +15235,11 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
             <div className="flex items-center justify-between gap-2 mb-1">
               <span className="text-base font-bold" style={{ color: RUST }}>Thông số kỹ thuật (web)</span>
               <button type="button" onClick={() => setWeb({ specsText: autoFormatSpecsText(w.specsText) })}
-                className="text-xs px-2 py-1 rounded-md border inline-flex items-center gap-1 shrink-0" style={{ borderColor: LINE, color: INK }}>
+                className="text-xs px-2 py-1 rounded-md border inline-flex items-center gap-1 shrink-0" style={{ borderColor: LINE, color: TEXT }}>
                 <Wand2 size={12} /> Chuẩn hoá "Nhãn | Giá trị"
               </button>
             </div>
-            <p className="text-[11px] opacity-50 mb-1.5">
+            <p className="text-xs opacity-60 mb-1.5">
               Mỗi dòng: Nhãn | Giá trị. Dòng không có | sẽ nối tiếp (xuống dòng) vào giá trị phía trên.
               Dán thông số từ trang khác (dùng dấu ":" hoặc tab) rồi bấm "Chuẩn hoá" để tự thêm dấu |.
             </p>
@@ -15235,27 +15257,27 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
               <input type="checkbox" checked={!!w.published} onChange={(e) => setWeb({ published: e.target.checked })} />
               <span>{w.published ? "Đang bán trên web" : "Ẩn khỏi web"}</span>
             </label>
-            <p className="text-[11px] opacity-50 mt-1">Bỏ tick = sản phẩm không hiện trên website khách.</p>
+            <p className="text-xs opacity-60 mt-1">Bỏ tick = sản phẩm không hiện trên website khách.</p>
 
-            <div className="mt-3 pt-3" style={{ borderTop: `1px dashed ${LINE}` }}>
+            <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${LINE}` }}>
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <input type="checkbox" checked={!!w.virtualStock}
                   onChange={(e) => setWeb({ virtualStock: e.target.checked, virtualStockQty: e.target.checked ? (w.virtualStockQty || randomVirtualStock()) : 0 })} />
                 <span>Tồn kho ảo bán online</span>
               </label>
-              <p className="text-[11px] opacity-50 mt-1">Web hiển thị "còn hàng" theo số ảo bên dưới (không lộ tồn thật) — dùng cho hàng dropship / nhập nhanh từ NPP.</p>
+              <p className="text-xs opacity-60 mt-1">Web hiển thị "còn hàng" theo số ảo bên dưới (không lộ tồn thật) — dùng cho hàng dropship / nhập nhanh từ NPP.</p>
               {w.virtualStock && (
                 <div className="mt-2 flex items-center gap-2">
                   <span className="text-xs opacity-60">Số lượng ảo</span>
                   <input type="number" min={1} className="w-20 border rounded-md py-1 px-2 text-sm" style={{ borderColor: LINE }}
                     value={w.virtualStockQty || ""} onChange={(e) => setWeb({ virtualStockQty: Math.max(0, Math.floor(Number(e.target.value) || 0)) })} />
                   <button type="button" onClick={() => setWeb({ virtualStockQty: randomVirtualStock() })}
-                    className="text-xs px-2 py-1 rounded-md border" style={{ borderColor: LINE, color: INK }}>🎲 Số khác</button>
+                    className="text-xs px-2 py-1 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>🎲 Số khác</button>
                 </div>
               )}
             </div>
 
-            <div className="mt-3 pt-3" style={{ borderTop: `1px dashed ${LINE}` }}>
+            <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${LINE}` }}>
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <input type="checkbox"
                   checked={(w.categories || []).includes(WEB_FLASH_CAT)}
@@ -15266,19 +15288,19 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
                   })} />
                 <span>⚡ Đưa vào khối Flash Sale trang chủ</span>
               </label>
-              <p className="text-[11px] opacity-50 mt-1">Sản phẩm sẽ hiện trong khối Flash Sale (không cần nằm trong menu danh mục). Số lượng & cách sắp xếp chỉnh ở Cấu hình web → Flash Sale.</p>
+              <p className="text-xs opacity-60 mt-1">Sản phẩm sẽ hiện trong khối Flash Sale (không cần nằm trong menu danh mục). Số lượng & cách sắp xếp chỉnh ở Cấu hình web → Flash Sale.</p>
             </div>
 
-            <div className="mt-3 pt-3" style={{ borderTop: `1px dashed ${LINE}` }}>
+            <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${LINE}` }}>
               <label className="text-sm block mb-1">Độ ưu tiên hiển thị</label>
               <input type="number" className="w-24 border rounded-md py-1 px-2 text-sm" style={{ borderColor: LINE }}
                 value={w.priority || 0} onChange={(e) => setWeb({ priority: Math.floor(Number(e.target.value) || 0) })} />
-              <p className="text-[11px] opacity-50 mt-1">Số càng lớn càng hiện lên ĐẦU trang danh mục/trang chủ khi khách chưa tự chọn sắp xếp (mặc định "Phổ biến"). Để 0 = theo thứ tự bình thường. Không ảnh hưởng khi khách tự chọn sắp xếp theo giá/tên.</p>
+              <p className="text-xs opacity-60 mt-1">Số càng lớn càng hiện lên ĐẦU trang danh mục/trang chủ khi khách chưa tự chọn sắp xếp (mặc định "Phổ biến"). Để 0 = theo thứ tự bình thường. Không ảnh hưởng khi khách tự chọn sắp xếp theo giá/tên.</p>
             </div>
           </div>
 
           <div className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-            <p className="text-base font-bold mb-2" style={{ color: RUST }}>Danh mục phụ trên web <span className="text-xs font-normal opacity-50">(mọi cấp — chọn được nhiều)</span></p>
+            <p className="text-base font-bold mb-2" style={{ color: RUST }}>Danh mục phụ trên web <span className="text-xs font-normal opacity-60">(mọi cấp — chọn được nhiều)</span></p>
             <WebCategoryMultiSelect webCats={webCats} value={w.categories} onChange={(next) => setWeb({ categories: next })} />
           </div>
 
@@ -15310,10 +15332,10 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
               <textarea rows={3} className={inputCls} style={{ borderColor: LINE }} value={w.seoDesc} onChange={(e) => setWeb({ seoDesc: e.target.value })} placeholder={seoDesc} />
             </Field>
             <div className="rounded-md p-2.5" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
-              <p className="text-[10px] uppercase tracking-wider opacity-45 mb-1">Xem trước trên Google</p>
+              <p className="text-xs opacity-60 mb-1 font-medium">Xem trước trên Google</p>
               <div className="text-[13px] leading-snug" style={{ color: "#1a0dab" }}>{seoTitle}</div>
-              <div className="text-[11px]" style={{ color: "#006621" }}>hilitek.vn › san-pham › {effSlug}</div>
-              <div className="text-[11px] mt-0.5" style={{ color: "#4d5156" }}>{seoDesc || "…"}</div>
+              <div className="text-xs" style={{ color: "#006621" }}>hilitek.vn › san-pham › {effSlug}</div>
+              <div className="text-xs mt-0.5" style={{ color: "#4d5156" }}>{seoDesc || "…"}</div>
             </div>
           </div>
         </div>
@@ -15361,7 +15383,7 @@ function WebOrders({ orders, onOpenOrder }) {
             <th className="px-3 py-2.5"></th>
           </tr></thead>
           <tbody>
-            {list.length === 0 && <tr><td colSpan={7} className="text-center py-8 opacity-50">Chưa có đơn từ website.</td></tr>}
+            {list.length === 0 && <tr><td colSpan={7} className="text-center py-8 opacity-60">Chưa có đơn từ website.</td></tr>}
             {list.map((o) => {
               const a = o.shippingAddress || {};
               return (
@@ -15369,11 +15391,11 @@ function WebOrders({ orders, onOpenOrder }) {
                   <td className="px-3 py-2.5 font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>
                     {o.code}
                     {(o.tags || []).includes("Đặt trước") && (
-                      <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-md" style={{ background: "#E8730C1A", color: "#E8730C", fontFamily: "inherit" }}>ĐẶT TRƯỚC</span>
+                      <span className="ml-2 text-xs px-1.5 py-0.5 rounded-md" style={{ background: "#E8730C1A", color: "#E8730C", fontFamily: "inherit" }}>ĐẶT TRƯỚC</span>
                     )}
                   </td>
                   <td className="px-3 py-2.5 opacity-70">{(o.createdAt || "").slice(0, 10)}</td>
-                  <td className="px-3 py-2.5">{a.recipientName || "—"}<div className="text-[11px] opacity-50">{a.recipientPhone}</div></td>
+                  <td className="px-3 py-2.5">{a.recipientName || "—"}<div className="text-xs opacity-60">{a.recipientPhone}</div></td>
                   <td className="px-3 py-2.5 opacity-70 max-w-[280px]">{[a.addressDetail, a.ward, a.province].filter(Boolean).join(", ") || "—"}</td>
                   <td className="px-3 py-2.5 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(webOrderTotal(o))}</td>
                   <td className="px-3 py-2.5"><span className="text-xs px-2 py-0.5 rounded-md" style={{ background: PAPER }}>{statusLabel(o.status)}{o.approvalStatus === "pending" ? " · chờ duyệt" : ""}</span></td>
@@ -15532,10 +15554,10 @@ function MenuNodeRow({ node, siblingsCount, index, depth, onUpdate, onDelete, on
           placeholder="Tên danh mục"
           className="flex-1 border rounded-md px-2 py-1 text-sm min-w-0" style={{ borderColor: LINE }}
         />
-        <button onClick={() => onMove(node._key, -1)} disabled={index === 0} className="text-xs px-1 py-1 rounded-md border disabled:opacity-30 shrink-0" style={{ borderColor: LINE, color: INK }} title="Lên">↑</button>
-        <button onClick={() => onMove(node._key, 1)} disabled={index === siblingsCount - 1} className="text-xs px-1 py-1 rounded-md border disabled:opacity-30 shrink-0" style={{ borderColor: LINE, color: INK }} title="Xuống">↓</button>
+        <button onClick={() => onMove(node._key, -1)} disabled={index === 0} className="text-xs px-1 py-1 rounded-md border disabled:opacity-30 shrink-0" style={{ borderColor: LINE, color: TEXT }} title="Lên">↑</button>
+        <button onClick={() => onMove(node._key, 1)} disabled={index === siblingsCount - 1} className="text-xs px-1 py-1 rounded-md border disabled:opacity-30 shrink-0" style={{ borderColor: LINE, color: TEXT }} title="Xuống">↓</button>
         {depth < WEB_MAX_CATEGORY_DEPTH && (
-          <button onClick={() => onAddChild(node._key)} className="text-xs px-2 py-1 rounded-md border shrink-0 whitespace-nowrap" style={{ borderColor: LINE, color: INK }}>+ Con</button>
+          <button onClick={() => onAddChild(node._key)} className="text-xs px-2 py-1 rounded-md border shrink-0 whitespace-nowrap" style={{ borderColor: LINE, color: TEXT }}>+ Con</button>
         )}
         <button onClick={() => onDelete(node._key, node.name, childCount)} className="text-xs px-1.5 shrink-0" style={{ color: RUST }}>Xoá</button>
       </div>
@@ -15557,7 +15579,7 @@ function WebPageEditor({ pageKey, label, webConfig, setWebConfig }) {
   }));
   return (
     <div className="border rounded-md" style={{ borderColor: LINE }}>
-      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium" style={{ color: INK }}>
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium" style={{ color: TEXT }}>
         {label}
         {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
       </button>
@@ -15608,7 +15630,7 @@ function WebMenuEditor({ webConfig, setWebConfig, setProducts, products }) {
   const save = () => {
     const names = collectDraftNamesLower(draft);
     const dupes = [...new Set(names.filter((n, i) => names.indexOf(n) !== i))];
-    if (dupes.length) { alert(`Tên danh mục bị trùng — mỗi tên chỉ dùng 1 lần trên toàn cây:\n${dupes.join(", ")}`); return; }
+    if (dupes.length) { notify(`Tên danh mục bị trùng — mỗi tên chỉ dùng 1 lần trên toàn cây:\n${dupes.join(", ")}`); return; }
 
     const finalNames = collectDraftKeyNames(draft);
     const renameMap = {};
@@ -15640,7 +15662,7 @@ function WebMenuEditor({ webConfig, setWebConfig, setProducts, products }) {
         Cột <b>Thương hiệu</b> và <b>Khoảng giá</b> web <b>tự sinh</b> — không cần khai ở đây.
       </p>
       {usedCats.length > 0 && (
-        <div className="text-[11px] opacity-60">
+        <div className="text-xs opacity-60">
           Đang được gán cho sản phẩm: <span style={{ color: BLUE }}>{usedCats.join(" · ")}</span>
         </div>
       )}
@@ -15650,10 +15672,10 @@ function WebMenuEditor({ webConfig, setWebConfig, setProducts, products }) {
           <div className="flex gap-3 items-end mb-3">
             <Field label="Tên nhóm chính"><input className={inputCls} style={{ borderColor: LINE }} value={g.group} onChange={(e) => setG(gi, "group", e.target.value)} /></Field>
             <div style={{ width: 170 }}>
-              <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">Icon</p>
+              <p className="text-xs opacity-60 mb-1 font-medium">Icon</p>
               <div className="flex items-center gap-2">
                 <span className="shrink-0 grid place-items-center rounded-md" style={{ width: 30, height: 30, border: `1px solid ${LINE}`, background: "#fff" }}>
-                  {React.createElement(webGroupIcon(g.icon), { size: 17, color: INK })}
+                  {React.createElement(webGroupIcon(g.icon), { size: 17, color: TEXT })}
                 </span>
                 <select className={inputCls} style={{ borderColor: LINE }} value={g.icon} onChange={(e) => setG(gi, "icon", e.target.value)}>
                   {WEB_ICON_NAMES.map((n) => <option key={n} value={n}>{n}</option>)}
@@ -15667,7 +15689,7 @@ function WebMenuEditor({ webConfig, setWebConfig, setProducts, products }) {
             </div>
           </div>
 
-          <p className="text-[11px] uppercase tracking-wide opacity-50 mb-1.5">Danh mục phụ</p>
+          <p className="text-xs uppercase tracking-wide opacity-60 mb-1.5">Danh mục phụ</p>
           <div className="space-y-0.5">
             {(g.subs || []).map((node, i) => (
               <MenuNodeRow key={node._key} node={node} siblingsCount={g.subs.length} index={i} depth={1}
@@ -15681,7 +15703,7 @@ function WebMenuEditor({ webConfig, setWebConfig, setProducts, products }) {
               />
             ))}
             <button onClick={() => setG(gi, "subs", [...(g.subs || []), { _key: uid(), name: "Danh mục mới", subs: [] }])}
-              className="text-xs px-2.5 py-1.5 rounded-md border mt-1" style={{ borderColor: LINE, color: INK }}>
+              className="text-xs px-2.5 py-1.5 rounded-md border mt-1" style={{ borderColor: LINE, color: TEXT }}>
               + Thêm danh mục phụ
             </button>
           </div>
@@ -15689,7 +15711,7 @@ function WebMenuEditor({ webConfig, setWebConfig, setProducts, products }) {
       ))}
 
       <div className="flex items-center gap-3">
-        <button onClick={addG} className="text-sm px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>+ Thêm nhóm chính</button>
+        <button onClick={addG} className="text-sm px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>+ Thêm nhóm chính</button>
         <button onClick={save} disabled={!dirty} className="text-sm px-4 py-1.5 rounded-md text-white" style={{ background: dirty ? INK : LINE }}>Lưu danh mục</button>
         <button onClick={reset} className="text-xs underline" style={{ color: RUST }}>Khôi phục mặc định</button>
         {dirty && <span className="text-xs" style={{ color: RUST }}>Có thay đổi chưa lưu</span>}
@@ -15725,7 +15747,7 @@ function HomeSectionsEditor({ webConfig, setWebConfig, products }) {
 
   return (
     <div className="space-y-3">
-      <p className="text-xs opacity-55">
+      <p className="text-xs opacity-60">
         Mỗi khối = 1 hàng sản phẩm chạy ngang ở trang chủ (kiểu hotgear.vn). Chọn nhóm / danh mục phụ / thương hiệu / “đang giảm giá”… để quyết định sản phẩm nào hiện.
         Nút “Xem tất cả” tự mở trang danh mục đã lọc sẵn. Sản phẩm phải đang “Đăng web”.
       </p>
@@ -15828,7 +15850,7 @@ function HomeSectionsEditor({ webConfig, setWebConfig, products }) {
       ))}
 
       <div className="flex items-center gap-3">
-        <button onClick={addBlock} className="text-xs px-2.5 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>+ Thêm khối</button>
+        <button onClick={addBlock} className="text-xs px-2.5 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>+ Thêm khối</button>
         <button onClick={reset} className="text-xs underline" style={{ color: RUST }}>Đặt lại về mặc định</button>
       </div>
     </div>
@@ -15857,7 +15879,7 @@ function LandingsEditor({ webConfig, setWebConfig }) {
 
   return (
     <div className="space-y-3">
-      <p className="text-xs opacity-55">
+      <p className="text-xs opacity-60">
         Trang tự tạo để <b>poster / banner</b> trỏ tới (bài viết, hình ảnh, video, chương trình khuyến mãi…).
         Mỗi trang có địa chỉ <code>/trang/&lt;đường-dẫn&gt;</code> — dán địa chỉ này vào ô "link" của poster ở mục bên dưới.
         Nội dung soạn giống mô tả sản phẩm: xuống dòng đôi = đoạn mới · <code>## </code> = tiêu đề · <code>- </code> = gạch đầu dòng · dán ảnh / link YouTube = tự nhúng.
@@ -15879,7 +15901,7 @@ function LandingsEditor({ webConfig, setWebConfig }) {
 
           <div className="flex items-center gap-2 text-xs">
             <span className="opacity-60 shrink-0">Đường dẫn</span>
-            <span className="opacity-50">/trang/</span>
+            <span className="opacity-60">/trang/</span>
             <input value={l.slug || ""}
               onChange={(e) => setAt(i, { slug: webSlugifyLive(e.target.value) })}
               onBlur={(e) => setAt(i, { slug: webSlugify(e.target.value) })}
@@ -15887,7 +15909,7 @@ function LandingsEditor({ webConfig, setWebConfig }) {
               className="flex-1 border rounded-md py-1 px-2" style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} />
             <button type="button"
               onClick={() => { try { navigator.clipboard.writeText(`/trang/${l.slug || webSlugify(l.title || "")}`); } catch (e) {} }}
-              className="text-xs px-2 py-1 rounded-md border shrink-0" style={{ borderColor: LINE, color: INK }}>Sao chép link</button>
+              className="text-xs px-2 py-1 rounded-md border shrink-0" style={{ borderColor: LINE, color: TEXT }}>Sao chép link</button>
           </div>
 
           <Field label="Nội dung">
@@ -15897,7 +15919,7 @@ function LandingsEditor({ webConfig, setWebConfig }) {
       ))}
 
       <div className="flex items-center gap-3">
-        <button onClick={addOne} className="text-xs px-2.5 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>+ Thêm trang</button>
+        <button onClick={addOne} className="text-xs px-2.5 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>+ Thêm trang</button>
         <button onClick={reset} className="text-xs underline" style={{ color: RUST }}>Đặt lại về mặc định</button>
       </div>
     </div>
@@ -15921,7 +15943,7 @@ function CouponsEditor({ webConfig, setWebConfig }) {
 
   return (
     <div className="space-y-3">
-      <p className="text-xs opacity-55 leading-relaxed">
+      <p className="text-xs opacity-60 leading-relaxed">
         Khách nhập mã ở <b>trang giỏ hàng</b>. Mã kiểu <b>%</b> → đơn từ web tự đặt <b>chiết khấu %</b>;
         mã kiểu <b>đ</b> → chiết khấu số tiền cố định. Đơn về mục "Bán hàng" đã có sẵn chiết khấu này.
         <br />Danh sách mã nằm trong cấu hình công khai của web (khách rành kỹ thuật có thể xem) — dùng cho mã phát cho khách, không đặt mã "bí mật".
@@ -15975,7 +15997,7 @@ function CouponsEditor({ webConfig, setWebConfig }) {
         </div>
       ))}
 
-      <button onClick={addOne} className="text-xs px-2.5 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>+ Thêm mã</button>
+      <button onClick={addOne} className="text-xs px-2.5 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>+ Thêm mã</button>
     </div>
   );
 }
@@ -16096,13 +16118,13 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
             </Field>
           </div>
         )}
-        <p className="text-xs opacity-50 mt-2">
+        <p className="text-xs opacity-60 mt-2">
           Khách xem điểm tại trang "Điểm tích luỹ" trên web (tra theo SĐT). Admin xem/điều chỉnh tay điểm của từng khách trong mục Khách hàng.
         </p>
       </section>
 
       <section className="p-4 rounded-md" style={{ border: `2px solid ${LINE}` }}>
-        <h3 className="font-bold mb-3" style={{ color: RUST }}>Mã giảm giá <span className="text-xs opacity-50">(khách nhập ở trang giỏ hàng → chiết khấu đơn)</span></h3>
+        <h3 className="font-bold mb-3" style={{ color: RUST }}>Mã giảm giá <span className="text-xs opacity-60">(khách nhập ở trang giỏ hàng → chiết khấu đơn)</span></h3>
         <CouponsEditor webConfig={webConfig} setWebConfig={setWebConfig} />
       </section>
 
@@ -16112,7 +16134,7 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
       </section>
 
       <section className="p-4 rounded-md" style={{ border: `2px solid ${LINE}` }}>
-        <h3 className="font-bold mb-3" style={{ color: RUST }}>Flash Sale <span className="text-xs opacity-50">(khối nổi bật dưới dải đếm ngược — viền đỏ, nhãn ⚡)</span></h3>
+        <h3 className="font-bold mb-3" style={{ color: RUST }}>Flash Sale <span className="text-xs opacity-60">(khối nổi bật dưới dải đếm ngược — viền đỏ, nhãn ⚡)</span></h3>
         <label className="flex items-center gap-2 text-sm mb-3">
           <input type="checkbox" checked={FS.enabled !== false} onChange={(e) => setFlash("enabled", e.target.checked)} /> Bật khối Flash Sale trên trang chủ
         </label>
@@ -16154,7 +16176,7 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
 
       <section className="p-4 rounded-md" style={{ border: `2px solid ${LINE}` }}>
         <h3 className="font-bold mb-3" style={{ color: RUST }}>Poster / banner trang chủ (URL ảnh + link)</h3>
-        <p className="text-xs opacity-50 mb-3">
+        <p className="text-xs opacity-60 mb-3">
           Ảnh: tải lên host bất kỳ hoặc để trong <code>public/posters/</code> rồi điền đường dẫn (vd <code>/posters/hero.jpg</code>).<br />
           Ô "link" nhận: sản phẩm <code>/san-pham/&lt;slug&gt;</code> · danh mục <code>/danh-muc?group=…</code> · web ngoài <code>https://…</code> · hoặc trang nội dung <code>/trang/&lt;slug&gt;</code> (bấm vào ô sẽ gợi ý sẵn các trang đã tạo ở trên).
         </p>
@@ -16170,11 +16192,11 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
         <div className="space-y-3">
           <div className="rounded-md p-2.5" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-sm font-medium" style={{ color: INK }}>Poster chính (slider) — nhiều ảnh</span>
-              <button onClick={addHeroSlide} className="text-xs px-2 py-1 rounded-md border" style={{ borderColor: LINE, color: INK }}>+ Thêm ảnh</button>
+              <span className="text-sm font-medium" style={{ color: TEXT }}>Poster chính (slider) — nhiều ảnh</span>
+              <button onClick={addHeroSlide} className="text-xs px-2 py-1 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>+ Thêm ảnh</button>
             </div>
-            <p className="text-[11px] opacity-55 mb-2">Từ 2 ảnh trở lên sẽ tự chạy slide (đổi mỗi 5 giây, có nút ‹ › + chấm). 1 ảnh = ảnh tĩnh. Chưa có ảnh nào = khung gợi ý kích thước.</p>
-            {heroSlides.length === 0 && <p className="text-xs opacity-45">Chưa có ảnh — bấm “+ Thêm ảnh”.</p>}
+            <p className="text-xs opacity-60 mb-2">Từ 2 ảnh trở lên sẽ tự chạy slide (đổi mỗi 5 giây, có nút ‹ › + chấm). 1 ảnh = ảnh tĩnh. Chưa có ảnh nào = khung gợi ý kích thước.</p>
+            {heroSlides.length === 0 && <p className="text-xs opacity-60">Chưa có ảnh — bấm “+ Thêm ảnh”.</p>}
             {heroSlides.map((s, i) => (
               <div key={i} className="grid gap-2 mb-2" style={{ gridTemplateColumns: "1fr 1fr auto" }}>
                 {ip(s.image, (v) => setHeroSlide(i, "image", v), `/posters/hero-${i + 1}.jpg`)}
@@ -16286,7 +16308,7 @@ function MediaCleanupPanel() {
         Khi bạn thay ảnh khác hoặc xoá sản phẩm, ảnh cũ không tự mất — quét để tìm và dọn bớt ảnh không còn dùng.
       </p>
       <div className="flex items-center gap-3 flex-wrap">
-        <button onClick={scan} disabled={busy} className="px-3 py-1.5 rounded-md text-sm border inline-flex items-center gap-1.5" style={{ borderColor: LINE, color: INK, opacity: busy ? 0.5 : 1 }}>
+        <button onClick={scan} disabled={busy} className="px-3 py-1.5 rounded-md text-sm border inline-flex items-center gap-1.5" style={{ borderColor: LINE, color: TEXT, opacity: busy ? 0.5 : 1 }}>
           {busy && <Loader2 size={14} className="animate-spin" />} Quét ảnh rác
         </button>
         {report && report.orphanCount > 0 && (
@@ -16657,7 +16679,7 @@ export default function SalesManager() {
         const kicks = await readKickList();
         const kickedAt = kicks[currentUserId];
         if (kickedAt && new Date(kickedAt).getTime() > sessionStartRef.current) {
-          if (!stopped) { alert("Bạn đã bị đăng xuất từ xa bởi chủ sở hữu."); setCurrentUserId(null); }
+          if (!stopped) { notify("Bạn đã bị đăng xuất từ xa bởi chủ sở hữu."); setCurrentUserId(null); }
           return;
         }
         const meta = await window.storage.getMeta(STORAGE_KEY, true);
@@ -16841,7 +16863,7 @@ export default function SalesManager() {
   }, [loaded, purchaseOrders]);
 
   if (!loaded) {
-    return <div className="flex items-center justify-center h-96" style={{ color: INK }}><Loader2 className="animate-spin mr-2" size={18} /> Đang tải dữ liệu…</div>;
+    return <div className="flex items-center justify-center h-96" style={{ color: TEXT }}><Loader2 className="animate-spin mr-2" size={18} /> Đang tải dữ liệu…</div>;
   }
 
   const currentUser = accounts.find((a) => a.id === currentUserId) || null;
@@ -16927,7 +16949,7 @@ export default function SalesManager() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ background: "rgba(20,20,20,0.6)" }}>
           <div className="max-w-sm w-full rounded-md shadow-2xl text-center p-6" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
             <p className="text-3xl mb-2">🔄</p>
-            <p className="text-base font-medium mb-2" style={{ color: INK }}>Đã có bản cập nhật mới</p>
+            <p className="text-base font-medium mb-2" style={{ color: TEXT }}>Đã có bản cập nhật mới</p>
             <p className="text-sm opacity-70 mb-5">Các thao tác gần nhất của bạn đã được tự lưu lại. Trang tạm khoá thao tác — bấm tải lại để tiếp tục làm việc trên bản mới nhất.</p>
             <button onClick={() => location.reload()} className="w-full px-4 py-2.5 rounded-md text-sm font-medium text-white" style={{ background: BRASS }}>Tải lại trang</button>
           </div>
@@ -16967,15 +16989,15 @@ export default function SalesManager() {
           <div className="mt-auto pt-6 flex items-center justify-between gap-2" style={{ borderTop: "1px solid rgba(255,255,255,0.12)" }}>
             <div className="min-w-0 pt-4">
               <p className="text-sm font-medium truncate" style={{ color: "#fff" }}>{currentUser.fullName}</p>
-              <p className="text-[11px] opacity-50" style={{ color: "#fff" }}>{ACCOUNT_ROLES.find((r) => r.id === currentUser.role)?.label}</p>
+              <p className="text-xs opacity-60" style={{ color: "#fff" }}>{ACCOUNT_ROLES.find((r) => r.id === currentUser.role)?.label}</p>
             </div>
             <button onClick={() => setCurrentUserId(null)} title="Đăng xuất" className="pt-4 opacity-60 hover:opacity-100 shrink-0" style={{ color: "#fff" }}><LogOut size={16} /></button>
           </div>
         </div>
         <div className="flex-1 p-5 md:p-8 min-w-0 md:ml-72">
           <div className="flex items-center justify-between mb-6">
-            <h2 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, color: INK }} className="text-2xl">{visibleTabs.find((t) => t.id === tab)?.label || "Bán hàng"}</h2>
-            <span className="text-xs opacity-40" style={{ fontFamily: "'Inter', sans-serif" }}>{todayISO()}</span>
+            <h2 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, color: TEXT }} className="text-2xl">{visibleTabs.find((t) => t.id === tab)?.label || "Bán hàng"}</h2>
+            <span className="text-xs opacity-60" style={{ fontFamily: "'Inter', sans-serif" }}>{todayISO()}</span>
           </div>
           <AppErrorBoundary key={tab}>
             {tab === "dashboard" && <Dashboard products={products} orders={orders} goToOrdersFilter={goToOrdersFilter} />}
