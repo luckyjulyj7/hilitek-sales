@@ -4875,6 +4875,23 @@ function POProgressStepper({ po }) {
   );
 }
 
+// Danh sách đơn bán/đơn nhập: tối đa 30 dòng mỗi trang.
+const DOC_PAGE_SIZE = 30;
+function DocPager({ page, total, unit, onPage }) {
+  if (total === 0) return null;
+  const totalPages = Math.max(1, Math.ceil(total / DOC_PAGE_SIZE));
+  return (
+    <div className="flex items-center justify-between mt-2.5 text-xs" style={{ color: INK, opacity: 0.7 }}>
+      <span>{(page - 1) * DOC_PAGE_SIZE + 1}–{Math.min(page * DOC_PAGE_SIZE, total)} / {total} {unit}</span>
+      <div className="flex items-center gap-1">
+        <button onClick={() => onPage(page - 1)} disabled={page <= 1} className="px-2 py-1 rounded-sm disabled:opacity-30" style={{ border: `1px solid ${LINE}` }}><ChevronLeft size={14} /></button>
+        <span className="px-2">Trang {page} / {totalPages}</span>
+        <button onClick={() => onPage(page + 1)} disabled={page >= totalPages} className="px-2 py-1 rounded-sm disabled:opacity-30" style={{ border: `1px solid ${LINE}` }}><ChevronRight size={14} /></button>
+      </div>
+    </div>
+  );
+}
+
 function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProducts, suppliers, setSuppliers, brands, employeeNames, addLog, focusPOId, onFocusHandled, currentUser }) {
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({});
@@ -5128,6 +5145,9 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
   // Sắp lại theo ngày tạo mới nhất trước khi hiển thị — mảng gốc có thể không còn đúng thứ tự tạo sau
   // khi đồng bộ/gộp dữ liệu nền, nếu không sắp lại danh sách sẽ "nhảy vị trí" ngẫu nhiên lúc thì thế này lúc thì thế khác.
   const sortedPOs = [...purchaseOrders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const [poPage, setPoPage] = useState(1);
+  const poSafePage = Math.min(poPage, Math.max(1, Math.ceil(sortedPOs.length / DOC_PAGE_SIZE)));
+  const pagedPOs = sortedPOs.slice((poSafePage - 1) * DOC_PAGE_SIZE, poSafePage * DOC_PAGE_SIZE);
 
   return (
     <div>
@@ -5152,7 +5172,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
         </div>
       </div>
 
-      <div className="rounded-sm overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "65vh" }}>
+      <div key={poSafePage} className="rounded-sm overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "65vh" }}>
         <table className="w-full text-sm" style={{ minWidth: 720 }}>
           <thead>
             <tr style={{ borderBottom: `2px solid ${INK}` }}>
@@ -5162,7 +5182,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
             </tr>
           </thead>
           <tbody>
-            {sortedPOs.map((po) => {
+            {pagedPOs.map((po) => {
               const s = PO_STATUSES.find((x) => x.id === po.status);
               const total = po.items.reduce((sum, it) => sum + it.qty * it.price, 0);
               const isOpen = expanded === po.id;
@@ -5237,6 +5257,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
           </tbody>
         </table>
       </div>
+      <DocPager page={poSafePage} total={sortedPOs.length} unit="đơn nhập" onPage={setPoPage} />
 
       {/* Modal tạo đơn mới */}
       {creating && (
@@ -10852,7 +10873,17 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
   };
 
   const toggleSelect = (id) => setSelectedIds((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
-  const toggleSelectAll = () => setSelectedIds((prev) => (prev.size === visible.length ? new Set() : new Set(visible.map((o) => o.id))));
+  // Về trang 1 khi đổi bộ lọc/tìm kiếm; chọn tất cả chỉ áp dụng cho các đơn của trang đang xem.
+  const [orderPage, setOrderPage] = useState(1);
+  useEffect(() => { setOrderPage(1); }, [filterStatus, searchQuery, filterSeller, filterInvoice, filterCustomer, filterProduct, filterApprovalOnly, filterCancelledOnly, filterUnpaidOnly, filterFrom, filterTo, filterDeliveredFrom, filterDeliveredTo, filterText]);
+  const orderSafePage = Math.min(orderPage, Math.max(1, Math.ceil(visible.length / DOC_PAGE_SIZE)));
+  const pagedOrders = visible.slice((orderSafePage - 1) * DOC_PAGE_SIZE, orderSafePage * DOC_PAGE_SIZE);
+  const pageAllSelected = pagedOrders.length > 0 && pagedOrders.every((o) => selectedIds.has(o.id));
+  const toggleSelectAll = () => setSelectedIds((prev) => {
+    const n = new Set(prev);
+    pagedOrders.forEach((o) => (pageAllSelected ? n.delete(o.id) : n.add(o.id)));
+    return n;
+  });
 
   // Chuyển trạng thái hàng loạt cho các đơn đã chọn — tự động bỏ qua đơn không đủ điều kiện (còn chờ hàng/chưa duyệt/chưa thanh toán đủ/đã huỷ/đang ở bước sau).
   const bulkSetStatus = (newStatus) => {
@@ -11017,18 +11048,18 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
         </div>
       )}
 
-      <div className="rounded-sm overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "65vh" }}>
+      <div key={orderSafePage} className="rounded-sm overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "65vh" }}>
         <table className="w-full text-sm" style={{ minWidth: 900 }}>
           <thead className="sticky top-0" style={{ zIndex: 2 }}>
             <tr style={{ borderBottom: `2px solid ${INK}` }}>
-              <th className="px-3 py-2.5" style={{ background: "#fff" }}><input type="checkbox" checked={selectedIds.size > 0 && selectedIds.size === visible.length} onChange={toggleSelectAll} /></th>
+              <th className="px-3 py-2.5" style={{ background: "#fff" }}><input type="checkbox" title="Chọn tất cả đơn trong trang này" checked={pageAllSelected} onChange={toggleSelectAll} /></th>
               {["Mã đơn", "Ngày tạo", "Khách hàng", "Bán tại", "Trạng thái giao", "Xuất hoá đơn", "Tổng tiền", "Còn phải trả", ""].map((h, hi) => (
                 <th key={hi} className="text-left px-3 py-2.5 text-xs uppercase tracking-wider whitespace-nowrap" style={{ color: INK, opacity: 0.6, background: "#fff" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {visible.map((o) => {
+            {pagedOrders.map((o) => {
               const cust = customers.find((c) => c.id === o.customerId);
               const c = orderCalc(o);
               return (
@@ -11069,6 +11100,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
           </tbody>
         </table>
       </div>
+      <DocPager page={orderSafePage} total={visible.length} unit="đơn hàng" onPage={setOrderPage} />
 
       {/* Modal tạo đơn và giao hàng */}
       {creating && (
