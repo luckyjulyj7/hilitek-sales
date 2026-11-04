@@ -2727,11 +2727,21 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
     });
   };
   const submitAddVariant = () => {
-    const { rep, attrs, baseCode, baseSku, values } = addVariantFor;
-    const vals = attrs.map((k) => (values[k] || "").trim());
+    const { rep, baseCode, baseSku, values } = addVariantFor;
+    // Thêm thuộc tính mới cho cả nhóm (VD đang chỉ có Màu, thêm Switch): mọi phiên bản đang có phải được
+    // gán 1 giá trị của thuộc tính này, nếu không nút chọn phiên bản trên web sẽ bị thiếu/lệch.
+    const extraName = (addVariantFor.extraName || "").trim();
+    const extraExisting = (addVariantFor.extraExisting || "").trim();
+    const extraNew = (addVariantFor.extraNew || "").trim();
+    if (addVariantFor.addAttr && (!extraName || !extraExisting || !extraNew)) { alert("Vui lòng nhập đủ tên thuộc tính và 2 giá trị."); return; }
+    if (addVariantFor.addAttr && addVariantFor.attrs.some((k) => k.toLowerCase() === extraName.toLowerCase())) { alert(`Nhóm đã có thuộc tính "${extraName}".`); return; }
+    const withExtra = !!addVariantFor.addAttr;
+    const attrs = withExtra ? [...addVariantFor.attrs, extraName] : addVariantFor.attrs;
+    const vals = [...addVariantFor.attrs.map((k) => (values[k] || "").trim()), ...(withExtra ? [extraNew] : [])];
     if (vals.some((v) => !v)) { alert("Vui lòng nhập đủ giá trị phiên bản."); return; }
     const siblings = products.filter((x) => x.variantGroupId === rep.variantGroupId);
-    const same = siblings.find((x) => attrs.every((k, i) => String(x.variantAttrs?.[k] || "").trim().toLowerCase() === vals[i].toLowerCase()));
+    const attrOf = (x, k) => (withExtra && k === extraName ? extraExisting : String(x.variantAttrs?.[k] || ""));
+    const same = siblings.find((x) => attrs.every((k, i) => attrOf(x, k).trim().toLowerCase() === vals[i].toLowerCase()));
     if (same) { alert(`Phiên bản này đã có trong nhóm (${same.code}).`); return; }
     const taken = (suffix) => products.some((x) => x.code.toLowerCase() === `${baseCode}_${suffix}`.toLowerCase() || (x.sku || "").toLowerCase() === `${baseSku}_${suffix}`.toLowerCase());
     let suffix = vals.map((v) => variantValueCode(v)).join("_");
@@ -2743,12 +2753,19 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
     if (newWeb.published) { newWeb.publishedAt = now; newWeb.publishedBy = currentUser.fullName; }
     const created = {
       ...rep, id: uid(), code: `${baseCode}_${suffix}`, sku: `${baseSku}_${suffix}`,
-      name: `${baseVariantName(rep)} - ${vals.join(", ")}`,
+      name: `${baseVariantName(rep)} - ${vals.join(withExtra ? " - " : ", ")}`,
       variantAttrs: Object.fromEntries(attrs.map((k, i) => [k, vals[i]])),
       openingQty: 0, barcode: "", movements: [], priceHistory: [], createdAt: now, createdBy: currentUser.fullName, web: newWeb,
     };
-    setProducts((prev) => [...prev, created]);
-    addLog("Thêm phiên bản", `${created.code} · ${created.name}`);
+    setProducts((prev) => [...prev.map((x) => {
+      if (!withExtra || x.variantGroupId !== rep.variantGroupId) return x;
+      // Tên đổi thì đường dẫn web tự sinh theo tên cũng đổi — chốt lại đường dẫn cũ để link/SEO không gãy.
+      return {
+        ...x, name: `${x.name} - ${extraExisting}`, variantAttrs: { ...x.variantAttrs, [extraName]: extraExisting },
+        web: { ...x.web, slug: x.web?.slug || webSlugify(x.name) },
+      };
+    }), created]);
+    addLog("Thêm phiên bản", `${created.code} · ${created.name}${withExtra ? ` · thêm thuộc tính ${extraName} cho cả nhóm` : ""}`);
     setExpandedGroups((prev) => new Set(prev).add(rep.variantGroupId));
     setAddVariantFor(null);
     openEdit(created); // mở luôn để chỉnh ảnh/giá riêng của phiên bản mới
@@ -3489,6 +3506,22 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
               </Field>
             ))}
           </div>
+          {!addVariantFor.addAttr ? (
+            <button type="button" onClick={() => setAddVariantFor((f) => ({ ...f, addAttr: true }))} className="text-xs underline mt-3" style={{ color: PURPLE }}>+ Thêm thuộc tính mới cho cả nhóm (VD: Switch)</button>
+          ) : (
+            <div className="mt-3 p-3 rounded-sm space-y-3" style={{ background: `${PURPLE}0D`, border: `1px solid ${PURPLE}33` }}>
+              <Field label="Tên thuộc tính mới">
+                <input className={inputCls} style={{ borderColor: LINE }} value={addVariantFor.extraName || ""} onChange={(e) => { const v = e.target.value; setAddVariantFor((f) => ({ ...f, extraName: v })); }} placeholder="VD: Switch" />
+              </Field>
+              <Field label="Giá trị của phiên bản mới này">
+                <input className={inputCls} style={{ borderColor: LINE }} value={addVariantFor.extraNew || ""} onChange={(e) => { const v = e.target.value; setAddVariantFor((f) => ({ ...f, extraNew: v })); }} placeholder="VD: TE" />
+              </Field>
+              <Field label="Giá trị gán cho các phiên bản đang có" hint="Tên các phiên bản đang có sẽ thêm đuôi này, VD ... - DARK - CY. Đường dẫn web giữ nguyên.">
+                <input className={inputCls} style={{ borderColor: LINE }} value={addVariantFor.extraExisting || ""} onChange={(e) => { const v = e.target.value; setAddVariantFor((f) => ({ ...f, extraExisting: v })); }} placeholder="VD: CY" />
+              </Field>
+              <button type="button" onClick={() => setAddVariantFor((f) => ({ ...f, addAttr: false }))} className="text-xs underline" style={{ color: RUST }}>Bỏ thêm thuộc tính</button>
+            </div>
+          )}
           <p className="text-xs opacity-60 mt-3">Sao chép nhóm hàng, nhãn hiệu, giá, ảnh, mô tả web từ phiên bản {addVariantFor.rep.code}. Tồn kho bắt đầu từ 0. Tạo xong sẽ mở trang sửa để chỉnh ảnh/giá riêng.</p>
           <button onClick={submitAddVariant} className="w-full py-2.5 rounded-sm text-white text-sm mt-3" style={{ background: INK }}>Thêm phiên bản</button>
         </Modal>
