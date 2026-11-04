@@ -221,6 +221,7 @@ export function publicProduct(p, { detail = false } = {}) {
     // variantGroupId, mỗi phiên bản có variantAttrs riêng (VD {"Màu sắc":"Đen"}). Web dùng để
     // gộp các phiên bản thành 1 sản phẩm có nút chọn option, thay vì hiện thành nhiều SP rời rạc.
     variantGroupId: p.variantGroupId || "",
+    variantGroupName: p.variantGroupName || "",
     variantAttrs: p.variantAttrs && typeof p.variantAttrs === "object" ? p.variantAttrs : null,
     brand: p.brand || "",
     category: webCats[0] || p.category || "",
