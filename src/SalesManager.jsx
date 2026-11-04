@@ -5828,7 +5828,7 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
                     <tr key={po.id} style={{ borderTop: `1px dashed ${LINE}` }}>
                       <td className="px-3 py-2">
                         {goToDoc ? (
-                          <button onClick={() => goToDoc(po.code)} className="hover:underline" style={{ fontFamily: "'IBM Plex Mono', monospace", color: BLUE }}>{po.code}</button>
+                          <a href={`${window.location.pathname}?po=${encodeURIComponent(po.id)}`} target="_blank" rel="noopener" className="hover:underline" style={{ fontFamily: "'IBM Plex Mono', monospace", color: BLUE }}>{po.code}</a>
                         ) : <span style={{ fontFamily: "'IBM Plex Mono', monospace", color: BLUE }}>{po.code}</span>}
                       </td>
                       <td className="px-3 py-2" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{po.invoiceNo || "—"}</td>
@@ -16454,13 +16454,20 @@ export default function SalesManager() {
     if (!loaded) return;
     const params = new URLSearchParams(window.location.search);
     const wpId = params.get("webproduct");
-    if (!wpId) return;
+    const poId = params.get("po"); // "?po=<id>": mở đơn nhập ở tab mới từ bảng công nợ NCC
+    if (!wpId && !poId) return;
     const cu = accounts.find((a) => a.id === currentUserId);
     if (!cu || cu.role !== "admin") return;
-    setTab("website");
-    setNavTarget({ type: "webproduct", id: wpId });
+    if (poId) {
+      setTab("purchase");
+      setNavTarget({ type: "po", id: poId });
+    } else {
+      setTab("website");
+      setNavTarget({ type: "webproduct", id: wpId });
+    }
     const url = new URL(window.location.href);
     url.searchParams.delete("webproduct");
+    url.searchParams.delete("po");
     window.history.replaceState({}, "", url);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded, currentUserId]);
