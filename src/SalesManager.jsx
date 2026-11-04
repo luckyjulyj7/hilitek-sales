@@ -2294,7 +2294,9 @@ function ImageLightbox({ images, startIndex, onClose }) {
 
 const __modalStack = [];
 function Modal({ title, onClose, children, wide, size, headerAction }) {
-  const sizeClass = { md: "max-w-md", lg: "max-w-lg", xl: "max-w-3xl", "2xl": "max-w-6xl", "3xl": "max-w-[92rem]" }[size] || (wide ? "max-w-lg" : "max-w-md");
+  // Chỉ 3 khổ khung: nhỏ (xác nhận, kết quả), dọc (form một cột), ngang (phiếu và form nhiều cột).
+  const kind = size === "2xl" || size === "3xl" ? "wide" : size === "lg" || size === "xl" || wide ? "form" : "small";
+  const sizeClass = { small: "max-w-md", form: "max-w-3xl", wide: "max-w-6xl" }[kind];
   const touchedRef = useRef(false); // đã gõ/chọn trong popup thì Esc phải hỏi lại
   // Bấm ESC để đóng — chỉ popup trên cùng phản hồi (tránh đóng luôn popup nền).
   useEffect(() => {
@@ -2316,7 +2318,7 @@ function Modal({ title, onClose, children, wide, size, headerAction }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4" style={{ background: "rgba(15,23,70,0.45)" }}>
       <div onClick={(e) => e.stopPropagation()} onInput={() => { touchedRef.current = true; }} onChange={() => { touchedRef.current = true; }}
         className={`w-full ${sizeClass} rounded-md shadow-2xl relative flex flex-col`}
-        style={{ background: "#fff", maxHeight: "90vh" }}>
+        style={{ background: "#fff", maxHeight: "90vh", height: kind === "small" ? undefined : "90vh" }}>
         <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3.5 shrink-0" style={{ borderBottom: `1px solid ${LINE}` }}>
           <h3 className="text-base sm:text-lg flex-1 min-w-0" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, color: TEXT }}>{title}</h3>
           <div className="flex items-center gap-2 shrink-0">
@@ -3570,7 +3572,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
       )}
 
       {addVariantFor && (
-        <Modal title="Thêm phiên bản" onClose={() => setAddVariantFor(null)}>
+        <Modal title="Thêm phiên bản" onClose={() => setAddVariantFor(null)} size="xl">
           <p className="text-sm mb-3" style={{ color: TEXT }}>{baseVariantName(addVariantFor.rep)}</p>
           <div className="space-y-3">
             {addVariantFor.attrs.map((k, i) => (
@@ -4263,7 +4265,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
       )}
 
       {managingCategories && (
-        <Modal title="Quản lý nhóm hàng" onClose={() => { setManagingCategories(false); setNewCategoryInput(""); setEditingCategory(null); }}>
+        <Modal title="Quản lý nhóm hàng" onClose={() => { setManagingCategories(false); setNewCategoryInput(""); setEditingCategory(null); }} size="xl">
           <p className="text-xs opacity-60 mb-3">Đây là danh sách nhóm hàng dùng chung cho toàn bộ sản phẩm — chỉ quản trị viên tạo/xoá được, các sản phẩm chỉ chọn từ danh sách này. Đổi tên (nút bút chì) sẽ tự cập nhật lại tên nhóm cho mọi sản phẩm/nhãn hiệu đang gán — không bị mất khỏi danh mục.</p>
           <div className="flex gap-2 mb-4">
             <input value={newCategoryInput} onChange={(e) => setNewCategoryInput(e.target.value)} placeholder="Tên nhóm hàng mới…"
@@ -5611,7 +5613,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
 
       {/* Modal thêm nhanh nhà cung cấp — thao tác tắt, không cần rời khỏi mục Nhập hàng */}
       {quickAddingSupplier && (
-        <Modal title="Thêm nhà cung cấp" onClose={() => setQuickAddingSupplier(false)}>
+        <Modal title="Thêm nhà cung cấp" onClose={() => setQuickAddingSupplier(false)} size="xl">
           <div className="grid grid-cols-2 gap-4">
             <Field label="Mã NCC" hint="Tự động sinh — có thể sửa lại">
               <input className={inputCls} style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} value={quickSupplierForm.code} onChange={(e) => setQuickSupplierForm({ ...quickSupplierForm, code: e.target.value })} />
@@ -5939,7 +5941,7 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
       })()}
 
       {editing !== null && (
-        <Modal title={editing.id ? "Sửa nhà cung cấp" : "Thêm nhà cung cấp"} onClose={() => setEditing(null)}>
+        <Modal title={editing.id ? "Sửa nhà cung cấp" : "Thêm nhà cung cấp"} onClose={() => setEditing(null)} size="xl">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Mã NCC" hint="Tự động sinh — có thể sửa lại">
               <input className={inputCls} style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
@@ -8700,7 +8702,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
 
       {/* Modal thêm/sửa địa chỉ trong sổ địa chỉ khách hàng */}
       {addrForm && (
-        <Modal title={addrForm.id ? "Sửa địa chỉ" : "Thêm mới địa chỉ"} onClose={() => setAddrForm(null)}>
+        <Modal title={addrForm.id ? "Sửa địa chỉ" : "Thêm mới địa chỉ"} onClose={() => setAddrForm(null)} size="xl">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Họ tên người nhận"><input className={inputCls} style={{ borderColor: LINE }} value={addrForm.recipientName} onChange={(e) => setAddrForm({ ...addrForm, recipientName: e.target.value })} /></Field>
             <Field label="Số điện thoại nhận hàng"><input className={inputCls} style={{ borderColor: LINE }} inputMode="numeric" value={addrForm.recipientPhone} onChange={(e) => setAddrForm({ ...addrForm, recipientPhone: e.target.value.replace(/\D/g, "") })} /></Field>
@@ -11442,7 +11444,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
         const cust = customers.find((c) => c.id === form.customerId);
         const addrs = customerAddressBook(cust);
         return (
-          <Modal title="Chọn địa chỉ giao hàng" onClose={() => setPickingAddress(false)}>
+          <Modal title="Chọn địa chỉ giao hàng" onClose={() => setPickingAddress(false)} size="xl">
             {addrs.length === 0 ? (
               <p className="text-sm opacity-60 text-center py-8">Khách hàng này chưa có địa chỉ nào trong sổ địa chỉ.</p>
             ) : (
@@ -12332,7 +12334,7 @@ function Plans({ plans, setPlans, orders, purchaseOrders, products, employeeName
       )}
 
       {editing !== null && (
-        <Modal title={editing.id ? "Sửa kế hoạch" : `Thêm ${sub === "sales" ? "kế hoạch bán hàng" : sub === "purchase" ? "kế hoạch nhập hàng" : sub === "stock" ? "chỉ tiêu thêm mã kho" : "chỉ tiêu đăng web"}`} onClose={() => setEditing(null)}>
+        <Modal title={editing.id ? "Sửa kế hoạch" : `Thêm ${sub === "sales" ? "kế hoạch bán hàng" : sub === "purchase" ? "kế hoạch nhập hàng" : sub === "stock" ? "chỉ tiêu thêm mã kho" : "chỉ tiêu đăng web"}`} onClose={() => setEditing(null)} size="xl">
           <Field label="Tháng">
             <input type="month" className={inputCls} style={{ borderColor: LINE }} value={form.month} onChange={(e) => setForm({ ...form, month: e.target.value })} />
           </Field>
@@ -14198,7 +14200,7 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
       )}
 
       {editing !== null && (
-        <Modal title={editing.id ? (editing.isOwner ? "Sửa tài khoản chủ" : "Sửa tài khoản") : "Thêm tài khoản"} onClose={() => setEditing(null)}>
+        <Modal title={editing.id ? (editing.isOwner ? "Sửa tài khoản chủ" : "Sửa tài khoản") : "Thêm tài khoản"} onClose={() => setEditing(null)} size="xl">
           <Field label="Tên đăng nhập"><input className={inputCls} style={{ borderColor: LINE }} value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} disabled={!!editing.id} /></Field>
           <Field label="Họ tên"><input className={inputCls} style={{ borderColor: LINE }} value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} /></Field>
           <Field label="Mật khẩu" hint={editing.id ? "Để trống nếu không đổi mật khẩu" : ""}>
@@ -14945,7 +14947,7 @@ function CopyWebInfoButton({ product, products, setWeb }) {
         <Copy size={13} /> Sao chép từ sản phẩm khác
       </button>
       {open && (
-        <Modal title="Sao chép thông tin web từ sản phẩm khác" onClose={close}>
+        <Modal title="Sao chép thông tin web từ sản phẩm khác" onClose={close} size="xl">
           {!picked ? (
             <div>
               <input value={q} onChange={(e) => setQ(e.target.value)} autoFocus placeholder="Tìm tên / SKU sản phẩm nguồn…"
