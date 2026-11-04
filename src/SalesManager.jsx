@@ -14345,35 +14345,85 @@ function webOrderTotal(o) {
   return (o.items || []).reduce((s, it) => s + (Number(it.qty) || 0) * (Number(it.price) || 0), 0);
 }
 
+/* ---------------- Thành phần dùng chung ---------------- */
+function TabBar({ tabs, value, onChange }) {
+  return (
+    <div className="flex gap-6 mb-5 overflow-x-auto overflow-y-hidden" style={{ borderBottom: `1px solid ${LINE}` }}>
+      {tabs.map((t) => (
+        <button key={t.id} type="button" onClick={() => onChange(t.id)} className="py-2.5 text-sm whitespace-nowrap"
+          style={{ color: value === t.id ? INK : "#4B5563", fontWeight: value === t.id ? 600 : 400, borderBottom: `2px solid ${value === t.id ? INK : "transparent"}` }}>
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+function Switch({ checked, onChange, label }) {
+  return (
+    <button type="button" role="switch" aria-checked={!!checked} aria-label={label} title={label} onClick={() => onChange(!checked)}
+      className="relative inline-block shrink-0 rounded-full transition-colors" style={{ width: 36, height: 20, background: checked ? INK : "#D1D5DB" }}>
+      <span className="absolute rounded-full bg-white transition-all" style={{ width: 16, height: 16, top: 2, left: checked ? 18 : 2 }} />
+    </button>
+  );
+}
+// Kiểm tra độ đầy đủ của sản phẩm trên web. required = bắt buộc nên có, SEO chỉ là khuyến nghị.
+function webHealth(p, web) {
+  const w = web || p.web || {};
+  const hasImage = !!(p.image || (w.images || []).length);
+  const hasDesc = !!stripHtmlToText(w.description || "").trim();
+  return [
+    { label: "Ảnh sản phẩm", ok: hasImage, required: true },
+    { label: "Mô tả", ok: hasDesc, required: true },
+    { label: "Thông số", ok: !!(w.specsText || "").trim() || (w.specs || []).length > 0, required: true },
+    { label: "Danh mục", ok: (w.categories || []).length > 0, required: true },
+    { label: "SEO riêng", ok: !!(w.seoTitle || w.seoDesc), required: false },
+  ];
+}
+const webMissing = (p) => webHealth(p).filter((h) => h.required && !h.ok);
+const webOutOfStockShown = (p) => !!p.web?.published && !p.web?.virtualStock && productStats(p).closingQty <= 0;
+function WebHealthBadge({ p }) {
+  const miss = webMissing(p);
+  if (miss.length === 0) return <span className="text-xs font-medium" style={{ color: FOREST }}>Đầy đủ</span>;
+  return <span className="text-xs font-medium" style={{ color: miss.some((m) => m.label === "Ảnh sản phẩm" || m.label === "Mô tả") ? RUST : BRASS }} title={`Thiếu: ${miss.map((m) => m.label).join(", ")}`}>Thiếu {miss[0].label.toLowerCase()}{miss.length > 1 ? ` +${miss.length - 1}` : ""}</span>;
+}
+
 function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig, categories, brands, currentUser, addLog, onOpenOrder, navTarget, onFocusHandled, goToInventoryProductEdit }) {
   const [sub, setSub] = useState("products");
   useEffect(() => {
     if (navTarget?.type === "webproduct" || navTarget?.type === "webproducts-daterange") setSub("products");
   }, [navTarget]);
   const subs = [
-    { id: "products", label: "Sản phẩm web" },
+    { id: "products", label: "Sản phẩm" },
     { id: "orders", label: "Đơn hàng web" },
-    { id: "config", label: "Cấu hình web" },
+    { id: "home", label: "Trang chủ" },
+    { id: "promo", label: "Khuyến mãi" },
+    { id: "content", label: "Nội dung" },
+    { id: "settings", label: "Cài đặt" },
   ];
   return (
     <div>
-      <div className="flex gap-1 mb-5 flex-wrap">
-        {subs.map((s) => (
-          <button key={s.id} onClick={() => setSub(s.id)}
-            className="px-4 py-2 rounded-md text-sm font-medium border"
-            style={{ borderColor: sub === s.id ? INK : LINE, background: sub === s.id ? INK : "transparent", color: sub === s.id ? "#fff" : INK }}>
-            {s.label}
-          </button>
-        ))}
-      </div>
+      <TabBar tabs={subs} value={sub} onChange={setSub} />
       {sub === "products" && <WebProducts products={products} setProducts={setProducts} categories={categories} brands={brands} currentUser={currentUser} addLog={addLog} webConfig={webConfig} focusProductId={navTarget?.type === "webproduct" ? navTarget.id : null} initialPublishedFrom={navTarget?.type === "webproducts-daterange" ? navTarget.from : null} initialPublishedTo={navTarget?.type === "webproducts-daterange" ? navTarget.to : null} onFocusHandled={onFocusHandled} goToInventoryProductEdit={goToInventoryProductEdit} />}
       {sub === "orders" && <WebOrders orders={orders} onOpenOrder={onOpenOrder} />}
-      {sub === "config" && <WebConfigForm webConfig={webConfig} setWebConfig={setWebConfig} setProducts={setProducts} addLog={addLog} products={products} categories={categories} />}
+      {sub !== "products" && sub !== "orders" && <WebConfigForm section={sub} webConfig={webConfig} setWebConfig={setWebConfig} setProducts={setProducts} addLog={addLog} products={products} categories={categories} />}
     </div>
   );
 }
 
 function WebProducts({ products, setProducts, categories, brands, currentUser, addLog, webConfig, focusProductId, initialPublishedFrom, initialPublishedTo, onFocusHandled, goToInventoryProductEdit }) {
+  // Hết hàng vẫn hiện: tính cả nhóm, chỉ báo khi mọi phiên bản đang đăng đều hết hàng.
+  const unitOutOfStock = useMemo(() => {
+    const cache = new Map();
+    products.forEach((p) => {
+      const k = p.variantGroupId || p.id;
+      if (!cache.has(k)) cache.set(k, []);
+      if (p.web?.published) cache.get(k).push(p);
+    });
+    return (p) => {
+      const pub = cache.get(p.variantGroupId || p.id) || [];
+      return pub.length > 0 && pub.every(webOutOfStockShown);
+    };
+  }, [products]);
   // Danh mục web khả dụng = toàn bộ cây danh mục (mọi cấp) trong menu ở "Cấu hình web" (hoặc menu mặc định),
   // kèm cấp (depth) để hiện thụt lề đúng thứ bậc khi chọn cho sản phẩm.
   const webCats = useMemo(() => {
@@ -14431,7 +14481,7 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
     return products
       .map((p, i) => ({ p, i }))
       .filter(({ p }) => !p.isService)
-      .filter(({ p }) => (filter === "on" ? p.web?.published : filter === "off" ? !p.web?.published : true))
+      .filter(({ p }) => (filter === "on" ? p.web?.published : filter === "off" ? !p.web?.published : filter === "missing" ? p.web?.published && webMissing(p).length > 0 : filter === "oos" ? unitOutOfStock(p) : true))
       .filter(({ p }) => !filterCategory || p.category === filterCategory)
       .filter(({ p }) => !filterBrand || p.brand === filterBrand)
       .filter(({ p }) => {
@@ -14446,7 +14496,7 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
       .filter(({ p }) => !kw || webSlugify(`${p.name} ${p.sku} ${p.code}`).includes(kw))
       .sort((a, b) => b.i - a.i)
       .map(({ p }) => p);
-  }, [products, q, filter, filterCategory, filterBrand, filterPublishedFrom, filterPublishedTo]);
+  }, [products, q, filter, filterCategory, filterBrand, filterPublishedFrom, filterPublishedTo, unitOutOfStock]);
 
   // Gộp các phiên bản (variantGroupId) thành 1 dòng đại diện — dùng luôn làm đơn vị phân trang
   // (1 group = 1 dòng trong trang) để số dòng/trang không đổi khi mở/đóng 1 nhóm.
@@ -14461,7 +14511,7 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
     });
     return groups;
   }, [rows]);
-  const WEB_PAGE_SIZE = 50;
+  const WEB_PAGE_SIZE = DOC_PAGE_SIZE;
   const webTotalPages = Math.max(1, Math.ceil(webGroups.length / WEB_PAGE_SIZE));
   const webSafePage = Math.min(webPage, webTotalPages);
   const pagedWebGroups = webGroups.slice((webSafePage - 1) * WEB_PAGE_SIZE, webSafePage * WEB_PAGE_SIZE);
@@ -14486,7 +14536,22 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
   };
   const togglePublish = (p) => { setWeb(p, { published: !p.web?.published }); addLog(p.web?.published ? "Gỡ sản phẩm khỏi web" : "Đăng sản phẩm lên web", `${p.sku} · ${p.name}`); };
 
-  const publishedCount = products.filter((p) => p.web?.published).length;
+  // Đếm theo đúng đơn vị hiển thị trong bảng: một nhóm phiên bản tính là một dòng.
+  const webCounts = useMemo(() => {
+    const units = new Map();
+    products.filter((p) => !p.isService).forEach((p) => {
+      const k = p.variantGroupId || p.id;
+      units.set(k, [...(units.get(k) || []), p]);
+    });
+    const list = [...units.values()];
+    return {
+      all: list.length,
+      on: list.filter((u) => u.some((p) => p.web?.published)).length,
+      off: list.filter((u) => u.some((p) => !p.web?.published)).length,
+      missing: list.filter((u) => u.some((p) => p.web?.published && webMissing(p).length > 0)).length,
+      oos: list.filter((u) => unitOutOfStock(u[0])).length,
+    };
+  }, [products]);
 
   const editing = editId ? products.find((x) => x.id === editId) : null;
   if (editing) {
@@ -14511,11 +14576,19 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
 
   return (
     <div>
-      <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+        {[["all", "Tất cả", TEXT], ["on", "Đang bán", TEXT], ["off", "Chưa đăng", TEXT], ["missing", "Đang bán, thiếu nội dung", BRASS], ["oos", "Hết hàng vẫn hiện", RUST]].map(([id, label, color]) => (
+          <button key={id} type="button" onClick={() => setFilter(id)} className="text-left px-4 py-3 rounded-lg" style={{ background: "#fff", border: `1px solid ${filter === id ? INK : LINE}`, boxShadow: filter === id ? `inset 0 0 0 1px ${INK}` : "none" }}>
+            <span className="block text-xs" style={{ color: "#6B7280" }}>{label}</span>
+            <span className="block text-xl font-bold" style={{ color: webCounts[id] > 0 ? color : "#9CA3AF" }}>{webCounts[id]}</span>
+          </button>
+        ))}
+      </div>
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
         <div className="relative flex-1 min-w-[220px] max-w-md">
-          <Search size={15} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-60" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm tên / SKU…"
-            className="w-full pl-7 pr-2 py-1.5 text-sm rounded-md border-2 outline-none" style={{ borderColor: INK, background: "#fff" }} />
+          <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 opacity-60" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm tên, SKU, mã hàng"
+            className="w-full pl-8 pr-2 py-2 text-sm rounded-md border outline-none focus:ring-2 focus:ring-blue-200" style={{ borderColor: LINE, background: "#fff" }} />
         </div>
         <button onClick={() => setShowFilters((s) => !s)} className="flex items-center gap-1.5 text-sm px-3.5 py-1.5 rounded-md border shrink-0" style={{ borderColor: activeFilterCount ? INK : LINE, color: TEXT, background: showFilters ? PAPER : "#fff" }}>
           <Filter size={14} /> Bộ lọc {activeFilterCount > 0 && <span className="text-xs px-1.5 rounded-full text-white" style={{ background: INK }}>{activeFilterCount}</span>}
@@ -14531,14 +14604,6 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
             <button onClick={() => { setFilterPublishedFrom(""); setFilterPublishedTo(""); }} title="Xoá lọc ngày"><X size={12} /></button>
           </span>
         )}
-        <div className="flex-1" />
-        <div className="flex gap-1 shrink-0">
-          {[["all", "Tất cả"], ["on", "Đã đăng"], ["off", "Chưa đăng"]].map(([id, l]) => (
-            <button key={id} onClick={() => setFilter(id)} className="px-3 py-1.5 rounded-md border text-xs"
-              style={{ borderColor: filter === id ? INK : LINE, background: filter === id ? INK : "transparent", color: filter === id ? "#fff" : INK }}>{l}</button>
-          ))}
-        </div>
-        <span className="text-sm opacity-60 shrink-0">Đang đăng: <b>{publishedCount}</b> sản phẩm</span>
       </div>
 
       {showFilters && (
@@ -14570,22 +14635,21 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
               <th className="text-right px-3 py-2.5 font-medium">Giá bán (web)</th>
               <th className="text-right px-3 py-2.5 font-medium">Giá so sánh</th>
               <th className="text-right px-3 py-2.5 font-medium">Tồn</th>
+              <th className="text-left px-3 py-2.5 font-medium">Nội dung</th>
               <th className="px-3 py-2.5"></th>
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 && <tr><td colSpan={7} className="text-center py-8 opacity-60">Không có sản phẩm.</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={8} className="text-center py-8 opacity-60">Không có sản phẩm phù hợp.</td></tr>}
             {(() => {
               const renderRow = (p, indent) => {
                 const st = productStats(p);
                 const vLabel = p.variantAttrs ? Object.values(p.variantAttrs).join(" / ") : "";
                 const on = !!p.web?.published;
                 return (
-                  <tr key={p.id} style={{ borderTop: `1px solid ${LINE}`, background: on ? `${BLUE}08` : "#fff" }}>
+                  <tr key={p.id} style={{ borderTop: `1px solid ${LINE}`, background: "#fff" }}>
                     <td className="px-3 py-2.5">
-                      <label className="inline-flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={on} onChange={() => togglePublish(p)} />
-                      </label>
+                      <Switch checked={on} onChange={() => togglePublish(p)} label={on ? "Đang đăng trên web" : "Chưa đăng"} />
                     </td>
                     <td className="px-3 py-2.5" style={{ paddingLeft: indent ? 32 : undefined }}>
                       <div className="flex items-center gap-2">
@@ -14621,6 +14685,7 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
                         ? <span style={{ color: BLUE }} title="Tồn kho ảo bán online">{p.web.virtualStockQty || 8} <span className="text-xs opacity-60">ảo</span></span>
                         : <span style={{ color: st.closingQty <= 0 ? RUST : INK }}>{st.closingQty}</span>}
                     </td>
+                    <td className="px-3 py-2.5"><WebHealthBadge p={p} /></td>
                     <td className="px-3 py-2.5 text-right">
                       <button onClick={() => setEditId(p.id)} className="text-xs px-2.5 py-1 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>
                         Sửa
@@ -14639,11 +14704,9 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
                 const stockSum = members.reduce((s, m) => s + productStats(m).closingQty, 0);
                 return (
                   <React.Fragment key={gid}>
-                    <tr style={{ borderTop: `1px solid ${LINE}`, background: on ? `${BLUE}08` : `${PURPLE}0D` }}>
+                    <tr style={{ borderTop: `1px solid ${LINE}`, background: "#fff" }}>
                       <td className="px-3 py-2.5">
-                        <label className="inline-flex items-center gap-2 cursor-pointer">
-                          <input type="checkbox" checked={on} onChange={() => togglePublish(rep)} />
-                        </label>
+                        <Switch checked={on} onChange={() => togglePublish(rep)} label={on ? "Đang đăng trên web" : "Chưa đăng"} />
                       </td>
                       <td className="px-3 py-2.5">
                         <div className="flex items-center gap-2">
@@ -14675,6 +14738,7 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
                           value={rep.web?.compareAtPrice || ""} onChange={(v) => setWeb(rep, { compareAtPrice: v })} placeholder="—" />
                       </td>
                       <td className="px-3 py-2.5 text-right" style={{ fontFamily: "'Inter', sans-serif", color: stockSum <= 0 ? RUST : INK }}>{stockSum}</td>
+                      <td className="px-3 py-2.5"><WebHealthBadge p={rep} /></td>
                       <td className="px-3 py-2.5 text-right">
                         <button onClick={() => setEditId(rep.id)} className="text-xs px-2.5 py-1 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>
                           Sửa
@@ -14986,6 +15050,8 @@ function AIWriteFromUrl({ onApply, product, products, setProducts, addLog }) {
  * Sửa trên bản NHÁP tại chỗ — KHÔNG tự lưu; phải bấm "Lưu" mới ghi vào dữ liệu thật.
  */
 function WebProductPage({ product, products, setProducts, webCats, onBack, onSwitch, goToInventoryProductEdit, currentUser, addLog }) {
+  const [editTab, setEditTab] = useState("content");
+  const [showAI, setShowAI] = useState(false);
   const p = product;
   // Các phiên bản (màu sắc/kích cỡ...) cùng 1 sản phẩm dùng CHUNG mô tả/thông số/danh mục/trạng
   // thái/giá so sánh — KHÔNG đồng bộ "images": mỗi phiên bản có ảnh riêng, đây là điểm khác duy nhất.
@@ -15134,6 +15200,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
           <div className="text-xs opacity-60 truncate">{p.sku} · {p.category || "—"}</div>
         </div>
         {dirty && <span className="text-xs font-medium" style={{ color: BRASS }}>● Chưa lưu</span>}
+        {p.web?.published && <a href={`https://hilipc.vn/san-pham/${effSlug}`} target="_blank" rel="noopener" className="text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT, background: "#fff" }}>Xem trên web ↗</a>}
         <button onClick={doDiscard} disabled={!dirty} className="text-xs px-3 py-1.5 rounded-md border disabled:opacity-40" style={{ borderColor: LINE, color: TEXT, background: "#fff" }}>
           Huỷ
         </button>
@@ -15201,13 +15268,19 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
 
       <div className="grid lg:grid-cols-[1fr_320px] gap-5 items-start">
         {/* Cột trái */}
-        <div className="space-y-4">
+        <div className="space-y-4 min-w-0">
+          <TabBar tabs={[{ id: "content", label: "Nội dung" }, { id: "images", label: "Ảnh" }, { id: "price", label: "Giá & vận chuyển" }, { id: "seo", label: "SEO" }]} value={editTab} onChange={setEditTab} />
           {p.variantGroupId && <p className="text-xs p-2 rounded-md" style={{ background: `${BLUE}0D`, color: BLUE }}>Ảnh, giá bán, SEO, slug riêng từng phiên bản. Các mục còn lại dùng chung cho cả nhóm.</p>}
 
-          <AIWriteFromUrl onApply={setWeb} product={p} products={products} setProducts={setProducts} addLog={addLog} />
+          <div hidden={!showAI || editTab !== "content"}>
+            <AIWriteFromUrl onApply={setWeb} product={p} products={products} setProducts={setProducts} addLog={addLog} />
+          </div>
 
-          <div className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-            <p className="text-base font-bold mb-2" style={{ color: RUST }}>Mô tả sản phẩm</p>
+          <div hidden={editTab !== "content"} className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <p className="text-base font-semibold" style={{ color: TEXT }}>Mô tả sản phẩm</p>
+              <button type="button" onClick={() => setShowAI((v) => !v)} className="text-sm px-3 py-1.5 rounded-md border inline-flex items-center gap-1.5" style={{ borderColor: LINE, color: TEXT }}><Wand2 size={14} /> {showAI ? "Ẩn viết bằng AI" : "Viết bằng AI"}</button>
+            </div>
             <Field label="Nội dung mô tả" hint="Dán / kéo–thả ảnh · dán cả bài từ web khác · dán link YouTube (dòng riêng) = nhúng video">
               <WebDescEditor rows={12} bg="#fff" value={w.description} onChange={(v) => setWeb({ description: v })} />
             </Field>
@@ -15226,14 +15299,14 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
             </div>
           </div>
 
-          <div className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-            <p className="text-base font-bold mb-2" style={{ color: RUST }}>Ảnh sản phẩm trên web <span className="text-xs font-normal opacity-60">(tối đa 10, chất lượng cao — bỏ trống = dùng ảnh ở form sản phẩm chính)</span></p>
+          <div hidden={editTab !== "images"} className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+            <p className="text-base font-semibold mb-2" style={{ color: TEXT }}>Ảnh sản phẩm trên web <span className="text-xs font-normal opacity-60">(tối đa 10, chất lượng cao — bỏ trống = dùng ảnh ở form sản phẩm chính)</span></p>
             <WebImageGrid images={w.images} onChange={(imgs) => setWeb({ images: imgs })} max={10} />
           </div>
 
-          <div className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+          <div hidden={editTab !== "content"} className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
             <div className="flex items-center justify-between gap-2 mb-1">
-              <span className="text-base font-bold" style={{ color: RUST }}>Thông số kỹ thuật (web)</span>
+              <span className="text-base font-semibold" style={{ color: TEXT }}>Thông số kỹ thuật (web)</span>
               <button type="button" onClick={() => setWeb({ specsText: autoFormatSpecsText(w.specsText) })}
                 className="text-xs px-2 py-1 rounded-md border inline-flex items-center gap-1 shrink-0" style={{ borderColor: LINE, color: TEXT }}>
                 <Wand2 size={12} /> Chuẩn hoá "Nhãn | Giá trị"
@@ -15247,17 +15320,76 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
               value={w.specsText} onChange={(e) => setWeb({ specsText: e.target.value })}
               placeholder={"Chất liệu | Kính cường lực\nĐộ cứng | 9H\nĐặc điểm | Cảm ứng nhạy\n- Viền phủ keo\n- Chống dầu vân tay"} />
           </div>
+          <div hidden={editTab !== "content"} className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+            <p className="text-base font-semibold mb-2" style={{ color: TEXT }}>Danh mục phụ trên web <span className="text-xs font-normal opacity-60">(mọi cấp — chọn được nhiều)</span></p>
+            <WebCategoryMultiSelect webCats={webCats} value={w.categories} onChange={(next) => setWeb({ categories: next })} />
+          </div>
+
+          <div hidden={editTab !== "price"} className="p-4 rounded-md space-y-3" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+            <p className="text-base font-semibold" style={{ color: TEXT }}>Giá & vận chuyển</p>
+            <Field label="Giá bán web (đ)" hint="= Giá bán lẻ. Sửa ở tab Sản phẩm & tồn kho.">
+              <input readOnly disabled className={inputCls} style={{ borderColor: LINE, background: PAPER }} value={p.retailPrice ? vnd(Number(p.retailPrice)) : "—"} />
+            </Field>
+            <Field label="Giá so sánh — gạch bỏ (đ)" hint="Bỏ trống = không hiện giá gạch">
+              <MoneyInput className={inputCls} style={{ borderColor: LINE }} value={w.compareAtPrice || ""} onChange={(v) => setWeb({ compareAtPrice: v })} />
+            </Field>
+            <Field label="Khối lượng (gram)" hint="Tính phí ship">
+              <input type="number" min={0} className={inputCls} style={{ borderColor: LINE }} value={weightDraft ?? ""} onChange={(e) => setWeightField(Number(e.target.value) || 0)} />
+            </Field>
+          </div>
+
+          <div hidden={editTab !== "seo"} className="p-4 rounded-md space-y-3" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+            <p className="text-base font-semibold" style={{ color: TEXT }}>SEO Google</p>
+            <Field label="Đường dẫn (slug)" hint="Bỏ trống = tự tạo từ tên sản phẩm">
+              <input className={inputCls} style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} value={w.slug}
+                onChange={(e) => setWeb({ slug: webSlugifyLive(e.target.value) })}
+                onBlur={(e) => setWeb({ slug: webSlugify(e.target.value) })}
+                placeholder={effSlug} />
+            </Field>
+            <Field label="Tiêu đề SEO" hint={`Bỏ trống = dùng tên sản phẩm. ~60 ký tự (${seoTitle.length})`}>
+              <input className={inputCls} style={{ borderColor: LINE }} value={w.seoTitle} onChange={(e) => setWeb({ seoTitle: e.target.value })} placeholder={p.name} />
+            </Field>
+            <Field label="Mô tả SEO" hint={`Bỏ trống = dùng mô tả ngắn. ~155 ký tự (${seoDesc.length})`}>
+              <textarea rows={3} className={inputCls} style={{ borderColor: LINE }} value={w.seoDesc} onChange={(e) => setWeb({ seoDesc: e.target.value })} placeholder={seoDesc} />
+            </Field>
+            <div className="rounded-md p-2.5" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
+              <p className="text-xs opacity-60 mb-1 font-medium">Xem trước trên Google</p>
+              <div className="text-[13px] leading-snug" style={{ color: "#1a0dab" }}>{seoTitle}</div>
+              <div className="text-xs" style={{ color: "#006621" }}>hilipc.vn › san-pham › {effSlug}</div>
+              <div className="text-xs mt-0.5" style={{ color: "#4d5156" }}>{seoDesc || "…"}</div>
+            </div>
+          </div>
         </div>
 
         {/* Cột phải */}
-        <div className="space-y-4">
+        <div className="space-y-4 lg:sticky lg:top-28 self-start">
+          {(() => {
+            const health = webHealth(p, w);
+            const done = health.filter((h) => h.ok).length;
+            return (
+              <div className="p-4 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-base font-semibold" style={{ color: TEXT }}>Sẵn sàng đăng</p>
+                  <span className="text-sm" style={{ color: "#6B7280" }}>{done}/{health.length}</span>
+                </div>
+                <div className="h-1.5 rounded-full mb-3" style={{ background: PAPER }}>
+                  <div className="h-1.5 rounded-full" style={{ width: `${(done / health.length) * 100}%`, background: GOLD }} />
+                </div>
+                {health.map((h) => (
+                  <div key={h.label} className="flex items-center gap-2 text-sm py-1" style={{ color: h.ok ? TEXT : h.required ? RUST : BRASS }}>
+                    {h.ok ? <Check size={14} style={{ color: FOREST }} /> : <AlertTriangle size={14} />}
+                    {h.label}{!h.ok && !h.required ? " (nên có)" : ""}
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
           <div className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-            <p className="text-base font-bold mb-2" style={{ color: RUST }}>Trạng thái</p>
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input type="checkbox" checked={!!w.published} onChange={(e) => setWeb({ published: e.target.checked })} />
+            <p className="text-base font-semibold mb-2" style={{ color: TEXT }}>Trạng thái</p>
+            <div className="flex items-center justify-between gap-2 text-sm">
               <span>{w.published ? "Đang bán trên web" : "Ẩn khỏi web"}</span>
-            </label>
-            <p className="text-xs opacity-60 mt-1">Bỏ tick = sản phẩm không hiện trên website khách.</p>
+              <Switch checked={!!w.published} onChange={(v) => setWeb({ published: v })} label="Đăng sản phẩm lên web" />
+            </div>
 
             <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${LINE}` }}>
               <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -15299,45 +15431,6 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
             </div>
           </div>
 
-          <div className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-            <p className="text-base font-bold mb-2" style={{ color: RUST }}>Danh mục phụ trên web <span className="text-xs font-normal opacity-60">(mọi cấp — chọn được nhiều)</span></p>
-            <WebCategoryMultiSelect webCats={webCats} value={w.categories} onChange={(next) => setWeb({ categories: next })} />
-          </div>
-
-          <div className="p-4 rounded-md space-y-3" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-            <p className="text-base font-bold" style={{ color: RUST }}>Giá & vận chuyển</p>
-            <Field label="Giá bán web (đ)" hint="= Giá bán lẻ. Sửa ở tab Sản phẩm & tồn kho.">
-              <input readOnly disabled className={inputCls} style={{ borderColor: LINE, background: PAPER }} value={p.retailPrice ? vnd(Number(p.retailPrice)) : "—"} />
-            </Field>
-            <Field label="Giá so sánh — gạch bỏ (đ)" hint="Bỏ trống = không hiện giá gạch">
-              <MoneyInput className={inputCls} style={{ borderColor: LINE }} value={w.compareAtPrice || ""} onChange={(v) => setWeb({ compareAtPrice: v })} />
-            </Field>
-            <Field label="Khối lượng (gram)" hint="Tính phí ship">
-              <input type="number" min={0} className={inputCls} style={{ borderColor: LINE }} value={weightDraft ?? ""} onChange={(e) => setWeightField(Number(e.target.value) || 0)} />
-            </Field>
-          </div>
-
-          <div className="p-4 rounded-md space-y-3" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-            <p className="text-base font-bold" style={{ color: RUST }}>SEO Google</p>
-            <Field label="Đường dẫn (slug)" hint="Bỏ trống = tự tạo từ tên sản phẩm">
-              <input className={inputCls} style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} value={w.slug}
-                onChange={(e) => setWeb({ slug: webSlugifyLive(e.target.value) })}
-                onBlur={(e) => setWeb({ slug: webSlugify(e.target.value) })}
-                placeholder={effSlug} />
-            </Field>
-            <Field label="Tiêu đề SEO" hint={`Bỏ trống = dùng tên sản phẩm. ~60 ký tự (${seoTitle.length})`}>
-              <input className={inputCls} style={{ borderColor: LINE }} value={w.seoTitle} onChange={(e) => setWeb({ seoTitle: e.target.value })} placeholder={p.name} />
-            </Field>
-            <Field label="Mô tả SEO" hint={`Bỏ trống = dùng mô tả ngắn. ~155 ký tự (${seoDesc.length})`}>
-              <textarea rows={3} className={inputCls} style={{ borderColor: LINE }} value={w.seoDesc} onChange={(e) => setWeb({ seoDesc: e.target.value })} placeholder={seoDesc} />
-            </Field>
-            <div className="rounded-md p-2.5" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
-              <p className="text-xs opacity-60 mb-1 font-medium">Xem trước trên Google</p>
-              <div className="text-[13px] leading-snug" style={{ color: "#1a0dab" }}>{seoTitle}</div>
-              <div className="text-xs" style={{ color: "#006621" }}>hilitek.vn › san-pham › {effSlug}</div>
-              <div className="text-xs mt-0.5" style={{ color: "#4d5156" }}>{seoDesc || "…"}</div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -16002,7 +16095,17 @@ function CouponsEditor({ webConfig, setWebConfig }) {
   );
 }
 
-function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products, categories }) {
+const WEB_CONFIG_PANES = {
+  home: [["posters", "Banner trang chủ"], ["homeblocks", "Khối sản phẩm"], ["menu", "Menu danh mục"]],
+  promo: [["flash", "Flash Sale"], ["coupons", "Mã giảm giá"], ["loyalty", "Điểm tích luỹ"]],
+  content: [["landing", "Trang nội dung"], ["policy", "Trang chính sách"], ["media", "Kho ảnh"]],
+  settings: [["contact", "Liên hệ"], ["bank", "Tài khoản ngân hàng"]],
+};
+
+function WebConfigForm({ section, webConfig, setWebConfig, setProducts, addLog, products, categories }) {
+  const panes = WEB_CONFIG_PANES[section] || [];
+  const [paneBySection, setPaneBySection] = useState({});
+  const pane = paneBySection[section] || panes[0]?.[0];
   const c = webConfig || {};
   const SITE = c.SITE || {};
   const bank = SITE.bank || {};
@@ -16054,6 +16157,11 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
     [arr[i], arr[j]] = [arr[j], arr[i]];
     return arr;
   });
+  const thumb = (src) => (
+    <div className="rounded-md overflow-hidden flex items-center justify-center shrink-0" style={{ width: 96, height: 44, background: PAPER, border: `1px solid ${LINE}` }}>
+      {src ? <img src={src} alt="" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} /> : <ImageOff size={14} style={{ color: "#9CA3AF" }} />}
+    </div>
+  );
   const ip = (val, on, ph) => (
     <input value={val ?? ""} onChange={(e) => on(e.target.value)} placeholder={ph} className={inputCls} style={{ borderColor: LINE }} />
   );
@@ -16064,13 +16172,19 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
   );
 
   return (
-    <div className="max-w-3xl space-y-7">
-      <div className="p-3 rounded-md text-xs" style={{ background: `${BLUE}0D`, border: `1px solid ${BLUE}` }}>
-        Bỏ trống 1 ô = web dùng giá trị mặc định. Web khách đọc cấu hình này mỗi lần tải trang.
+    <div className="grid md:grid-cols-[190px_1fr] gap-5 items-start">
+      <div className="flex md:flex-col gap-1 overflow-x-auto">
+        {panes.map(([id, label]) => (
+          <button key={id} type="button" onClick={() => setPaneBySection((x) => ({ ...x, [section]: id }))} className="text-left text-sm px-3 py-2 rounded-md whitespace-nowrap"
+            style={{ background: pane === id ? "#fff" : "transparent", color: pane === id ? INK : "#4B5563", fontWeight: pane === id ? 600 : 400, boxShadow: pane === id ? `inset 3px 0 0 ${GOLD}` : "none" }}>
+            {label}
+          </button>
+        ))}
       </div>
+      <div className="min-w-0 max-w-4xl space-y-5">
 
-      <section className="p-4 rounded-md" style={{ border: `2px solid ${LINE}` }}>
-        <h3 className="font-bold mb-3" style={{ color: RUST }}>Liên hệ</h3>
+      <section hidden={pane !== "contact"} className="p-5 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+        <h3 className="text-base font-semibold mb-4" style={{ color: TEXT }}>Liên hệ</h3>
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="Hotline (hiển thị)">{ip(SITE.phone, (v) => setSite("phone", v), "0869 196 079")}</Field>
           <Field label="Hotline (chỉ số, cho nút gọi)">{ip(SITE.phoneRaw, (v) => setSite("phoneRaw", v), "0869196079")}</Field>
@@ -16086,8 +16200,8 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
         <Field label="Địa chỉ" >{ip(SITE.address, (v) => setSite("address", v), "6/27A Đường Số 3, …")}</Field>
       </section>
 
-      <section className="p-4 rounded-md" style={{ border: `2px solid ${LINE}` }}>
-        <h3 className="font-bold mb-3" style={{ color: RUST }}>Tài khoản ngân hàng</h3>
+      <section hidden={pane !== "bank"} className="p-5 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+        <h3 className="text-base font-semibold mb-4" style={{ color: TEXT }}>Tài khoản ngân hàng</h3>
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="Ngân hàng">{ip(bank.name, (v) => setBank("name", v), "ACB (Á Châu)")}</Field>
           <Field label="Số tài khoản">{ip(bank.accountNumber, (v) => setBank("accountNumber", v), "19551097")}</Field>
@@ -16099,8 +16213,8 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
         </div>
       </section>
 
-      <section className="p-4 rounded-md" style={{ border: `2px solid ${LINE}` }}>
-        <h3 className="font-bold mb-3" style={{ color: RUST }}>Điểm tích luỹ khách hàng</h3>
+      <section hidden={pane !== "loyalty"} className="p-5 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+        <h3 className="text-base font-semibold mb-4" style={{ color: TEXT }}>Điểm tích luỹ khách hàng</h3>
         <label className="flex items-center gap-2 text-sm mb-3">
           <input type="checkbox" checked={!!LOY.enabled} onChange={(e) => setLoyalty("enabled", e.target.checked)} />
           Bật tích điểm — cộng theo số điện thoại đặt hàng, tính tự động từ đơn "Hoàn thành" (không tính đơn đang xử lý/đã huỷ)
@@ -16123,18 +16237,18 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
         </p>
       </section>
 
-      <section className="p-4 rounded-md" style={{ border: `2px solid ${LINE}` }}>
-        <h3 className="font-bold mb-3" style={{ color: RUST }}>Mã giảm giá <span className="text-xs opacity-60">(khách nhập ở trang giỏ hàng → chiết khấu đơn)</span></h3>
+      <section hidden={pane !== "coupons"} className="p-5 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+        <h3 className="text-base font-semibold mb-4" style={{ color: TEXT }}>Mã giảm giá <span className="text-xs opacity-60">(khách nhập ở trang giỏ hàng → chiết khấu đơn)</span></h3>
         <CouponsEditor webConfig={webConfig} setWebConfig={setWebConfig} />
       </section>
 
-      <section className="p-4 rounded-md" style={{ border: `2px solid ${LINE}` }}>
-        <h3 className="font-bold mb-3" style={{ color: RUST }}>Danh mục sản phẩm web (menu)</h3>
+      <section hidden={pane !== "menu"} className="p-5 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+        <h3 className="text-base font-semibold mb-4" style={{ color: TEXT }}>Danh mục sản phẩm web (menu)</h3>
         <WebMenuEditor webConfig={webConfig} setWebConfig={setWebConfig} setProducts={setProducts} products={products} />
       </section>
 
-      <section className="p-4 rounded-md" style={{ border: `2px solid ${LINE}` }}>
-        <h3 className="font-bold mb-3" style={{ color: RUST }}>Flash Sale <span className="text-xs opacity-60">(khối nổi bật dưới dải đếm ngược — viền đỏ, nhãn ⚡)</span></h3>
+      <section hidden={pane !== "flash"} className="p-5 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+        <h3 className="text-base font-semibold mb-4" style={{ color: TEXT }}>Flash Sale <span className="text-xs opacity-60">(khối nổi bật dưới dải đếm ngược — viền đỏ, nhãn ⚡)</span></h3>
         <label className="flex items-center gap-2 text-sm mb-3">
           <input type="checkbox" checked={FS.enabled !== false} onChange={(e) => setFlash("enabled", e.target.checked)} /> Bật khối Flash Sale trên trang chủ
         </label>
@@ -16164,22 +16278,19 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
         </div>
       </section>
 
-      <section className="p-4 rounded-md" style={{ border: `2px solid ${LINE}` }}>
-        <h3 className="font-bold mb-3" style={{ color: RUST }}>Khối sản phẩm trang chủ</h3>
+      <section hidden={pane !== "homeblocks"} className="p-5 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+        <h3 className="text-base font-semibold mb-4" style={{ color: TEXT }}>Khối sản phẩm trang chủ</h3>
         <HomeSectionsEditor webConfig={webConfig} setWebConfig={setWebConfig} products={products} />
       </section>
 
-      <section className="p-4 rounded-md" style={{ border: `2px solid ${LINE}` }}>
-        <h3 className="font-bold mb-3" style={{ color: RUST }}>Trang nội dung (landing)</h3>
+      <section hidden={pane !== "landing"} className="p-5 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+        <h3 className="text-base font-semibold mb-4" style={{ color: TEXT }}>Trang nội dung (landing)</h3>
         <LandingsEditor webConfig={webConfig} setWebConfig={setWebConfig} />
       </section>
 
-      <section className="p-4 rounded-md" style={{ border: `2px solid ${LINE}` }}>
-        <h3 className="font-bold mb-3" style={{ color: RUST }}>Poster / banner trang chủ (URL ảnh + link)</h3>
-        <p className="text-xs opacity-60 mb-3">
-          Ảnh: tải lên host bất kỳ hoặc để trong <code>public/posters/</code> rồi điền đường dẫn (vd <code>/posters/hero.jpg</code>).<br />
-          Ô "link" nhận: sản phẩm <code>/san-pham/&lt;slug&gt;</code> · danh mục <code>/danh-muc?group=…</code> · web ngoài <code>https://…</code> · hoặc trang nội dung <code>/trang/&lt;slug&gt;</code> (bấm vào ô sẽ gợi ý sẵn các trang đã tạo ở trên).
-        </p>
+      <section hidden={pane !== "posters"} className="p-5 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+        <h3 className="text-base font-semibold mb-4" style={{ color: TEXT }}>Banner trang chủ</h3>
+        <p className="text-xs mb-3" style={{ color: "#6B7280" }}>Dán đường dẫn ảnh và link khi khách bấm vào. Ô link có gợi ý sẵn danh mục và trang nội dung.</p>
         <datalist id="webPosterLinks">
           <option value="/danh-muc?sort=discount">Trang danh mục — đang giảm giá</option>
           {(Array.isArray(c.MENU) && c.MENU.length ? c.MENU : WEB_DEFAULT_MENU).map((g) => (
@@ -16192,13 +16303,13 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
         <div className="space-y-3">
           <div className="rounded-md p-2.5" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-sm font-medium" style={{ color: TEXT }}>Poster chính (slider) — nhiều ảnh</span>
-              <button onClick={addHeroSlide} className="text-xs px-2 py-1 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>+ Thêm ảnh</button>
+              <span className="text-sm font-medium" style={{ color: TEXT }}>Banner chính (tự chạy khi có từ 2 ảnh)</span>
+              <button onClick={addHeroSlide} className="text-sm px-3 py-1.5 rounded-md text-white" style={{ background: INK }}>+ Thêm banner</button>
             </div>
-            <p className="text-xs opacity-60 mb-2">Từ 2 ảnh trở lên sẽ tự chạy slide (đổi mỗi 5 giây, có nút ‹ › + chấm). 1 ảnh = ảnh tĩnh. Chưa có ảnh nào = khung gợi ý kích thước.</p>
             {heroSlides.length === 0 && <p className="text-xs opacity-60">Chưa có ảnh — bấm “+ Thêm ảnh”.</p>}
             {heroSlides.map((s, i) => (
-              <div key={i} className="grid gap-2 mb-2" style={{ gridTemplateColumns: "1fr 1fr auto" }}>
+              <div key={i} className="grid gap-2 mb-2 items-center" style={{ gridTemplateColumns: "96px 1fr 1fr auto" }}>
+                {thumb(s.image)}
                 {ip(s.image, (v) => setHeroSlide(i, "image", v), `/posters/hero-${i + 1}.jpg`)}
                 {hrefIp(s.href, (v) => setHeroSlide(i, "href", v), "/danh-muc?sort=discount")}
                 <div className="flex items-center gap-1">
@@ -16210,13 +16321,15 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
             ))}
           </div>
           {[0, 1].map((i) => (
-            <div key={i} className="grid sm:grid-cols-2 gap-3">
+            <div key={i} className="grid sm:grid-cols-[96px_1fr_1fr] gap-3 items-center">
+              {thumb((HP.side || [])[i]?.image)}
               <Field label={`Poster phụ ${i + 1} — ảnh`}>{ip((HP.side || [])[i]?.image, (v) => setSidePoster(i, "image", v), `/posters/phu-${i + 1}.jpg`)}</Field>
               <Field label={`Poster phụ ${i + 1} — link`}>{hrefIp((HP.side || [])[i]?.href, (v) => setSidePoster(i, "href", v), "/danh-muc")}</Field>
             </div>
           ))}
           {[0, 1, 2].map((i) => (
-            <div key={i} className="grid sm:grid-cols-2 gap-3">
+            <div key={i} className="grid sm:grid-cols-[96px_1fr_1fr] gap-3 items-center">
+              {thumb((HP.strip || [])[i]?.image)}
               <Field label={`Banner ${i + 1} — ảnh`}>{ip((HP.strip || [])[i]?.image, (v) => setStripPoster(i, "image", v), `/posters/banner-${i + 1}.jpg`)}</Field>
               <Field label={`Banner ${i + 1} — link`}>{hrefIp((HP.strip || [])[i]?.href, (v) => setStripPoster(i, "href", v), "/danh-muc")}</Field>
             </div>
@@ -16232,8 +16345,8 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
         </div>
       </section>
 
-      <section className="p-4 rounded-md" style={{ border: `2px solid ${LINE}` }}>
-        <h3 className="font-bold mb-3" style={{ color: RUST }}>Trang chính sách</h3>
+      <section hidden={pane !== "policy"} className="p-5 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+        <h3 className="text-base font-semibold mb-4" style={{ color: TEXT }}>Trang chính sách</h3>
         <div className="space-y-2">
           {WEB_PAGE_KEYS.map(([k, l]) => (
             <WebPageEditor key={k} pageKey={k} label={l} webConfig={webConfig} setWebConfig={setWebConfig} />
@@ -16241,14 +16354,18 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
         </div>
       </section>
 
-      <section className="p-4 rounded-md" style={{ border: `2px solid ${LINE}` }}>
-        <h3 className="font-bold mb-3" style={{ color: RUST }}>Kho ảnh (Supabase Storage)</h3>
+      <section hidden={pane !== "media"} className="p-5 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+        <h3 className="text-base font-semibold mb-4" style={{ color: TEXT }}>Kho ảnh (Supabase Storage)</h3>
         <MediaCleanupPanel />
       </section>
 
+      {section === "settings" && (
       <div className="flex items-center gap-3">
         <button onClick={() => { addLog("Cập nhật cấu hình web", ""); }} className="px-4 py-2 rounded-md text-sm text-white" style={{ background: INK }}>Đã lưu (tự động)</button>
         <button onClick={() => { if (confirm("Xoá toàn bộ cấu hình web (web quay về mặc định)?")) setWebConfig({}); }} className="text-xs underline" style={{ color: RUST }}>Đặt lại về mặc định</button>
+      </div>
+      )}
+      <p className="text-xs" style={{ color: "#6B7280" }}>Thay đổi tự lưu. Ô bỏ trống sẽ dùng giá trị mặc định của web.</p>
       </div>
     </div>
   );
