@@ -3420,7 +3420,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
       )}
 
       <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 220px)" }}>
-        <table className="hili-rt w-full text-sm" style={{ minWidth: 940 }}>
+        <table className="hili-rt hili-products w-full text-sm" style={{ minWidth: 940 }}>
           <thead className="sticky top-0" style={{ zIndex: 2 }}>
             <tr style={{ borderBottom: `1px solid ${LINE}` }}>
               <th className="px-3 py-2.5" style={{ background: "#fff" }}><input type="checkbox" title="Chọn tất cả sản phẩm trong trang này" checked={pageAllSelected()} onChange={toggleSelectAll} /></th>
@@ -17525,6 +17525,19 @@ export default function SalesManager() {
           table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Giá nhập"]::before { content: "Nhập"; }
           table.hili-rt:not(.hili-items) > tbody > tr > td:has(.hili-nodata) { display: none; }
           table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Tên vật tư"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Sản phẩm"] { display: block; }
+          /* Thẻ sản phẩm: hàng 1 ảnh + tên, hàng 2 mã + tồn + 4 nút */
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr { display: grid; grid-template-columns: 18px 16px 40px minmax(0, 1fr) auto auto; gap: 6px 8px; align-items: center; }
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td:nth-child(1) { grid-area: 1 / 1; }
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td:nth-child(2) { grid-area: 1 / 2; }
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td:nth-child(3) { grid-area: 1 / 3; }
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td[data-label="Tên vật tư"] { grid-area: 1 / 4 / 2 / -1; display: block; min-width: 0; }
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td[data-label="Mã VT"] { grid-area: 2 / 1 / 3 / 5; display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td[data-label="Mã VT"] > * { white-space: nowrap; display: inline; }
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td[data-label="Tồn CK"] { grid-area: 2 / 5; }
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td[data-label="Giá nhập"] { display: none; }
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td:last-child:not([data-label]) { grid-area: 2 / 6; margin-left: 0; }
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td:last-child:not([data-label]) > div { display: flex !important; gap: 8px !important; width: auto !important; margin: 0 !important; }
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td[colspan] { grid-column: 1 / -1; }
           /* Dòng hàng trong phiếu */
           table.hili-items > tbody > tr { display: grid; grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr); gap: 6px 8px; align-items: end; position: relative; border: 1px solid #E5E7EB !important; border-radius: 8px; margin: 0 0 8px; padding: 10px; background: #fff; }
           table.hili-items > tbody > tr > td { display: block; padding: 0 !important; text-align: left; grid-column: 1 / -1; max-width: none !important; white-space: normal; }
