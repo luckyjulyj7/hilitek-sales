@@ -16882,23 +16882,32 @@ export default function SalesManager() {
   }, [tab]);
   useEffect(() => { navOpenRef.current = navOpen; }, [navOpen]);
   useEffect(() => {
-    const hold = () => window.history.pushState({ hiliGuard: true }, "");
-    if (!(window.history.state && window.history.state.hiliGuard)) hold();
-    const onPop = () => {
-      if (document.querySelector("[data-web-editor]")) return; // trang sửa sản phẩm web tự xử lý
-      if (document.querySelector('[role="alertdialog"]') || document.querySelector("[data-hili-overlay]")) { hold(); return; }
-      if (__modalStack.length > 0) { hold(); __modalStack[__modalStack.length - 1].close(); return; }
-      if (navOpenRef.current) { hold(); setNavOpen(false); return; }
-      const prev = tabTrailRef.current.pop();
-      if (prev) { hold(); skipTrailRef.current = true; setTab(prev); window.scrollTo(0, 0); return; }
-      const now = Date.now();
-      if (now - lastBackRef.current < 2000) { window.history.back(); return; }
-      lastBackRef.current = now;
-      hold();
-      notify("Bấm Back lần nữa để thoát");
+    // Chrome trên điện thoại bỏ qua mốc lịch sử tạo khi người dùng chưa chạm vào trang, nên Back văng khỏi web.
+    // Vì vậy mỗi lần bấm/chạm mới thêm 1 mốc (tối đa 12 mốc dự trữ); mỗi lần Back dùng hết 1 mốc.
+    const MAX_GUARD = 12;
+    let pos = (window.history.state && window.history.state.hiliPos) || 0;
+    const onTouch = () => {
+      if (pos >= MAX_GUARD) return;
+      pos += 1;
+      window.history.pushState({ ...(window.history.state || {}), hiliGuard: true, hiliPos: pos }, "");
     };
+    const onPop = () => {
+      const prevPos = pos;
+      pos = (window.history.state && window.history.state.hiliPos) || 0;
+      if (document.querySelector("[data-web-editor]")) return; // trang sửa sản phẩm web tự xử lý
+      if (document.querySelector('[role="alertdialog"]') || document.querySelector("[data-hili-overlay]")) return;
+      if (__modalStack.length > 0) { __modalStack[__modalStack.length - 1].close(); return; }
+      if (navOpenRef.current) { setNavOpen(false); return; }
+      const prev = tabTrailRef.current.pop();
+      if (prev) { skipTrailRef.current = true; setTab(prev); window.scrollTo(0, 0); return; }
+      const now = Date.now();
+      if (now - lastBackRef.current < 2000) { if (pos > 0) window.history.go(-pos - 1); return; }
+      lastBackRef.current = now;
+      if (prevPos > 0) notify("Bấm Back lần nữa để thoát");
+    };
+    window.addEventListener("click", onTouch, true);
     window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
+    return () => { window.removeEventListener("click", onTouch, true); window.removeEventListener("popstate", onPop); };
   }, []);
   // Trên điện thoại, bảng danh sách hiện dạng thẻ: gắn tên cột vào từng ô để CSS hiển thị.
   useEffect(() => {
