@@ -54,7 +54,7 @@ const CHANNELS = [
   { id: "store", label: "Tại cửa hàng", icon: Store },
   { id: "online", label: "Online", icon: Globe },
 ];
-const PURPLE = "#6B4FA0";
+const PURPLE = "#1E2A8A"; // giữ tên cũ, đồng bộ về xanh thương hiệu
 const STATUSES = [
   { id: "pending", label: "Chờ xử lý", color: BRASS },
   { id: "shipping", label: "Đang giao", color: BLUE },
@@ -3623,13 +3623,16 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
               </div>
             )}
 
-            <div className="mb-5" style={{ borderTop: `1px solid ${LINE}` }}>
-              <button onClick={() => setShowProductInfo((v) => !v)} className="w-full flex items-center justify-between py-3 text-sm font-semibold" style={{ color: INK }}>
+            <div className="mb-5">
+              <button onClick={() => setShowProductInfo((v) => !v)} className="w-full flex items-center justify-between px-4 py-3 mt-3 rounded-lg text-sm font-semibold" style={{ color: INK, background: PAPER }}>
                 Thông tin chi tiết
-                <ChevronDown size={16} style={{ transform: showProductInfo ? "rotate(180deg)" : "none" }} />
+                <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md text-white" style={{ background: INK }}>
+                  {showProductInfo ? "Thu gọn" : "Xem thêm"}
+                  <ChevronDown size={15} strokeWidth={2.5} style={{ transform: showProductInfo ? "rotate(180deg)" : "none" }} />
+                </span>
               </button>
               {showProductInfo && (
-                <dl className="grid sm:grid-cols-2 gap-x-8 text-sm">
+                <dl className="grid sm:grid-cols-2 gap-x-8 text-sm mt-2">
                   {[
                     ["Mã hàng", viewingProduct.code],
                     ["SKU", viewingProduct.sku || "—"],
@@ -8389,7 +8392,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
                   <td className="px-3 py-3 font-medium whitespace-nowrap">
                     <button onClick={() => setViewingId(c.id)} className="hover:underline" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{c.code}</button>
                   </td>
-                  <td className="px-3 py-3 whitespace-nowrap" style={{ color: INK }}>{c.name}</td>
+                  <td className="px-3 py-3 whitespace-nowrap"><button onClick={() => setViewingId(c.id)} className="text-left hover:underline" style={{ color: INK }}>{c.name}</button></td>
                   <td className="px-3 py-3 whitespace-nowrap opacity-70" style={{ fontFamily: "'Inter', sans-serif" }}>{c.phone || "—"}</td>
                   <td className="px-3 py-3 whitespace-nowrap">
                     <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: `${BLUE}15`, color: BLUE }}>{g.label}</span>
@@ -8452,28 +8455,28 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
               )}
             </div>
 
-            <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3 text-sm mb-5">
+            <dl className="grid sm:grid-cols-2 gap-x-8 text-sm mb-5" style={{ borderBottom: `1px solid ${LINE}` }}>
               {[
                 ["Số điện thoại", viewingCustomer.phone],
                 ["Mã số thuế", viewingCustomer.taxCode],
-                ["Phụ trách", viewingCustomer.assignedTo || "Chưa gán"],
                 ["Email", viewingCustomer.email],
-                ...(viewingCustomer.contactPerson ? [["Người liên hệ", viewingCustomer.contactPerson]] : []),
-                ...(viewingCustomer.representativeName || viewingCustomer.representativeTitle ? [["Đại diện", [viewingCustomer.representativeName, viewingCustomer.representativeTitle].filter(Boolean).join(" · ")]] : []),
+                ["Phụ trách", viewingCustomer.assignedTo || "Chưa gán"],
+                ["Người liên hệ", viewingCustomer.contactPerson],
+                ["Đại diện", [viewingCustomer.representativeName, viewingCustomer.representativeTitle].filter(Boolean).join(" · ")],
               ].map(([label, val]) => (
-                <div key={label} className="min-w-0">
-                  <dt className="text-xs" style={{ color: INK, opacity: 0.6 }}>{label}</dt>
-                  <dd className="font-medium break-words" style={{ color: INK }}>{val || "—"}</dd>
+                <div key={label} className="flex justify-between gap-4 py-2.5 min-w-0" style={{ borderTop: `1px solid ${LINE}` }}>
+                  <dt className="shrink-0" style={{ color: INK, opacity: 0.6 }}>{label}</dt>
+                  <dd className="font-medium text-right truncate" style={{ color: INK }} title={val || ""}>{val || "—"}</dd>
                 </div>
               ))}
-              <div className="col-span-2 sm:col-span-3">
-                <dt className="text-xs" style={{ color: INK, opacity: 0.6 }}>Địa chỉ</dt>
-                <dd className="font-medium" style={{ color: INK }}>{fullAddress(viewingCustomer) || "—"}</dd>
+              <div className="sm:col-span-2 flex justify-between gap-4 py-2.5" style={{ borderTop: `1px solid ${LINE}` }}>
+                <dt className="shrink-0" style={{ color: INK, opacity: 0.6 }}>Địa chỉ</dt>
+                <dd className="font-medium text-right" style={{ color: INK }}>{fullAddress(viewingCustomer) || "—"}</dd>
               </div>
               {viewingCustomer.note && (
-                <div className="col-span-2 sm:col-span-3">
-                  <dt className="text-xs" style={{ color: INK, opacity: 0.6 }}>Ghi chú</dt>
-                  <dd style={{ color: INK }}>{viewingCustomer.note}</dd>
+                <div className="sm:col-span-2 flex justify-between gap-4 py-2.5" style={{ borderTop: `1px solid ${LINE}` }}>
+                  <dt className="shrink-0" style={{ color: INK, opacity: 0.6 }}>Ghi chú</dt>
+                  <dd className="text-right" style={{ color: INK }}>{viewingCustomer.note}</dd>
                 </div>
               )}
             </dl>
@@ -8884,8 +8887,7 @@ function SalesItemsTable({ items, products, onUpdate, onRemove, role }) {
     <div className="rounded-md overflow-x-auto" style={{ border: `1px solid ${LINE}` }}>
       <table className="w-full text-sm table-fixed" style={{ minWidth: 560 }}>
         <colgroup>
-          <col style={{ width: 28 }} />
-          <col style={{ width: 46 }} />
+          <col style={{ width: 54 }} />
           <col />
           <col style={{ width: 76 }} />
           <col style={{ width: 150 }} />
@@ -8893,10 +8895,8 @@ function SalesItemsTable({ items, products, onUpdate, onRemove, role }) {
           <col style={{ width: 32 }} />
         </colgroup>
         <thead>
-          <tr style={{ borderBottom: `2px solid ${INK}`, background: PAPER }}>
-            <th className="text-left px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-50">STT</th>
-            <th className="text-left px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-60">Ảnh</th>
-            <th className="text-left px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-60">Sản phẩm</th>
+          <tr style={{ borderBottom: `1px solid ${LINE}`, background: PAPER }}>
+            <th colSpan={2} className="text-left px-3 py-2.5 text-[11px] uppercase tracking-wider opacity-60">Sản phẩm</th>
             <th className="text-center px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-60">SL</th>
             <th className="text-right px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-60">Đơn giá</th>
             <th className="text-right px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-60">Thành tiền</th>
@@ -8912,28 +8912,27 @@ function SalesItemsTable({ items, products, onUpdate, onRemove, role }) {
             return (
               <React.Fragment key={it.productId}>
                 <tr style={{ borderBottom: p?.hasSeries ? "none" : `1px dashed ${LINE}` }}>
-                  <td className="px-2 py-3 text-xs opacity-40 align-top">{idx + 1}</td>
-                  <td className="px-2 py-3 align-top">
+                  <td className="pl-3 pr-1 py-3 align-top">
                     {p?.image ? <img src={p.image} alt={p.name} className="w-9 h-9 object-cover rounded-md" style={{ border: `1px solid ${LINE}` }} /> : (
                       <div className="w-9 h-9 rounded-md flex items-center justify-center" style={{ background: PAPER, border: `1px dashed ${LINE}` }}><ImageOff size={12} className="opacity-30" /></div>
                     )}
                   </td>
                   <td className="px-2 py-3 align-top">
-                    <div className="font-semibold text-base leading-snug" style={{ color: INK }}>{p?.name}</div>
+                    <div className="font-medium text-sm leading-snug" style={{ color: INK }}>{p?.name}</div>
                     <div className="text-xs opacity-50 mt-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>{p?.sku || p?.code}</div>
                   </td>
                   <td className="px-1 py-3 align-top">
                     <input type="number" min={1} value={it.qty || ""} onChange={(e) => { const v = e.target.value; onUpdate(it.productId, { qty: v === "" ? "" : Math.max(0, Number(v)) }); }}
                       onBlur={() => { if (!it.qty || it.qty < 1) onUpdate(it.productId, { qty: 1 }); }}
-                      className="w-full border rounded-md py-2 px-1 text-center text-[15px] font-medium" style={{ borderColor: LINE }} />
+                      className="w-full border rounded-md py-1.5 px-1 text-center text-sm" style={{ borderColor: LINE }} />
                   </td>
                   <td className="px-1 py-3 align-top">
                     <MoneyInput value={it.price} onChange={(v) => onUpdate(it.productId, { price: v === "" ? 0 : v })}
-                      className="w-full border rounded-md py-2 px-2 text-right text-[15px] font-medium" style={{ borderColor: belowFloor ? RUST : LINE, fontFamily: "'Inter', sans-serif", color: belowFloor ? RUST : INK }} />
+                      className="w-full border rounded-md py-1.5 px-2 text-right text-sm" style={{ borderColor: belowFloor ? RUST : LINE, fontFamily: "'Inter', sans-serif", color: belowFloor ? RUST : INK }} />
                     {p && (
-                      <div className="flex gap-1 mt-1">
-                        <button type="button" onClick={() => onUpdate(it.productId, { price: p.wholesalePrice })} className="text-[10px] px-1.5 py-0.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>Giá sỉ</button>
-                        <button type="button" onClick={() => onUpdate(it.productId, { price: p.retailPrice })} className="text-[10px] px-1.5 py-0.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>Giá lẻ</button>
+                      <div className="flex justify-end gap-2.5 mt-1 text-[11px]">
+                        <button type="button" onClick={() => onUpdate(it.productId, { price: p.wholesalePrice })} className="hover:underline" style={{ color: BLUE }}>Giá sỉ</button>
+                        <button type="button" onClick={() => onUpdate(it.productId, { price: p.retailPrice })} className="hover:underline" style={{ color: BLUE }}>Giá lẻ</button>
                       </div>
                     )}
                     {belowFloor && <span className="block text-[10px] mt-0.5" style={{ color: RUST }}>Dưới giá niêm yết tối thiểu ({vnd(floor)})</span>}
@@ -8944,22 +8943,21 @@ function SalesItemsTable({ items, products, onUpdate, onRemove, role }) {
                 {p?.hasSeries && (
                   <tr style={{ borderBottom: `1px dashed ${LINE}` }}>
                     <td></td>
-                    <td colSpan={6} className="px-2 pb-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs opacity-60">Chọn series xuất bán — cần {it.qty} (còn tồn {available.length})</span>
+                    <td colSpan={4} className="px-2 pb-3">
+                      <div className="flex items-center gap-2 mb-1 text-xs">
+                        <span style={{ color: INK, opacity: 0.6 }}>Series {it.series.length}/{it.qty} · còn tồn {available.length}</span>
                         {it.series.length < it.qty && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider" style={{ background: `${BRASS}1A`, color: BRASS }}>Sẽ ở trạng thái chờ hàng</span>
+                          <span title="Vẫn tạo được đơn, bổ sung series sau khi nhập hàng về" style={{ color: BRASS }}>· Chờ hàng</span>
                         )}
                       </div>
                       <SeriesPicker growable available={available} selected={it.series} setSelected={(arr) => onUpdate(it.productId, { series: arr, qty: Math.max(Number(it.qty) || 0, arr.length) })} need={it.qty} />
-                      {it.series.length < it.qty && <p className="text-[11px] opacity-50 mt-1">Chưa đủ series (thường vì chưa đủ hàng trong kho) — vẫn tạo được đơn, bổ sung series sau khi nhập hàng về.</p>}
                     </td>
                   </tr>
                 )}
               </React.Fragment>
             );
           })}
-          {items.length === 0 && <tr><td colSpan={7} className="text-center py-8 opacity-40 text-sm">Chưa có thông tin sản phẩm.</td></tr>}
+          {items.length === 0 && <tr><td colSpan={6} className="text-center py-8 opacity-40 text-sm">Chưa có thông tin sản phẩm.</td></tr>}
         </tbody>
       </table>
     </div>
@@ -10032,7 +10030,7 @@ function QuoteItemsTable({ items, products, onUpdate, onRemove }) {
       <table className="w-full text-sm table-fixed" style={{ minWidth: 480 }}>
         <colgroup><col style={{ width: 28 }} /><col /><col style={{ width: 70 }} /><col style={{ width: 130 }} /><col style={{ width: 120 }} /><col style={{ width: 32 }} /></colgroup>
         <thead>
-          <tr style={{ borderBottom: `2px solid ${INK}`, background: PAPER }}>
+          <tr style={{ borderBottom: `1px solid ${LINE}`, background: PAPER }}>
             <th className="text-left px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-50">STT</th>
             <th className="text-left px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-60">Sản phẩm</th>
             <th className="text-center px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-60">SL</th>
@@ -10305,15 +10303,19 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
       {/* Modal tạo / sửa báo giá */}
       {creating && (
         <Modal title={editingQuoteId ? "Sửa báo giá" : "Tạo phiếu báo giá"} onClose={() => { setCreating(false); setEditingQuoteId(null); }} size="2xl">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <div className="lg:col-span-2 space-y-4 min-w-0">
+              <div className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+                <p className="text-sm font-semibold mb-3" style={{ color: INK }}>Khách hàng</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Khách hàng (gõ tên rồi Enter nếu là khách mới)">
+            <Field label="Khách hàng">
               <FilterSearchSelect
                 options={customers.map((c) => ({ id: c.id, label: c.name }))}
                 value={form.customerId}
                 freeText={form.customerName}
                 onChange={(v) => setForm({ ...form, customerId: v, customerName: v ? "" : form.customerName })}
                 onFreeText={(name) => setForm({ ...form, customerId: "", customerName: name })}
-                placeholder="Gõ tên khách hàng…"
+                placeholder="Gõ tên, khách mới thì Enter…"
               />
             </Field>
             <Field label="Bán bởi">
@@ -10326,15 +10328,20 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
               <Field label="SĐT"><input className={inputCls} style={{ borderColor: LINE }} inputMode="numeric" value={form.customerPhone} onChange={(e) => setForm({ ...form, customerPhone: e.target.value.replace(/\D/g, "") })} /></Field>
             </div>
           )}
-          <p className="text-[11px] opacity-50 -mt-2 mb-3">Khách hàng chỉ được thêm chính thức vào danh sách khi báo giá được chuyển thành đơn hàng.</p>
 
-          <Field label="Thêm sản phẩm vào báo giá">
+              </div>
+              <div className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+                <p className="text-sm font-semibold mb-3" style={{ color: INK }}>Sản phẩm</p>
             <ProductPicker products={products} onPick={addItem} onQuickCreate={quickCreateProduct} brands={brands} />
-          </Field>
+                <div className="mt-3">
           <QuoteItemsTable items={form.items || []} products={products} onUpdate={updateItem} onRemove={removeItem} />
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-            <Field label="Hiệu lực báo giá (số ngày)" hint={editingQuoteId ? "Tính từ thời điểm lưu chỉnh sửa." : "Tính từ thời điểm tạo báo giá."}>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-4 min-w-0">
+              <div className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+                <p className="text-sm font-semibold mb-3" style={{ color: INK }}>Thanh toán</p>
+            <Field label="Hiệu lực báo giá (số ngày)">
               <input type="number" min={1} value={form.validDays ?? 7}
                 onChange={(e) => setForm({ ...form, validDays: e.target.value === "" ? "" : Math.max(1, Number(e.target.value)) })}
                 onBlur={() => { if (!form.validDays) setForm({ ...form, validDays: 7 }); }}
@@ -10349,20 +10356,19 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
                 <MoneyInput value={form.orderDiscount} onChange={(v) => setForm({ ...form, orderDiscount: v })} className="flex-1 border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} />
               </div>
             </Field>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Phí giao hàng"><MoneyInput value={form.shippingFee} onChange={(v) => setForm({ ...form, shippingFee: v })} className={inputCls} style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} /></Field>
-          </div>
-
           <div className="p-3 rounded-md space-y-1.5 mb-3" style={{ background: PAPER }}>
             <div className="flex justify-between text-sm"><span className="opacity-60">Tạm tính</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(calc.subtotal)}</span></div>
             <div className="flex justify-between text-sm font-semibold" style={{ color: INK }}><span>Tổng cộng</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(calc.total)}</span></div>
           </div>
 
-          <TagsNotesCompact tags={form.tags} setTags={(arr) => setForm({ ...form, tags: arr })} notes={form.notes} setNotes={(v) => setForm({ ...form, notes: v })} />
-          <button onClick={submit} className="w-full py-2.5 rounded-md text-white text-sm mt-4" style={{ background: INK }}>
+              </div>
+          <button onClick={submit} className="w-full py-2.5 rounded-md text-white text-sm font-medium" style={{ background: INK }}>
             {editingQuoteId ? "Lưu thay đổi (kích hoạt lại)" : `Tạo báo giá (hiệu lực ${form.validDays || 7} ngày)`}
           </button>
+            </div>
+          </div>
+          <TagsNotesCompact tags={form.tags} setTags={(arr) => setForm({ ...form, tags: arr })} notes={form.notes} setNotes={(v) => setForm({ ...form, notes: v })} />
         </Modal>
       )}
 
@@ -11202,8 +11208,8 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
         <Modal title={editingOrderId ? "Sửa đơn hàng" : "Tạo đơn và giao hàng"} onClose={() => { setCreating(false); setEditingOrderId(null); }} size="3xl">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
             <div className="lg:col-span-2 space-y-5 min-w-0">
-              <div className="p-4 rounded-md" style={{ border: `2px solid ${INK}`, background: "#fff" }}>
-                <p className="text-xs uppercase tracking-wider mb-2 font-medium" style={{ color: INK }}>Thông tin khách hàng</p>
+              <div className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+                <p className="text-sm font-semibold mb-3" style={{ color: INK }}>Khách hàng</p>
                 <CustomerPicker customers={customers} setCustomers={setCustomers} currentUser={currentUser} onPick={(id) => {
                   const cust = customers.find((c) => c.id === id);
                   const def = customerDefaultAddress(cust);
@@ -11218,7 +11224,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                     <div className="mt-2.5 p-3 rounded-md flex items-center justify-between" style={{ background: `${FOREST}0F`, border: `1px solid ${FOREST}44` }}>
                       <div>
                         <p className="text-[10px] uppercase tracking-wider opacity-60 mb-0.5">Khách hàng</p>
-                        <p className="text-lg font-bold uppercase" style={{ color: INK, letterSpacing: "0.02em" }}>{cust?.name}</p>
+                        <p className="text-sm font-semibold" style={{ color: INK }}>{cust?.name}</p>
                         {cust?.phone && <p className="text-xs opacity-60 mt-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>{cust.phone}</p>}
                       </div>
                       <button onClick={() => setForm({ ...form, customerId: "", shippingAddress: null })} className="text-xs opacity-50 hover:opacity-100 underline shrink-0">Bỏ chọn</button>
@@ -11253,8 +11259,8 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
               </div>
 
               <div className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-                <p className="text-xs uppercase tracking-wider mb-3 opacity-60">Thông tin xuất hàng</p>
-                <div className="grid grid-cols-2 gap-3">
+                <p className="text-sm font-semibold mb-3" style={{ color: INK }}>Thông tin xuất hàng</p>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-x-3">
                   <Field label="Bán tại">
                     <select className={inputCls} style={{ borderColor: LINE }} value={form.branch} onChange={(e) => setForm({ ...form, branch: e.target.value })}>
                       {BRANCHES.map((b) => <option key={b} value={b}>{b}</option>)}
@@ -11263,27 +11269,25 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                   <Field label="Bán bởi">
                     <div className={inputCls} style={{ borderColor: LINE, background: "#F3F4F6", color: INK, display: "flex", alignItems: "center" }}>{form.seller}</div>
                   </Field>
-                </div>
-                <Field label="Nguồn">
+                  <Field label="Mã đơn"><input disabled className={inputCls} style={{ borderColor: LINE, opacity: 0.5 }} value={nextOrderCode(orders)} /></Field>
+                  <Field label="Nguồn">
                   <div className="flex gap-2">
                     {CHANNELS.map((c) => (
                       <button key={c.id} type="button" onClick={() => setForm({ ...form, channel: c.id })}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm border"
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm border whitespace-nowrap"
                         style={{ borderColor: form.channel === c.id ? INK : LINE, background: form.channel === c.id ? INK : "transparent", color: form.channel === c.id ? "#fff" : INK }}>
                         <c.icon size={14} /> {c.label}
                       </button>
                     ))}
                   </div>
-                </Field>
-                <div className="grid grid-cols-2 gap-3">
+                  </Field>
                   <Field label="Hẹn giao">
                     <input type="date" className={inputCls} style={{ borderColor: LINE }} value={form.deliveryDate} onChange={(e) => setForm({ ...form, deliveryDate: e.target.value })} />
                   </Field>
-                  <Field label="Mã đơn"><input disabled className={inputCls} style={{ borderColor: LINE, opacity: 0.5 }} value={nextOrderCode(orders)} /></Field>
+                  <Field label="Công nợ (số ngày)">
+                    <input type="number" min={0} title="0 hoặc bỏ trống nếu khách trả ngay" className={inputCls} style={{ borderColor: LINE }} value={form.creditDays} onChange={(e) => setForm({ ...form, creditDays: e.target.value })} placeholder="0" />
+                  </Field>
                 </div>
-                <Field label="Công nợ khách hàng (số ngày)" hint="Bỏ trống/0 nếu khách trả ngay — dùng cho khách B2B mua trả chậm">
-                  <input type="number" min={0} className={inputCls} style={{ borderColor: LINE }} value={form.creditDays} onChange={(e) => setForm({ ...form, creditDays: e.target.value })} placeholder="0" />
-                </Field>
               </div>
 
               {belowListPriceItems.length > 0 && (
@@ -11297,8 +11301,8 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                 </div>
               )}
 
-              <div className="p-4 rounded-md" style={{ border: `2px solid ${INK}`, background: "#fff" }}>
-                <p className="text-xs uppercase tracking-wider mb-2 font-medium" style={{ color: INK }}>Thông tin sản phẩm</p>
+              <div className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+                <p className="text-sm font-semibold mb-3" style={{ color: INK }}>Sản phẩm</p>
                 <ProductPicker products={products} onPick={addItem} />
                 <div className="mt-3">
                   <SalesItemsTable items={form.items || []} products={products} onUpdate={updateItem} onRemove={removeItem} role={currentUser.role} />
@@ -12504,7 +12508,7 @@ function SalesRanking({ orders, products, accounts }) {
 // Lợi nhuận gộp = (giá bán - giá nhập) x số lượng, cộng dồn theo từng đơn đã giao trong khoảng thời gian chọn.
 // Công nợ phải thu tổng hợp — tổng công nợ toàn hệ thống, top khách nợ nhiều nhất, và công nợ theo ngày phát sinh đơn (30 ngày gần nhất).
 function DebtOverviewReport({ orders, customers }) {
-  const chartColors = [INK, BRASS, FOREST, BLUE, RUST, "#8B6FB5"];
+  const chartColors = [INK, BRASS, FOREST, BLUE, RUST, "#F7C600"];
   const tooltipStyle = { fontFamily: "'Inter', sans-serif", fontSize: 13, border: `1px solid ${LINE}`, borderRadius: 8, boxShadow: "0 8px 24px rgba(31,42,68,0.12)", padding: "8px 12px" };
   const axisTick = { fontSize: 12, fill: INK, fontFamily: "'Inter', sans-serif" };
   const moneyTick = (v) => (Math.abs(v) >= 1000000 ? `${(v / 1000000).toFixed(0)}tr` : `${v / 1000}k`);
@@ -12848,7 +12852,7 @@ function DeadStockReport({ products }) {
 // Vòng quay tồn kho — ước tính số ngày để bán hết tồn kho hiện tại, theo tốc độ bán trung bình trong khoảng thời gian đã chọn.
 function InventoryTurnoverReport({ orders, products }) {
   const [periodDays, setPeriodDays] = useState(90);
-  const chartColors = [INK, BRASS, FOREST, BLUE, RUST, "#8B6FB5"];
+  const chartColors = [INK, BRASS, FOREST, BLUE, RUST, "#F7C600"];
   const tooltipStyle = { fontFamily: "'Inter', sans-serif", fontSize: 13, border: `1px solid ${LINE}`, borderRadius: 8, boxShadow: "0 8px 24px rgba(31,42,68,0.12)", padding: "8px 12px" };
   const axisTick = { fontSize: 12, fill: INK, fontFamily: "'Inter', sans-serif" };
 
@@ -13096,7 +13100,7 @@ function TopReturnedProductsReport({ orders, products }) {
 // Biên lợi nhuận gộp theo nhóm hàng/sản phẩm — phát hiện sản phẩm bán nhiều nhưng lời ít, và sản phẩm lời nhiều dù bán ít.
 function ProfitMarginReport({ orders, products }) {
   const [periodDays, setPeriodDays] = useState(30);
-  const chartColors = [INK, BRASS, FOREST, BLUE, RUST, "#8B6FB5"];
+  const chartColors = [INK, BRASS, FOREST, BLUE, RUST, "#F7C600"];
   const tooltipStyle = { fontFamily: "'Inter', sans-serif", fontSize: 13, border: `1px solid ${LINE}`, borderRadius: 8, boxShadow: "0 8px 24px rgba(31,42,68,0.12)", padding: "8px 12px" };
   const axisTick = { fontSize: 12, fill: INK, fontFamily: "'Inter', sans-serif" };
   const PERIODS = [{ d: 30, label: "30 ngày" }, { d: 90, label: "90 ngày" }, { d: 180, label: "180 ngày" }, { d: 365, label: "1 năm" }];
@@ -13644,7 +13648,7 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
     .sort((a, b) => Math.abs(b.giaTri) - Math.abs(a.giaTri));
   const maxStockValue = Math.max(1, ...stockAging.map((s) => Math.abs(s.giaTri)));
 
-  const chartColors = [INK, BRASS, FOREST, BLUE, RUST, "#8B6FB5"];
+  const chartColors = [INK, BRASS, FOREST, BLUE, RUST, "#F7C600"];
   const tooltipStyle = { fontFamily: "'Inter', sans-serif", fontSize: 13, border: `1px solid ${LINE}`, borderRadius: 8, boxShadow: "0 8px 24px rgba(31,42,68,0.12)", padding: "8px 12px" };
   const axisTick = { fontSize: 12, fill: INK, fontFamily: "'Inter', sans-serif" };
 
