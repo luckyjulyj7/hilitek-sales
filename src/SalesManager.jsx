@@ -426,6 +426,12 @@ function nextPOCode(purchaseOrders) {
   });
   return PO_PREFIX + String(max + 1).padStart(3, "0");
 }
+// Ngày giờ ngắn cho thẻ trên điện thoại, ví dụ 4/11 21:50.
+function shortDateTime(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return `${d.getDate()}/${d.getMonth() + 1} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
 function formatDateTime(iso) {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return iso || "";
@@ -5300,19 +5306,19 @@ function PurchaseOrders({ goToProduct, goToSupplier, purchaseOrders, setPurchase
         </div>
       )}
       <div className="flex items-center justify-between mb-5">
-        <p className="text-sm opacity-60">{purchaseOrders.length} đơn nhập hàng</p>
-        <div className="flex gap-2">
+        <p className="hidden md:block text-sm opacity-60">{purchaseOrders.length} đơn nhập hàng</p>
+        <div className="flex gap-2 ml-auto">
           <button onClick={openQuickAddSupplier} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: LINE, color: TEXT }}>
-            <Truck size={15} /> Thêm nhà cung cấp
+            <Truck size={15} /> <span className="hidden sm:inline">Thêm nhà cung cấp</span>
           </button>
           <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white" style={{ background: INK }}>
-            <Plus size={15} /> Tạo đơn nhập hàng
+            <Plus size={15} /> Tạo đơn<span className="hidden sm:inline"> nhập hàng</span>
           </button>
         </div>
       </div>
 
       <div key={poSafePage} className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 250px)" }}>
-        <table className="hili-rt w-full text-sm" style={{ minWidth: 720 }}>
+        <table className="hili-rt hili-pos w-full text-sm" style={{ minWidth: 720 }}>
           <thead className="sticky top-0" style={{ zIndex: 2 }}>
             <tr style={{ borderBottom: `1px solid ${LINE}` }}>
               {["", "Mã đơn nhập", "Ngày nhập", "Trạng thái nhập", "Chi nhánh nhập", "Nhà cung cấp", "Số hoá đơn", "Nhân viên tạo", "Thanh toán", "Giá trị đơn", ""].map((h, hi) => (
@@ -5336,7 +5342,7 @@ function PurchaseOrders({ goToProduct, goToSupplier, purchaseOrders, setPurchase
                     <td className="px-3 py-3 font-medium">
                       <button onClick={() => openView(po)} className="hover:underline" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{po.code}</button>
                     </td>
-                    <td className="px-3 py-3 whitespace-nowrap opacity-80" style={{ fontFamily: "'Inter', sans-serif" }}>{formatDateTime(po.createdAt)}</td>
+                    <td className="px-3 py-3 whitespace-nowrap opacity-80"><span className="hidden md:inline">{formatDateTime(po.createdAt)}</span><span className="md:hidden">{shortDateTime(po.createdAt)}</span></td>
                     <td className="px-3 py-3">
                       <span style={{ borderColor: s.color, color: s.color, fontFamily: "'Inter', sans-serif" }} className="inline-block border rounded-full px-2.5 py-0.5 text-xs">{s.label}</span>
                     </td>
@@ -11206,7 +11212,7 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
   return (
     <div>
       <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-        <div className="flex flex-wrap gap-2 flex-1">
+        <div className="hili-tabs flex flex-wrap gap-2 flex-1 min-w-0 max-w-full">
           <FilterChip active={filterStatus === "all"} onClick={() => setFilterStatus("all")}>Tất cả</FilterChip>
           <FilterChip active={filterStatus === "approval_pending"} onClick={() => setFilterStatus("approval_pending")} color={RUST}>Chờ duyệt</FilterChip>
           {STATUSES.map((s) => <FilterChip key={s.id} active={filterStatus === s.id} onClick={() => setFilterStatus(s.id)} color={s.color}>{s.label}</FilterChip>)}
@@ -11226,7 +11232,7 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
           <button onClick={exportOrders} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: FOREST, color: FOREST }}>
             <FileSpreadsheet size={15} /> <span className="hidden sm:inline">Xuất Excel</span>{selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}
           </button>
-          <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white" style={{ background: INK }}><Plus size={15} /> Tạo đơn và giao hàng</button>
+          <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white" style={{ background: INK }}><Plus size={15} /> Tạo đơn<span className="hidden sm:inline"> và giao hàng</span></button>
         </div>
       </div>
 
@@ -11303,7 +11309,7 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
       )}
 
       <div key={orderSafePage} className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 300px)" }}>
-        <table className="hili-rt w-full text-sm" style={{ minWidth: 900 }}>
+        <table className="hili-rt hili-orders w-full text-sm" style={{ minWidth: 900 }}>
           <thead className="sticky top-0" style={{ zIndex: 2 }}>
             <tr style={{ borderBottom: `1px solid ${LINE}` }}>
               <th className="px-3 py-2.5" style={{ background: "#fff" }}><input type="checkbox" title="Chọn tất cả đơn trong trang này" checked={pageAllSelected} onChange={toggleSelectAll} /></th>
@@ -11322,7 +11328,7 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
                   <td className="px-3 py-3 font-medium whitespace-nowrap">
                     <button onClick={() => { setViewingId(o.id); setPayInput(""); }} className="hover:underline" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{o.code}</button>
                   </td>
-                  <td className="px-3 py-3 whitespace-nowrap opacity-80" style={{ fontFamily: "'Inter', sans-serif" }}>{formatDateTime(o.createdAt)}</td>
+                  <td className="px-3 py-3 whitespace-nowrap opacity-80"><span className="hidden md:inline">{formatDateTime(o.createdAt)}</span><span className="md:hidden">{shortDateTime(o.createdAt)}</span></td>
                   <td className="px-3 py-3 truncate" style={{ maxWidth: 280 }} title={cust?.name || "Khách lẻ"}>{cust?.name || "Khách lẻ"}</td>
                   <td className="px-3 py-3 whitespace-nowrap opacity-70">{o.branch}</td>
                   <td className="px-3 py-3">
@@ -11336,11 +11342,11 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap">
                     <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: o.status === "cancelled" ? "rgba(0,0,0,0.08)" : o.invoiceStatus === "issued" ? `${FOREST}1A` : `${RUST}1A`, color: o.status === "cancelled" ? INK : o.invoiceStatus === "issued" ? FOREST : RUST, opacity: o.status === "cancelled" ? 0.6 : 1 }}>
-                      {o.status === "cancelled" ? "Huỷ" : o.invoiceStatus === "issued" ? `Đã xuất${o.invoiceNo ? ` · ${o.invoiceNo}` : ""}` : "Chờ xuất"}
+                      {o.status === "cancelled" ? "Huỷ" : o.invoiceStatus === "issued" ? <><span className="hidden md:inline">Đã xuất{o.invoiceNo ? ` · ${o.invoiceNo}` : ""}</span><span className="md:hidden">HĐ {o.invoiceNo || "đã xuất"}</span></> : "Chờ xuất"}
                     </span>
                   </td>
                   <td className="px-3 py-3 text-right whitespace-nowrap font-medium" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{vnd(c.payable)}</td>
-                  <td className="px-3 py-3 text-right whitespace-nowrap font-medium" style={{ fontFamily: "'Inter', sans-serif", color: c.remaining > 0 ? RUST : FOREST }}>{vnd(c.remaining)}</td>
+                  <td className="px-3 py-3 text-right whitespace-nowrap font-medium" style={{ fontFamily: "'Inter', sans-serif", color: c.remaining > 0 ? RUST : FOREST }}>{vnd(c.remaining)}{c.remaining <= 0 && <span className="hili-nodata" />}</td>
                   <td className="px-3 py-3 text-right"><CreditDueBadge order={o} plain /></td>
                   <td className="px-3 py-3">
                     {/* Chỉ tài khoản CHỦ (isOwner) mới xoá được đơn — QTV thường không thấy nút này */}
@@ -11468,7 +11474,7 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
               <div className="p-4 rounded-md space-y-2.5" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
                 <div className="text-sm">
                   <div className="flex justify-between mb-1.5"><span className="opacity-60">Tổng tiền ({form.items?.length || 0} sản phẩm)</span><span style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{vnd(calc.subtotal)}</span></div>
-                  <span className="opacity-60 block mb-1.5">VAT</span>
+                  <span className="opacity-60 hidden md:block mb-1.5">VAT</span>
                   <div className="flex gap-1.5 flex-wrap">
                     {VAT_OPTIONS.map((v) => (
                       <button key={v.id} type="button" onClick={() => setForm({ ...form, vat: v.id })}
@@ -17525,35 +17531,91 @@ export default function SalesManager() {
           table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Giá nhập"]::before { content: "Nhập"; }
           table.hili-rt:not(.hili-items) > tbody > tr > td:has(.hili-nodata) { display: none; }
           table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Tên vật tư"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Sản phẩm"] { display: block; }
-          /* Thẻ sản phẩm: hàng 1 ảnh + tên, hàng 2 mã + tồn + 4 nút */
-          table.hili-rt.hili-products:not(.hili-items) > tbody > tr { display: grid; grid-template-columns: 18px 16px 40px minmax(0, 1fr) auto auto; gap: 6px 8px; align-items: center; }
-          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td:nth-child(1) { grid-area: 1 / 1; }
-          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td:nth-child(2) { grid-area: 1 / 2; }
-          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td:nth-child(3) { grid-area: 1 / 3; }
-          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td[data-label="Tên vật tư"] { grid-area: 1 / 4 / 2 / -1; display: block; min-width: 0; }
-          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td[data-label="Mã VT"] { grid-area: 2 / 1 / 3 / 5; display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+          table.hili-rt input[type="checkbox"] { width: 14px; height: 14px; }
+          /* Thẻ sản phẩm: ảnh bên trái; hàng 1 tên, hàng 2 mã, tồn, nút; ô chọn và mũi tên nằm góc phải */
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto auto; gap: 4px 8px; align-items: center; padding: 8px 10px; position: relative; }
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td { min-width: 0; }
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td:nth-child(1) { position: absolute; top: 8px; right: 10px; }
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td:nth-child(2) { position: absolute; top: 6px; right: 30px; }
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td:nth-child(3) { grid-area: 1 / 1 / 3 / 2; }
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td[data-label="Tên vật tư"] { grid-area: 1 / 2 / 2 / -1; display: block; width: 0; min-width: 100%; padding-right: 44px !important; overflow: hidden; overflow-wrap: anywhere; font-size: 13px; line-height: 1.3; }
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td[data-label="Tên vật tư"] * { min-width: 0; max-width: 100%; white-space: normal; }
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td[data-label="Mã VT"] { grid-area: 2 / 2; display: block; width: 0; min-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
           table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td[data-label="Mã VT"] > * { white-space: nowrap; display: inline; }
-          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td[data-label="Tồn CK"] { grid-area: 2 / 5; }
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td[data-label="Tồn CK"] { grid-area: 2 / 3; font-size: 12px; }
           table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td[data-label="Giá nhập"] { display: none; }
-          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td:last-child:not([data-label]) { grid-area: 2 / 6; margin-left: 0; }
-          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td:last-child:not([data-label]) > div { display: flex !important; gap: 8px !important; width: auto !important; margin: 0 !important; }
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td:last-child:not([data-label]) { grid-area: 2 / 4; margin-left: 0; }
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td:last-child:not([data-label]) > div { display: flex !important; gap: 4px !important; width: auto !important; margin: 0 !important; }
           table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td[colspan] { grid-column: 1 / -1; }
-          /* Dòng hàng trong phiếu */
-          table.hili-items > tbody > tr { display: grid; grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr); gap: 6px 8px; align-items: end; position: relative; border: 1px solid #E5E7EB !important; border-radius: 8px; margin: 0 0 8px; padding: 10px; background: #fff; }
-          table.hili-items > tbody > tr > td { display: block; padding: 0 !important; text-align: left; grid-column: 1 / -1; max-width: none !important; white-space: normal; }
+          /* Thẻ đơn bán: hàng 1 khách + mã, hàng 2 ngày, trạng thái, HĐ, tổng; hàng 3 chỉ hiện khi còn nợ */
+          table.hili-rt.hili-orders:not(.hili-items) > tbody > tr { display: grid; grid-template-columns: 16px auto auto auto minmax(0, 1fr); gap: 3px 6px; align-items: center; padding: 8px 10px; position: relative; }
+          table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td { min-width: 0; font-size: 11px; }
+          table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td span { font-size: 11px; min-width: 0; }
+          table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td:first-child { grid-area: 1 / 1; }
+          table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td[data-label="Khách hàng"] { grid-area: 1 / 2 / 2 / -1; display: block; width: 0; min-width: 100%; padding-right: 52px !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+          table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td[data-label="Mã đơn"] { position: absolute; top: 8px; right: 10px; font-size: 12px; }
+          table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td[data-label="Ngày tạo"] { grid-area: 2 / 1 / 3 / 3; white-space: nowrap; }
+          table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td[data-label="Trạng thái giao"] { grid-area: 2 / 3; }
+          table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td[data-label="Trạng thái giao"] span { padding: 1px 6px; white-space: nowrap; }
+          table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td[data-label="Xuất hoá đơn"] { grid-area: 2 / 4; display: inline-flex; }
+          table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td[data-label="Xuất hoá đơn"] span { padding: 1px 6px; white-space: nowrap; }
+          table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td[data-label="Tổng tiền"] { grid-area: 2 / 5; justify-content: flex-end; margin: 0; font-size: 13px; }
+          table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td[data-label="Còn phải trả"] { grid-area: 3 / 1 / 4 / 5; font-size: 12px; }
+          table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td[data-label="CNợ"] { grid-area: 3 / 5; justify-content: flex-end; font-size: 12px; }
+          table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td:last-child:not([data-label]) { display: none; }
+          table.hili-rt:not(.hili-items) > tbody > tr > td:has(.hili-nodata) { display: none; }
+          /* Thẻ đơn nhập */
+          table.hili-rt.hili-pos:not(.hili-items) > tbody > tr { display: grid; grid-template-columns: auto auto auto minmax(0, 1fr); gap: 3px 8px; align-items: center; padding: 8px 10px; position: relative; }
+          table.hili-rt.hili-pos:not(.hili-items) > tbody > tr > td { min-width: 0; font-size: 11px; }
+          table.hili-rt.hili-pos:not(.hili-items) > tbody > tr > td span { font-size: 11px; }
+          table.hili-rt.hili-pos:not(.hili-items) > tbody > tr > td:first-child { display: none; }
+          table.hili-rt.hili-pos:not(.hili-items) > tbody > tr > td[data-label="Nhà cung cấp"] { grid-area: 1 / 1 / 2 / -1; display: block; width: 0; min-width: 100%; padding-right: 60px !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+          table.hili-rt.hili-pos:not(.hili-items) > tbody > tr > td[data-label="Mã đơn nhập"] { position: absolute; top: 8px; right: 10px; font-size: 12px; }
+          table.hili-rt.hili-pos:not(.hili-items) > tbody > tr > td[data-label="Ngày nhập"] { grid-area: 2 / 1; white-space: nowrap; }
+          table.hili-rt.hili-pos:not(.hili-items) > tbody > tr > td[data-label="Thanh toán"] { grid-area: 2 / 2; }
+          table.hili-rt.hili-pos:not(.hili-items) > tbody > tr > td[data-label="Thanh toán"] span { padding: 1px 6px; }
+          table.hili-rt.hili-pos:not(.hili-items) > tbody > tr > td[data-label="Số hoá đơn"] { grid-area: 2 / 3; display: inline-flex; white-space: nowrap; }
+          table.hili-rt.hili-pos:not(.hili-items) > tbody > tr > td[data-label="Số hoá đơn"]::before { content: "HĐ"; }
+          table.hili-rt.hili-pos:not(.hili-items) > tbody > tr > td[data-label="Giá trị đơn"] { grid-area: 2 / 4; justify-content: flex-end; margin: 0; font-size: 13px; display: block; text-align: right; }
+          table.hili-rt.hili-pos:not(.hili-items) > tbody > tr > td:last-child:not([data-label]) { grid-column: 1 / -1; margin-left: 0; }
+          /* Dòng hàng trong phiếu: hàng 1 ảnh + tên, hàng 2 SL, đơn giá, thành tiền thẳng hàng */
+          div:has(> table.hili-items) { border: 0 !important; overflow: visible !important; }
+          table.hili-items > tbody > tr { display: grid; grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr); gap: 6px 8px; align-items: center; position: relative; border: 1px solid #E5E7EB !important; border-radius: 8px; margin: 0 0 8px; padding: 8px; background: #fff; }
+          table.hili-items > tbody > tr > td { display: block; padding: 0 !important; text-align: left; grid-column: 1 / -1; max-width: none !important; white-space: normal; min-width: 0; font-size: 13px; }
           table.hili-items > tbody > tr > td:empty { display: none; }
-          table.hili-items > tbody > tr > td:first-child:not([data-label]):not([colspan]) { grid-column: 1; align-self: start; }
+          table.hili-items > tbody > tr > td:first-child:not([data-label]):not([colspan]) { grid-column: 1; }
+          table.hili-items > tbody > tr > td:first-child img, table.hili-items > tbody > tr > td:first-child > div { width: 36px; height: 36px; }
           table.hili-items > tbody > tr > td[data-label="#"] { display: none; }
-          table.hili-items > tbody > tr > td[data-label="Sản phẩm"] { grid-column: 2 / -1; align-self: start; padding-right: 22px !important; }
+          table.hili-items > tbody > tr > td[data-label="Sản phẩm"] { grid-column: 2 / -1; padding-right: 20px !important; }
           table.hili-items > tbody > tr > td[data-label="Sản phẩm"]:first-child { grid-column: 1 / -1; }
-          table.hili-items > tbody > tr > td[data-label="SL"], table.hili-items > tbody > tr > td[data-label="VAT"] { grid-column: 1 / 3; }
-          table.hili-items > tbody > tr > td[data-label="Đơn giá"], table.hili-items > tbody > tr > td[data-label="Thành tiền"] { grid-column: 3; text-align: right; }
-          table.hili-items > tbody > tr > td[data-label="SL"]::before, table.hili-items > tbody > tr > td[data-label="Đơn giá"]::before, table.hili-items > tbody > tr > td[data-label="VAT"]::before { content: attr(data-label); display: block; font-size: 12px; color: #6B7280; text-align: left; margin-bottom: 2px; }
-          table.hili-items > tbody > tr > td:last-child:not([data-label]):not([colspan]) { position: absolute; top: 6px; right: 8px; grid-column: auto; }
-          table.hili-items input, table.hili-items select { width: 100%; max-width: none; }
+          table.hili-items > tbody > tr > td[data-label="Sản phẩm"] > div > div:first-child { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+          table.hili-items > tbody > tr > td[data-label="SL"] { grid-column: 1; }
+          table.hili-items > tbody > tr > td[data-label="Đơn giá"] { grid-column: 2; }
+          table.hili-items > tbody > tr > td[data-label="Thành tiền"] { grid-column: 3; }
+          table.hili-items > tbody > tr > td[data-label="Thành tiền"] > div { height: 36px; display: flex; align-items: center; justify-content: flex-end; }
+          table.hili-items > tbody > tr > td[data-label="Series"] { grid-column: 1 / -1; }
+          table.hili-items > tbody > tr > td[data-label="VAT"] { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; }
+          table.hili-items > tbody > tr > td[data-label="VAT"]::before { content: "VAT"; font-size: 12px; color: #6B7280; }
+          table.hili-items > tbody > tr > td[data-label="SL"]:not(:has(input))::before, table.hili-items > tbody > tr > td[data-label="Đơn giá"]:not(:has(input))::before { content: attr(data-label) " "; font-size: 12px; color: #6B7280; }
+          table.hili-items > tbody > tr > td[data-label="Thành tiền"]:not(:has(div)) { text-align: right; font-weight: 600; }
+          table.hili-items > tbody > tr > td:last-child:not([data-label]):not([colspan]) { position: absolute; top: 4px; right: 6px; grid-column: auto; }
+          table.hili-items input { width: 100%; height: 36px; padding-top: 0; padding-bottom: 0; font-size: 15px !important; }
+          table.hili-items td[data-label="SL"] input { padding: 0 2px; }
+          table.hili-items td[data-label="Đơn giá"] input { padding: 0 8px; }
+          /* Giá sỉ, Giá lẻ nằm cùng dòng mã hàng để không thêm hàng mới */
+          table.hili-items > tbody > tr > td[data-label="Đơn giá"] > div { position: absolute; right: 10px; bottom: 50px; margin: 0; }
+          /* Series liền với dòng hàng phía trên */
+          table.hili-items > tbody > tr:has(+ tr > td[colspan]) { border-bottom: 0 !important; border-radius: 8px 8px 0 0; margin-bottom: 0; padding-bottom: 4px; }
+          table.hili-items > tbody > tr:has(+ tr > td[colspan]) > td[data-label="Đơn giá"] > div { bottom: 46px; }
+          table.hili-items > tbody > tr:has(> td[colspan]) { border-top: 0 !important; border-radius: 0 0 8px 8px; padding-top: 0; }
           /* Khung, tab, nút */
           .hili-full { max-width: none !important; height: 100dvh !important; max-height: 100dvh !important; border-radius: 0 !important; }
-          .hili-full > div:last-child { overflow-x: hidden; padding-bottom: 80px; }
+          .hili-full > div:last-child { overflow-x: hidden; padding: 10px 10px 76px; }
+          .hili-full .p-4 { padding: 10px; }
+          .hili-full .space-y-5 > * + *, .hili-full .gap-5 { --tw-space-y-reverse: 0; row-gap: 10px; }
+          .hili-full .space-y-5 > :not([hidden]) ~ :not([hidden]) { margin-top: 10px; }
+          .hili-full .space-y-2\\.5 > :not([hidden]) ~ :not([hidden]) { margin-top: 6px; }
+          .hili-full label.block { margin-bottom: 8px; }
           .hili-tabs { flex-wrap: nowrap !important; overflow-x: auto; scrollbar-width: none; }
           .hili-tabs::-webkit-scrollbar { display: none; }
           .hili-tabs > button { flex: none !important; }
