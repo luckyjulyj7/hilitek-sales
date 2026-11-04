@@ -72,7 +72,7 @@ function writeDeviceSession(userId) {
  * nó nằm ở localStorage của riêng máy đang mở app.
  */
 function withDeviceSession(backend) {
-  return {
+  const wrapped = {
     async get(key, shared) {
       const res = await backend.get(key, shared);
       if (key !== STORAGE_KEY || !res || !res.value) return res;
@@ -98,11 +98,19 @@ function withDeviceSession(backend) {
         return backend.set(key, value, shared);
       }
     },
+    async casSet(key, value, expectedUpdatedAt) {
+      const obj = JSON.parse(value);
+      writeDeviceSession(obj && obj.session ? obj.session.userId : null);
+      if (obj && obj.session) obj.session = { userId: null };
+      return backend.casSet(key, JSON.stringify(obj), expectedUpdatedAt);
+    },
     async delete(key, shared) {
       if (key === STORAGE_KEY) writeDeviceSession(null);
       return backend.delete ? backend.delete(key, shared) : { ok: true };
     },
   };
+  if (!backend.casSet) delete wrapped.casSet; // localStorage: 1 trình duyệt, không cần
+  return wrapped;
 }
 
 export const localStorageShim = {

@@ -111,11 +111,27 @@ export function createSupabaseStorage() {
         value: typeof value === "string" ? value : JSON.stringify(value),
         updated_at: new Date().toISOString(),
       };
-      const { error } = await getClient()
+      const { data, error } = await getClient()
         .from(TABLE)
-        .upsert(row, { onConflict: "key" });
+        .upsert(row, { onConflict: "key" })
+        .select("updated_at");
       if (error) throw new Error(`Supabase set("${key}"): ${error.message}`);
-      return { ok: true, updatedAt: row.updated_at };
+      // updated_at do trigger trên server đặt — phải dùng đúng giá trị này, không dùng giờ máy khách.
+      return { ok: true, updatedAt: (data && data[0] && data[0].updated_at) || null };
+    },
+
+    // Ghi CÓ ĐIỀU KIỆN trong 1 câu lệnh duy nhất: chỉ ghi nếu hàng vẫn đúng phiên bản mình đã đọc.
+    // Kiểm tra rồi mới ghi bằng 2 lệnh riêng thì 2 máy cùng lọt qua, máy sau xoá phần của máy trước.
+    async casSet(key, value, expectedUpdatedAt) {
+      const { data, error } = await getClient()
+        .from(TABLE)
+        .update({ value })
+        .eq("key", key)
+        .eq("updated_at", expectedUpdatedAt)
+        .select("updated_at");
+      if (error) throw new Error(`Supabase casSet("${key}"): ${error.message}`);
+      if (!data || data.length === 0) return { conflict: true };
+      return { ok: true, updatedAt: data[0].updated_at };
     },
 
     async delete(key /* , shared */) {

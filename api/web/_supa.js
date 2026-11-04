@@ -32,10 +32,14 @@ function client() {
 }
 
 export async function readState() {
-  const { data, error } = await client().from(TABLE).select("value").eq("key", STORAGE_KEY).maybeSingle();
+  const { data, error } = await client().from(TABLE).select("value, updated_at").eq("key", STORAGE_KEY).maybeSingle();
   if (error) throw new Error("Supabase đọc lỗi: " + error.message);
   if (!data || !data.value) return {};
-  try { return JSON.parse(data.value); } catch { return {}; }
+  try {
+    const state = JSON.parse(data.value);
+    Object.defineProperty(state, "__version", { value: data.updated_at, enumerable: false });
+    return state;
+  } catch { return {}; }
 }
 
 // Bản đọc có nhớ tạm (20s) trong bộ nhớ của function đang chạy — CHỈ dùng cho API công khai chỉ-đọc
@@ -59,10 +63,20 @@ export async function readStateCached() {
   return pending;
 }
 
+// Ghi có điều kiện: chỉ ghi nếu blob chưa đổi kể từ lúc readState() — nếu đã đổi thì ném CONFLICT để
+// handler() chạy lại từ đầu trên dữ liệu mới, không xoá mất thao tác nhân viên vừa lưu.
 export async function writeState(state) {
+  const value = JSON.stringify(state);
+  if (state.__version) {
+    const { data, error } = await client().from(TABLE).update({ value })
+      .eq("key", STORAGE_KEY).eq("updated_at", state.__version).select("updated_at");
+    if (error) throw new Error("Supabase ghi lỗi: " + error.message);
+    if (!data || data.length === 0) { const e = new Error("Dữ liệu vừa thay đổi, vui lòng thử lại."); e.code = "CONFLICT"; throw e; }
+    return;
+  }
   const { error } = await client()
     .from(TABLE)
-    .upsert({ key: STORAGE_KEY, value: JSON.stringify(state), updated_at: new Date().toISOString() }, { onConflict: "key" });
+    .upsert({ key: STORAGE_KEY, value, updated_at: new Date().toISOString() }, { onConflict: "key" });
   if (error) throw new Error("Supabase ghi lỗi: " + error.message);
 }
 
@@ -108,10 +122,18 @@ export function json(res, status, payload, cacheControl) {
 /** Bọc handler: bắt lỗi chung, map NO_CONFIG → 503. */
 export function handler(fn) {
   return async (req, res) => {
-    try {
-      await fn(req, res);
-    } catch (e) {
-      json(res, e.code === "NO_CONFIG" ? 503 : 500, { error: String(e.message || e) });
+    for (let attempt = 0; ; attempt++) {
+      try {
+        await fn(req, res);
+        return;
+      } catch (e) {
+        if (e.code === "CONFLICT" && attempt < 5) {
+          await new Promise((r) => setTimeout(r, 150 + Math.random() * 350));
+          continue;
+        }
+        json(res, e.code === "NO_CONFIG" ? 503 : 500, { error: String(e.message || e) });
+        return;
+      }
     }
   };
 }

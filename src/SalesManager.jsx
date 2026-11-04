@@ -873,28 +873,27 @@ function sameInstant(a, b) {
 // việc mình vừa làm, vừa không làm mất phần của người khác, không cần bắt người dùng tải lại trang.
 // LUÔN LƯU bằng được: nếu tải bản của họ về hoặc gộp bị lỗi (mạng chập chờn...), vẫn ghi đè thẳng
 // bằng dữ liệu cục bộ thay vì bỏ cuộc — thà chấp nhận rủi ro hiếm gặp còn hơn để mất thao tác vừa làm.
-async function saveData(data, { expectedUpdatedAt, baseSnapshot, onConflict, onMerged } = {}) {
+async function saveData(data, { expectedUpdatedAt, baseSnapshot } = {}) {
   try {
-    if (expectedUpdatedAt && window.storage.getMeta) {
-      const meta = await window.storage.getMeta(STORAGE_KEY, true).catch(() => null);
-      if (meta && meta.updatedAt && !sameInstant(meta.updatedAt, expectedUpdatedAt)) {
-        try {
-          const remoteRaw = await window.storage.get(STORAGE_KEY, true);
-          if (remoteRaw && remoteRaw.value) {
-            const remote = JSON.parse(remoteRaw.value);
-            const merged = mergeState(baseSnapshot, data, remote);
-            const res = await window.storage.set(STORAGE_KEY, JSON.stringify(merged), true);
-            onMerged && onMerged(merged);
-            return { ok: true, merged: true, updatedAt: res && res.updatedAt, data: merged };
-          }
-        } catch (mergeErr) { console.error("Gộp dữ liệu lỗi — vẫn lưu đè bằng bản cục bộ:", mergeErr); }
-        onConflict && onConflict();
-        const res = await window.storage.set(STORAGE_KEY, JSON.stringify(data), true);
-        return { ok: true, updatedAt: res && res.updatedAt };
-      }
+    if (!expectedUpdatedAt || !window.storage.casSet) {
+      const res = await window.storage.set(STORAGE_KEY, JSON.stringify(data), true);
+      return { ok: true, updatedAt: res && res.updatedAt };
     }
-    const res = await window.storage.set(STORAGE_KEY, JSON.stringify(data), true);
-    return { ok: true, updatedAt: res && res.updatedAt };
+    let cur = data, base = baseSnapshot, expected = expectedUpdatedAt, merged = false;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const r = await window.storage.casSet(STORAGE_KEY, JSON.stringify(cur), expected, true);
+      if (r && r.ok) return { ok: true, updatedAt: r.updatedAt, merged, data: merged ? cur : undefined };
+      const remoteRaw = await window.storage.get(STORAGE_KEY, true);
+      if (!remoteRaw || !remoteRaw.value) throw new Error("Không đọc được dữ liệu trên server");
+      const remote = JSON.parse(remoteRaw.value);
+      cur = mergeState(base, cur, remote);
+      base = remote;
+      expected = remoteRaw.updatedAt;
+      merged = true;
+      await new Promise((res) => setTimeout(res, 100 + Math.random() * 300 * (attempt + 1)));
+    }
+    // KHÔNG ghi đè thẳng — thà báo lỗi rồi thử lại còn hơn xoá dữ liệu của người khác.
+    return { error: new Error("Quá nhiều lượt ghi cùng lúc") };
   } catch (e) {
     console.error("Lỗi lưu dữ liệu:", e);
     return { error: e };
@@ -16222,6 +16221,14 @@ export default function SalesManager() {
   // khoá tự lưu lại, tránh mất các thao tác vừa làm trong lúc đang gõ/thao tác liên tục (xem effect
   // kiểm tra phiên bản bên dưới — đây chính là nguyên nhân 1 phiên gộp phiên bản hàng loạt bị mất hết).
   const latestSnapshotRef = useRef(null);
+  // Chỉ 1 lượt lưu chạy tại 1 thời điểm, luôn lấy bản mới nhất: 2 lượt chồng nhau thì lượt cầm bản cũ
+  // sẽ tưởng các bản ghi mới "đã bị xoá" và xoá thật trên server.
+  const savingRef = useRef(false);
+  const dirtyRef = useRef(false);
+  const lastCleanJsonRef = useRef(null);  // nội dung đã khớp server — trùng thì khỏi ghi
+  const lastAccountsRef = useRef(null);
+  const remoteSettleRef = useRef(null);   // bản vừa áp từ server, chờ so ở lượt lưu kế tiếp
+  const [saveFailed, setSaveFailed] = useState(false);
   // Mốc thời điểm TAB này bắt đầu chạy — dùng để biết lệnh "đăng xuất từ xa" nào là MỚI (phát sinh
   // sau khi tab đã mở), tránh 1 lệnh kick cũ còn sót lại làm tự đăng xuất ngay khi vừa mở tab.
   const sessionStartRef = useRef(Date.now());
@@ -16239,6 +16246,7 @@ export default function SalesManager() {
   // bộ định kỳ bên dưới) vào toàn bộ state — dùng chung để không lặp code. KHÔNG đụng currentUserId
   // ở đây (chỉ set lúc tải lần đầu) để không tự đăng xuất người đang dùng khi có bản mới về.
   const applyRemoteData = async (data) => {
+    remoteSettleRef.current = data;
     // Áp theo kiểu GỘP AN TOÀN (mergeById, dùng dạng "functional update" đọc state MỚI NHẤT tại thời
     // điểm React thực sự áp dụng) thay vì ghi đè thẳng — tránh trường hợp giữa lúc đang tải dữ liệu về
     // (mất chút thời gian mạng) thì mình vừa tạo/sửa gì đó, dữ liệu vừa tạo bị mất vì bị ghi đè bởi
@@ -16356,6 +16364,58 @@ export default function SalesManager() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded, currentUserId]);
 
+  const withoutVolatile = (d) => JSON.stringify({ ...d, session: null, accounts: null, __updatedAt: undefined });
+  const runSave = async () => {
+    if (savingRef.current) { dirtyRef.current = true; return; }
+    savingRef.current = true;
+    pendingSaveRef.current = true;
+    let snapshot;
+    do {
+      dirtyRef.current = false;
+      snapshot = latestSnapshotRef.current;
+      const json = JSON.stringify(snapshot);
+      const settled = remoteSettleRef.current;
+      remoteSettleRef.current = null;
+      // Chỉ vừa nhận dữ liệu từ server, không có gì mới của mình: KHÔNG ghi ngược lên. Nếu không, các
+      // máy cứ thay nhau ghi sau mỗi lần đồng bộ, vừa nặng vừa tăng va chạm.
+      if (settled && (lastAccountsRef.current === null || lastAccountsRef.current === snapshot.accounts) && withoutVolatile(settled) === withoutVolatile(snapshot)) {
+        lastCleanJsonRef.current = json;
+        lastAccountsRef.current = snapshot.accounts;
+      }
+      if (json === lastCleanJsonRef.current) continue;
+      const res = await saveData(snapshot, { expectedUpdatedAt: lastSyncedAtRef.current, baseSnapshot: baseSnapshotRef.current });
+      if (res && res.updatedAt) lastSyncedAtRef.current = res.updatedAt;
+      if (res && res.ok) {
+        setSaveFailed(false);
+        lastAccountsRef.current = snapshot.accounts;
+        if (res.merged) {
+          // Mốc gốc = đúng bản vừa gửi, để phân biệt phần mình sửa thêm sau đó với phần mới của người khác.
+          baseSnapshotRef.current = snapshot;
+          await applyRemoteData(res.data);
+          baseSnapshotRef.current = res.data;
+          await new Promise((r) => setTimeout(r, 80)); // đợi React áp xong rồi mới đọc lại bản mới nhất
+          dirtyRef.current = true;
+        } else {
+          baseSnapshotRef.current = snapshot;
+          lastCleanJsonRef.current = json;
+        }
+      } else {
+        setSaveFailed(true);
+        await new Promise((r) => setTimeout(r, 3000));
+        dirtyRef.current = true;
+      }
+    } while (dirtyRef.current);
+    savingRef.current = false;
+    pendingSaveRef.current = latestSnapshotRef.current !== snapshot; // có sửa mới thì timer kế tiếp sẽ lưu
+  };
+
+  // Còn thay đổi chưa lưu xong mà F5/đóng tab thì trình duyệt hỏi lại, tránh mất dữ liệu vừa nhập.
+  useEffect(() => {
+    const warn = (e) => { if (pendingSaveRef.current) { e.preventDefault(); e.returnValue = ""; } };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, []);
+
   useEffect(() => {
     // Luôn cập nhật bản mới nhất ngay lập tức (không đợi hết debounce 400ms bên dưới) — để effect
     // kiểm tra phiên bản mới có thể LƯU NGAY khi phát hiện bản triển khai mới, không bỏ lỡ gì cả.
@@ -16365,28 +16425,7 @@ export default function SalesManager() {
     // Đánh dấu "đang có thay đổi chưa lưu xong" ngay từ lúc này (chưa đợi hết debounce) — effect đồng
     // bộ định kỳ ở trên sẽ thấy cờ này và tạm hoãn 1 nhịp, tránh áp bản từ xa đè mất đúng lúc đang lưu.
     pendingSaveRef.current = true;
-    const t = setTimeout(async () => {
-      // saveData() luôn lưu bằng được (tự gộp nếu có người khác vừa lưu, hoặc lưu đè khi gộp lỗi) —
-      // không còn banner chặn thao tác giữa chừng chờ tải lại trang nữa.
-      const res = await saveData(snapshot, {
-        expectedUpdatedAt: lastSyncedAtRef.current,
-        baseSnapshot: baseSnapshotRef.current,
-      });
-      if (res && res.updatedAt) lastSyncedAtRef.current = res.updatedAt;
-      if (res && res.merged) {
-        // Có người khác vừa lưu đè trong lúc mình cũng đang lưu — đã tự gộp lại (giữ phần của mình,
-        // nhận phần của họ). Áp bản đã gộp vào màn hình, dùng ĐÚNG bản snapshot lúc nãy (không phải
-        // bản vừa gộp) làm mốc gốc cho lần áp này, để applyRemoteData còn phân biệt được phần nào
-        // mình vừa tạo/sửa thêm SAU lúc gửi đi (phải giữ) với phần chỉ đơn thuần mới được gộp vào
-        // (không phải do mình tự xoá) — tránh xoá nhầm chính những gì vừa gộp thêm.
-        baseSnapshotRef.current = snapshot;
-        await applyRemoteData(res.data);
-        baseSnapshotRef.current = res.data;
-      } else if (res && res.ok) {
-        baseSnapshotRef.current = snapshot;
-      }
-      pendingSaveRef.current = false;
-    }, 400);
+    const t = setTimeout(runSave, 400);
     return () => clearTimeout(t);
   }, [products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, parcelLabels, plans, accounts, activityLog, notifications, printSettings, quotations, pointAdjustments, webConfig, currentUserId, loaded, staleVersion]);
 
@@ -16410,7 +16449,7 @@ export default function SalesManager() {
         const meta = await window.storage.getMeta(STORAGE_KEY, true);
         if (stopped || pendingSaveRef.current || !meta || !meta.updatedAt || sameInstant(meta.updatedAt, lastSyncedAtRef.current)) return;
         const raw = await window.storage.get(STORAGE_KEY, true);
-        if (stopped || !raw || !raw.value) return;
+        if (stopped || pendingSaveRef.current || !raw || !raw.value) return;
         const remote = JSON.parse(raw.value);
         await applyRemoteData(remote);
         lastSyncedAtRef.current = raw.updatedAt || meta.updatedAt;
@@ -16440,14 +16479,7 @@ export default function SalesManager() {
         // trắng các thay đổi chưa kịp lưu, vì khoá tự lưu chặn luôn debounce đang chờ. Lưu NGAY 1 lần
         // cuối từ bản mới nhất hiện có trước khi khoá — nếu lỗi mạng vẫn khoá lại để an toàn dữ liệu.
         if (latestSnapshotRef.current) {
-          try {
-            const flush = await saveData(latestSnapshotRef.current, {
-              expectedUpdatedAt: lastSyncedAtRef.current,
-              baseSnapshot: baseSnapshotRef.current,
-            });
-            if (flush && flush.updatedAt) lastSyncedAtRef.current = flush.updatedAt;
-            if (flush && (flush.ok || flush.merged)) baseSnapshotRef.current = flush.data || latestSnapshotRef.current;
-          } catch { /* vẫn khoá lại bên dưới dù lưu cuối lỗi — ưu tiên an toàn hơn mất thêm dữ liệu */ }
+          try { await runSave(); } catch { /* vẫn khoá lại bên dưới — ưu tiên an toàn */ }
         }
         if (!stopped) setStaleVersion(true);
       } catch { /* mạng chập chờn — thử lại lần sau */ }
@@ -16668,6 +16700,11 @@ export default function SalesManager() {
         @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
         select { appearance: none; }
       `}</style>
+      {saveFailed && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[90] px-4 py-2 rounded-sm text-sm text-white shadow-lg" style={{ background: RUST }}>
+          Chưa lưu được dữ liệu lên server — đang tự thử lại. Đừng đóng trang.
+        </div>
+      )}
       {staleVersion && (
         // Khoá thao tác THẬT SỰ (không chỉ 1 banner trong khi phần còn lại vẫn bấm được) — tránh đúng
         // kiểu lỗi cũ: người dùng tưởng vẫn đang thao tác bình thường trong khi tự lưu đã âm thầm bị
