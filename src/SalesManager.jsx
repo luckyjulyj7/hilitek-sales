@@ -2603,7 +2603,15 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
       })()
   ).reverse();
   const toggleSelect = (id) => setSelectedIds((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
-  const toggleSelectAll = () => setSelectedIds((prev) => (prev.size === filtered.length ? new Set() : new Set(filtered.map((p) => p.id))));
+  // Ô tiêu đề chỉ chọn TRANG đang xem (kể cả các phiên bản trong nhóm) — chọn toàn bộ danh sách phải bấm
+  // riêng link dưới bảng, tránh lỡ tay Xoá/Sửa cả nghìn sản phẩm vì tưởng chỉ chọn những dòng đang thấy.
+  const pageProductIds = () => pagedProductGroups.flatMap((g) => (g.type === "single" ? [g.p.id] : g.members.map((m) => m.id)));
+  const pageAllSelected = () => { const ids = pageProductIds(); return ids.length > 0 && ids.every((id) => selectedIds.has(id)); };
+  const toggleSelectAll = () => {
+    const ids = pageProductIds();
+    const all = pageAllSelected();
+    setSelectedIds((prev) => { const next = new Set(prev); ids.forEach((id) => (all ? next.delete(id) : next.add(id))); return next; });
+  };
 
   // Gom các phiên bản (variantGroupId) lại thành 1 dòng đại diện — bấm mở ra mới hiện từng phiên
   // bản riêng. Dùng luôn làm đơn vị phân trang (1 group = 1 "dòng" trong trang, dù mở rộng ra nhiều
@@ -3267,7 +3275,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         <table className="w-full text-sm" style={{ minWidth: 940 }}>
           <thead className="sticky top-0" style={{ zIndex: 2 }}>
             <tr style={{ borderBottom: `2px solid ${INK}` }}>
-              <th className="px-3 py-2.5" style={{ background: "#fff" }}><input type="checkbox" checked={selectedIds.size > 0 && selectedIds.size === filtered.length} onChange={toggleSelectAll} /></th>
+              <th className="px-3 py-2.5" style={{ background: "#fff" }}><input type="checkbox" title="Chọn tất cả sản phẩm trong trang này" checked={pageAllSelected()} onChange={toggleSelectAll} /></th>
               {["", "", "Mã VT", "SKU", "Tên vật tư", "ĐVT", "Tồn ĐK", "Nhập", "Xuất", "Tồn CK", ...(isAdmin ? ["Giá nhập"] : []), ""].map((h, hi) => (
                 <th key={hi} className="text-left px-2 py-2.5 text-xs uppercase tracking-wider whitespace-nowrap" style={h === "Tên vật tư" ? { color: INK, opacity: 0.6, background: "#fff", minWidth: 260 } : { color: INK, opacity: 0.6, background: "#fff" }}>{h}</th>
               ))}
@@ -3449,6 +3457,9 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         <div className="flex items-center justify-between mt-2.5 text-xs" style={{ color: INK, opacity: 0.7 }}>
           <span>
             {(productSafePage - 1) * PRODUCT_PAGE_SIZE + 1}–{Math.min(productSafePage * PRODUCT_PAGE_SIZE, productGroups.length)} / {productGroups.length} sản phẩm
+            {isAdmin && pageAllSelected() && selectedIds.size < filtered.length && (
+              <button onClick={() => setSelectedIds(new Set(filtered.map((p) => p.id)))} className="ml-3 underline" style={{ color: BLUE }}>Chọn tất cả {filtered.length} sản phẩm đang lọc</button>
+            )}
           </span>
           <div className="flex items-center gap-1">
             <button onClick={() => setProductPage((p) => Math.max(1, p - 1))} disabled={productSafePage <= 1}
