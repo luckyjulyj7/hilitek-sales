@@ -3654,9 +3654,9 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                     ["Nhập lại (đổi trả)", `+${stats.importedFromReturnQty}`],
                     ["Xuất trong kỳ", `-${stats.exportedQty}`],
                   ].map(([label, val]) => (
-                    <div key={label} className="flex justify-between gap-4 py-2" style={{ borderTop: `1px solid ${LINE}` }}>
-                      <dt style={{ color: INK, opacity: 0.6 }}>{label}</dt>
-                      <dd className="font-medium text-right" style={{ color: INK }}>{val}</dd>
+                    <div key={label} className="flex gap-4 py-2" style={{ borderTop: `1px solid ${LINE}` }}>
+                      <dt className="shrink-0 w-32" style={{ color: INK, opacity: 0.6 }}>{label}</dt>
+                      <dd className="font-medium" style={{ color: INK }}>{val}</dd>
                     </div>
                   ))}
                 </dl>
@@ -8464,19 +8464,19 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
                 ["Người liên hệ", viewingCustomer.contactPerson],
                 ["Đại diện", [viewingCustomer.representativeName, viewingCustomer.representativeTitle].filter(Boolean).join(" · ")],
               ].map(([label, val]) => (
-                <div key={label} className="flex justify-between gap-4 py-2.5 min-w-0" style={{ borderTop: `1px solid ${LINE}` }}>
-                  <dt className="shrink-0" style={{ color: INK, opacity: 0.6 }}>{label}</dt>
-                  <dd className="font-medium text-right truncate" style={{ color: INK }} title={val || ""}>{val || "—"}</dd>
+                <div key={label} className="flex gap-4 py-2.5 min-w-0" style={{ borderTop: `1px solid ${LINE}` }}>
+                  <dt className="shrink-0 w-28" style={{ color: INK, opacity: 0.6 }}>{label}</dt>
+                  <dd className="font-medium truncate min-w-0" style={{ color: INK }} title={val || ""}>{val || "—"}</dd>
                 </div>
               ))}
-              <div className="sm:col-span-2 flex justify-between gap-4 py-2.5" style={{ borderTop: `1px solid ${LINE}` }}>
-                <dt className="shrink-0" style={{ color: INK, opacity: 0.6 }}>Địa chỉ</dt>
-                <dd className="font-medium text-right" style={{ color: INK }}>{fullAddress(viewingCustomer) || "—"}</dd>
+              <div className="sm:col-span-2 flex gap-4 py-2.5" style={{ borderTop: `1px solid ${LINE}` }}>
+                <dt className="shrink-0 w-28" style={{ color: INK, opacity: 0.6 }}>Địa chỉ</dt>
+                <dd className="font-medium" style={{ color: INK }}>{fullAddress(viewingCustomer) || "—"}</dd>
               </div>
               {viewingCustomer.note && (
-                <div className="sm:col-span-2 flex justify-between gap-4 py-2.5" style={{ borderTop: `1px solid ${LINE}` }}>
-                  <dt className="shrink-0" style={{ color: INK, opacity: 0.6 }}>Ghi chú</dt>
-                  <dd className="text-right" style={{ color: INK }}>{viewingCustomer.note}</dd>
+                <div className="sm:col-span-2 flex gap-4 py-2.5" style={{ borderTop: `1px solid ${LINE}` }}>
+                  <dt className="shrink-0 w-28" style={{ color: INK, opacity: 0.6 }}>Ghi chú</dt>
+                  <dd style={{ color: INK }}>{viewingCustomer.note}</dd>
                 </div>
               )}
             </dl>
@@ -8898,8 +8898,8 @@ function SalesItemsTable({ items, products, onUpdate, onRemove, role }) {
           <tr style={{ borderBottom: `1px solid ${LINE}`, background: PAPER }}>
             <th colSpan={2} className="text-left px-3 py-2.5 text-[11px] uppercase tracking-wider opacity-60">Sản phẩm</th>
             <th className="text-center px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-60">SL</th>
-            <th className="text-right px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-60">Đơn giá</th>
-            <th className="text-right px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-60">Thành tiền</th>
+            <th className="text-right pl-2 pr-4 py-2.5 text-[11px] uppercase tracking-wider opacity-60">Đơn giá</th>
+            <th className="text-right px-3 py-2.5 text-[11px] uppercase tracking-wider opacity-60">Thành tiền</th>
             <th></th>
           </tr>
         </thead>
@@ -8911,24 +8911,26 @@ function SalesItemsTable({ items, products, onUpdate, onRemove, role }) {
             const belowFloor = p && floor > 0 && it.price < floor;
             return (
               <React.Fragment key={it.productId}>
-                <tr style={{ borderBottom: p?.hasSeries ? "none" : `1px dashed ${LINE}` }}>
+                <tr style={{ borderBottom: p?.hasSeries ? "none" : `1px solid ${LINE}` }}>
                   <td className="pl-3 pr-1 py-3 align-top">
                     {p?.image ? <img src={p.image} alt={p.name} className="w-9 h-9 object-cover rounded-md" style={{ border: `1px solid ${LINE}` }} /> : (
-                      <div className="w-9 h-9 rounded-md flex items-center justify-center" style={{ background: PAPER, border: `1px dashed ${LINE}` }}><ImageOff size={12} className="opacity-30" /></div>
+                      <div className="w-9 h-9 rounded-md flex items-center justify-center" style={{ background: PAPER, border: `1px solid ${LINE}` }}><ImageOff size={12} className="opacity-30" /></div>
                     )}
                   </td>
                   <td className="px-2 py-3 align-top">
-                    <div className="font-medium text-sm leading-snug" style={{ color: INK }}>{p?.name}</div>
-                    <div className="text-xs opacity-50 mt-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>{p?.sku || p?.code}</div>
+                    <div className="min-h-[36px] flex flex-col justify-center">
+                      <div className="font-medium text-[13px] leading-snug" style={{ color: INK }}>{p?.name}</div>
+                      <div className="text-xs opacity-50">{p?.sku || p?.code}</div>
+                    </div>
                   </td>
                   <td className="px-1 py-3 align-top">
                     <input type="number" min={1} value={it.qty || ""} onChange={(e) => { const v = e.target.value; onUpdate(it.productId, { qty: v === "" ? "" : Math.max(0, Number(v)) }); }}
                       onBlur={() => { if (!it.qty || it.qty < 1) onUpdate(it.productId, { qty: 1 }); }}
-                      className="w-full border rounded-md py-1.5 px-1 text-center text-sm" style={{ borderColor: LINE }} />
+                      className="w-full border rounded-md h-9 px-1 text-center text-sm" style={{ borderColor: LINE }} />
                   </td>
                   <td className="px-1 py-3 align-top">
                     <MoneyInput value={it.price} onChange={(v) => onUpdate(it.productId, { price: v === "" ? 0 : v })}
-                      className="w-full border rounded-md py-1.5 px-2 text-right text-sm" style={{ borderColor: belowFloor ? RUST : LINE, fontFamily: "'Inter', sans-serif", color: belowFloor ? RUST : INK }} />
+                      className="w-full border rounded-md h-9 px-3 text-right text-sm" style={{ borderColor: belowFloor ? RUST : LINE, fontFamily: "'Inter', sans-serif", color: belowFloor ? RUST : INK }} />
                     {p && (
                       <div className="flex justify-end gap-2.5 mt-1 text-[11px]">
                         <button type="button" onClick={() => onUpdate(it.productId, { price: p.wholesalePrice })} className="hover:underline" style={{ color: BLUE }}>Giá sỉ</button>
@@ -8937,11 +8939,11 @@ function SalesItemsTable({ items, products, onUpdate, onRemove, role }) {
                     )}
                     {belowFloor && <span className="block text-[10px] mt-0.5" style={{ color: RUST }}>Dưới giá niêm yết tối thiểu ({vnd(floor)})</span>}
                   </td>
-                  <td className="px-2 py-3 text-right font-semibold text-sm whitespace-nowrap align-top" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(orderLineTotal(it))}</td>
-                  <td className="px-1 py-3 align-top"><button onClick={() => onRemove(it.productId)} style={{ color: RUST }}><X size={14} /></button></td>
+                  <td className="px-3 py-3 align-top"><div className="h-9 flex items-center justify-end text-sm font-semibold whitespace-nowrap" style={{ color: INK }}>{vnd(orderLineTotal(it))}</div></td>
+                  <td className="px-1 py-3 align-top"><button onClick={() => onRemove(it.productId)} title="Xoá dòng" className="h-9 flex items-center opacity-60 hover:opacity-100" style={{ color: RUST }}><X size={14} /></button></td>
                 </tr>
                 {p?.hasSeries && (
-                  <tr style={{ borderBottom: `1px dashed ${LINE}` }}>
+                  <tr style={{ borderBottom: `1px solid ${LINE}` }}>
                     <td></td>
                     <td colSpan={4} className="px-2 pb-3">
                       <div className="flex items-center gap-2 mb-1 text-xs">
@@ -10028,14 +10030,13 @@ function QuoteItemsTable({ items, products, onUpdate, onRemove }) {
   return (
     <div className="rounded-md overflow-x-auto" style={{ border: `1px solid ${LINE}` }}>
       <table className="w-full text-sm table-fixed" style={{ minWidth: 480 }}>
-        <colgroup><col style={{ width: 28 }} /><col /><col style={{ width: 70 }} /><col style={{ width: 130 }} /><col style={{ width: 120 }} /><col style={{ width: 32 }} /></colgroup>
+        <colgroup><col /><col style={{ width: 70 }} /><col style={{ width: 130 }} /><col style={{ width: 120 }} /><col style={{ width: 32 }} /></colgroup>
         <thead>
           <tr style={{ borderBottom: `1px solid ${LINE}`, background: PAPER }}>
-            <th className="text-left px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-50">STT</th>
-            <th className="text-left px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-60">Sản phẩm</th>
+            <th className="text-left px-3 py-2.5 text-[11px] uppercase tracking-wider opacity-60">Sản phẩm</th>
             <th className="text-center px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-60">SL</th>
-            <th className="text-right px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-60">Đơn giá</th>
-            <th className="text-right px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-60">Thành tiền</th>
+            <th className="text-right pl-2 pr-4 py-2.5 text-[11px] uppercase tracking-wider opacity-60">Đơn giá</th>
+            <th className="text-right px-3 py-2.5 text-[11px] uppercase tracking-wider opacity-60">Thành tiền</th>
             <th></th>
           </tr>
         </thead>
@@ -10043,27 +10044,28 @@ function QuoteItemsTable({ items, products, onUpdate, onRemove }) {
           {items.map((it, idx) => {
             const p = products.find((x) => x.id === it.productId);
             return (
-              <tr key={it.productId} style={{ borderBottom: `1px dashed ${LINE}` }}>
-                <td className="px-2 py-3 text-xs opacity-40 align-top">{idx + 1}</td>
-                <td className="px-2 py-3 align-top">
-                  <div className="font-semibold text-base leading-snug" style={{ color: INK }}>{p?.name}</div>
-                  <div className="text-xs opacity-50 mt-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>{p?.sku || p?.code}</div>
+              <tr key={it.productId} style={{ borderBottom: `1px solid ${LINE}` }}>
+                <td className="px-3 py-3 align-top">
+                  <div className="min-h-[36px] flex flex-col justify-center">
+                    <div className="font-medium text-[13px] leading-snug" style={{ color: INK }}>{p?.name}</div>
+                    <div className="text-xs opacity-50">{p?.sku || p?.code}</div>
+                  </div>
                 </td>
                 <td className="px-1 py-3 align-top">
                   <input type="number" min={1} value={it.qty || ""} onChange={(e) => { const v = e.target.value; onUpdate(it.productId, { qty: v === "" ? "" : Math.max(0, Number(v)) }); }}
                     onBlur={() => { if (!it.qty || it.qty < 1) onUpdate(it.productId, { qty: 1 }); }}
-                    className="w-full border rounded-md py-2 px-1 text-center text-[15px] font-medium" style={{ borderColor: LINE }} />
+                    className="w-full border rounded-md h-9 px-1 text-center text-sm" style={{ borderColor: LINE }} />
                 </td>
                 <td className="px-1 py-3 align-top">
                   <MoneyInput value={it.price} onChange={(v) => onUpdate(it.productId, { price: v === "" ? 0 : v })}
-                    className="w-full border rounded-md py-2 px-2 text-right text-[15px] font-medium" style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} />
+                    className="w-full border rounded-md h-9 px-3 text-right text-sm" style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} />
                 </td>
-                <td className="px-2 py-3 text-right font-semibold text-sm whitespace-nowrap align-top" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(it.qty * it.price)}</td>
-                <td className="px-1 py-3 align-top"><button onClick={() => onRemove(it.productId)} style={{ color: RUST }}><X size={14} /></button></td>
+                <td className="px-3 py-3 align-top"><div className="h-9 flex items-center justify-end text-sm font-semibold whitespace-nowrap" style={{ color: INK }}>{vnd(it.qty * it.price)}</div></td>
+                <td className="px-1 py-3 align-top"><button onClick={() => onRemove(it.productId)} title="Xoá dòng" className="h-9 flex items-center opacity-60 hover:opacity-100" style={{ color: RUST }}><X size={14} /></button></td>
               </tr>
             );
           })}
-          {items.length === 0 && <tr><td colSpan={6} className="text-center py-8 opacity-40">Chưa có thông tin sản phẩm.</td></tr>}
+          {items.length === 0 && <tr><td colSpan={5} className="text-center py-8 opacity-40 text-sm">Chưa có thông tin sản phẩm.</td></tr>}
         </tbody>
       </table>
     </div>
@@ -10338,7 +10340,7 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
                 </div>
               </div>
             </div>
-            <div className="space-y-4 min-w-0">
+            <div className="space-y-4 min-w-0 lg:sticky lg:top-0 self-start">
               <div className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
                 <p className="text-sm font-semibold mb-3" style={{ color: INK }}>Thanh toán</p>
             <Field label="Hiệu lực báo giá (số ngày)">
@@ -11310,7 +11312,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
               </div>
             </div>
 
-            <div className="space-y-4 min-w-0">
+            <div className="space-y-4 min-w-0 lg:sticky lg:top-0 self-start">
               <div className="p-4 rounded-md space-y-2.5" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
                 <div className="text-sm">
                   <div className="flex justify-between mb-1.5"><span className="opacity-60">Tổng tiền ({form.items?.length || 0} sản phẩm)</span><span style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(calc.subtotal)}</span></div>
