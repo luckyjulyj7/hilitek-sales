@@ -1882,6 +1882,15 @@ function orderDueInfo(o) {
   const daysLeft = Math.round((due.getTime() - today.getTime()) / 86400000);
   return { dueDate: due, daysLeft, overdue: daysLeft < 0, overdue3: daysLeft <= -3 };
 }
+// Nhãn công nợ của đơn: số âm = còn hạn (xanh), 0 = đến hạn (vàng), số dương = quá hạn (đỏ).
+function CreditDueBadge({ order, plain }) {
+  const due = orderDueInfo(order);
+  if (!due) return plain ? <span style={{ color: "#9CA3AF" }}>—</span> : null;
+  const n = -due.daysLeft;
+  const color = n < 0 ? "#15803D" : n === 0 ? "#B45309" : "#C62828";
+  const title = n < 0 ? `Còn ${-n} ngày` : n === 0 ? "Đến hạn hôm nay" : `Quá hạn ${n} ngày`;
+  return <span className="font-semibold whitespace-nowrap" style={{ color }} title={`${title}, hạn ${due.dueDate.toLocaleDateString("vi-VN")}`}>{plain ? n : `CNợ: ${n}`}</span>;
+}
 // Giá sàn được phép bán theo vai trò — không dùng giá vốn/giá nhập (thông tin nội bộ, không cho Kinh doanh/CTV xem).
 // Kinh doanh (nhân viên): tối thiểu = Giá bán sỉ. CTV: tối thiểu = Giá bán lẻ - 10%. Admin: không giới hạn.
 function minSellPrice(product, role) {
@@ -2008,6 +2017,7 @@ function normalizeCustomer(c) {
     group: CUSTOMER_GROUPS.some((g) => g.id === c.group) ? c.group : "retail",
     representativeName: c.representativeName || "", representativeTitle: c.representativeTitle || "",
     assignedTo: c.assignedTo || "",
+    creditDays: Number(c.creditDays) || 0, // số ngày công nợ mặc định khi tạo đơn cho khách này
   };
   let addresses = Array.isArray(c.addresses) ? c.addresses.map((a) => ({
     id: a.id || uid(), label: a.label || "Địa chỉ giao hàng", recipientName: a.recipientName || "", recipientPhone: a.recipientPhone || "",
@@ -4890,7 +4900,7 @@ function ProductPicker({ products, onPick, onQuickCreate, brands }) {
   );
 }
 
-function ItemsTable({ items, products, onUpdate, onRemove, lockQtyPrice }) {
+function ItemsTable({ items, products, onUpdate, onRemove, lockQtyPrice, onOpenProduct }) {
   const colCount = onRemove ? 6 : 5;
   return (
     <div className="rounded-md overflow-x-auto mb-3" style={{ border: `1px solid ${LINE}` }}>
@@ -5015,7 +5025,7 @@ function DocPager({ page, total, unit, onPage }) {
   );
 }
 
-function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProducts, suppliers, setSuppliers, brands, employeeNames, addLog, focusPOId, onFocusHandled, currentUser }) {
+function PurchaseOrders({ goToProduct, goToSupplier, purchaseOrders, setPurchaseOrders, products, setProducts, suppliers, setSuppliers, brands, employeeNames, addLog, focusPOId, onFocusHandled, currentUser }) {
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({});
   const [expanded, setExpanded] = useState(null);
@@ -5486,7 +5496,9 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-lg mb-4" style={{ background: PAPER }}>
                 <div className="col-span-2 min-w-0">
                   <p className="text-xs opacity-60 mb-0.5">Nhà cung cấp</p>
-                  <p className="text-sm font-semibold" style={{ color: TEXT }}>{viewingPO.supplier || "—"}</p>
+                  {viewingPO.supplierId && goToSupplier
+                    ? <button type="button" onClick={() => goToSupplier(viewingPO.supplierId)} className="block text-left text-sm font-semibold hover:underline" style={{ color: BLUE }}>{viewingPO.supplier}</button>
+                    : <p className="text-sm font-semibold" style={{ color: TEXT }}>{viewingPO.supplier || "—"}</p>}
                   <p className="text-xs opacity-60 mt-0.5">HĐ {viewingPO.invoiceNo || "—"} · {viewingPO.branch} · {viewingPO.createdBy}</p>
                 </div>
                 <div>
@@ -5587,7 +5599,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
             </>
           ) : (
             <>
-                            <ItemsTable items={editForm.items} products={products} onUpdate={editUpdateItem} lockQtyPrice />
+                            <ItemsTable items={editForm.items} products={products} onUpdate={editUpdateItem} lockQtyPrice onOpenProduct={goToProduct} />
               {(viewingPO.status === "pending" || showPONotes || editForm.notes || (editForm.tags || []).length > 0) ? (
                 <TagsNotesCompact tags={editForm.tags} setTags={(arr) => setEditForm({ ...editForm, tags: arr })} notes={editForm.notes} setNotes={(v) => setEditForm({ ...editForm, notes: v })} />
               ) : null}
@@ -8098,7 +8110,7 @@ function WardSelect({ province, value, onChange }) {
   );
 }
 
-function Customers({ customers, setCustomers, orders, products, currentUser, addLog, goToDoc, employeeNames, webConfig, pointAdjustments, setPointAdjustments, navTarget, onFocusHandled }) {
+function Customers({ setOrders, customers, setCustomers, orders, products, currentUser, addLog, goToDoc, employeeNames, webConfig, pointAdjustments, setPointAdjustments, navTarget, onFocusHandled }) {
   const isAdmin = currentUser.role === "admin";
   const [view, setView] = useState("list"); // list | debt
   const [editing, setEditing] = useState(null);
@@ -8148,10 +8160,10 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
         ["note", "Ghi chú"], ["group", "Nhóm"], ["assignedTo", "Phụ trách"],
         ["representativeName", "Người đại diện"], ["representativeTitle", "Chức vụ"],
       ]);
-      setCustomers((prev) => prev.map((c) => (c.id === editing.id ? { ...c, ...form, assignedTo, code: form.code || c.code } : c)));
+      setCustomers((prev) => prev.map((c) => (c.id === editing.id ? { ...c, ...form, creditDays: Number(form.creditDays) || 0, assignedTo, code: form.code || c.code } : c)));
       addLog("Sửa khách hàng", `${form.name} — ${diffSummary(changes, "không đổi thông tin")}`);
     } else {
-      setCustomers((prev) => [...prev, { ...form, assignedTo, id: uid(), code: form.code || nextCustomerCode(customers) }]);
+      setCustomers((prev) => [...prev, { ...form, creditDays: Number(form.creditDays) || 0, assignedTo, id: uid(), code: form.code || nextCustomerCode(customers) }]);
       addLog("Thêm khách hàng", `${form.name}${assignedTo ? ` · Phụ trách: ${assignedTo}` : ""}`);
     }
     setEditing(null);
@@ -8220,6 +8232,26 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
   useEffect(() => { setCustomerPage(1); }, [query]);
   const customerSafePage = Math.min(customerPage, Math.max(1, Math.ceil(filtered.length / DOC_PAGE_SIZE)));
   const pagedCustomers = filtered.slice((customerSafePage - 1) * DOC_PAGE_SIZE, customerSafePage * DOC_PAGE_SIZE);
+  const [picked, setPicked] = useState(new Set());
+  const [bulkForm, setBulkForm] = useState(null);
+  const pageAllPicked = pagedCustomers.length > 0 && pagedCustomers.every((c) => picked.has(c.id));
+  const togglePick = (id) => setPicked((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const togglePickPage = () => setPicked((prev) => { const n = new Set(prev); pagedCustomers.forEach((c) => (pageAllPicked ? n.delete(c.id) : n.add(c.id))); return n; });
+  const applyBulk = () => {
+    const days = bulkForm.creditDays === "" ? null : Math.max(0, Number(bulkForm.creditDays) || 0);
+    if (!bulkForm.group && days === null) { notify("Chọn nhóm hoặc nhập số ngày công nợ."); return; }
+    setCustomers((prev) => prev.map((c) => (picked.has(c.id) ? { ...c, ...(bulkForm.group ? { group: bulkForm.group } : {}), ...(days !== null ? { creditDays: days } : {}) } : c)));
+    let updated = 0;
+    if (days && bulkForm.applyOrders) {
+      const hit = orders.filter((o) => picked.has(o.customerId) && !o.creditDays && o.status !== "cancelled" && orderCalc(o).remaining > 0);
+      updated = hit.length;
+      const ids = new Set(hit.map((o) => o.id));
+      if (updated) setOrders((prev) => prev.map((o) => (ids.has(o.id) ? { ...o, creditDays: days } : o)));
+    }
+    addLog("Sửa hàng loạt khách hàng", `${picked.size} khách${bulkForm.group ? ` · nhóm ${CUSTOMER_GROUPS.find((g) => g.id === bulkForm.group)?.label}` : ""}${days !== null ? ` · công nợ ${days} ngày` : ""}${updated ? ` · ${updated} đơn đang nợ` : ""}`);
+    notify(`Đã cập nhật ${picked.size} khách hàng${updated ? ` và ${updated} đơn đang nợ` : ""}.`);
+    setBulkForm(null); setPicked(new Set());
+  };
 
   const viewingCustomer = myCustomers.find((c) => c.id === viewingId) || null;
 
@@ -8451,6 +8483,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
         <table className="hili-rt w-full text-sm" style={{ minWidth: 760 }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${LINE}` }}>
+              {isAdmin && <th className="px-3 py-2.5"><input type="checkbox" title="Chọn tất cả khách trong trang này" checked={pageAllPicked} onChange={togglePickPage} /></th>}
               {(isAdmin ? ["Mã KH", "Tên khách hàng", "SĐT", "Nhóm khách hàng", "Phụ trách", "Công nợ", "Tổng chi tiêu", "Tổng SL đơn", ""] : ["Mã KH", "Tên khách hàng", "SĐT", "Nhóm khách hàng", "Công nợ", "Tổng chi tiêu", "Tổng SL đơn", ""]).map((h, hi) => (
                 <th key={hi} className={`${RIGHT_COLUMNS.has(h) ? "text-right" : "text-left"} px-3 py-2.5 text-xs whitespace-nowrap font-medium`} style={{ color: TEXT, opacity: 0.6 }}>{h}</th>
               ))}
@@ -8462,6 +8495,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
               const g = CUSTOMER_GROUPS.find((x) => x.id === c.group) || CUSTOMER_GROUPS[0];
               return (
                 <tr key={c.id} style={{ borderBottom: `1px solid ${LINE}` }} className="hover:bg-black/[0.02]">
+                  {isAdmin && <td className="px-3 py-3"><input type="checkbox" checked={picked.has(c.id)} onChange={() => togglePick(c.id)} /></td>}
                   <td className="px-3 py-3 font-medium whitespace-nowrap">
                     <button onClick={() => setViewingId(c.id)} className="hover:underline" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{c.code}</button>
                   </td>
@@ -8489,11 +8523,39 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
                 </tr>
               );
             })}
-            {filtered.length === 0 && <tr><td colSpan={isAdmin ? 9 : 8} className="text-center py-10 opacity-60">Không có khách hàng nào.</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={isAdmin ? 10 : 8} className="text-center py-10 opacity-60">Không có khách hàng nào.</td></tr>}
           </tbody>
         </table>
       </div>
       <DocPager page={customerSafePage} total={filtered.length} unit="khách hàng" onPage={setCustomerPage} />
+      {picked.size > 0 && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-white shadow-lg whitespace-nowrap" style={{ background: TEXT }}>
+          Đã chọn {picked.size} khách
+          <button onClick={() => setBulkForm({ group: "", creditDays: "", applyOrders: true })} className="px-3 py-1.5 rounded-md font-medium" style={{ background: "#fff", color: TEXT }}>Sửa hàng loạt</button>
+          <button onClick={() => setPicked(new Set())} className="underline">Bỏ chọn</button>
+        </div>
+      )}
+      {bulkForm && (
+        <Modal title={`Sửa hàng loạt ${picked.size} khách hàng`} onClose={() => setBulkForm(null)} size="xl">
+          <p className="text-sm mb-4" style={{ color: "#6B7280" }}>Mục nào để trống thì giữ nguyên.</p>
+          <Field label="Nhóm khách hàng">
+            <div className="flex gap-2 flex-wrap">
+              {[{ id: "", label: "Giữ nguyên" }, ...CUSTOMER_GROUPS].map((g) => (
+                <button key={g.id} type="button" onClick={() => setBulkForm({ ...bulkForm, group: g.id })} className="px-3.5 py-1.5 rounded-md text-sm border"
+                  style={{ borderColor: bulkForm.group === g.id ? INK : LINE, background: bulkForm.group === g.id ? INK : "transparent", color: bulkForm.group === g.id ? "#fff" : INK }}>{g.label}</button>
+              ))}
+            </div>
+          </Field>
+          <Field label="Công nợ (số ngày)">
+            <input type="number" min={0} className={inputCls} style={{ borderColor: LINE, maxWidth: 200 }} value={bulkForm.creditDays} onChange={(e) => setBulkForm({ ...bulkForm, creditDays: e.target.value })} placeholder="Giữ nguyên" />
+          </Field>
+          <label className="flex items-start gap-2 text-sm mb-5 cursor-pointer" style={{ color: TEXT }}>
+            <input type="checkbox" className="mt-0.5" checked={bulkForm.applyOrders} onChange={(e) => setBulkForm({ ...bulkForm, applyOrders: e.target.checked })} />
+            Áp dụng số ngày này cho các đơn đang nợ chưa có ngày công nợ của những khách đã chọn
+          </label>
+          <button onClick={applyBulk} className="px-5 py-2 rounded-md text-white text-sm font-medium" style={{ background: INK }}>Cập nhật</button>
+        </Modal>
+      )}
       </>
       )}
 
@@ -8534,6 +8596,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
                 ["Mã số thuế", viewingCustomer.taxCode],
                 ["Email", viewingCustomer.email],
                 ["Phụ trách", viewingCustomer.assignedTo || "Chưa gán"],
+                ["Công nợ", viewingCustomer.creditDays ? `${viewingCustomer.creditDays} ngày` : "Trả ngay"],
                 ["Người liên hệ", viewingCustomer.contactPerson],
                 ["Đại diện", [viewingCustomer.representativeName, viewingCustomer.representativeTitle].filter(Boolean).join(" · ")],
               ].map(([label, val]) => (
@@ -8740,6 +8803,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
           <Field label="Email"><input className={inputCls} style={{ borderColor: LINE }} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Field>
 
           <div className="grid grid-cols-2 gap-4">
+            <div>
             <Field label="Nhóm khách hàng">
               <div className="flex gap-2 flex-wrap">
                 {CUSTOMER_GROUPS.map((g) => (
@@ -8751,6 +8815,10 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
                 ))}
               </div>
             </Field>
+            <Field label="Công nợ (số ngày)" hint="Tự điền khi tạo đơn cho khách này. Bỏ trống nếu trả ngay">
+              <input type="number" min={0} className={inputCls} style={{ borderColor: LINE }} value={form.creditDays || ""} onChange={(e) => setForm({ ...form, creditDays: e.target.value })} placeholder="0" />
+            </Field>
+            </div>
 
             <Field label="Nhân viên phụ trách" hint={isAdmin ? "Chỉ nhân viên/CTV được gán mới thấy công nợ, đơn hàng của khách này" : "Khách hàng do bạn tạo sẽ tự động do bạn phụ trách"}>
               {isAdmin ? (
@@ -8992,7 +9060,7 @@ function SalesItemsTable({ items, products, onUpdate, onRemove, role }) {
                   </td>
                   <td className="px-2 py-3 align-top">
                     <div className="min-h-[36px] flex flex-col justify-center">
-                      <div className="font-medium text-[13px] leading-snug" style={{ color: TEXT }}>{p?.name}</div>
+                      {p && onOpenProduct ? <button type="button" onClick={() => onOpenProduct(p.id)} className="block text-left font-medium text-[13px] leading-snug hover:underline" style={{ color: BLUE }}>{p.name}</button> : <div className="font-medium text-[13px] leading-snug" style={{ color: TEXT }}>{p?.name}</div>}
                       <div className="text-xs opacity-60">{p?.sku || p?.code}</div>
                     </div>
                   </td>
@@ -10285,7 +10353,7 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
       id: uid(), code, createdAt: now, date: todayISO(), customerId, channel: "store", branch: q.branch, seller: q.seller, deliveryDate: "",
       tags: q.tags, notes: `Chuyển từ báo giá ${q.code}.${q.notes ? " " + q.notes : ""}`, status: "pending", items: itemsWithFulfilled, vat: q.vat,
       shippingAt: null, deliveredAt: null, paidCompleteAt: null, cancelledAt: null,
-      orderDiscount: q.orderDiscount, discountType: q.discountType, creditDays: 0, shippingFee: q.shippingFee, paidAmount: 0,
+      orderDiscount: q.orderDiscount, discountType: q.discountType, creditDays: customers.find((c) => c.id === customerId)?.creditDays || 0, shippingFee: q.shippingFee, paidAmount: 0,
       approvalStatus: "approved", approvalReason: "", createdByRole: currentUser.role,
     };
     setOrders((prev) => [newOrder, ...prev]);
@@ -10556,7 +10624,7 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
   );
 }
 
-function Orders({ orders, setOrders, products, setProducts, customers, setCustomers, employeeNames, currentUser, addLog, focusOrderId, initialFilterStatus, initialDeliveredFrom, initialDeliveredTo, onFocusHandled, printSettings, setPrintSettings }) {
+function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setProducts, customers, setCustomers, employeeNames, currentUser, addLog, focusOrderId, initialFilterStatus, initialDeliveredFrom, initialDeliveredTo, onFocusHandled, printSettings, setPrintSettings }) {
   const isCtv = currentUser.role === "ctv";
   const isAdmin = currentUser.role === "admin";
   const [creating, setCreating] = useState(false);
@@ -11233,7 +11301,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
           <thead className="sticky top-0" style={{ zIndex: 2 }}>
             <tr style={{ borderBottom: `1px solid ${LINE}` }}>
               <th className="px-3 py-2.5" style={{ background: "#fff" }}><input type="checkbox" title="Chọn tất cả đơn trong trang này" checked={pageAllSelected} onChange={toggleSelectAll} /></th>
-              {["Mã đơn", "Ngày tạo", "Khách hàng", "Bán tại", "Trạng thái giao", "Xuất hoá đơn", "Tổng tiền", "Còn phải trả", ""].map((h, hi) => (
+              {["Mã đơn", "Ngày tạo", "Khách hàng", "Bán tại", "Trạng thái giao", "Xuất hoá đơn", "Tổng tiền", "Còn phải trả", "CNợ", ""].map((h, hi) => (
                 <th key={hi} className={`${RIGHT_COLUMNS.has(h) ? "text-right" : "text-left"} px-3 py-2.5 text-xs whitespace-nowrap font-medium`} style={{ color: TEXT, opacity: 0.6, background: "#fff" }}>{h}</th>
               ))}
             </tr>
@@ -11249,7 +11317,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                     <button onClick={() => { setViewingId(o.id); setPayInput(""); }} className="hover:underline" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{o.code}</button>
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap opacity-80" style={{ fontFamily: "'Inter', sans-serif" }}>{formatDateTime(o.createdAt)}</td>
-                  <td className="px-3 py-3 truncate" style={{ maxWidth: 320 }} title={cust?.name || "Khách lẻ"}>{cust?.name || "Khách lẻ"}</td>
+                  <td className="px-3 py-3 truncate" style={{ maxWidth: 280 }} title={cust?.name || "Khách lẻ"}>{cust?.name || "Khách lẻ"}</td>
                   <td className="px-3 py-3 whitespace-nowrap opacity-70">{o.branch}</td>
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-1.5">
@@ -11267,6 +11335,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                   </td>
                   <td className="px-3 py-3 text-right whitespace-nowrap font-medium" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{vnd(c.payable)}</td>
                   <td className="px-3 py-3 text-right whitespace-nowrap font-medium" style={{ fontFamily: "'Inter', sans-serif", color: c.remaining > 0 ? RUST : FOREST }}>{vnd(c.remaining)}</td>
+                  <td className="px-3 py-3 text-right"><CreditDueBadge order={o} plain /></td>
                   <td className="px-3 py-3">
                     {/* Chỉ tài khoản CHỦ (isOwner) mới xoá được đơn — QTV thường không thấy nút này */}
                     {currentUser.isOwner && (
@@ -11276,7 +11345,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                 </tr>
               );
             })}
-            {visible.length === 0 && <tr><td colSpan={10} className="text-center py-10 opacity-60">Không có đơn hàng nào.</td></tr>}
+            {visible.length === 0 && <tr><td colSpan={11} className="text-center py-10 opacity-60">Không có đơn hàng nào.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -11295,7 +11364,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                   const shippingAddress = def
                     ? { recipientName: def.recipientName || cust?.name || "", recipientPhone: def.recipientPhone || cust?.phone || "", province: def.province, ward: def.ward, addressDetail: def.addressDetail }
                     : (cust ? { recipientName: cust.name, recipientPhone: cust.phone, province: cust.province, ward: cust.ward, addressDetail: cust.addressDetail } : null);
-                  setForm({ ...form, customerId: id, shippingAddress });
+                  setForm({ ...form, customerId: id, shippingAddress, creditDays: editingOrderId ? form.creditDays : (cust?.creditDays || 0) });
                 }} />
                 {form.customerId && (() => {
                   const cust = customers.find((c) => c.id === form.customerId);
@@ -11478,6 +11547,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
 
             <p className="text-xs mb-3 flex items-center gap-1.5 flex-wrap" style={{ color: TEXT, opacity: 0.65 }}>
               <ch.icon size={13} /> {ch.label} · {formatDateTime(viewingOrder.createdAt)} · {viewingOrder.branch} · {viewingOrder.seller}{viewingOrder.deliveryDate ? ` · Hẹn giao ${viewingOrder.deliveryDate}` : ""}
+              {orderDueInfo(viewingOrder) && <span style={{ opacity: 1 }}> · <CreditDueBadge order={viewingOrder} /></span>}
             </p>
 
             <div className="flex flex-wrap gap-1.5 mb-1.5">
@@ -11586,7 +11656,9 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
             <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-4 p-4 rounded-lg mb-4" style={{ background: PAPER }}>
               <div className="min-w-0">
                 <p className="text-xs opacity-60 mb-0.5">Khách hàng</p>
-                <p className="text-sm font-semibold" style={{ color: TEXT }}>{cust?.name || "Khách lẻ"}</p>
+                {cust && goToCustomer
+                  ? <button type="button" onClick={() => goToCustomer(cust.id)} className="block text-left text-sm font-semibold hover:underline" style={{ color: BLUE }}>{cust.name}</button>
+                  : <p className="text-sm font-semibold" style={{ color: TEXT }}>{cust?.name || "Khách lẻ"}</p>}
                 {viewingOrder.shippingAddress && (viewingOrder.shippingAddress.addressDetail || viewingOrder.shippingAddress.province || viewingOrder.shippingAddress.ward) && (
                   <p className="text-xs mt-1" style={{ color: TEXT, opacity: 0.7 }}>
                     {viewingOrder.shippingAddress.recipientName && viewingOrder.shippingAddress.recipientName !== cust?.name ? `${viewingOrder.shippingAddress.recipientName} · ` : ""}{viewingOrder.shippingAddress.recipientPhone ? `${viewingOrder.shippingAddress.recipientPhone} · ` : ""}
@@ -11634,7 +11706,9 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                     return (
                       <tr key={i} style={{ borderTop: `1px solid ${LINE}` }}>
                         <td className="py-2.5 px-2">
-                          <span className="font-medium" style={{ color: TEXT }}>{p?.name || "?"}</span>
+                          {p && goToProduct
+                            ? <button type="button" onClick={() => goToProduct(p.id)} className="text-left font-medium hover:underline" style={{ color: BLUE }}>{p.name}</button>
+                            : <span className="font-medium" style={{ color: TEXT }}>{p?.name || "?"}</span>}
                           {returnedQty > 0 && <span className="ml-1.5 text-xs whitespace-nowrap" style={{ color: RUST }}>(đã trả {returnedQty})</span>}
                           {!it.fulfilled && <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded-md whitespace-nowrap font-medium" style={{ background: `${BRASS}1A`, color: BRASS }}>Chờ hàng</span>}
                         </td>
@@ -16590,7 +16664,7 @@ function ScrollTopButton() {
   );
 }
 
-const RIGHT_COLUMNS = new Set(["Tổng tiền", "Còn phải trả", "Giá trị đơn", "Công nợ", "Tổng chi tiêu", "Tổng SL đơn", "Giá trị", "Thành tiền", "Đơn giá"]);
+const RIGHT_COLUMNS = new Set(["CNợ", "Tổng tiền", "Còn phải trả", "Giá trị đơn", "Công nợ", "Tổng chi tiêu", "Tổng SL đơn", "Giá trị", "Thành tiền", "Đơn giá"]);
 const NAV_GROUPS = [
   { label: "", ids: ["dashboard"] },
   { label: "Bán hàng", ids: ["quotes", "orders", "shipping", "customers"] },
@@ -16706,6 +16780,8 @@ export default function SalesManager() {
       if (o) { setTab("orders"); setNavTarget({ type: "order", id: o.id }); }
     }
   };
+  const goToCustomer = (id) => { setTab("customers"); setNavTarget({ type: "customer", id }); };
+  const goToProduct = (id) => { setTab("products"); setNavTarget({ type: "product", id }); };
   const goToSupplier = (supplierId) => {
     if (!supplierId || currentUser.role !== "admin") return;
     setTab("suppliers"); setNavTarget({ type: "supplier", id: supplierId });
@@ -17359,11 +17435,11 @@ export default function SalesManager() {
           <AppErrorBoundary key={tab}>
             {tab === "dashboard" && <Dashboard products={products} orders={orders} goToOrdersFilter={goToOrdersFilter} purchaseOrders={purchaseOrders} isAdmin={currentUser.role === "admin"} onGo={setTab} />}
             {tab === "products" && roleTabIds.includes("products") && <ProductsSection products={products} setProducts={setProducts} purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} suppliers={suppliers} setSuppliers={setSuppliers} categories={categories} setCategories={setCategories} brands={brands} setBrands={setBrands} stocktakes={stocktakes} setStocktakes={setStocktakes} warrantyTickets={warrantyTickets} setWarrantyTickets={setWarrantyTickets} repairTickets={repairTickets} setRepairTickets={setRepairTickets} helpdeskTickets={helpdeskTickets} setHelpdeskTickets={setHelpdeskTickets} orders={orders} setOrders={setOrders} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} navTarget={tab === "products" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} goToDoc={goToDoc} goToSupplier={goToSupplier} goToWebProduct={goToWebProduct} webConfig={webConfig} />}
-            {tab === "purchase" && roleTabIds.includes("purchase") && <PurchaseOrders purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} products={products} setProducts={setProducts} suppliers={suppliers} setSuppliers={setSuppliers} brands={brands} employeeNames={employeeNames} addLog={addLog} focusPOId={navTarget?.type === "po" ? navTarget.id : null} onFocusHandled={() => setNavTarget(null)} currentUser={currentUser} />}
+            {tab === "purchase" && roleTabIds.includes("purchase") && <PurchaseOrders goToProduct={goToProduct} goToSupplier={goToSupplier} purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} products={products} setProducts={setProducts} suppliers={suppliers} setSuppliers={setSuppliers} brands={brands} employeeNames={employeeNames} addLog={addLog} focusPOId={navTarget?.type === "po" ? navTarget.id : null} onFocusHandled={() => setNavTarget(null)} currentUser={currentUser} />}
             {tab === "quotes" && <Quotations quotations={quotations} setQuotations={setQuotations} orders={orders} setOrders={setOrders} products={products} setProducts={setProducts} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} brands={brands} />}
-            {tab === "orders" && <Orders orders={orders} setOrders={setOrders} products={products} setProducts={setProducts} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} focusOrderId={tab === "orders" ? navTarget?.type === "order" ? navTarget.id : null : null} initialFilterStatus={tab === "orders" && navTarget?.type === "orders-filter" ? navTarget.status : null} initialDeliveredFrom={tab === "orders" && navTarget?.type === "orders-daterange" ? navTarget.from : null} initialDeliveredTo={tab === "orders" && navTarget?.type === "orders-daterange" ? navTarget.to : null} onFocusHandled={() => setNavTarget(null)} printSettings={printSettings} setPrintSettings={setPrintSettings} />}
+            {tab === "orders" && <Orders goToCustomer={goToCustomer} goToProduct={goToProduct} orders={orders} setOrders={setOrders} products={products} setProducts={setProducts} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} focusOrderId={tab === "orders" ? navTarget?.type === "order" ? navTarget.id : null : null} initialFilterStatus={tab === "orders" && navTarget?.type === "orders-filter" ? navTarget.status : null} initialDeliveredFrom={tab === "orders" && navTarget?.type === "orders-daterange" ? navTarget.from : null} initialDeliveredTo={tab === "orders" && navTarget?.type === "orders-daterange" ? navTarget.to : null} onFocusHandled={() => setNavTarget(null)} printSettings={printSettings} setPrintSettings={setPrintSettings} />}
             {tab === "shipping" && roleTabIds.includes("shipping") && <Shipping shippingTickets={shippingTickets} setShippingTickets={setShippingTickets} parcelLabels={parcelLabels} setParcelLabels={setParcelLabels} orders={orders} customers={customers} currentUser={currentUser} addLog={addLog} />}
-            {tab === "customers" && <Customers navTarget={navTarget} onFocusHandled={() => setNavTarget(null)} customers={customers} setCustomers={setCustomers} orders={orders} products={products} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} employeeNames={employeeNames} webConfig={webConfig} pointAdjustments={pointAdjustments} setPointAdjustments={setPointAdjustments} />}
+            {tab === "customers" && <Customers setOrders={setOrders} navTarget={navTarget} onFocusHandled={() => setNavTarget(null)} customers={customers} setCustomers={setCustomers} orders={orders} products={products} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} employeeNames={employeeNames} webConfig={webConfig} pointAdjustments={pointAdjustments} setPointAdjustments={setPointAdjustments} />}
             {tab === "suppliers" && <Suppliers suppliers={suppliers} setSuppliers={setSuppliers} purchaseOrders={purchaseOrders} addLog={addLog} goToDoc={goToDoc} navTarget={tab === "suppliers" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} currentUser={currentUser} />}
             {tab === "plans" && roleTabIds.includes("plans") && <Plans plans={plans} setPlans={setPlans} orders={orders} purchaseOrders={purchaseOrders} products={products} employeeNames={employeeNames} />}
             {tab === "reports" && roleTabIds.includes("reports") && <Reports onOpen={(type, id) => { setTab(type === "customer" ? "customers" : "products"); setNavTarget({ type, id }); }} orders={orders} products={products} customers={customers} accounts={accounts} purchaseOrders={purchaseOrders} warrantyTickets={warrantyTickets} employeeNames={employeeNames} goToOrdersDateRange={goToOrdersDateRange} goToProductsDateRange={goToProductsDateRange} />}
