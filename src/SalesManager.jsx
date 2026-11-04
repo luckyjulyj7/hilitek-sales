@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   LayoutDashboard, Package, ShoppingCart, Users, BarChart3,
-  Plus, Trash2, Pencil, X, Search, Store, Globe,
+  Plus, Trash2, Pencil, X, Search, Store, Globe, Menu, Home, Tag, Settings, Images,
   TrendingUp, AlertTriangle, Loader2, ChevronDown, ChevronRight, ChevronLeft, ChevronUp,
   ArrowDownToLine, ArrowUpFromLine, Barcode, ImagePlus, ImageOff, Check, Printer, RotateCcw, KeyRound, LogOut, Eye, EyeOff, Filter, Target, History, ShieldCheck, XCircle, Wallet, PackageCheck, Truck, Clock, Bell, FileSpreadsheet, FileText, MapPin, UserCircle, Crown, Link2 as LinkIcon, Copy, Wand2, Bold, Italic, Heading1, Heading2, Heading3, List, Sparkles, Save, Layers, Star
 } from "lucide-react";
@@ -470,7 +470,9 @@ function diffSummary(changes, fallback) {
 
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 const vnd = (n) => (Math.round(Number(n)) || 0).toLocaleString("vi-VN") + "đ";
-const todayISO = () => new Date().toISOString().slice(0, 10);
+// Ngày theo giờ máy người dùng. Không dùng toISOString vì từ 0h đến 7h sáng sẽ ra ngày hôm trước.
+const localDay = (v) => { const d = v ? new Date(v) : new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+const todayISO = () => localDay();
 // Đổi chuỗi "YYYY-MM-DD" (từ ô <input type="date">) thành mốc mili-giây ĐẦU/CUỐI ngày theo GIỜ ĐỊA
 // PHƯƠNG — KHÔNG dùng thẳng `new Date("YYYY-MM-DD")` (chuẩn ISO parse ra UTC midnight, lệch múi
 // giờ VN UTC+7 gần 7 tiếng, khiến các bộ lọc "Từ ngày/Đến ngày" bỏ sót hoặc lẫn nhầm dữ liệu của
@@ -2357,9 +2359,9 @@ function MiniStat({ label, value, icon: Icon, accent, onClick }) {
   );
 }
 
-function Dashboard({ products, orders, goToOrdersFilter }) {
+function Dashboard({ products, orders, goToOrdersFilter, purchaseOrders, isAdmin, onGo }) {
   const today = todayISO();
-  const isToday = (dateStr) => (dateStr || "").slice(0, 10) === today;
+  const isToday = (dateStr) => !!dateStr && localDay(dateStr) === today;
 
   const stockValue = products.reduce((s, p) => s + productStats(p).closingQty * productStats(p).avgCost, 0);
   const stockUnits = products.reduce((s, p) => s + productStats(p).closingQty, 0);
@@ -2380,11 +2382,11 @@ function Dashboard({ products, orders, goToOrdersFilter }) {
     const days = [];
     for (let i = chartDays - 1; i >= 0; i--) {
       const d = new Date(); d.setDate(d.getDate() - i);
-      const key = d.toISOString().slice(0, 10);
+      const key = localDay(d);
       days.push({ key, label: `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`, total: 0 });
     }
     orders.filter((o) => o.status !== "cancelled").forEach((o) => {
-      const key = o.createdAt.slice(0, 10);
+      const key = localDay(o.createdAt);
       const d = days.find((x) => x.key === key);
       if (d) d.total += orderCalc(o).payable;
     });
@@ -2414,6 +2416,17 @@ function Dashboard({ products, orders, goToOrdersFilter }) {
     return Object.values(map).sort((a, b) => b.qty - a.qty).slice(0, 5);
   }, [products, topDays]);
 
+  const webMissingCount = isAdmin ? products.filter((p) => !p.isService && p.web?.published && webMissing(p).length > 0).length : 0;
+  const poDue = isAdmin ? (purchaseOrders || []).filter((po) => poDueInfo(po)?.nearDue).length : 0;
+  const todoItems = [
+    { label: "Đơn chờ duyệt", count: pendingApproval, color: RUST, go: () => goToOrdersFilter && goToOrdersFilter("approval_pending") },
+    { label: "Yêu cầu huỷ, đổi trả", count: pendingRequests, color: RUST, go: () => goToOrdersFilter && goToOrdersFilter("return_request") },
+    { label: "Đơn chờ xử lý", count: pendingProcess, color: BRASS, go: () => goToOrdersFilter && goToOrdersFilter("pending") },
+    { label: "Công nợ NCC sắp đến hạn", count: poDue, color: RUST, go: () => onGo && onGo("suppliers") },
+    { label: "Sản phẩm dưới định mức tồn", count: lowStock.length, color: BRASS, go: () => onGo && onGo("products") },
+    { label: "Sản phẩm web thiếu nội dung", count: webMissingCount, color: BRASS, go: () => onGo && onGo("website") },
+  ].filter((t) => t.count > 0);
+
   const pieColors = [INK, BRASS, FOREST, BLUE, RUST];
   const topProductsByValue = useMemo(() => {
     return products
@@ -2427,7 +2440,7 @@ function Dashboard({ products, orders, goToOrdersFilter }) {
     <div>
       {/* Kết quả kinh doanh trong ngày */}
       <div className="p-5 rounded-md mb-6" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-        <h4 className="text-sm mb-4 font-medium" style={{ color: TEXT, opacity: 0.6, letterSpacing: "0.06em" }}>Kết quả kinh doanh trong ngày</h4>
+        <h4 className="text-base mb-4 font-semibold" style={{ color: TEXT }}>Kết quả kinh doanh trong ngày</h4>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
           <MiniStat label="Doanh thu" value={vnd(todayRevenue)} icon={Wallet} accent={BLUE} />
           <MiniStat label="Đơn hàng mới" value={todayNewOrders} icon={Package} accent={FOREST} />
@@ -2436,10 +2449,11 @@ function Dashboard({ products, orders, goToOrdersFilter }) {
         </div>
       </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
       {/* Doanh thu bán hàng theo ngày */}
-      <div className="p-5 rounded-md mb-6" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+      <div className="lg:col-span-2 p-5 rounded-lg min-w-0" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-          <h4 className="text-sm font-medium" style={{ color: TEXT, opacity: 0.6, letterSpacing: "0.06em" }}>Doanh thu bán hàng</h4>
+          <h4 className="text-base font-semibold" style={{ color: TEXT }}>Doanh thu bán hàng</h4>
           <div className="flex gap-1.5">
             {[7, 14, 30].map((d) => (
               <button key={d} onClick={() => setChartDays(d)} className="text-xs px-3 py-1.5 rounded-full border"
@@ -2461,9 +2475,23 @@ function Dashboard({ products, orders, goToOrdersFilter }) {
         <p className="text-sm mt-2" style={{ color: TEXT }}>Tổng doanh thu: <span className="font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(chartTotal)}</span></p>
       </div>
 
+      {/* Việc cần xử lý */}
+      <div className="p-5 rounded-lg min-w-0" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+        <h4 className="text-base mb-3 font-semibold" style={{ color: TEXT }}>Việc cần xử lý</h4>
+        {todoItems.length === 0 ? (
+          <div className="py-10 text-center text-sm" style={{ color: "#6B7280" }}><Check size={20} className="mx-auto mb-2" style={{ color: FOREST }} />Không có việc tồn đọng</div>
+        ) : todoItems.map((t) => (
+          <button key={t.label} type="button" onClick={t.go} className="w-full flex items-center justify-between gap-3 py-2.5 text-sm text-left hover:underline" style={{ borderTop: `1px solid ${LINE}`, color: TEXT }}>
+            <span>{t.label}</span>
+            <span className="flex items-center gap-1 font-semibold" style={{ color: t.color }}>{t.count} <ChevronRight size={15} /></span>
+          </button>
+        ))}
+      </div>
+      </div>
+
       {/* Đơn hàng chờ xử lý */}
       <div className="p-5 rounded-md mb-6" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-        <h4 className="text-sm mb-4 font-medium" style={{ color: TEXT, opacity: 0.6, letterSpacing: "0.06em" }}>Đơn hàng chờ xử lý</h4>
+        <h4 className="text-base mb-4 font-semibold" style={{ color: TEXT }}>Đơn hàng theo trạng thái</h4>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
           <MiniStat label="Chờ duyệt" value={pendingApproval} icon={ShieldCheck} accent={RUST} onClick={() => goToOrdersFilter && goToOrdersFilter("approval_pending")} />
           <MiniStat label="Chờ thanh toán" value={pendingPayment} icon={Wallet} accent={BRASS} onClick={() => goToOrdersFilter && goToOrdersFilter("delivered")} />
@@ -2483,7 +2511,7 @@ function Dashboard({ products, orders, goToOrdersFilter }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="p-5 rounded-md min-w-0" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-            <h4 className="text-sm font-medium" style={{ color: TEXT, opacity: 0.6, letterSpacing: "0.06em" }}>Top sản phẩm bán chạy</h4>
+            <h4 className="text-base font-semibold" style={{ color: TEXT }}>Top sản phẩm bán chạy</h4>
             <div className="flex gap-1.5">
               {[7, 30].map((d) => (
                 <button key={d} onClick={() => setTopDays(d)} className="text-xs px-2.5 py-1 rounded-full border"
@@ -2510,7 +2538,7 @@ function Dashboard({ products, orders, goToOrdersFilter }) {
         </div>
 
         <div className="p-5 rounded-md min-w-0" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-          <h4 className="text-sm mb-4 font-medium" style={{ color: TEXT, opacity: 0.6, letterSpacing: "0.06em" }}>Thông tin kho</h4>
+          <h4 className="text-base mb-4 font-semibold" style={{ color: TEXT }}>Thông tin kho</h4>
           <div className="space-y-1">
             <div className="flex items-center justify-between py-3" style={{ borderBottom: `1px solid ${LINE}` }}>
               <span className="text-sm flex items-center gap-1.5" style={{ color: lowStock.length > 0 ? RUST : INK }}>
@@ -2715,7 +2743,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
     });
   }
   // Phân trang — chỉ vẽ ra 1 trang thay vì toàn bộ danh sách, tránh app chậm dần khi có nhiều sản phẩm.
-  const PRODUCT_PAGE_SIZE = 50;
+  const PRODUCT_PAGE_SIZE = 30;
   const productTotalPages = Math.max(1, Math.ceil(productGroups.length / PRODUCT_PAGE_SIZE));
   const productSafePage = Math.min(productPage, productTotalPages);
   const pagedProductGroups = productGroups.slice((productSafePage - 1) * PRODUCT_PAGE_SIZE, productSafePage * PRODUCT_PAGE_SIZE);
@@ -5888,7 +5916,7 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
       {viewingSupplierId && (() => {
         const sup = suppliers.find((x) => x.id === viewingSupplierId);
         if (!sup) return null;
-        const pos = purchaseOrders.filter((po) => po.supplierId === sup.id).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        const pos = purchaseOrders.filter((po) => poMatchesSupplier(po, sup)).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         const unpaid = pos.filter((po) => !po.paid);
         return (
           <Modal drawer title={sup.name} onClose={() => setViewingSupplierId(null)}
@@ -8474,7 +8502,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
                   <td className="px-3 py-3 font-medium whitespace-nowrap">
                     <button onClick={() => setViewingId(c.id)} className="hover:underline" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{c.code}</button>
                   </td>
-                  <td className="px-3 py-3 whitespace-nowrap"><button onClick={() => setViewingId(c.id)} className="text-left hover:underline" style={{ color: TEXT }}>{c.name}</button></td>
+                  <td className="px-3 py-3 truncate" style={{ maxWidth: 380 }} title={c.name}><button onClick={() => setViewingId(c.id)} className="text-left hover:underline" style={{ color: TEXT }}>{c.name}</button></td>
                   <td className="px-3 py-3 whitespace-nowrap opacity-70" style={{ fontFamily: "'Inter', sans-serif" }}>{c.phone || "—"}</td>
                   <td className="px-3 py-3 whitespace-nowrap">
                     <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: `${BLUE}15`, color: BLUE }}>{g.label}</span>
@@ -13742,16 +13770,7 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-2 mb-1 max-w-md">
-        <button onClick={() => setSub("overview")} className="px-3.5 py-2.5 rounded-full text-sm border text-center"
-          style={{ borderColor: sub === "overview" ? INK : LINE, background: sub === "overview" ? INK : "transparent", color: sub === "overview" ? "#fff" : INK }}>
-          Tổng quan
-        </button>
-        <button onClick={() => setSub("ranking")} className="px-3.5 py-2.5 rounded-full text-sm border text-center"
-          style={{ borderColor: sub === "ranking" ? INK : LINE, background: sub === "ranking" ? INK : "transparent", color: sub === "ranking" ? "#fff" : INK }}>
-          Xếp hạng bán hàng
-        </button>
-      </div>
+      <TabBar tabs={[{ id: "overview", label: "Tổng quan", icon: BarChart3 }, { id: "ranking", label: "Xếp hạng bán hàng", icon: Target }]} value={sub} onChange={setSub} />
 
       {sub === "ranking" ? <SalesRanking orders={orders} products={products} accounts={accounts} /> : (<>
       <BusinessActivityChart orders={orders} products={products} onBarClick={goToOrdersDateRange} />
@@ -14410,15 +14429,45 @@ function webOrderTotal(o) {
 }
 
 /* ---------------- Thành phần dùng chung ---------------- */
+// Tab cấp 1 của một trang: thanh lớn có biểu tượng, mục đang chọn tô đậm, kèm dòng giải thích.
 function TabBar({ tabs, value, onChange }) {
+  const current = tabs.find((t) => t.id === value);
   return (
-    <div className="flex gap-6 mb-5 overflow-x-auto overflow-y-hidden" style={{ borderBottom: `1px solid ${LINE}` }}>
-      {tabs.map((t) => (
-        <button key={t.id} type="button" onClick={() => onChange(t.id)} className="py-2.5 text-sm whitespace-nowrap"
-          style={{ color: value === t.id ? INK : "#4B5563", fontWeight: value === t.id ? 600 : 400, borderBottom: `2px solid ${value === t.id ? INK : "transparent"}` }}>
-          {t.label}
-        </button>
-      ))}
+    <div className="mb-5">
+      <div className="flex flex-wrap gap-1 p-1 rounded-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+        {tabs.map((t) => {
+          const on = value === t.id;
+          return (
+            <button key={t.id} type="button" onClick={() => onChange(t.id)} className="flex-1 flex items-center justify-center gap-2 px-4 rounded-md text-sm whitespace-nowrap transition-colors"
+              style={{ height: 40, background: on ? INK : "transparent", color: on ? "#fff" : "#374151", fontWeight: on ? 600 : 500 }}>
+              {t.icon && <t.icon size={16} className="shrink-0" />} {t.label}
+            </button>
+          );
+        })}
+      </div>
+      {current?.hint && <p className="text-sm mt-2" style={{ color: "#6B7280" }}>{current.hint}</p>}
+    </div>
+  );
+}
+// Tab cấp 2 trong một biểu mẫu: dạng thẻ, mỗi thẻ cho biết mục đó đã đủ hay còn thiếu.
+function SectionTabs({ tabs, value, onChange }) {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+      {tabs.map((t) => {
+        const on = value === t.id;
+        const tone = t.state === "missing" ? RUST : t.state === "warn" ? BRASS : t.state === "ok" ? FOREST : "#6B7280";
+        return (
+          <button key={t.id} type="button" onClick={() => onChange(t.id)} className="text-left px-3 py-2.5 rounded-lg transition-colors"
+            style={{ background: on ? "#EEF1FB" : "#fff", border: `1px solid ${on ? INK : LINE}`, boxShadow: on ? `inset 0 0 0 1px ${INK}` : "none" }}>
+            <span className="flex items-center gap-2 text-sm font-semibold" style={{ color: on ? INK : TEXT }}>
+              {t.icon && <t.icon size={16} className="shrink-0" />} {t.label}
+            </span>
+            <span className="flex items-center gap-1 text-xs mt-0.5" style={{ color: tone }}>
+              {t.state === "ok" && <Check size={12} />}{(t.state === "missing" || t.state === "warn") && <AlertTriangle size={12} />} {t.note}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -14521,12 +14570,12 @@ function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig
     if (navTarget?.type === "webproduct" || navTarget?.type === "webproducts-daterange") setSub("products");
   }, [navTarget]);
   const subs = [
-    { id: "products", label: "Sản phẩm" },
-    { id: "orders", label: "Đơn hàng web" },
-    { id: "home", label: "Trang chủ" },
-    { id: "promo", label: "Khuyến mãi" },
-    { id: "content", label: "Nội dung" },
-    { id: "settings", label: "Cài đặt" },
+    { id: "products", label: "Sản phẩm", icon: Package, hint: "Đăng sản phẩm lên web, sửa ảnh, mô tả, giá và SEO." },
+    { id: "orders", label: "Đơn hàng web", icon: ShoppingCart, hint: "Xem các đơn khách đặt trên hilipc.vn." },
+    { id: "home", label: "Trang chủ", icon: Home, hint: "Đổi banner, khối sản phẩm và menu danh mục trên trang chủ." },
+    { id: "promo", label: "Khuyến mãi", icon: Tag, hint: "Cài Flash Sale, mã giảm giá và điểm tích luỹ." },
+    { id: "content", label: "Nội dung", icon: FileText, hint: "Sửa trang giới thiệu, trang chính sách và kho ảnh." },
+    { id: "settings", label: "Cài đặt", icon: Settings, hint: "Sửa số điện thoại, địa chỉ và tài khoản ngân hàng hiện trên web." },
   ];
   return (
     <div>
@@ -15397,7 +15446,23 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
       <div className="grid lg:grid-cols-[1fr_320px] gap-5 items-start">
         {/* Cột trái */}
         <div className="space-y-4 min-w-0">
-          <TabBar tabs={[{ id: "content", label: "Nội dung" }, { id: "images", label: "Ảnh" }, { id: "price", label: "Giá & vận chuyển" }, { id: "seo", label: "SEO" }]} value={editTab} onChange={setEditTab} />
+          {(() => {
+            const miss = webHealth(p, w).filter((h) => !h.ok).map((h) => h.label);
+            const contentMiss = miss.filter((l) => ["Mô tả", "Thông số", "Danh mục"].includes(l));
+            const noImage = miss.includes("Ảnh sản phẩm");
+            const noSeo = miss.includes("SEO riêng");
+            return (
+              <div>
+                <p className="text-sm font-medium mb-2" style={{ color: TEXT }}>Chọn phần cần sửa</p>
+                <SectionTabs value={editTab} onChange={setEditTab} tabs={[
+                  { id: "content", label: "Nội dung", icon: FileText, state: contentMiss.length ? "missing" : "ok", note: contentMiss.length ? `Thiếu ${contentMiss.join(", ").toLowerCase()}` : "Mô tả, thông số, danh mục" },
+                  { id: "images", label: "Ảnh", icon: Images, state: noImage ? "missing" : "ok", note: noImage ? "Chưa có ảnh" : "Đã có ảnh" },
+                  { id: "price", label: "Giá & vận chuyển", icon: Tag, note: "Giá gạch, khối lượng" },
+                  { id: "seo", label: "SEO", icon: Search, state: noSeo ? "warn" : "ok", note: noSeo ? "Nên bổ sung" : "Đã có SEO riêng" },
+                ]} />
+              </div>
+            );
+          })()}
           {p.variantGroupId && <p className="text-xs p-2 rounded-md" style={{ background: `${BLUE}0D`, color: BLUE }}>Ảnh, giá bán, SEO, slug riêng từng phiên bản. Các mục còn lại dùng chung cho cả nhóm.</p>}
 
           <div hidden={!showAI || editTab !== "content"}>
@@ -16620,6 +16685,7 @@ const TABS = [
 
 export default function SalesManager() {
   const [tab, setTab] = useState("dashboard");
+  const [navOpen, setNavOpen] = useState(false); // thanh bên trên điện thoại
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -17215,7 +17281,8 @@ export default function SalesManager() {
         </div>
       )}
       <div id="app-shell" className="flex flex-col md:flex-row">
-        <div className="md:w-56 shrink-0 p-3 flex flex-col md:fixed md:top-0 md:left-0 md:h-screen md:overflow-y-auto md:z-10" style={{ background: INK }}>
+        {navOpen && <div className="md:hidden fixed inset-0 z-30" style={{ background: "rgba(15,23,70,0.45)" }} onClick={() => setNavOpen(false)} />}
+        <div className={`${navOpen ? "flex" : "hidden"} md:flex w-64 md:w-56 shrink-0 p-3 flex-col fixed top-0 left-0 h-screen overflow-y-auto z-40 md:z-10`} style={{ background: INK }}>
           <div className="mb-3 px-1 flex items-center gap-2.5">
             <HiliLogo size={32} />
             <div>
@@ -17230,7 +17297,7 @@ export default function SalesManager() {
                 <React.Fragment key={g.label || "top"}>
                   {g.label && <p className="px-3 pt-3 pb-1 text-xs font-semibold" style={{ color: "#AEB7E6" }}>{g.label}</p>}
                   {items.map((t) => (
-                    <button key={t.id} onClick={() => setTab(t.id)} className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors w-full text-left"
+                    <button key={t.id} onClick={() => { setTab(t.id); setNavOpen(false); }} className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors w-full text-left"
                       style={{ background: tab === t.id ? GOLD : "transparent", color: tab === t.id ? INK : "#E4E7F7", fontWeight: tab === t.id ? 700 : 500 }}>
                       <t.icon size={17} className="shrink-0" /> {t.label}
                     </button>
@@ -17263,8 +17330,9 @@ export default function SalesManager() {
           </div>
         </div>
         <div className="flex-1 p-5 md:p-6 min-w-0 md:ml-56">
-          <div className="flex items-center justify-between mb-6">
-            <h2 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, color: TEXT }} className="text-2xl">{visibleTabs.find((t) => t.id === tab)?.label || "Bán hàng"}</h2>
+          <div className="flex items-center justify-between gap-3 mb-6">
+            <button type="button" onClick={() => setNavOpen(true)} aria-label="Mở menu" className="md:hidden w-9 h-9 rounded-md border flex items-center justify-center shrink-0" style={{ borderColor: LINE, background: "#fff", color: TEXT }}><Menu size={18} /></button>
+            <h2 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, color: TEXT }} className="text-xl md:text-2xl flex-1 min-w-0 truncate">{visibleTabs.find((t) => t.id === tab)?.label || "Bán hàng"}</h2>
             <button type="button" onClick={() => window.dispatchEvent(new Event("hili:search"))} className="hidden sm:flex items-center gap-2 text-sm px-3 rounded-md border" style={{ height: 36, width: 300, borderColor: "#D1D5DB", background: "#fff", color: "#6B7280" }}>
               <Search size={15} /> <span className="flex-1 text-left">Tìm đơn, khách, sản phẩm</span> <span className="text-xs px-1.5 rounded" style={{ border: `1px solid ${LINE}` }}>Ctrl K</span>
             </button>
@@ -17278,7 +17346,7 @@ export default function SalesManager() {
               else if (r.type === "customer") { setTab("customers"); setNavTarget({ type: "customer", id: r.id }); }
             }} />
           <AppErrorBoundary key={tab}>
-            {tab === "dashboard" && <Dashboard products={products} orders={orders} goToOrdersFilter={goToOrdersFilter} />}
+            {tab === "dashboard" && <Dashboard products={products} orders={orders} goToOrdersFilter={goToOrdersFilter} purchaseOrders={purchaseOrders} isAdmin={currentUser.role === "admin"} onGo={setTab} />}
             {tab === "products" && roleTabIds.includes("products") && <ProductsSection products={products} setProducts={setProducts} purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} suppliers={suppliers} setSuppliers={setSuppliers} categories={categories} setCategories={setCategories} brands={brands} setBrands={setBrands} stocktakes={stocktakes} setStocktakes={setStocktakes} warrantyTickets={warrantyTickets} setWarrantyTickets={setWarrantyTickets} repairTickets={repairTickets} setRepairTickets={setRepairTickets} helpdeskTickets={helpdeskTickets} setHelpdeskTickets={setHelpdeskTickets} orders={orders} setOrders={setOrders} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} navTarget={tab === "products" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} goToDoc={goToDoc} goToSupplier={goToSupplier} goToWebProduct={goToWebProduct} webConfig={webConfig} />}
             {tab === "purchase" && roleTabIds.includes("purchase") && <PurchaseOrders purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} products={products} setProducts={setProducts} suppliers={suppliers} setSuppliers={setSuppliers} brands={brands} employeeNames={employeeNames} addLog={addLog} focusPOId={navTarget?.type === "po" ? navTarget.id : null} onFocusHandled={() => setNavTarget(null)} currentUser={currentUser} />}
             {tab === "quotes" && <Quotations quotations={quotations} setQuotations={setQuotations} orders={orders} setOrders={setOrders} products={products} setProducts={setProducts} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} brands={brands} />}
