@@ -7737,8 +7737,7 @@ function ProductsSection({ products, setProducts, purchaseOrders, setPurchaseOrd
   const isCtv = currentUser.role === "ctv";
 
   useEffect(() => {
-    if (navTarget?.type === "po" && isAdmin) setSub("purchase");
-    else if (navTarget?.type === "product" || navTarget?.type === "products-daterange") setSub("list");
+    if (navTarget?.type === "product" || navTarget?.type === "products-daterange") setSub("list");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navTarget]);
 
@@ -7810,12 +7809,6 @@ function ProductsSection({ products, setProducts, purchaseOrders, setPurchaseOrd
           Danh sách sản phẩm
         </button>
         {isAdmin && (
-          <button onClick={() => setSub("purchase")} className="px-3 py-1.5 rounded-full text-sm border whitespace-nowrap"
-            style={{ borderColor: sub === "purchase" ? INK : LINE, background: sub === "purchase" ? INK : "transparent", color: sub === "purchase" ? "#fff" : INK }}>
-            Nhập hàng
-          </button>
-        )}
-        {isAdmin && (
           <button onClick={() => setSub("stocktake")} className="px-3 py-1.5 rounded-full text-sm border whitespace-nowrap"
             style={{ borderColor: sub === "stocktake" ? INK : LINE, background: sub === "stocktake" ? INK : "transparent", color: sub === "stocktake" ? "#fff" : INK }}>
             Kiểm kho
@@ -7835,7 +7828,6 @@ function ProductsSection({ products, setProducts, purchaseOrders, setPurchaseOrd
         )}
       </div>
       {sub === "list" && <ProductsInventory products={products} setProducts={setProducts} addLog={addLog} currentUser={currentUser} focusProductId={navTarget?.type === "product" ? navTarget.id : null} focusEdit={navTarget?.type === "product" && !!navTarget.edit} initialCreatedFrom={navTarget?.type === "products-daterange" ? navTarget.from : null} initialCreatedTo={navTarget?.type === "products-daterange" ? navTarget.to : null} onFocusHandled={onFocusHandled} goToDoc={goToDoc} suppliers={suppliers} goToSupplier={goToSupplier} goToWebProduct={goToWebProduct} categories={categories} setCategories={setCategories} brands={brands} setBrands={setBrands} webConfig={webConfig} />}
-      {isAdmin && sub === "purchase" && <PurchaseOrders purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} products={products} setProducts={setProducts} suppliers={suppliers} setSuppliers={setSuppliers} brands={brands} employeeNames={employeeNames} addLog={addLog} focusPOId={navTarget?.type === "po" ? navTarget.id : null} onFocusHandled={onFocusHandled} currentUser={currentUser} />}
       {isAdmin && sub === "stocktake" && <Stocktake products={products} setProducts={setProducts} stocktakes={stocktakes} setStocktakes={setStocktakes} currentUser={currentUser} addLog={addLog} />}
       {!isCtv && sub === "warranty" && <WarrantyTickets products={products} setProducts={setProducts} orders={orders} customers={customers} warrantyTickets={warrantyTickets} setWarrantyTickets={setWarrantyTickets} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} />}
       {!isCtv && sub === "service" && <ServiceTickets repairTickets={repairTickets} setRepairTickets={setRepairTickets} helpdeskTickets={helpdeskTickets} setHelpdeskTickets={setHelpdeskTickets} products={products} setProducts={setProducts} orders={orders} setOrders={setOrders} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} />}
@@ -16234,6 +16226,7 @@ function ScrollTopButton() {
 const TABS = [
   { id: "dashboard", label: "Tổng quan", icon: LayoutDashboard },
   { id: "products", label: "Sản phẩm & Tồn kho", icon: Package },
+  { id: "purchase", label: "Nhập hàng", icon: PackageCheck },
   { id: "quotes", label: "Báo giá", icon: FileText },
   { id: "orders", label: "Bán hàng", icon: ShoppingCart },
   { id: "shipping", label: "Vận chuyển", icon: PackageCheck },
@@ -16278,7 +16271,7 @@ export default function SalesManager() {
     if (!docNo) return;
     if (docNo.startsWith("POH")) {
       const po = purchaseOrders.find((p) => p.code === docNo);
-      if (po) { setTab("products"); setNavTarget({ type: "po", id: po.id }); }
+      if (po) { setTab("purchase"); setNavTarget({ type: "po", id: po.id }); }
     } else if (docNo.startsWith("DH")) {
       const orderCode = docNo.split("-")[0];
       const o = orders.find((x) => x.code === orderCode);
@@ -16790,7 +16783,7 @@ export default function SalesManager() {
     location.reload();
   };
 
-  const roleTabIds = currentUser.role === "admin" ? ["dashboard", "products", "quotes", "orders", "shipping", "customers", "suppliers", "plans", "reports"]
+  const roleTabIds = currentUser.role === "admin" ? ["dashboard", "products", "purchase", "quotes", "orders", "shipping", "customers", "suppliers", "plans", "reports"]
     : currentUser.role === "staff" ? ["dashboard", "products", "quotes", "orders", "shipping", "customers"]
     : ["dashboard", "products", "quotes", "orders", "shipping", "customers"]; // ctv — chỉ xem sản phẩm, không tạo/sửa/xoá
   const visibleTabs = [
@@ -16852,7 +16845,7 @@ export default function SalesManager() {
                 onGoto={(n) => {
                   const [prefix, id] = n.key.split(":");
                   if (["appr", "cxreq", "rtreq", "b2bdue", "pend", "cancelled"].includes(prefix)) { setTab("orders"); setNavTarget({ type: "order", id }); }
-                  else if (prefix === "podue") { setTab("products"); setNavTarget({ type: "po", id }); }
+                  else if (prefix === "podue") { setTab("purchase"); setNavTarget({ type: "po", id }); }
                   else if (prefix === "low" || prefix === "neg" || prefix === "incom") { setTab("products"); setNavTarget({ type: "product", id }); }
                 }}
               />
@@ -16874,6 +16867,7 @@ export default function SalesManager() {
           <AppErrorBoundary key={tab}>
             {tab === "dashboard" && <Dashboard products={products} orders={orders} goToOrdersFilter={goToOrdersFilter} />}
             {tab === "products" && roleTabIds.includes("products") && <ProductsSection products={products} setProducts={setProducts} purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} suppliers={suppliers} setSuppliers={setSuppliers} categories={categories} setCategories={setCategories} brands={brands} setBrands={setBrands} stocktakes={stocktakes} setStocktakes={setStocktakes} warrantyTickets={warrantyTickets} setWarrantyTickets={setWarrantyTickets} repairTickets={repairTickets} setRepairTickets={setRepairTickets} helpdeskTickets={helpdeskTickets} setHelpdeskTickets={setHelpdeskTickets} orders={orders} setOrders={setOrders} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} navTarget={tab === "products" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} goToDoc={goToDoc} goToSupplier={goToSupplier} goToWebProduct={goToWebProduct} webConfig={webConfig} />}
+            {tab === "purchase" && roleTabIds.includes("purchase") && <PurchaseOrders purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} products={products} setProducts={setProducts} suppliers={suppliers} setSuppliers={setSuppliers} brands={brands} employeeNames={employeeNames} addLog={addLog} focusPOId={navTarget?.type === "po" ? navTarget.id : null} onFocusHandled={() => setNavTarget(null)} currentUser={currentUser} />}
             {tab === "quotes" && <Quotations quotations={quotations} setQuotations={setQuotations} orders={orders} setOrders={setOrders} products={products} setProducts={setProducts} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} brands={brands} />}
             {tab === "orders" && <Orders orders={orders} setOrders={setOrders} products={products} setProducts={setProducts} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} focusOrderId={tab === "orders" ? navTarget?.type === "order" ? navTarget.id : null : null} initialFilterStatus={tab === "orders" && navTarget?.type === "orders-filter" ? navTarget.status : null} initialDeliveredFrom={tab === "orders" && navTarget?.type === "orders-daterange" ? navTarget.from : null} initialDeliveredTo={tab === "orders" && navTarget?.type === "orders-daterange" ? navTarget.to : null} onFocusHandled={() => setNavTarget(null)} printSettings={printSettings} setPrintSettings={setPrintSettings} />}
             {tab === "shipping" && roleTabIds.includes("shipping") && <Shipping shippingTickets={shippingTickets} setShippingTickets={setShippingTickets} parcelLabels={parcelLabels} setParcelLabels={setParcelLabels} orders={orders} customers={customers} currentUser={currentUser} addLog={addLog} />}
