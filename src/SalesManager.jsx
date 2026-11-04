@@ -2095,8 +2095,8 @@ class AppErrorBoundary extends React.Component {
 function Stamp({ status }) {
   const s = STATUSES.find((x) => x.id === status) || STATUSES[0];
   return (
-    <span style={{ borderColor: s.color, color: s.color, fontFamily: "'Inter', sans-serif" }}
-      className="inline-block border-2 rounded px-2 py-0.5 text-[11px] uppercase tracking-wider -rotate-2 select-none">
+    <span style={{ background: `${s.color}14`, color: s.color }}
+      className="inline-block text-center rounded-md px-2 py-1 text-xs font-medium whitespace-nowrap select-none min-w-[92px]">
       {s.label}
     </span>
   );
@@ -4909,6 +4909,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
   const [expanded, setExpanded] = useState(null);
   const [viewingId, setViewingId] = useState(null); // id của đơn đang xem/sửa
   const [showPOInfo, setShowPOInfo] = useState(false);
+  const [showPONotes, setShowPONotes] = useState(false);
   const [editForm, setEditForm] = useState(null);
   const [returningPO, setReturningPO] = useState(null); // po đang lập phiếu trả hàng NCC
   const [returnForm, setReturnForm] = useState(null);
@@ -5083,7 +5084,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
     });
     setViewingId(po.id);
   };
-  const closeView = () => { setViewingId(null); setEditForm(null); setShowPOInfo(false); };
+  const closeView = () => { setViewingId(null); setEditForm(null); setShowPOInfo(false); setShowPONotes(false); };
 
   useEffect(() => {
     if (focusPOId) {
@@ -5184,12 +5185,12 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
         </div>
       </div>
 
-      <div key={poSafePage} className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "65vh" }}>
+      <div key={poSafePage} className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 250px)" }}>
         <table className="w-full text-sm" style={{ minWidth: 720 }}>
-          <thead>
+          <thead className="sticky top-0" style={{ zIndex: 2 }}>
             <tr style={{ borderBottom: `2px solid ${INK}` }}>
               {["", "Mã đơn nhập", "Ngày nhập", "Trạng thái nhập", "Chi nhánh nhập", "Nhà cung cấp", "Số hoá đơn", "Nhân viên tạo", "Thanh toán", "Giá trị đơn", ""].map((h, hi) => (
-                <th key={hi} className="text-left px-3 py-2.5 text-xs uppercase tracking-wider whitespace-nowrap" style={{ color: INK, opacity: 0.6 }}>{h}</th>
+                <th key={hi} className="text-left px-3 py-2.5 text-xs uppercase tracking-wider whitespace-nowrap" style={{ color: INK, background: "#fff" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -5345,7 +5346,26 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
       {/* Modal xem / sửa đơn đã tạo */}
       {viewingPO && editForm && (
         <Modal title={`Đơn nhập hàng ${viewingPO.code}`} onClose={closeView} size="2xl">
-          <POProgressStepper po={viewingPO} />
+          <div className="flex items-start justify-between gap-3 flex-wrap mb-1">
+            <POProgressStepper po={viewingPO} />
+            <div className="flex gap-2 flex-wrap">
+            {!viewingPO.paid && (
+              <button onClick={() => markPaid(viewingPO)} className="px-3.5 py-1.5 rounded-md text-sm font-medium text-white" style={{ background: INK }}>
+                Đã thanh toán
+              </button>
+            )}
+            {viewingPO.status === "received" && (
+              <button onClick={() => openReturn(viewingPO)} className="px-3.5 py-1.5 rounded-md text-sm border" style={{ borderColor: LINE, color: RUST }}>
+                Trả hàng NCC
+              </button>
+            )}
+            {viewingPO.status !== "pending" && (
+              <button onClick={() => setShowPOInfo((v) => !v)} className="px-3.5 py-1.5 rounded-md text-sm border inline-flex items-center gap-1.5" style={{ borderColor: LINE, color: INK }}>
+                <Pencil size={13} /> {showPOInfo ? "Ẩn thông tin" : "Sửa thông tin"}
+              </button>
+            )}
+            </div>
+          </div>
 
           {(() => {
             const due = poDueInfo(viewingPO);
@@ -5369,24 +5389,6 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
               </div>
             );
           })()}
-
-          <div className="flex gap-2 flex-wrap mb-4">
-            {!viewingPO.paid && (
-              <button onClick={() => markPaid(viewingPO)} className="px-3.5 py-1.5 rounded-md text-sm font-medium text-white" style={{ background: INK }}>
-                Đã thanh toán NCC
-              </button>
-            )}
-            {viewingPO.status === "received" && (
-              <button onClick={() => openReturn(viewingPO)} className="px-3.5 py-1.5 rounded-md text-sm border" style={{ borderColor: LINE, color: RUST }}>
-                Trả hàng NCC
-              </button>
-            )}
-            {viewingPO.status !== "pending" && (
-              <button onClick={() => setShowPOInfo((v) => !v)} className="px-3.5 py-1.5 rounded-md text-sm border inline-flex items-center gap-1.5" style={{ borderColor: LINE, color: INK }}>
-                <Pencil size={13} /> {showPOInfo ? "Ẩn thông tin đơn" : "Sửa thông tin đơn"}
-              </button>
-            )}
-          </div>
 
           {(viewingPO.returns || []).length > 0 && (
             <div className="mb-5 p-3 rounded-md" style={{ background: `${RUST}08`, border: `1px solid ${RUST}33` }}>
@@ -5463,11 +5465,9 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
               {editForm.items.length > 0 && (
                 <ItemsTable items={editForm.items} products={products} onUpdate={editUpdateItem} onRemove={editRemoveItem} />
               )}
-              <div className="flex justify-between items-center py-2 mb-1" style={{ borderTop: `2px solid ${INK}` }}>
-                <span className="text-sm uppercase tracking-wider opacity-60">Tổng giá trị đơn</span>
-                <span style={{ fontFamily: "'Inter', sans-serif", color: INK }} className="text-lg">{vnd(editTotal)}</span>
-              </div>
-              <TagsNotesCompact tags={editForm.tags} setTags={(arr) => setEditForm({ ...editForm, tags: arr })} notes={editForm.notes} setNotes={(v) => setEditForm({ ...editForm, notes: v })} />
+              {(viewingPO.status === "pending" || showPONotes || editForm.notes || (editForm.tags || []).length > 0) ? (
+                <TagsNotesCompact tags={editForm.tags} setTags={(arr) => setEditForm({ ...editForm, tags: arr })} notes={editForm.notes} setNotes={(v) => setEditForm({ ...editForm, notes: v })} />
+              ) : null}
               <div className="flex flex-col sm:flex-row gap-3 mt-4">
                 <button onClick={savePendingItems} disabled={itemsInvalid(editForm.items)} className="flex-1 py-2.5 rounded-md text-sm border disabled:opacity-40" style={{ borderColor: LINE, color: INK }}>Lưu thay đổi</button>
                 <button onClick={confirmReceiveFromEdit} disabled={itemsInvalid(editForm.items)} className="flex-1 py-2.5 rounded-md text-white text-sm disabled:opacity-40" style={{ background: FOREST }}>Xác nhận nhập hàng</button>
@@ -5475,14 +5475,17 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
             </>
           ) : (
             <>
-              <p className="text-xs mb-2 opacity-60">Đơn đã nhập kho: chỉ sửa được series và VAT.</p>
-              <ItemsTable items={editForm.items} products={products} onUpdate={editUpdateItem} lockQtyPrice />
-              <div className="flex justify-between items-center py-2 mb-1" style={{ borderTop: `2px solid ${INK}` }}>
-                <span className="text-sm uppercase tracking-wider opacity-60">Tổng giá trị đơn</span>
-                <span style={{ fontFamily: "'Inter', sans-serif", color: INK }} className="text-lg">{vnd(editTotal)}</span>
+                            <ItemsTable items={editForm.items} products={products} onUpdate={editUpdateItem} lockQtyPrice />
+              {(viewingPO.status === "pending" || showPONotes || editForm.notes || (editForm.tags || []).length > 0) ? (
+                <TagsNotesCompact tags={editForm.tags} setTags={(arr) => setEditForm({ ...editForm, tags: arr })} notes={editForm.notes} setNotes={(v) => setEditForm({ ...editForm, notes: v })} />
+              ) : null}
+              <div className="flex items-center justify-between gap-3 mt-3 flex-wrap">
+                <span className="text-xs" style={{ color: INK, opacity: 0.6 }}>
+                  Đã nhập kho nên chỉ sửa được series và VAT.
+                  {!showPONotes && !editForm.notes && !(editForm.tags || []).length && <button onClick={() => setShowPONotes(true)} className="ml-2 underline">Thêm ghi chú</button>}
+                </span>
+                <button onClick={saveReceivedEdits} disabled={itemsInvalid(editForm.items)} className="px-5 py-2 rounded-md text-white text-sm font-medium disabled:opacity-40" style={{ background: INK }}>Lưu thay đổi</button>
               </div>
-              <TagsNotesCompact tags={editForm.tags} setTags={(arr) => setEditForm({ ...editForm, tags: arr })} notes={editForm.notes} setNotes={(v) => setEditForm({ ...editForm, notes: v })} />
-              <button onClick={saveReceivedEdits} disabled={itemsInvalid(editForm.items)} className="w-full py-2.5 rounded-md text-white text-sm disabled:opacity-40 mt-4" style={{ background: INK }}>Lưu thay đổi</button>
             </>
           )}
         </Modal>
@@ -5574,6 +5577,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
 /* ---------------- Sản phẩm & Tồn kho — bao gồm 2 menu con ---------------- */
 
 function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, navTarget, onFocusHandled, currentUser }) {
+  const [viewingSupplierId, setViewingSupplierId] = useState(null);
   const [view, setView] = useState("list"); // list | debt
   const [query, setQuery] = useState("");
   const [debtSort, setDebtSort] = useState("amount"); // amount | due
@@ -5584,7 +5588,7 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
   useEffect(() => {
     if (navTarget?.type === "supplier") {
       const s = suppliers.find((x) => x.id === navTarget.id);
-      if (s) { setView("list"); setForm({ ...s }); setEditing(s); }
+      if (s) { setView("list"); setViewingSupplierId(s.id); }
       onFocusHandled && onFocusHandled();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -5772,8 +5776,8 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
           <tbody>
             {filtered.map((s) => (
               <tr key={s.id} style={{ borderBottom: `1px dashed ${LINE}` }} className="hover:bg-black/[0.02]">
-                <td className="px-3 py-3 font-medium whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{s.code}</td>
-                <td className="px-3 py-3" style={{ color: INK }}>{s.name}</td>
+                <td className="px-3 py-3 font-medium whitespace-nowrap"><button onClick={() => setViewingSupplierId(s.id)} className="hover:underline" style={{ color: BLUE }}>{s.code}</button></td>
+                <td className="px-3 py-3"><button onClick={() => setViewingSupplierId(s.id)} className="text-left hover:underline" style={{ color: INK }}>{s.name}</button></td>
                 <td className="px-3 py-3 opacity-70 whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>{s.taxCode || "—"}</td>
                 <td className="px-3 py-3 opacity-70 whitespace-nowrap">{s.contactPerson || "—"}</td>
                 <td className="px-3 py-3 opacity-70 whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>{s.phone || "—"}</td>
@@ -5798,6 +5802,65 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
         </table>
       </div>
       )}
+
+      {viewingSupplierId && (() => {
+        const sup = suppliers.find((x) => x.id === viewingSupplierId);
+        if (!sup) return null;
+        const pos = purchaseOrders.filter((po) => po.supplierId === sup.id).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        const unpaid = pos.filter((po) => !po.paid);
+        return (
+          <Modal title={sup.name} onClose={() => setViewingSupplierId(null)} size="xl"
+            headerAction={<button onClick={() => { setViewingSupplierId(null); openEdit(sup); }} className="text-sm px-3 py-1.5 rounded-md text-white inline-flex items-center gap-1.5" style={{ background: INK }}><Pencil size={14} /> Sửa</button>}>
+            <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3 text-sm mb-5">
+              {[
+                ["Mã NCC", sup.code],
+                ["Mã số thuế", sup.taxCode],
+                ["Thanh toán", sup.paymentTerm === "cash" ? "Tiền mặt" : `Công nợ ${sup.creditDays} ngày`],
+                ["Người liên hệ", sup.contactPerson],
+                ["Số điện thoại", sup.phone],
+                ["Email", sup.email],
+              ].map(([label, val]) => (
+                <div key={label} className="min-w-0">
+                  <dt className="text-xs" style={{ color: INK, opacity: 0.6 }}>{label}</dt>
+                  <dd className="font-medium break-words" style={{ color: INK }}>{val || "—"}</dd>
+                </div>
+              ))}
+              <div className="col-span-2 sm:col-span-3">
+                <dt className="text-xs" style={{ color: INK, opacity: 0.6 }}>Địa chỉ</dt>
+                <dd className="font-medium" style={{ color: INK }}>{sup.address || "—"}</dd>
+              </div>
+            </dl>
+            <div className="grid grid-cols-3 gap-2 mb-5">
+              {[
+                ["Số đơn nhập", pos.length, INK],
+                ["Tổng giá trị nhập", vnd(pos.reduce((t, po) => t + poNetTotal(po), 0)), INK],
+                ["Còn nợ", vnd(unpaid.reduce((t, po) => t + poNetTotal(po), 0)), unpaid.length ? RUST : FOREST],
+              ].map(([label, val, color]) => (
+                <div key={label} className="px-3 py-2.5 rounded-lg" style={{ background: PAPER }}>
+                  <p className="text-xs opacity-60 mb-0.5">{label}</p>
+                  <p className="text-base font-bold" style={{ color }}>{val}</p>
+                </div>
+              ))}
+            </div>
+            {pos.length > 0 && (
+              <div className="rounded-md overflow-auto" style={{ border: `1px solid ${LINE}`, maxHeight: 280 }}>
+                <table className="w-full text-sm">
+                  <tbody>
+                    {pos.map((po) => (
+                      <tr key={po.id} style={{ borderBottom: `1px solid ${LINE}` }}>
+                        <td className="px-3 py-2"><a href={`${window.location.pathname}?po=${encodeURIComponent(po.id)}`} target="_blank" rel="noopener" className="hover:underline" style={{ color: BLUE }}>{po.code}</a></td>
+                        <td className="px-3 py-2 opacity-70 whitespace-nowrap">{formatDateTime(po.createdAt)}</td>
+                        <td className="px-3 py-2" style={{ color: po.paid ? FOREST : BRASS }}>{po.paid ? "Đã thanh toán" : "Còn nợ"}</td>
+                        <td className="px-3 py-2 text-right font-medium whitespace-nowrap" style={{ color: INK }}>{vnd(poNetTotal(po))}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Modal>
+        );
+      })()}
 
       {editing !== null && (
         <Modal title={editing.id ? "Sửa nhà cung cấp" : "Thêm nhà cung cấp"} onClose={() => setEditing(null)}>
@@ -8062,9 +8125,15 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
   // Phạm vi khách hàng theo quyền: admin thấy tất cả; nhân viên/CTV chỉ thấy khách hàng do mình phụ trách.
   const myCustomers = isAdmin ? customers : customers.filter((c) => c.assignedTo === currentUser.fullName);
 
-  const filtered = myCustomers.filter((c) =>
-    c.name.toLowerCase().includes(query.toLowerCase()) || c.code.toLowerCase().includes(query.toLowerCase()) || (c.phone || "").includes(query)
-  );
+  const filtered = myCustomers.filter((c) => {
+    const q = query.trim().toLowerCase();
+    if (!q) return true;
+    return [c.name, c.code, c.phone, c.taxCode, c.assignedTo].some((v) => String(v || "").toLowerCase().includes(q));
+  });
+  const [customerPage, setCustomerPage] = useState(1);
+  useEffect(() => { setCustomerPage(1); }, [query]);
+  const customerSafePage = Math.min(customerPage, Math.max(1, Math.ceil(filtered.length / DOC_PAGE_SIZE)));
+  const pagedCustomers = filtered.slice((customerSafePage - 1) * DOC_PAGE_SIZE, customerSafePage * DOC_PAGE_SIZE);
 
   const viewingCustomer = myCustomers.find((c) => c.id === viewingId) || null;
 
@@ -8222,12 +8291,12 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
   return (
     <div>
       <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
-        <div className="grid grid-cols-2 max-w-xs gap-2">
-          <button onClick={() => setView("list")} className="px-3.5 py-2.5 rounded-full text-sm border text-center"
+        <div className="flex gap-2">
+          <button onClick={() => setView("list")} className="px-3.5 py-2.5 rounded-full text-sm border text-center whitespace-nowrap"
             style={{ borderColor: view === "list" ? INK : LINE, background: view === "list" ? INK : "transparent", color: view === "list" ? "#fff" : INK }}>
             Danh sách khách hàng
           </button>
-          <button onClick={() => setView("debt")} className="px-3.5 py-2.5 rounded-full text-sm border text-center relative"
+          <button onClick={() => setView("debt")} className="px-3.5 py-2.5 rounded-full text-sm border text-center relative whitespace-nowrap"
             style={{ borderColor: view === "debt" ? INK : LINE, background: view === "debt" ? INK : "transparent", color: view === "debt" ? "#fff" : INK }}>
             Công nợ khách hàng
             {debtList.length > 0 && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: view === "debt" ? "rgba(255,255,255,0.25)" : `${RUST}1A`, color: view === "debt" ? "#fff" : RUST }}>{debtList.length}</span>}
@@ -8237,7 +8306,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
           <div className="flex gap-2 flex-wrap">
             <div className="relative flex-1 max-w-xs">
               <Search size={15} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50" />
-              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm theo mã, tên, SĐT…"
+              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm mã, tên, SĐT, MST, phụ trách…"
                 className="w-full pl-7 pr-2 py-2 text-sm rounded-md border outline-none" style={{ borderColor: LINE, background: "#fff" }} />
             </div>
             <button onClick={exportCustomerList} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: FOREST, color: FOREST }}>
@@ -8312,7 +8381,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
             </tr>
           </thead>
           <tbody>
-            {filtered.map((c) => {
+            {pagedCustomers.map((c) => {
               const s = customerStats(c.id);
               const g = CUSTOMER_GROUPS.find((x) => x.id === c.group) || CUSTOMER_GROUPS[0];
               return (
@@ -8348,6 +8417,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
           </tbody>
         </table>
       </div>
+      <DocPager page={customerSafePage} total={filtered.length} unit="khách hàng" onPage={setCustomerPage} />
       </>
       )}
 
@@ -8373,50 +8443,64 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
         return (
           <Modal title={viewingCustomer.name} onClose={() => { setViewingId(null); setDetailTab("orders"); }} size="xl">
             <div className="flex items-center gap-2 mb-4 flex-wrap">
-              <span className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: `${BLUE}15`, color: BLUE }}>{g.label}</span>
-              <span className="text-xs opacity-50" style={{ fontFamily: "'Inter', sans-serif" }}>{viewingCustomer.code}</span>
-              <button onClick={() => exportCustomerHistory(viewingCustomer)} className="ml-auto text-xs px-3 py-1.5 rounded-md border flex items-center gap-1" style={{ borderColor: FOREST, color: FOREST }}><FileSpreadsheet size={12} /> Xuất lịch sử mua hàng</button>
+              <span className="text-xs px-2 py-1 rounded-md" style={{ background: PAPER, color: INK }}>{g.label}</span>
+              <span className="text-sm" style={{ color: INK, opacity: 0.6 }}>{viewingCustomer.code}</span>
+              <div className="flex-1" />
+              <button onClick={() => exportCustomerHistory(viewingCustomer)} className="text-sm px-3 py-1.5 rounded-md border flex items-center gap-1.5" style={{ borderColor: LINE, color: INK }}><FileSpreadsheet size={14} /> Xuất Excel</button>
               {isAdmin && (
-                <button onClick={() => { setViewingId(null); openEdit(viewingCustomer); }} className="text-xs px-3 py-1.5 rounded-md border flex items-center gap-1" style={{ borderColor: LINE, color: INK }}><Pencil size={12} /> Sửa thông tin</button>
+                <button onClick={() => { setViewingId(null); openEdit(viewingCustomer); }} className="text-sm px-3 py-1.5 rounded-md text-white flex items-center gap-1.5" style={{ background: INK }}><Pencil size={14} /> Sửa</button>
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm mb-4 p-3 rounded-md" style={{ background: PAPER }}>
-              <p><span className="opacity-50">SĐT: </span>{viewingCustomer.phone || "—"}</p>
-              {viewingCustomer.contactPerson && <p><span className="opacity-50">Người liên hệ: </span>{viewingCustomer.contactPerson}</p>}
-              <p><span className="opacity-50">Email: </span>{viewingCustomer.email || "—"}</p>
-              <p><span className="opacity-50">MST: </span>{viewingCustomer.taxCode || "—"}</p>
-              <p><span className="opacity-50">Địa chỉ: </span>{fullAddress(viewingCustomer) || "—"}</p>
-              <p><span className="opacity-50">Phụ trách: </span>{viewingCustomer.assignedTo || <span className="opacity-40">Chưa gán</span>}</p>
-              {(viewingCustomer.representativeName || viewingCustomer.representativeTitle) && (
-                <p><span className="opacity-50">Đại diện: </span>{viewingCustomer.representativeName || "—"}{viewingCustomer.representativeTitle ? ` · ${viewingCustomer.representativeTitle}` : ""}</p>
+            <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3 text-sm mb-5">
+              {[
+                ["Số điện thoại", viewingCustomer.phone],
+                ["Mã số thuế", viewingCustomer.taxCode],
+                ["Phụ trách", viewingCustomer.assignedTo || "Chưa gán"],
+                ["Email", viewingCustomer.email],
+                ...(viewingCustomer.contactPerson ? [["Người liên hệ", viewingCustomer.contactPerson]] : []),
+                ...(viewingCustomer.representativeName || viewingCustomer.representativeTitle ? [["Đại diện", [viewingCustomer.representativeName, viewingCustomer.representativeTitle].filter(Boolean).join(" · ")]] : []),
+              ].map(([label, val]) => (
+                <div key={label} className="min-w-0">
+                  <dt className="text-xs" style={{ color: INK, opacity: 0.6 }}>{label}</dt>
+                  <dd className="font-medium break-words" style={{ color: INK }}>{val || "—"}</dd>
+                </div>
+              ))}
+              <div className="col-span-2 sm:col-span-3">
+                <dt className="text-xs" style={{ color: INK, opacity: 0.6 }}>Địa chỉ</dt>
+                <dd className="font-medium" style={{ color: INK }}>{fullAddress(viewingCustomer) || "—"}</dd>
+              </div>
+              {viewingCustomer.note && (
+                <div className="col-span-2 sm:col-span-3">
+                  <dt className="text-xs" style={{ color: INK, opacity: 0.6 }}>Ghi chú</dt>
+                  <dd style={{ color: INK }}>{viewingCustomer.note}</dd>
+                </div>
               )}
-              {viewingCustomer.note && <p className="sm:col-span-2"><span className="opacity-50">Ghi chú: </span>{viewingCustomer.note}</p>}
-            </div>
+            </dl>
 
             <div className={"grid grid-cols-2 gap-2 mb-5 " + (loyaltyOn ? "sm:grid-cols-5" : "sm:grid-cols-4")}>
-              <div className="p-3 rounded-md text-center" style={{ border: `1px solid ${LINE}` }}>
-                <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">Tổng chi tiêu</p>
-                <p className="text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(s.totalSpent)}</p>
+              <div className="px-3 py-2.5 rounded-lg" style={{ background: PAPER }}>
+                <p className="text-xs opacity-60 mb-0.5">Tổng chi tiêu</p>
+                <p className="text-base font-bold" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(s.totalSpent)}</p>
               </div>
-              <div className="p-3 rounded-md text-center" style={{ border: `1px solid ${LINE}` }}>
-                <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">Tổng SL đơn</p>
-                <p className="text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{s.orderCount}</p>
+              <div className="px-3 py-2.5 rounded-lg" style={{ background: PAPER }}>
+                <p className="text-xs opacity-60 mb-0.5">Tổng SL đơn</p>
+                <p className="text-base font-bold" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{s.orderCount}</p>
               </div>
-              <div className="p-3 rounded-md text-center" style={{ border: `1px solid ${LINE}` }}>
-                <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">Công nợ hiện tại</p>
-                <p className="text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: s.debt > 0 ? RUST : FOREST }}>{vnd(s.debt)}</p>
+              <div className="px-3 py-2.5 rounded-lg" style={{ background: PAPER }}>
+                <p className="text-xs opacity-60 mb-0.5">Công nợ hiện tại</p>
+                <p className="text-base font-bold" style={{ fontFamily: "'Inter', sans-serif", color: s.debt > 0 ? RUST : FOREST }}>{vnd(s.debt)}</p>
               </div>
-              <div className="p-3 rounded-md text-center" style={{ border: `1px solid ${LINE}` }}>
-                <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">Mua gần nhất</p>
-                <p className="text-sm font-semibold" style={{ color: INK }}>{s.lastOrderAt ? new Date(s.lastOrderAt).toLocaleDateString("vi-VN") : "—"}</p>
+              <div className="px-3 py-2.5 rounded-lg" style={{ background: PAPER }}>
+                <p className="text-xs opacity-60 mb-0.5">Mua gần nhất</p>
+                <p className="text-base font-bold" style={{ color: INK }}>{s.lastOrderAt ? new Date(s.lastOrderAt).toLocaleDateString("vi-VN") : "—"}</p>
               </div>
               {loyaltyOn && (() => {
                 const pts = pointsOf(viewingCustomer);
                 return (
-                  <div className="p-3 rounded-md text-center relative" style={{ border: `1px solid ${LINE}` }}>
-                    <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">Điểm tích luỹ</p>
-                    <p className="text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: BRASS }}>{pts.points}</p>
+                  <div className="px-3 py-2.5 rounded-lg relative" style={{ background: PAPER }}>
+                    <p className="text-xs opacity-60 mb-0.5">Điểm tích luỹ</p>
+                    <p className="text-base font-bold" style={{ fontFamily: "'Inter', sans-serif", color: BRASS }}>{pts.points}</p>
                     {isAdmin && (
                       <button onClick={() => setAdjustOpen((v) => !v)} className="absolute top-1 right-1 p-1 rounded-md hover:bg-black/5" title="Điều chỉnh điểm" style={{ opacity: 0.5 }}>
                         <Pencil size={11} />
@@ -11059,7 +11143,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
         </div>
       )}
 
-      <div key={orderSafePage} className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "65vh" }}>
+      <div key={orderSafePage} className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 300px)" }}>
         <table className="w-full text-sm" style={{ minWidth: 900 }}>
           <thead className="sticky top-0" style={{ zIndex: 2 }}>
             <tr style={{ borderBottom: `2px solid ${INK}` }}>
@@ -11309,11 +11393,9 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
           <Modal title={`Đơn hàng ${viewingOrder.code}`} onClose={() => setViewingId(null)} size="2xl">
             <OrderProgressStepper order={viewingOrder} />
 
-            <div className="flex items-center gap-2 mb-4 flex-wrap">
-              <Stamp status={viewingOrder.status} />
-              <span className="text-xs opacity-50" style={{ fontFamily: "'Inter', sans-serif" }}>{formatDateTime(viewingOrder.createdAt)}</span>
-              <span className="text-xs opacity-50 flex items-center gap-1"><ch.icon size={12} /> {ch.label}</span>
-            </div>
+            <p className="text-xs mb-3 flex items-center gap-1.5 flex-wrap" style={{ color: INK, opacity: 0.65 }}>
+              <ch.icon size={13} /> {ch.label} · {formatDateTime(viewingOrder.createdAt)} · {viewingOrder.branch} · {viewingOrder.seller}{viewingOrder.deliveryDate ? ` · Hẹn giao ${viewingOrder.deliveryDate}` : ""}
+            </p>
 
             <div className="flex flex-wrap gap-1.5 mb-1.5">
               {viewingOrder.status === "cancelled" ? (
@@ -11321,6 +11403,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
               ) : STATUSES.filter((s) => s.id !== "cancelled").map((s) => {
                 const rank = { pending: 0, shipping: 1, delivered: 2, done: 3 };
                 const isPast = rank[s.id] < rank[viewingOrder.status];
+                if (isPast || s.id === viewingOrder.status) return null; // chỉ hiện bước có thể chuyển tới
                 if (s.id === "done") {
                   const blocked = orderCalc(viewingOrder).remaining > 0 || isPast;
                   return (
@@ -11411,52 +11494,42 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                   <RotateCcw size={13} /> {isAdmin ? "Đổi trả hàng" : "Yêu cầu đổi trả hàng"}
                 </button>
               )}
-            </div>
-            {viewingOrder.status === "pending" && viewingOrder.paidAmount === 0 && (
-              <div className="-mt-2 mb-4">
+              {viewingOrder.status === "pending" && viewingOrder.paidAmount === 0 && (
                 <button onClick={() => setCancelling(true)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: RUST, color: RUST }}>
                   <XCircle size={13} /> Huỷ đơn
                 </button>
-              </div>
-            )}
-            {(viewingOrder.status === "shipping" || viewingOrder.status === "delivered" || viewingOrder.status === "done") && (
-              <p className="text-[11px] mb-3 opacity-50">Đơn đã qua bước "Đang giao" — không thể huỷ, chỉ có thể đổi trả hàng.</p>
-            )}
-
-
-            {!isCtv && viewingOrder.status !== "cancelled" && viewingOrder.approvalStatus !== "pending" && (
-              <div className="flex items-center gap-2 mb-4 p-3 rounded-md flex-wrap" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
-                <span className="text-xs opacity-60 shrink-0">Xuất hoá đơn:</span>
-                <button onClick={() => setInvoiceStatus(viewingOrder.id, "pending")} className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: viewingOrder.invoiceStatus === "pending" ? `${RUST}1A` : "transparent", color: RUST, border: `1px solid ${viewingOrder.invoiceStatus === "pending" ? RUST : LINE}` }}>Chờ xuất</button>
-                <button onClick={() => setInvoiceStatus(viewingOrder.id, "issued", viewingOrder.invoiceNo)} className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: viewingOrder.invoiceStatus === "issued" ? `${FOREST}1A` : "transparent", color: FOREST, border: `1px solid ${viewingOrder.invoiceStatus === "issued" ? FOREST : LINE}` }}>Đã xuất</button>
-                {viewingOrder.invoiceStatus === "issued" && (
-                  <input defaultValue={viewingOrder.invoiceNo} onBlur={(e) => setInvoiceStatus(viewingOrder.id, "issued", e.target.value)} placeholder="Số hoá đơn"
-                    className="text-xs border rounded-md py-1 px-2 flex-1 min-w-[120px]" style={{ borderColor: LINE }} />
+              )}
+            </div>
+            <div className="grid md:grid-cols-[1fr_300px] gap-4 p-4 rounded-lg mb-4" style={{ background: PAPER }}>
+              <div className="min-w-0">
+                <p className="text-xs opacity-60 mb-0.5">Khách hàng</p>
+                <p className="text-sm font-semibold" style={{ color: INK }}>{cust?.name || "Khách lẻ"}</p>
+                {viewingOrder.shippingAddress && (viewingOrder.shippingAddress.addressDetail || viewingOrder.shippingAddress.province || viewingOrder.shippingAddress.ward) && (
+                  <p className="text-xs mt-1" style={{ color: INK, opacity: 0.7 }}>
+                    {viewingOrder.shippingAddress.recipientName && viewingOrder.shippingAddress.recipientName !== cust?.name ? `${viewingOrder.shippingAddress.recipientName} · ` : ""}{viewingOrder.shippingAddress.recipientPhone ? `${viewingOrder.shippingAddress.recipientPhone} · ` : ""}
+                    {[viewingOrder.shippingAddress.addressDetail, viewingOrder.shippingAddress.ward, viewingOrder.shippingAddress.province].filter(Boolean).join(", ")}
+                  </p>
                 )}
+                {viewingOrder.notes && <p className="text-xs mt-1" title={viewingOrder.notes} style={{ color: INK, opacity: 0.7, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>Ghi chú: {viewingOrder.notes}</p>}
               </div>
-            )}
-            {viewingOrder.status === "cancelled" && (
-              <p className="text-xs mb-4 opacity-50">Đơn đã huỷ — không xuất hoá đơn.</p>
-            )}
-            {viewingOrder.approvalStatus === "pending" && viewingOrder.status !== "cancelled" && (
-              <p className="text-xs mb-4" style={{ color: BRASS }}>Đơn đang chờ duyệt — tạm khoá xuất hoá đơn và ghi nhận thanh toán.</p>
-            )}
-
-            <p className="text-[10px] uppercase tracking-wider opacity-50 mb-0.5">Khách hàng</p>
-            <p className="text-base font-semibold mb-1" style={{ color: INK }}>{cust?.name || "Khách lẻ"}</p>
-            {viewingOrder.shippingAddress && (viewingOrder.shippingAddress.addressDetail || viewingOrder.shippingAddress.province || viewingOrder.shippingAddress.ward) && (
-              <p className="text-sm mb-1 flex items-start gap-1.5" style={{ color: INK, opacity: 0.8 }}>
-                <MapPin size={13} className="shrink-0 mt-0.5 opacity-50" />
-                <span>
-                  {viewingOrder.shippingAddress.recipientName || cust?.name || "—"}{viewingOrder.shippingAddress.recipientPhone ? ` · ${viewingOrder.shippingAddress.recipientPhone}` : ""}
-                  {" — "}{[viewingOrder.shippingAddress.addressDetail, viewingOrder.shippingAddress.ward, viewingOrder.shippingAddress.province].filter(Boolean).join(", ")}
-                </span>
-              </p>
-            )}
-            <p className="text-sm mb-1 opacity-70">Bán tại {viewingOrder.branch} · Bán bởi {viewingOrder.seller}{viewingOrder.deliveryDate ? ` · Hẹn giao ${viewingOrder.deliveryDate}` : ""}</p>
-            {viewingOrder.notes && <p className="text-sm mb-3 opacity-70">Ghi chú: {viewingOrder.notes}</p>}
-
-            <div className="my-3" style={{ borderTop: `1px dashed ${LINE}` }} />
+              <div>
+                <p className="text-xs opacity-60 mb-1">Hoá đơn</p>
+                {viewingOrder.status === "cancelled" ? (
+                  <p className="text-xs opacity-60">Đơn đã huỷ, không xuất hoá đơn.</p>
+                ) : viewingOrder.approvalStatus === "pending" ? (
+                  <p className="text-xs" style={{ color: BRASS }}>Đơn đang chờ duyệt, tạm khoá hoá đơn và thanh toán.</p>
+                ) : !isCtv ? (
+                  <div className="flex items-center gap-1.5">
+                    <button onClick={() => setInvoiceStatus(viewingOrder.id, "pending")} className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: viewingOrder.invoiceStatus === "pending" ? `${RUST}1A` : "transparent", color: RUST, border: `1px solid ${viewingOrder.invoiceStatus === "pending" ? RUST : LINE}` }}>Chờ xuất</button>
+                    <button onClick={() => setInvoiceStatus(viewingOrder.id, "issued", viewingOrder.invoiceNo)} className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: viewingOrder.invoiceStatus === "issued" ? `${FOREST}1A` : "transparent", color: FOREST, border: `1px solid ${viewingOrder.invoiceStatus === "issued" ? FOREST : LINE}` }}>Đã xuất</button>
+                    {viewingOrder.invoiceStatus === "issued" && (
+                      <input key={viewingOrder.id} defaultValue={viewingOrder.invoiceNo} onBlur={(e) => setInvoiceStatus(viewingOrder.id, "issued", e.target.value)} placeholder="Số HĐ"
+                        className="text-xs border rounded-md py-1 px-2 w-20 flex-1 min-w-0 bg-white" style={{ borderColor: LINE }} />
+                    )}
+                  </div>
+                ) : <p className="text-sm" style={{ color: INK }}>{viewingOrder.invoiceStatus === "issued" ? `Đã xuất ${viewingOrder.invoiceNo || ""}` : "Chờ xuất"}</p>}
+              </div>
+            </div>
 
             <p className="text-xs uppercase tracking-wider mb-2 opacity-60">Thông tin sản phẩm</p>
             <div className="rounded-md overflow-x-auto mb-4" style={{ border: `1px solid ${LINE}` }}>
