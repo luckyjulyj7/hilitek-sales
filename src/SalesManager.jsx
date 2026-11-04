@@ -41,13 +41,14 @@ async function exportExcel(filename, sheets) {
 
 const STORAGE_KEY = "solbh-data-v2";
 
-const INK = "#1F2A44";
-const BRASS = "#B4863F";
-const PAPER = "#F1F0EA";
-const FOREST = "#3F6B52";
-const RUST = "#B0462F";
-const BLUE = "#3E6FA6";
-const LINE = "#D8D3C4";
+const INK = "#1E2A8A";
+const BRASS = "#B7791F";
+const PAPER = "#F3F6FC";
+const FOREST = "#15803D";
+const RUST = "#D0342C";
+const BLUE = "#1F5FD0";
+const LINE = "#DCE3F2";
+const GOLD = "#F7C600"; // vàng thương hiệu hilipc.vn: chỉ dùng làm nền/điểm nhấn, không dùng cho chữ trên nền trắng
 
 const CHANNELS = [
   { id: "store", label: "Tại cửa hàng", icon: Store },
@@ -1415,14 +1416,14 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
           onMouseDown={arm("linkNgoai")}
           onClick={guardedClick("linkNgoai", () => { setLinkOpen((v) => !v); setMsg(""); })}
           disabled={busy}
-          className="text-xs px-2 py-1 rounded-sm border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy ? 0.5 : 1 }}>
+          className="text-xs px-2 py-1 rounded-md border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy ? 0.5 : 1 }}>
           <LinkIcon size={13} /> Link ảnh ngoài
         </button>
         <button type="button"
           onMouseDown={arm("beautify")}
           onClick={guardedClick("beautify", doBeautify)}
           disabled={busy}
-          className="text-xs px-2 py-1 rounded-sm border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy ? 0.5 : 1 }}>
+          className="text-xs px-2 py-1 rounded-md border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy ? 0.5 : 1 }}>
           <Sparkles size={13} /> Làm đẹp mô tả
         </button>
         <span className="text-[11px] opacity-55">Chèn ảnh: bấm icon ảnh trên thanh công cụ bên dưới · dán ảnh (Ctrl+V) · kéo–thả file · dán cả bài từ web khác</span>
@@ -1434,7 +1435,7 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
       <div className="flex items-center gap-1 mb-1.5 flex-wrap">
         {["📦", "🎁", "⚡", "✅", "⭐", "🔥", "🚚", "🛡️", "📞"].map((emo) => (
           <button key={emo} type="button" onClick={() => insertEmoji(emo)}
-            className="w-7 h-7 grid place-items-center rounded-sm border text-[13px]" style={{ borderColor: LINE }}>{emo}</button>
+            className="w-7 h-7 grid place-items-center rounded-md border text-[13px]" style={{ borderColor: LINE }}>{emo}</button>
         ))}
         <span className="text-[11px] opacity-45 ml-1">Chèn nhanh biểu tượng — đậm/nghiêng/tiêu đề/danh sách... dùng thanh công cụ bên dưới</span>
       </div>
@@ -1443,14 +1444,14 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
           <div className="flex gap-2">
             <input value={linkVal} onChange={(e) => setLinkVal(e.target.value)} autoFocus
               placeholder="https://.../anh.jpg  hoặc  link Google Drive"
-              className="flex-1 border rounded-sm px-2 py-1 text-sm" style={{ borderColor: LINE }}
+              className="flex-1 border rounded-md px-2 py-1 text-sm" style={{ borderColor: LINE }}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addExternalLink())} />
-            <button type="button" onClick={addExternalLink} className="px-3 py-1 rounded-sm text-white text-sm" style={{ background: INK }}>Chèn</button>
+            <button type="button" onClick={addExternalLink} className="px-3 py-1 rounded-md text-white text-sm" style={{ background: INK }}>Chèn</button>
           </div>
           <div className="text-[11px] opacity-55 mt-1">Ảnh giữ nguyên link gốc, không tải về kho. Google Drive: chia sẻ ở chế độ “Bất kỳ ai có đường liên kết”.</div>
         </div>
       )}
-      <div className="relative rounded-sm" style={{ border: `1px solid ${drag ? BLUE : LINE}` }}
+      <div className="relative rounded-md" style={{ border: `1px solid ${drag ? BLUE : LINE}` }}
         onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={onDrop}>
         <div ref={containerRef} className="hilitek-ql" />
         <style>{`
@@ -1606,11 +1607,11 @@ function WebImageGrid({ images, onChange, max = 10 }) {
       <div className="flex items-center gap-2 mb-2 flex-wrap text-xs">
         <span className="opacity-55">{list.length}/{max} ảnh</span>
         <button type="button" disabled={busy || !room()} onClick={() => fileRef.current && fileRef.current.click()}
-          className="px-2 py-1 rounded-sm border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy || !room() ? 0.5 : 1 }}>
+          className="px-2 py-1 rounded-md border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy || !room() ? 0.5 : 1 }}>
           <ImagePlus size={13} /> Thêm ảnh
         </button>
         <button type="button" disabled={busy || !room()} onClick={() => { setUrlOpen((v) => !v); setMsg(""); }}
-          className="px-2 py-1 rounded-sm border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy || !room() ? 0.5 : 1 }}>
+          className="px-2 py-1 rounded-md border inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK, opacity: busy || !room() ? 0.5 : 1 }}>
           <LinkIcon size={13} /> Từ URL / Drive
         </button>
         {!busy && !msg && <span className="opacity-55">hoặc bấm vào khung ảnh rồi dán (Ctrl+V) cả bài — tự lấy hết ảnh trong đó</span>}
@@ -1623,10 +1624,10 @@ function WebImageGrid({ images, onChange, max = 10 }) {
           <div className="flex gap-2 flex-wrap">
             <input value={urlVal} onChange={(e) => setUrlVal(e.target.value)} autoFocus
               placeholder="https://.../anh.jpg  hoặc  link Google Drive"
-              className="flex-1 min-w-[180px] border rounded-sm px-2 py-1 text-sm" style={{ borderColor: LINE }}
+              className="flex-1 min-w-[180px] border rounded-md px-2 py-1 text-sm" style={{ borderColor: LINE }}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addUrlDirect())} />
-            <button type="button" onClick={addUrl} className="px-3 py-1 rounded-sm border text-sm" style={{ borderColor: LINE, color: INK }}>Tải về kho</button>
-            <button type="button" onClick={addUrlDirect} className="px-3 py-1 rounded-sm text-white text-sm" style={{ background: INK }}>Giữ link ngoài</button>
+            <button type="button" onClick={addUrl} className="px-3 py-1 rounded-md border text-sm" style={{ borderColor: LINE, color: INK }}>Tải về kho</button>
+            <button type="button" onClick={addUrlDirect} className="px-3 py-1 rounded-md text-white text-sm" style={{ background: INK }}>Giữ link ngoài</button>
           </div>
           <div className="text-[11px] opacity-55 mt-1">
             <b>Giữ link ngoài</b>: không tốn dung lượng kho, nhưng ảnh phụ thuộc web nguồn. Google Drive phải chia sẻ “Bất kỳ ai có đường liên kết”.
@@ -1635,7 +1636,7 @@ function WebImageGrid({ images, onChange, max = 10 }) {
       )}
       <div
         tabIndex={0}
-        className="grid grid-cols-4 sm:grid-cols-5 gap-2 rounded-sm p-2 outline-none"
+        className="grid grid-cols-4 sm:grid-cols-5 gap-2 rounded-md p-2 outline-none"
         style={{ border: `2px dashed ${drag ? BLUE : LINE}`, background: drag ? `${BLUE}0D` : PAPER }}
         onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
         onDragLeave={() => setDrag(false)}
@@ -1649,7 +1650,7 @@ function WebImageGrid({ images, onChange, max = 10 }) {
           </div>
         )}
         {list.map((src, i) => (
-          <div key={i} className="relative group aspect-square rounded-sm overflow-hidden" style={{ border: `1px solid ${brokenUrls.has(src) ? RUST : LINE}`, background: "#fff" }}>
+          <div key={i} className="relative group aspect-square rounded-md overflow-hidden" style={{ border: `1px solid ${brokenUrls.has(src) ? RUST : LINE}`, background: "#fff" }}>
             {brokenUrls.has(src) ? (
               <div className="w-full h-full grid place-items-center text-center px-1" style={{ color: RUST, background: `${RUST}0D` }}>
                 <span className="text-[10px] leading-tight">⚠ Ảnh lỗi<br />(xoá & thêm lại)</span>
@@ -1657,7 +1658,7 @@ function WebImageGrid({ images, onChange, max = 10 }) {
             ) : (
               <img src={src} alt="" className="w-full h-full object-cover" onError={() => markBroken(src)} />
             )}
-            {i === 0 && <span className="absolute top-0.5 left-0.5 text-[9px] px-1 rounded-sm text-white" style={{ background: INK }}>Đại diện</span>}
+            {i === 0 && <span className="absolute top-0.5 left-0.5 text-[9px] px-1 rounded-md text-white" style={{ background: INK }}>Đại diện</span>}
             <div className="absolute inset-x-0 bottom-0 flex justify-between px-0.5 py-0.5 opacity-0 group-hover:opacity-100 transition" style={{ background: "rgba(0,0,0,0.45)" }}>
               <button type="button" onClick={() => move(i, -1)} disabled={i === 0} className="text-white text-xs px-1 disabled:opacity-30">←</button>
               <button type="button" onClick={() => del(i)} className="text-white text-xs px-1" title="Xoá">✕</button>
@@ -2080,7 +2081,7 @@ class AppErrorBoundary extends React.Component {
   render() {
     if (this.state.error) {
       return (
-        <div className="p-6 text-sm" style={{ color: RUST, fontFamily: "'IBM Plex Mono', monospace", whiteSpace: "pre-wrap" }}>
+        <div className="p-6 text-sm" style={{ color: RUST, fontFamily: "'Inter', sans-serif", whiteSpace: "pre-wrap" }}>
           Đã xảy ra lỗi khi hiển thị: {String(this.state.error?.message || this.state.error)}
         </div>
       );
@@ -2094,7 +2095,7 @@ class AppErrorBoundary extends React.Component {
 function Stamp({ status }) {
   const s = STATUSES.find((x) => x.id === status) || STATUSES[0];
   return (
-    <span style={{ borderColor: s.color, color: s.color, fontFamily: "'IBM Plex Mono', monospace" }}
+    <span style={{ borderColor: s.color, color: s.color, fontFamily: "'Inter', sans-serif" }}
       className="inline-block border-2 rounded px-2 py-0.5 text-[11px] uppercase tracking-wider -rotate-2 select-none">
       {s.label}
     </span>
@@ -2103,13 +2104,13 @@ function Stamp({ status }) {
 function Field({ label, children, hint }) {
   return (
     <label className="block mb-3">
-      <span className="block text-xs uppercase tracking-wider mb-1" style={{ color: INK, opacity: 0.6 }}>{label}</span>
+      <span className="block text-xs font-medium mb-1" style={{ color: INK, opacity: 0.7 }}>{label}</span>
       {children}
       {hint && <span className="block text-[11px] mt-1 opacity-50">{hint}</span>}
     </label>
   );
 }
-const inputCls = "w-full bg-transparent border-b-2 outline-none py-1.5 px-1 text-[15px] focus:border-opacity-100";
+const inputCls = "w-full bg-white border rounded-md outline-none py-2 px-3 text-sm focus:ring-2 focus:ring-blue-200";
 
 // Input số tiền — tự hiển thị dấu chấm phân cách hàng nghìn khi gõ (vd 1.650.000), giữ nguyên vị trí con trỏ.
 // value: number | "" ; onChange nhận về number | "".
@@ -2152,7 +2153,7 @@ function TagsNotesCompact({ tags, setTags, notes, setNotes }) {
       </div>
       <div>
         <span className="block text-[10px] uppercase tracking-wider mb-1 opacity-45">Ghi chú</span>
-        <textarea rows={1} className="w-full border rounded-sm p-2 text-xs" style={{ borderColor: LINE }} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ghi chú thêm…" />
+        <textarea rows={1} className="w-full border rounded-md p-2 text-xs" style={{ borderColor: LINE }} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ghi chú thêm…" />
       </div>
     </div>
   );
@@ -2187,7 +2188,7 @@ function ImageLightbox({ images, startIndex, onClose }) {
               <ChevronLeft size={20} />
             </button>
           )}
-          <img src={current.src} alt={current.alt || "Ảnh"} className="max-w-full object-contain rounded-sm shadow-2xl" style={{ maxHeight: "68vh", background: "#fff" }} />
+          <img src={current.src} alt={current.alt || "Ảnh"} className="max-w-full object-contain rounded-md shadow-2xl" style={{ maxHeight: "68vh", background: "#fff" }} />
           {list.length > 1 && (
             <button onClick={goNext} className="absolute right-0 translate-x-12 sm:translate-x-14 w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,0.15)", color: "#fff" }}>
               <ChevronRight size={20} />
@@ -2199,20 +2200,20 @@ function ImageLightbox({ images, startIndex, onClose }) {
           <div className="flex items-center gap-2 mt-4 flex-wrap justify-center max-w-full">
             {list.map((img, i) => (
               <img key={i} src={img.src} alt={img.alt || ""} onClick={() => setIdx(i)}
-                className="w-12 h-12 object-cover rounded-sm cursor-pointer shrink-0"
+                className="w-12 h-12 object-cover rounded-md cursor-pointer shrink-0"
                 style={{ border: i === idx ? `2px solid ${BLUE}` : "2px solid rgba(255,255,255,0.25)", opacity: i === idx ? 1 : 0.55 }} />
             ))}
           </div>
         )}
 
         <div className="flex items-center gap-2 mt-4 flex-wrap justify-center">
-          <button onClick={copyImage} className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm text-white" style={{ background: INK }}>
+          <button onClick={copyImage} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm text-white" style={{ background: INK }}>
             {copyState === "ok" ? <><Check size={14} /> Đã sao chép!</> : copyState === "fail" ? "Không sao chép được — bấm Tải ảnh" : "Sao chép ảnh"}
           </button>
-          <a href={current.src} download={`${(current.alt || "anh-san-pham").replace(/[^\w\-]+/g, "_")}.png`} className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm border" style={{ borderColor: "rgba(255,255,255,0.4)", color: "#fff" }}>
+          <a href={current.src} download={`${(current.alt || "anh-san-pham").replace(/[^\w\-]+/g, "_")}.png`} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: "rgba(255,255,255,0.4)", color: "#fff" }}>
             Tải ảnh
           </a>
-          <button onClick={onClose} className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm border" style={{ borderColor: "rgba(255,255,255,0.4)", color: "#fff" }}>
+          <button onClick={onClose} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: "rgba(255,255,255,0.4)", color: "#fff" }}>
             <X size={14} /> Đóng
           </button>
         </div>
@@ -2239,18 +2240,18 @@ function Modal({ title, onClose, children, wide, size, headerAction }) {
     };
   }, [onClose]);
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4" style={{ background: "rgba(31,42,68,0.45)" }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4" style={{ background: "rgba(15,23,70,0.45)" }}>
       <div onClick={(e) => e.stopPropagation()}
-        className={`w-full ${sizeClass} rounded-sm shadow-2xl relative flex flex-col`}
-        style={{ background: PAPER, border: `1px solid ${LINE}`, maxHeight: "88vh" }}>
-        <div className="flex items-center justify-between gap-3 px-4 sm:px-6 pt-4 sm:pt-5 pb-3 shrink-0">
-          <h3 className="text-lg sm:text-xl flex-1 min-w-0" style={{ fontFamily: "'Fraunces', serif", color: INK }}>{title}</h3>
+        className={`w-full ${sizeClass} rounded-md shadow-2xl relative flex flex-col`}
+        style={{ background: "#fff", maxHeight: "90vh" }}>
+        <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3.5 shrink-0" style={{ borderBottom: `1px solid ${LINE}` }}>
+          <h3 className="text-base sm:text-lg flex-1 min-w-0" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, color: INK }}>{title}</h3>
           <div className="flex items-center gap-2 shrink-0">
             {headerAction}
             <button onClick={onClose} className="opacity-60 hover:opacity-100" style={{ color: INK }}><X size={18} /></button>
           </div>
         </div>
-        <div className="px-4 sm:px-6 pb-4 sm:pb-6 overflow-y-auto min-w-0" style={{ flex: "1 1 auto" }}>
+        <div className="px-4 sm:px-6 py-4 sm:py-5 overflow-y-auto min-w-0" style={{ flex: "1 1 auto" }}>
           {children}
         </div>
       </div>
@@ -2346,7 +2347,7 @@ function Dashboard({ products, orders, goToOrdersFilter }) {
   return (
     <div>
       {/* Kết quả kinh doanh trong ngày */}
-      <div className="p-5 rounded-sm mb-6" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+      <div className="p-5 rounded-md mb-6" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
         <h4 className="text-sm uppercase tracking-wider mb-4" style={{ color: INK, opacity: 0.6, letterSpacing: "0.06em" }}>Kết quả kinh doanh trong ngày</h4>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
           <MiniStat label="Doanh thu" value={vnd(todayRevenue)} icon={Wallet} accent={BLUE} />
@@ -2357,7 +2358,7 @@ function Dashboard({ products, orders, goToOrdersFilter }) {
       </div>
 
       {/* Doanh thu bán hàng theo ngày */}
-      <div className="p-5 rounded-sm mb-6" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+      <div className="p-5 rounded-md mb-6" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <h4 className="text-sm uppercase tracking-wider" style={{ color: INK, opacity: 0.6, letterSpacing: "0.06em" }}>Doanh thu bán hàng</h4>
           <div className="flex gap-1.5">
@@ -2378,11 +2379,11 @@ function Dashboard({ products, orders, goToOrdersFilter }) {
             <Bar dataKey="total" fill={BLUE} radius={[6, 6, 0, 0]} maxBarSize={40} />
           </BarChart>
         </ResponsiveContainer>
-        <p className="text-sm mt-2" style={{ color: INK }}>Tổng doanh thu: <span className="font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{vnd(chartTotal)}</span></p>
+        <p className="text-sm mt-2" style={{ color: INK }}>Tổng doanh thu: <span className="font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(chartTotal)}</span></p>
       </div>
 
       {/* Đơn hàng chờ xử lý */}
-      <div className="p-5 rounded-sm mb-6" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+      <div className="p-5 rounded-md mb-6" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
         <h4 className="text-sm uppercase tracking-wider mb-4" style={{ color: INK, opacity: 0.6, letterSpacing: "0.06em" }}>Đơn hàng chờ xử lý</h4>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
           <MiniStat label="Chờ duyệt" value={pendingApproval} icon={ShieldCheck} accent={RUST} onClick={() => goToOrdersFilter && goToOrdersFilter("approval_pending")} />
@@ -2401,7 +2402,7 @@ function Dashboard({ products, orders, goToOrdersFilter }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="p-5 rounded-sm min-w-0" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+        <div className="p-5 rounded-md min-w-0" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <h4 className="text-sm uppercase tracking-wider" style={{ color: INK, opacity: 0.6, letterSpacing: "0.06em" }}>Top sản phẩm bán chạy</h4>
             <div className="flex gap-1.5">
@@ -2420,35 +2421,35 @@ function Dashboard({ products, orders, goToOrdersFilter }) {
                   <span className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0" style={{ background: `${pieColors[i % pieColors.length]}1A`, color: pieColors[i % pieColors.length] }}>{String(i + 1).padStart(2, "0")}</span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm truncate" style={{ color: INK }}>{p.name}</p>
-                    <p className="text-xs opacity-50" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.code}</p>
+                    <p className="text-xs opacity-50" style={{ fontFamily: "'Inter', sans-serif" }}>{p.code}</p>
                   </div>
-                  <span className="text-sm font-semibold shrink-0" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{p.qty}</span>
+                  <span className="text-sm font-semibold shrink-0" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{p.qty}</span>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        <div className="p-5 rounded-sm min-w-0" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+        <div className="p-5 rounded-md min-w-0" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           <h4 className="text-sm uppercase tracking-wider mb-4" style={{ color: INK, opacity: 0.6, letterSpacing: "0.06em" }}>Thông tin kho</h4>
           <div className="space-y-1">
             <div className="flex items-center justify-between py-3" style={{ borderBottom: `1px dashed ${LINE}` }}>
               <span className="text-sm flex items-center gap-1.5" style={{ color: lowStock.length > 0 ? RUST : INK }}>
                 {lowStock.length > 0 && <AlertTriangle size={14} />} Sản phẩm dưới định mức (≤5)
               </span>
-              <span className="text-sm font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: lowStock.length > 0 ? RUST : INK }}>{lowStock.length}</span>
+              <span className="text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: lowStock.length > 0 ? RUST : INK }}>{lowStock.length}</span>
             </div>
             <div className="flex items-center justify-between py-3" style={{ borderBottom: `1px dashed ${LINE}` }}>
               <span className="text-sm opacity-70">Số tồn kho (tổng SL)</span>
-              <span className="text-sm font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{stockUnits}</span>
+              <span className="text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{stockUnits}</span>
             </div>
             <div className="flex items-center justify-between py-3">
               <span className="text-sm opacity-70">Giá trị tồn kho</span>
-              <span className="text-sm font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{vnd(stockValue)}</span>
+              <span className="text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(stockValue)}</span>
             </div>
           </div>
           {lowStock.length > 0 && (
-            <div className="mt-3 p-3 rounded-sm text-xs" style={{ background: "#FBF0EC", color: INK }}>
+            <div className="mt-3 p-3 rounded-md text-xs" style={{ background: "#FBF0EC", color: INK }}>
               {lowStock.slice(0, 6).map((p) => `${p.name} (còn ${productStats(p).closingQty})`).join(", ")}{lowStock.length > 6 ? "…" : ""}
             </div>
           )}
@@ -2459,10 +2460,10 @@ function Dashboard({ products, orders, goToOrdersFilter }) {
 }
 function StatCard({ label, value, icon: Icon, accent }) {
   return (
-    <div className="p-5 rounded-sm flex items-center justify-between" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+    <div className="p-5 rounded-md flex items-center justify-between" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
       <div>
         <p className="text-xs uppercase tracking-wider mb-1" style={{ color: INK, opacity: 0.55 }}>{label}</p>
-        <p className="text-2xl" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{value}</p>
+        <p className="text-2xl" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{value}</p>
       </div>
       <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: `${accent}1A` }}>
         <Icon size={18} style={{ color: accent }} />
@@ -2490,6 +2491,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
   const [ioModal, setIoModal] = useState(null); // { product, type: 'in'|'out' }
   const [ioForm, setIoForm] = useState({});
   const [viewingId, setViewingId] = useState(null); // id sản phẩm đang xem chi tiết
+  const [showProductInfo, setShowProductInfo] = useState(false);
   const [historyPage, setHistoryPage] = useState(1);
   const [historySearch, setHistorySearch] = useState("");
   const [historyFrom, setHistoryFrom] = useState("");
@@ -3164,7 +3166,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
   return (
     <div>
       {negativeStockProducts.length > 0 && (
-        <div className="mb-4 p-3 rounded-sm flex items-start gap-2.5" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44` }}>
+        <div className="mb-4 p-3 rounded-md flex items-start gap-2.5" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44` }}>
           <AlertTriangle size={16} style={{ color: RUST }} className="mt-0.5 shrink-0" />
           <p className="text-sm" style={{ color: INK }}>
             <span className="font-medium" style={{ color: RUST }}>Cảnh báo âm kho: </span>
@@ -3176,9 +3178,9 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         <div className="relative flex-1 min-w-[220px] max-w-md">
           <Search size={15} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50" />
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm theo mã VT hoặc tên…"
-            className="w-full pl-7 pr-2 py-1.5 text-sm rounded-sm border-2 outline-none" style={{ borderColor: INK, background: "#fff" }} />
+            className="w-full pl-7 pr-2 py-1.5 text-sm rounded-md border-2 outline-none" style={{ borderColor: INK, background: "#fff" }} />
         </div>
-        <button onClick={() => setShowFilters((s) => !s)} className="flex items-center gap-1.5 text-sm px-3.5 py-1.5 rounded-sm border shrink-0" style={{ borderColor: activeFilterCount ? INK : LINE, color: INK, background: showFilters ? PAPER : "#fff" }}>
+        <button onClick={() => setShowFilters((s) => !s)} className="flex items-center gap-1.5 text-sm px-3.5 py-1.5 rounded-md border shrink-0" style={{ borderColor: activeFilterCount ? INK : LINE, color: INK, background: showFilters ? PAPER : "#fff" }}>
           <Filter size={14} /> Bộ lọc {activeFilterCount > 0 && <span className="text-[10px] px-1.5 rounded-full text-white" style={{ background: INK }}>{activeFilterCount}</span>}
         </button>
         {activeFilterCount > 0 && (
@@ -3187,77 +3189,77 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           </button>
         )}
         {(filterCreatedFrom || filterCreatedTo) && (
-          <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-sm shrink-0" style={{ background: `${FOREST}14`, color: FOREST }}>
+          <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md shrink-0" style={{ background: `${FOREST}14`, color: FOREST }}>
             Ngày thêm: {filterCreatedFrom || "…"} → {filterCreatedTo || "…"}
             <button onClick={() => { setFilterCreatedFrom(""); setFilterCreatedTo(""); }} title="Xoá lọc ngày"><X size={12} /></button>
           </span>
         )}
         <div className="flex-1" />
         {selectedIds.size > 0 && (
-          <button onClick={() => setSelectedIds(new Set())} className="flex items-center gap-1 px-2.5 py-1.5 rounded-sm text-xs border whitespace-nowrap" style={{ borderColor: LINE, color: INK }}>
+          <button onClick={() => setSelectedIds(new Set())} className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs border whitespace-nowrap" style={{ borderColor: LINE, color: INK }}>
             <X size={13} /> Bỏ chọn ({selectedIds.size})
           </button>
         )}
-        <button onClick={exportProducts} title="Xuất Excel" className="flex items-center gap-1 px-2.5 py-1.5 rounded-sm text-xs border whitespace-nowrap" style={{ borderColor: FOREST, color: FOREST }}>
+        <button onClick={exportProducts} title="Xuất Excel" className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs border whitespace-nowrap" style={{ borderColor: FOREST, color: FOREST }}>
           <FileSpreadsheet size={13} /> Xuất{selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}
         </button>
         {isAdmin && (
-          <button onClick={triggerImportFile} title="Nhập từ Excel — dùng file đã tải từ nút Xuất, thêm dòng mới để tạo sản phẩm, hoặc điền cột (web) của sản phẩm đã có để cập nhật thông tin web hàng loạt" className="flex items-center gap-1 px-2.5 py-1.5 rounded-sm text-xs border whitespace-nowrap" style={{ borderColor: BLUE, color: BLUE }}>
+          <button onClick={triggerImportFile} title="Nhập từ Excel — dùng file đã tải từ nút Xuất, thêm dòng mới để tạo sản phẩm, hoặc điền cột (web) của sản phẩm đã có để cập nhật thông tin web hàng loạt" className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs border whitespace-nowrap" style={{ borderColor: BLUE, color: BLUE }}>
             <ArrowUpFromLine size={13} /> Nhập
           </button>
         )}
         <input ref={importFileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleImportFile} />
         {isAdmin && selectedIds.size > 0 && (
-          <button onClick={() => setBulkEditOpen(true)} title="Sửa hàng loạt" className="flex items-center gap-1 px-2 py-1.5 rounded-sm text-xs text-white whitespace-nowrap" style={{ background: INK }}>
+          <button onClick={() => setBulkEditOpen(true)} title="Sửa hàng loạt" className="flex items-center gap-1 px-2 py-1.5 rounded-md text-xs text-white whitespace-nowrap" style={{ background: INK }}>
             <Pencil size={12} /> Sửa ({selectedIds.size})
           </button>
         )}
         {isAdmin && selectedIds.size >= 2 && (
-          <button onClick={() => setMergeOpen(true)} title="Gộp thành phiên bản — gộp các sản phẩm đã chọn (VD từng màu 1 sản phẩm) thành các phiên bản của 1 sản phẩm chung, web/danh sách sẽ tự gộp hiện thị" className="flex items-center gap-1 px-2 py-1.5 rounded-sm text-xs border whitespace-nowrap" style={{ borderColor: PURPLE, color: PURPLE }}>
+          <button onClick={() => setMergeOpen(true)} title="Gộp thành phiên bản — gộp các sản phẩm đã chọn (VD từng màu 1 sản phẩm) thành các phiên bản của 1 sản phẩm chung, web/danh sách sẽ tự gộp hiện thị" className="flex items-center gap-1 px-2 py-1.5 rounded-md text-xs border whitespace-nowrap" style={{ borderColor: PURPLE, color: PURPLE }}>
             <Layers size={12} /> Gộp ({selectedIds.size})
           </button>
         )}
         {isAdmin && selectedIds.size > 0 && (
-          <button onClick={() => setBulkDeleteOpen(true)} title="Xoá hàng loạt sản phẩm đã chọn" className="flex items-center gap-1 px-2 py-1.5 rounded-sm text-xs border whitespace-nowrap" style={{ borderColor: RUST, color: RUST }}>
+          <button onClick={() => setBulkDeleteOpen(true)} title="Xoá hàng loạt sản phẩm đã chọn" className="flex items-center gap-1 px-2 py-1.5 rounded-md text-xs border whitespace-nowrap" style={{ borderColor: RUST, color: RUST }}>
             <Trash2 size={12} /> Xoá ({selectedIds.size})
           </button>
         )}
         {isAdmin && (
-          <button onClick={() => setManagingCategories(true)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-sm text-xs border whitespace-nowrap" style={{ borderColor: LINE, color: INK }}>
+          <button onClick={() => setManagingCategories(true)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs border whitespace-nowrap" style={{ borderColor: LINE, color: INK }}>
             <Filter size={13} /> Quản lý nhóm hàng
           </button>
         )}
         {isAdmin && (
-          <button onClick={() => setManagingBrands(true)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-sm text-xs border whitespace-nowrap" style={{ borderColor: LINE, color: INK }}>
+          <button onClick={() => setManagingBrands(true)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs border whitespace-nowrap" style={{ borderColor: LINE, color: INK }}>
             <Filter size={13} /> Quản lý nhãn hiệu
           </button>
         )}
         {!isCtv && (
-          <button onClick={openNew} className="flex items-center gap-1 px-3 py-1.5 rounded-sm text-xs text-white whitespace-nowrap" style={{ background: INK }}>
+          <button onClick={openNew} className="flex items-center gap-1 px-3 py-1.5 rounded-md text-xs text-white whitespace-nowrap" style={{ background: INK }}>
             <Plus size={13} /> Thêm sản phẩm
           </button>
         )}
       </div>
 
       {showFilters && (
-        <div className="flex flex-wrap items-end gap-3 mb-5 p-4 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+        <div className="flex flex-wrap items-end gap-3 mb-5 p-4 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           <label className="text-xs shrink-0" style={{ width: 190 }}>
             <span className="block opacity-60 mb-1">Nhóm hàng</span>
-            <select value={filterCategory} onChange={(e) => { setFilterCategory(e.target.value); if (filterBrand && !brandOptionsOf(e.target.value).includes(filterBrand)) setFilterBrand(""); }} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
+            <select value={filterCategory} onChange={(e) => { setFilterCategory(e.target.value); if (filterBrand && !brandOptionsOf(e.target.value).includes(filterBrand)) setFilterBrand(""); }} className="w-full border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
               <option value="">Tất cả</option>
               {categoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </label>
           <label className="text-xs shrink-0" style={{ width: 190 }}>
             <span className="block opacity-60 mb-1">Nhãn hiệu</span>
-            <select value={filterBrand} onChange={(e) => setFilterBrand(e.target.value)} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
+            <select value={filterBrand} onChange={(e) => setFilterBrand(e.target.value)} className="w-full border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
               <option value="">Tất cả</option>
               {(filterCategory ? brandOptionsOf(filterCategory) : brandOptions).map((b) => <option key={b} value={b}>{b}</option>)}
             </select>
           </label>
           <label className="text-xs shrink-0" style={{ width: 150 }}>
             <span className="block opacity-60 mb-1">Tồn kho</span>
-            <select value={filterStock} onChange={(e) => setFilterStock(e.target.value)} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
+            <select value={filterStock} onChange={(e) => setFilterStock(e.target.value)} className="w-full border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
               <option value="">Tất cả</option>
               <option value="in">Còn tồn</option>
               <option value="negative">Âm kho</option>
@@ -3265,14 +3267,14 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           </label>
           <label className="text-xs shrink-0" style={{ width: 190 }}>
             <span className="block opacity-60 mb-1">Nhà cung cấp</span>
-            <select value={filterSupplier} onChange={(e) => setFilterSupplier(e.target.value)} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
+            <select value={filterSupplier} onChange={(e) => setFilterSupplier(e.target.value)} className="w-full border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
               <option value="">Tất cả</option>
               {(suppliers || []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </label>
           <label className="text-xs shrink-0" style={{ width: 170 }}>
             <span className="block opacity-60 mb-1">Người tạo</span>
-            <select value={filterCreatedBy} onChange={(e) => setFilterCreatedBy(e.target.value)} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
+            <select value={filterCreatedBy} onChange={(e) => setFilterCreatedBy(e.target.value)} className="w-full border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
               <option value="">Tất cả</option>
               {createdByOptions.map((n) => <option key={n} value={n}>{n}</option>)}
             </select>
@@ -3294,7 +3296,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         </div>
       )}
 
-      <div className="rounded-sm overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 220px)" }}>
+      <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 220px)" }}>
         <table className="w-full text-sm" style={{ minWidth: 940 }}>
           <thead className="sticky top-0" style={{ zIndex: 2 }}>
             <tr style={{ borderBottom: `2px solid ${INK}` }}>
@@ -3319,47 +3321,47 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                       </td>
                       <td className="px-2 py-3">
                         {displayImage(p) ? (
-                          <img src={displayImage(p)} alt={p.name} onClick={() => setZoomImage({ images: [{ src: displayImage(p), alt: p.name }, ...(p.images || []).map((im, i) => ({ src: im, alt: `${p.name} — ảnh phụ ${i + 1}` }))], index: 0 })} className="w-9 h-9 object-cover rounded-sm cursor-zoom-in" style={{ border: `1px solid ${LINE}` }} />
+                          <img src={displayImage(p)} alt={p.name} onClick={() => setZoomImage({ images: [{ src: displayImage(p), alt: p.name }, ...(p.images || []).map((im, i) => ({ src: im, alt: `${p.name} — ảnh phụ ${i + 1}` }))], index: 0 })} className="w-9 h-9 object-cover rounded-md cursor-zoom-in" style={{ border: `1px solid ${LINE}` }} />
                         ) : (
-                          <div className="w-9 h-9 rounded-sm flex items-center justify-center" style={{ background: PAPER, border: `1px dashed ${LINE}` }}>
+                          <div className="w-9 h-9 rounded-md flex items-center justify-center" style={{ background: PAPER, border: `1px dashed ${LINE}` }}>
                             <ImageOff size={13} className="opacity-30" />
                           </div>
                         )}
                       </td>
                       <td className="px-3 py-3 font-medium" style={{ paddingLeft: inGroup ? 28 : undefined }}>
-                        <button onClick={() => openProductDetail(p.id)} className="hover:underline" style={{ fontFamily: "'IBM Plex Mono', monospace", color: BLUE }}>{p.code}</button>
+                        <button onClick={() => openProductDetail(p.id)} className="hover:underline" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{p.code}</button>
                       </td>
-                      <td className="px-3 py-3 opacity-70 whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.sku || "—"}</td>
+                      <td className="px-3 py-3 opacity-70 whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>{p.sku || "—"}</td>
                       <td className="px-3 py-3" style={{ color: INK, minWidth: 260 }}>
                         <button onClick={() => openProductDetail(p.id)} className="text-left hover:underline">{p.name}</button>
                         <div className="flex gap-1.5 mt-1 flex-wrap">
-                          {p.isService && <span className="inline-block text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${BLUE}1A`, color: BLUE }}>Dịch vụ</span>}
-                          {p.hasSeries && <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${BLUE}1A`, color: BLUE }}><Barcode size={10} /> Series</span>}
-                          {p.vat && <span className="inline-block text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${BRASS}1A`, color: BRASS }}>{VAT_OPTIONS.find((v) => v.id === p.vat)?.label || p.vat}</span>}
-                          {p.variantAttrs && <span className="inline-block text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${PURPLE}1A`, color: PURPLE }}>{Object.values(p.variantAttrs).join(" / ")}</span>}
-                          {isAdmin && duplicateProductIds.has(p.id) && <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${RUST}1A`, color: RUST }}><AlertTriangle size={10} /> Nghi trùng</span>}
+                          {p.isService && <span className="inline-block text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider" style={{ background: `${BLUE}1A`, color: BLUE }}>Dịch vụ</span>}
+                          {p.hasSeries && <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider" style={{ background: `${BLUE}1A`, color: BLUE }}><Barcode size={10} /> Series</span>}
+                          {p.vat && <span className="inline-block text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider" style={{ background: `${BRASS}1A`, color: BRASS }}>{VAT_OPTIONS.find((v) => v.id === p.vat)?.label || p.vat}</span>}
+                          {p.variantAttrs && <span className="inline-block text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider" style={{ background: `${PURPLE}1A`, color: PURPLE }}>{Object.values(p.variantAttrs).join(" / ")}</span>}
+                          {isAdmin && duplicateProductIds.has(p.id) && <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider" style={{ background: `${RUST}1A`, color: RUST }}><AlertTriangle size={10} /> Nghi trùng</span>}
                         </div>
                       </td>
                       <td className="px-2 py-3 opacity-70 whitespace-nowrap">{p.unit}</td>
                       {p.isService ? (
                         <td colSpan={3} className="px-2 py-3 text-center opacity-40 text-xs">— không quản lý tồn kho —</td>
                       ) : (<>
-                        <td className="px-2 py-3 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.openingQty}</td>
-                        <td className="px-2 py-3 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace", color: FOREST }}>+{stats.importedQty}</td>
-                        <td className="px-2 py-3 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace", color: RUST }}>-{stats.exportedQty}</td>
+                        <td className="px-2 py-3 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>{p.openingQty}</td>
+                        <td className="px-2 py-3 text-right" style={{ fontFamily: "'Inter', sans-serif", color: FOREST }}>+{stats.importedQty}</td>
+                        <td className="px-2 py-3 text-right" style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>-{stats.exportedQty}</td>
                       </>)}
-                      <td className="px-2 py-3 text-right font-medium whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: stats.closingQty < 0 ? "#fff" : (p.minStockLevel > 0 && stats.closingQty <= p.minStockLevel ? RUST : INK) }}>
+                      <td className="px-2 py-3 text-right font-medium whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: stats.closingQty < 0 ? "#fff" : (p.minStockLevel > 0 && stats.closingQty <= p.minStockLevel ? RUST : INK) }}>
                         {p.isService ? "—" : stats.closingQty < 0 ? (
-                          <span className="px-1.5 py-0.5 rounded-sm" style={{ background: RUST }}>{stats.closingQty}</span>
+                          <span className="px-1.5 py-0.5 rounded-md" style={{ background: RUST }}>{stats.closingQty}</span>
                         ) : stats.closingQty}
                       </td>
-                      {isAdmin && <td className="px-2 py-3 text-right whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.isService ? "—" : vnd(stats.avgCost)}</td>}
+                      {isAdmin && <td className="px-2 py-3 text-right whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>{p.isService ? "—" : vnd(stats.avgCost)}</td>}
                       <td className="px-2 py-3">
                         <div style={{ display: "grid", gridTemplateColumns: "auto auto", gap: 2, justifyContent: "end", marginLeft: "auto", width: "fit-content" }}>
-                          {isAdmin && !p.isService && <button onClick={() => openIO(p, "in")} title="Nhập kho" className="rounded-sm hover:bg-black/5" style={{ color: FOREST, padding: 4 }}><ArrowDownToLine size={13} /></button>}
-                          {!isCtv && !p.isService && <button onClick={() => openIO(p, "out")} title="Xuất kho" className="rounded-sm hover:bg-black/5" style={{ color: RUST, padding: 4 }}><ArrowUpFromLine size={13} /></button>}
+                          {isAdmin && !p.isService && <button onClick={() => openIO(p, "in")} title="Nhập kho" className="rounded-md hover:bg-black/5" style={{ color: FOREST, padding: 4 }}><ArrowDownToLine size={13} /></button>}
+                          {!isCtv && !p.isService && <button onClick={() => openIO(p, "out")} title="Xuất kho" className="rounded-md hover:bg-black/5" style={{ color: RUST, padding: 4 }}><ArrowUpFromLine size={13} /></button>}
                           {isAdmin && (
-                            <button onClick={() => openEdit(p)} title="Sửa" className="rounded-sm hover:bg-black/5" style={{ opacity: 0.6, padding: 4 }}><Pencil size={13} /></button>
+                            <button onClick={() => openEdit(p)} title="Sửa" className="rounded-md hover:bg-black/5" style={{ opacity: 0.6, padding: 4 }}><Pencil size={13} /></button>
                           )}
                         </div>
                       </td>
@@ -3422,46 +3424,46 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                       </td>
                       <td className="px-2 py-3">
                         {displayImage(rep) ? (
-                          <img src={displayImage(rep)} alt={rep.name} className="w-9 h-9 object-cover rounded-sm" style={{ border: `1px solid ${LINE}` }} />
+                          <img src={displayImage(rep)} alt={rep.name} className="w-9 h-9 object-cover rounded-md" style={{ border: `1px solid ${LINE}` }} />
                         ) : (
-                          <div className="w-9 h-9 rounded-sm flex items-center justify-center" style={{ background: PAPER, border: `1px dashed ${LINE}` }}>
+                          <div className="w-9 h-9 rounded-md flex items-center justify-center" style={{ background: PAPER, border: `1px dashed ${LINE}` }}>
                             <ImageOff size={13} className="opacity-30" />
                           </div>
                         )}
                       </td>
                       <td className="px-3 py-3 font-medium">
-                        <button onClick={() => toggleGroup(gid)} title={expanded ? "Thu gọn" : "Mở rộng"} className="hover:underline" style={{ fontFamily: "'IBM Plex Mono', monospace", color: baseCode ? BLUE : INK, opacity: baseCode ? 1 : 0.5 }}>
+                        <button onClick={() => toggleGroup(gid)} title={expanded ? "Thu gọn" : "Mở rộng"} className="hover:underline" style={{ fontFamily: "'Inter', sans-serif", color: baseCode ? BLUE : INK, opacity: baseCode ? 1 : 0.5 }}>
                           {baseCode || `${members.length} mã`}
                         </button>
                       </td>
-                      <td className="px-3 py-3 whitespace-nowrap opacity-70" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{baseSku || "—"}</td>
+                      <td className="px-3 py-3 whitespace-nowrap opacity-70" style={{ fontFamily: "'Inter', sans-serif" }}>{baseSku || "—"}</td>
                       <td className="px-3 py-3" style={{ color: INK, minWidth: 260 }}>
                         <button onClick={() => toggleGroup(gid)} className="text-left hover:underline font-medium">{baseVariantName(rep)}</button>
                         <div className="flex gap-1.5 mt-1 flex-wrap">
-                          <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider font-bold" style={{ background: `${PURPLE}1A`, color: PURPLE }}><Layers size={10} /> {members.length} phiên bản</span>
+                          <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider font-bold" style={{ background: `${PURPLE}1A`, color: PURPLE }}><Layers size={10} /> {members.length} phiên bản</span>
                         </div>
                       </td>
                       <td className="px-2 py-3 opacity-70 whitespace-nowrap">{rep.unit}</td>
                       {isService ? (
                         <td colSpan={3} className="px-2 py-3 text-center opacity-40 text-xs">— không quản lý tồn kho —</td>
                       ) : (<>
-                        <td className="px-2 py-3 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{openingSum}</td>
-                        <td className="px-2 py-3 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace", color: FOREST }}>+{importedSum}</td>
-                        <td className="px-2 py-3 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace", color: RUST }}>-{exportedSum}</td>
+                        <td className="px-2 py-3 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>{openingSum}</td>
+                        <td className="px-2 py-3 text-right" style={{ fontFamily: "'Inter', sans-serif", color: FOREST }}>+{importedSum}</td>
+                        <td className="px-2 py-3 text-right" style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>-{exportedSum}</td>
                       </>)}
-                      <td className="px-2 py-3 text-right font-medium whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: closingSum < 0 ? RUST : INK }}>
+                      <td className="px-2 py-3 text-right font-medium whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: closingSum < 0 ? RUST : INK }}>
                         {isService ? "—" : closingSum}
                       </td>
-                      {isAdmin && <td className="px-2 py-3 text-right whitespace-nowrap opacity-70" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{isService ? "—" : (sameCost ? vnd(rep.costPrice) : "Nhiều giá")}</td>}
+                      {isAdmin && <td className="px-2 py-3 text-right whitespace-nowrap opacity-70" style={{ fontFamily: "'Inter', sans-serif" }}>{isService ? "—" : (sameCost ? vnd(rep.costPrice) : "Nhiều giá")}</td>}
                       <td className="px-2 py-3">
                         <div style={{ display: "grid", gridTemplateColumns: "auto auto", gap: 2, justifyContent: "end", marginLeft: "auto", width: "fit-content" }}>
-                          {isAdmin && !isService && <button onClick={() => openIO(rep, "in")} title="Nhập kho (phiên bản đại diện — mở rộng nhóm để chọn đúng phiên bản khác)" className="rounded-sm hover:bg-black/5" style={{ color: FOREST, padding: 4 }}><ArrowDownToLine size={13} /></button>}
-                          {!isCtv && !isService && <button onClick={() => openIO(rep, "out")} title="Xuất kho (phiên bản đại diện — mở rộng nhóm để chọn đúng phiên bản khác)" className="rounded-sm hover:bg-black/5" style={{ color: RUST, padding: 4 }}><ArrowUpFromLine size={13} /></button>}
+                          {isAdmin && !isService && <button onClick={() => openIO(rep, "in")} title="Nhập kho (phiên bản đại diện — mở rộng nhóm để chọn đúng phiên bản khác)" className="rounded-md hover:bg-black/5" style={{ color: FOREST, padding: 4 }}><ArrowDownToLine size={13} /></button>}
+                          {!isCtv && !isService && <button onClick={() => openIO(rep, "out")} title="Xuất kho (phiên bản đại diện — mở rộng nhóm để chọn đúng phiên bản khác)" className="rounded-md hover:bg-black/5" style={{ color: RUST, padding: 4 }}><ArrowUpFromLine size={13} /></button>}
                           {isAdmin && (
-                            <button onClick={() => openEdit(rep)} title="Sửa" className="rounded-sm hover:bg-black/5" style={{ opacity: 0.6, padding: 4 }}><Pencil size={13} /></button>
+                            <button onClick={() => openEdit(rep)} title="Sửa" className="rounded-md hover:bg-black/5" style={{ opacity: 0.6, padding: 4 }}><Pencil size={13} /></button>
                           )}
                           {isAdmin && (
-                            <button onClick={() => openAddVariant(rep, baseCode, baseSku)} title="Thêm phiên bản vào nhóm này" className="rounded-sm hover:bg-black/5" style={{ color: PURPLE, padding: 4 }}><Plus size={13} /></button>
+                            <button onClick={() => openAddVariant(rep, baseCode, baseSku)} title="Thêm phiên bản vào nhóm này" className="rounded-md hover:bg-black/5" style={{ color: PURPLE, padding: 4 }}><Plus size={13} /></button>
                           )}
                         </div>
                       </td>
@@ -3486,10 +3488,10 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           </span>
           <div className="flex items-center gap-1">
             <button onClick={() => setProductPage((p) => Math.max(1, p - 1))} disabled={productSafePage <= 1}
-              className="px-2 py-1 rounded-sm disabled:opacity-30" style={{ border: `1px solid ${LINE}` }}><ChevronLeft size={14} /></button>
+              className="px-2 py-1 rounded-md disabled:opacity-30" style={{ border: `1px solid ${LINE}` }}><ChevronLeft size={14} /></button>
             <span className="px-2">Trang {productSafePage} / {productTotalPages}</span>
             <button onClick={() => setProductPage((p) => Math.min(productTotalPages, p + 1))} disabled={productSafePage >= productTotalPages}
-              className="px-2 py-1 rounded-sm disabled:opacity-30" style={{ border: `1px solid ${LINE}` }}><ChevronRight size={14} /></button>
+              className="px-2 py-1 rounded-md disabled:opacity-30" style={{ border: `1px solid ${LINE}` }}><ChevronRight size={14} /></button>
           </div>
         </div>
       )}
@@ -3509,7 +3511,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           {!addVariantFor.addAttr ? (
             <button type="button" onClick={() => setAddVariantFor((f) => ({ ...f, addAttr: true }))} className="text-xs underline mt-3" style={{ color: PURPLE }}>+ Thêm thuộc tính mới cho cả nhóm (VD: Switch)</button>
           ) : (
-            <div className="mt-3 p-3 rounded-sm space-y-3" style={{ background: `${PURPLE}0D`, border: `1px solid ${PURPLE}33` }}>
+            <div className="mt-3 p-3 rounded-md space-y-3" style={{ background: `${PURPLE}0D`, border: `1px solid ${PURPLE}33` }}>
               <Field label="Tên thuộc tính mới">
                 <input className={inputCls} style={{ borderColor: LINE }} value={addVariantFor.extraName || ""} onChange={(e) => { const v = e.target.value; setAddVariantFor((f) => ({ ...f, extraName: v })); }} placeholder="VD: Switch" />
               </Field>
@@ -3523,7 +3525,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
             </div>
           )}
           <p className="text-xs opacity-60 mt-3">Sao chép nhóm hàng, nhãn hiệu, giá, ảnh, mô tả web từ phiên bản {addVariantFor.rep.code}. Tồn kho bắt đầu từ 0. Tạo xong sẽ mở trang sửa để chỉnh ảnh/giá riêng.</p>
-          <button onClick={submitAddVariant} className="w-full py-2.5 rounded-sm text-white text-sm mt-3" style={{ background: INK }}>Thêm phiên bản</button>
+          <button onClick={submitAddVariant} className="w-full py-2.5 rounded-md text-white text-sm mt-3" style={{ background: INK }}>Thêm phiên bản</button>
         </Modal>
       )}
 
@@ -3536,68 +3538,37 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           ...(viewingProduct.image ? [{ src: viewingProduct.image, alt: viewingProduct.name }] : []),
           ...(viewingProduct.images || []).map((im, i) => ({ src: im, alt: `${viewingProduct.name} — ảnh phụ ${i + 1}` })),
         ];
+        const lowStock = viewingProduct.minStockLevel > 0 && stats.closingQty <= viewingProduct.minStockLevel;
+        const stockLabel = stats.closingQty <= 0 ? "Hết hàng" : lowStock ? "Sắp hết" : "Còn hàng";
+        const stockTone = stats.closingQty <= 0 || lowStock ? RUST : FOREST;
         return (
           <Modal title="Chi tiết sản phẩm" onClose={() => setViewingId(null)} size="2xl">
             <div className="flex items-start gap-5 mb-3">
               {viewingProduct.image ? (
                 <img src={viewingProduct.image} alt={viewingProduct.name} onClick={() => setZoomImage({ images: galleryImgs, index: 0 })}
-                  className="w-36 h-36 object-cover rounded-sm shrink-0 cursor-zoom-in" style={{ border: `1px solid ${LINE}` }} />
+                  className="w-36 h-36 object-cover rounded-md shrink-0 cursor-zoom-in" style={{ border: `1px solid ${LINE}` }} />
               ) : (
-                <div className="w-36 h-36 rounded-sm flex items-center justify-center shrink-0" style={{ background: PAPER, border: `1px dashed ${LINE}` }}>
+                <div className="w-36 h-36 rounded-md flex items-center justify-center shrink-0" style={{ background: PAPER, border: `1px dashed ${LINE}` }}>
                   <ImageOff size={30} className="opacity-30" />
                 </div>
               )}
               <div className="min-w-0">
-                <h4 style={{ fontFamily: "'Fraunces', serif", color: INK }} className="text-2xl leading-snug font-semibold">{viewingProduct.name}</h4>
-                {isAdmin && (() => {
-                  const sup = (suppliers || []).find((s) => s.id === viewingProduct.supplierId);
-                  return sup ? (
-                    <button onClick={() => goToSupplier && goToSupplier(sup.id)} className="inline-flex items-center gap-1 text-xs mt-1 hover:underline" style={{ color: BLUE, fontFamily: "'IBM Plex Mono', monospace" }}>
-                      <Truck size={12} /> NCC: {sup.code}
-                    </button>
-                  ) : (
-                    <p className="text-xs mt-1 opacity-40">Chưa gán nhà cung cấp</p>
-                  );
-                })()}
-                <div className="flex flex-wrap gap-1.5 mt-2.5">
-                  <span className="text-[11px] px-2 py-0.5 rounded-sm" style={{ background: PAPER, color: INK, fontFamily: "'IBM Plex Mono', monospace", border: `1px solid ${LINE}` }}>{viewingProduct.code}</span>
-                  <span className="text-[11px] px-2 py-0.5 rounded-sm" style={{ background: PAPER, color: INK, fontFamily: "'IBM Plex Mono', monospace", border: `1px solid ${LINE}` }}>SKU {viewingProduct.sku || "—"}</span>
-                  {viewingProduct.hasSeries && <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-sm" style={{ background: `${BLUE}1A`, color: BLUE }}><Barcode size={11} /> Series</span>}
-                  <span className="text-[11px] px-2 py-0.5 rounded-sm" style={{ background: `${BRASS}1A`, color: BRASS }}>{VAT_OPTIONS.find((v) => v.id === viewingProduct.vat)?.label || viewingProduct.vat}</span>
-                  {viewingProduct.warrantyMonths !== 0 && <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-sm" style={{ background: `${FOREST}1A`, color: FOREST }}><ShieldCheck size={11} /> BH {warrantyLabel(viewingProduct.warrantyMonths)}</span>}
-                  {viewingProduct.brand && <span className="text-[11px] px-2 py-0.5 rounded-sm" style={{ background: `${PURPLE}1A`, color: PURPLE }}>{viewingProduct.brand}</span>}
-                  {viewingProduct.variantAttrs && <span className="text-[11px] px-2 py-0.5 rounded-sm" style={{ background: `${PURPLE}1A`, color: PURPLE }}>Phiên bản: {Object.entries(viewingProduct.variantAttrs).map(([k, v]) => `${k}: ${v}`).join(" · ")}</span>}
-                </div>
-                <p className="text-base font-medium mt-2.5" style={{ color: INK }}>{viewingProduct.category || "Chưa phân nhóm"}</p>
-                <p className="text-xs opacity-50 mt-1">{viewingProduct.unit}{viewingProduct.barcode ? ` · Barcode: ${viewingProduct.barcode}` : ""}</p>
-              </div>
-            </div>
-
-            {viewingProduct.images && viewingProduct.images.length > 0 && (
-              <div className="flex gap-2 mb-5">
-                {viewingProduct.images.map((img, i) => (
-                  <img key={i} src={img} alt={`${viewingProduct.name} — ảnh phụ ${i + 1}`} onClick={() => setZoomImage({ images: galleryImgs, index: i + 1 })}
-                    className="w-16 h-16 object-cover rounded-sm cursor-zoom-in" style={{ border: `1px solid ${LINE}` }} />
-                ))}
-              </div>
-            )}
-
+                <h4 style={{ color: INK }} className="text-xl leading-snug font-bold">{viewingProduct.name}</h4>
+                <p className="text-sm mt-1" style={{ color: INK, opacity: 0.6 }}>{[viewingProduct.category || "Chưa phân nhóm", viewingProduct.brand].filter(Boolean).join(" · ")}</p>
             {viewingProduct.variantGroupId && (() => {
               const siblings = products.filter((p) => p.variantGroupId === viewingProduct.variantGroupId);
               if (siblings.length <= 1) return null;
               return (
-                <div className="mb-5 p-3 rounded-sm" style={{ background: `${PURPLE}08`, border: `1px solid ${PURPLE}33` }}>
-                  <p className="text-xs uppercase tracking-wider mb-2" style={{ color: PURPLE }}>Các phiên bản khác ({siblings.length})</p>
+                <div className="mt-3">
                   <div className="flex flex-wrap gap-2">
                     {siblings.map((sib) => {
                       const sibStats = productStats(sib);
                       const isCurrent = sib.id === viewingProduct.id;
                       return (
-                        <button key={sib.id} onClick={() => !isCurrent && openProductDetail(sib.id)} disabled={isCurrent}
-                          className="text-left px-3 py-2 rounded-sm text-xs"
-                          style={{ border: `1px solid ${isCurrent ? PURPLE : LINE}`, background: isCurrent ? `${PURPLE}1A` : "#fff", cursor: isCurrent ? "default" : "pointer" }}>
-                          <p className="font-medium" style={{ color: isCurrent ? PURPLE : INK }}>{sib.variantAttrs ? Object.values(sib.variantAttrs).join(" / ") : sib.name}</p>
-                          <p className="opacity-50 mt-0.5" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{sib.code} · Tồn {sibStats.closingQty}</p>
+                        <button key={sib.id} onClick={() => !isCurrent && openProductDetail(sib.id)} disabled={isCurrent} title={`${sib.code} · Tồn ${sibStats.closingQty}`}
+                          className="px-3 py-1.5 rounded-md text-sm"
+                          style={{ border: `1px solid ${isCurrent ? INK : LINE}`, background: isCurrent ? INK : "#fff", color: isCurrent ? "#fff" : INK, cursor: isCurrent ? "default" : "pointer" }}>
+                          {sib.variantAttrs ? Object.values(sib.variantAttrs).join(" / ") : sib.name}
                         </button>
                       );
                     })}
@@ -3605,23 +3576,88 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                 </div>
               );
             })()}
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 mb-5">
-              {[
-                ["Tồn đầu kỳ", viewingProduct.openingQty, INK],
-                ["Nhập từ NCC", `+${stats.importedFromSupplierQty}`, FOREST],
-                ["Nhập lại (đổi trả)", `+${stats.importedFromReturnQty}`, BLUE],
-                ["Xuất trong kỳ", `-${stats.exportedQty}`, RUST],
-                ["Tồn cuối kỳ", stats.closingQty, viewingProduct.minStockLevel > 0 && stats.closingQty <= viewingProduct.minStockLevel ? RUST : INK],
-                ...(isAdmin ? [["Giá nhập", vnd(viewingProduct.costPrice), INK]] : []),
-                ["Giá bán sỉ", vnd(viewingProduct.wholesalePrice), INK],
-                ["Giá bán lẻ", vnd(viewingProduct.retailPrice), INK],
-              ].map(([label, val, color], i) => (
-                <div key={i} className="p-2.5 rounded-sm text-center" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
-                  <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">{label}</p>
-                  <p className="text-sm font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color }}>{val}</p>
+                <div className="flex gap-10 mt-4">
+                  <div>
+                    <p className="text-xs opacity-60">Giá bán</p>
+                    <p className="text-2xl font-bold" style={{ color: INK }}>{vnd(viewingProduct.retailPrice)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs opacity-60">Tồn kho</p>
+                    <p className="text-2xl font-bold" style={{ color: stockTone }}>{stats.closingQty} <span className="text-sm font-medium">{stockLabel}</span></p>
+                  </div>
                 </div>
-              ))}
+              </div>
+            </div>
+
+            <div className="flex gap-2 mb-5 flex-wrap">
+              {isAdmin && <button onClick={() => openIOFromDetail(viewingProduct, "in")} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm text-white" style={{ background: INK }}><ArrowDownToLine size={14} /> Nhập kho</button>}
+              {!isCtv && <button onClick={() => openIOFromDetail(viewingProduct, "out")} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: INK, color: INK }}><ArrowUpFromLine size={14} /> Xuất kho</button>}
+              {isAdmin && (
+                <button onClick={() => openEditFromDetail(viewingProduct)} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: LINE, color: INK }}><Pencil size={14} /> Sửa thông tin</button>
+              )}
+              {isAdmin && goToWebProduct && (
+                <button onClick={() => goToWebProduct(viewingProduct.id)} title="Sửa mô tả, ảnh, giá so sánh... của sản phẩm này trên website" className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: BLUE, color: BLUE }}><Globe size={14} /> Sửa trên Website</button>
+              )}
+              {(currentUser.isOwner || currentUser.perms?.deleteProducts) && (
+                <button
+                  onClick={() => {
+                    if (confirm(`Xoá sản phẩm "${viewingProduct.name}"? Không thể hoàn tác.`)) {
+                      removeProduct(viewingProduct.id);
+                      setViewingId(null);
+                    }
+                  }}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border"
+                  style={{ borderColor: RUST, color: RUST }}
+                >
+                  <Trash2 size={14} /> Xoá sản phẩm
+                </button>
+              )}
+            </div>
+
+            {viewingProduct.images && viewingProduct.images.length > 0 && (
+              <div className="flex gap-2 mb-5">
+                {viewingProduct.images.map((img, i) => (
+                  <img key={i} src={img} alt={`${viewingProduct.name} — ảnh phụ ${i + 1}`} onClick={() => setZoomImage({ images: galleryImgs, index: i + 1 })}
+                    className="w-16 h-16 object-cover rounded-md cursor-zoom-in" style={{ border: `1px solid ${LINE}` }} />
+                ))}
+              </div>
+            )}
+
+            <div className="mb-5" style={{ borderTop: `1px solid ${LINE}` }}>
+              <button onClick={() => setShowProductInfo((v) => !v)} className="w-full flex items-center justify-between py-3 text-sm font-semibold" style={{ color: INK }}>
+                Thông tin chi tiết
+                <ChevronDown size={16} style={{ transform: showProductInfo ? "rotate(180deg)" : "none" }} />
+              </button>
+              {showProductInfo && (
+                <dl className="grid sm:grid-cols-2 gap-x-8 text-sm">
+                  {[
+                    ["Mã hàng", viewingProduct.code],
+                    ["SKU", viewingProduct.sku || "—"],
+                    ...(viewingProduct.barcode ? [["Barcode", viewingProduct.barcode]] : []),
+                    ["Đơn vị", viewingProduct.unit || "—"],
+                    ["VAT", VAT_OPTIONS.find((v) => v.id === viewingProduct.vat)?.label || viewingProduct.vat],
+                    ["Bảo hành", viewingProduct.warrantyMonths !== 0 ? warrantyLabel(viewingProduct.warrantyMonths) : "Không"],
+                    ["Quản lý series", viewingProduct.hasSeries ? "Có" : "Không"],
+                    ["Giá bán sỉ", vnd(viewingProduct.wholesalePrice)],
+                    ...(isAdmin ? [
+                      ["Giá nhập", vnd(viewingProduct.costPrice)],
+                      ["Nhà cung cấp", (() => {
+                        const sup = (suppliers || []).find((x) => x.id === viewingProduct.supplierId);
+                        return sup ? <button onClick={() => goToSupplier && goToSupplier(sup.id)} className="hover:underline" style={{ color: BLUE }}>{sup.code}</button> : "Chưa gán";
+                      })()],
+                    ] : []),
+                    ["Tồn đầu kỳ", viewingProduct.openingQty],
+                    ["Nhập từ NCC", `+${stats.importedFromSupplierQty}`],
+                    ["Nhập lại (đổi trả)", `+${stats.importedFromReturnQty}`],
+                    ["Xuất trong kỳ", `-${stats.exportedQty}`],
+                  ].map(([label, val]) => (
+                    <div key={label} className="flex justify-between gap-4 py-2" style={{ borderTop: `1px solid ${LINE}` }}>
+                      <dt style={{ color: INK, opacity: 0.6 }}>{label}</dt>
+                      <dd className="font-medium text-right" style={{ color: INK }}>{val}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
             </div>
 
             {isAdmin && priceHistory.length > 0 && (
@@ -3630,7 +3666,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                   {showPriceHistory ? "Ẩn" : "Xem"} lịch sử thay đổi giá ({priceHistory.length})
                 </button>
                 {showPriceHistory && (
-                  <div className="rounded-sm overflow-hidden" style={{ border: `1px solid ${LINE}` }}>
+                  <div className="rounded-md overflow-hidden" style={{ border: `1px solid ${LINE}` }}>
                     {priceHistory.map((h) => (
                       <div key={h.id} className="flex items-center justify-between gap-3 px-3 py-2 text-xs flex-wrap" style={{ borderBottom: `1px dashed ${LINE}` }}>
                         <span style={{ color: INK }}>
@@ -3644,36 +3680,12 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
               </div>
             )}
 
-            <div className="flex gap-2 mb-5 flex-wrap">
-              {isAdmin && <button onClick={() => openIOFromDetail(viewingProduct, "in")} className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm text-white" style={{ background: FOREST }}><ArrowDownToLine size={14} /> Nhập kho</button>}
-              {!isCtv && <button onClick={() => openIOFromDetail(viewingProduct, "out")} className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm text-white" style={{ background: RUST }}><ArrowUpFromLine size={14} /> Xuất kho</button>}
-              {isAdmin && (
-                <button onClick={() => openEditFromDetail(viewingProduct)} className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm border" style={{ borderColor: LINE, color: INK }}><Pencil size={14} /> Sửa thông tin</button>
-              )}
-              {isAdmin && goToWebProduct && (
-                <button onClick={() => goToWebProduct(viewingProduct.id)} title="Sửa mô tả, ảnh, giá so sánh... của sản phẩm này trên website" className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm border" style={{ borderColor: BLUE, color: BLUE }}><Globe size={14} /> Sửa trên Website</button>
-              )}
-              {(currentUser.isOwner || currentUser.perms?.deleteProducts) && (
-                <button
-                  onClick={() => {
-                    if (confirm(`Xoá sản phẩm "${viewingProduct.name}"? Không thể hoàn tác.`)) {
-                      removeProduct(viewingProduct.id);
-                      setViewingId(null);
-                    }
-                  }}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm border"
-                  style={{ borderColor: RUST, color: RUST }}
-                >
-                  <Trash2 size={14} /> Xoá sản phẩm
-                </button>
-              )}
-            </div>
 
             {viewingProduct.hasSeries && (
               <div>
                 <p className="text-xs uppercase tracking-wider mb-2 opacity-60">Danh sách series — {rows.filter((r) => r.status === "Còn tồn").length} còn tồn / {rows.length} tổng</p>
                 {rows.length === 0 ? <p className="text-sm opacity-50">Chưa có series nào — nhập kho để thêm.</p> : (
-                  <div className="rounded-sm overflow-hidden" style={{ border: `1px solid ${LINE}` }}>
+                  <div className="rounded-md overflow-hidden" style={{ border: `1px solid ${LINE}` }}>
                     <table className="w-full text-xs">
                       <thead style={{ background: PAPER }}><tr className="opacity-60">
                         <th className="text-left py-2 px-2">Số Series</th><th className="text-left py-2 px-2">Phiếu nhập</th><th className="text-left py-2 px-2">Ngày nhập</th>
@@ -3682,7 +3694,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                       <tbody>
                         {rows.map((r) => (
                           <tr key={r.serial} style={{ borderTop: `1px dashed ${LINE}` }}>
-                            <td className="py-1.5 px-2" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{r.serial}</td>
+                            <td className="py-1.5 px-2" style={{ fontFamily: "'Inter', sans-serif" }}>{r.serial}</td>
                             <td className="py-1.5 px-2">{r.importDoc && goToDoc ? <button onClick={() => goToDoc(r.importDoc)} className="hover:underline" style={{ color: BLUE }}>{r.importDoc}</button> : (r.importDoc || "—")}</td>
                             <td className="py-1.5 px-2">{r.importDate}</td>
                             <td className="py-1.5 px-2">{r.exportDoc && goToDoc ? <button onClick={() => goToDoc(r.exportDoc)} className="hover:underline" style={{ color: BLUE }}>{r.exportDoc}</button> : (r.exportDoc || "—")}</td>
@@ -3717,21 +3729,21 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                       <label className="text-xs" style={{ width: 160 }}>
                         <span className="block opacity-60 mb-1">Tìm số phiếu</span>
                         <input value={historySearch} onChange={(e) => { setHistorySearch(e.target.value); setHistoryPage(1); }} placeholder="VD: POH001"
-                          className="w-full border rounded-sm py-1.5 px-2 text-xs" style={{ borderColor: LINE }} />
+                          className="w-full border rounded-md py-1.5 px-2 text-xs" style={{ borderColor: LINE }} />
                       </label>
                       <label className="text-xs" style={{ width: 140 }}>
                         <span className="block opacity-60 mb-1">Từ ngày</span>
-                        <input type="date" value={historyFrom} onChange={(e) => { setHistoryFrom(e.target.value); setHistoryPage(1); }} className="w-full border rounded-sm py-1.5 px-2 text-xs" style={{ borderColor: LINE }} />
+                        <input type="date" value={historyFrom} onChange={(e) => { setHistoryFrom(e.target.value); setHistoryPage(1); }} className="w-full border rounded-md py-1.5 px-2 text-xs" style={{ borderColor: LINE }} />
                       </label>
                       <label className="text-xs" style={{ width: 140 }}>
                         <span className="block opacity-60 mb-1">Đến ngày</span>
-                        <input type="date" value={historyTo} onChange={(e) => { setHistoryTo(e.target.value); setHistoryPage(1); }} className="w-full border rounded-sm py-1.5 px-2 text-xs" style={{ borderColor: LINE }} />
+                        <input type="date" value={historyTo} onChange={(e) => { setHistoryTo(e.target.value); setHistoryPage(1); }} className="w-full border rounded-md py-1.5 px-2 text-xs" style={{ borderColor: LINE }} />
                       </label>
                       {(historySearch || historyFrom || historyTo) && (
                         <button onClick={() => { setHistorySearch(""); setHistoryFrom(""); setHistoryTo(""); setHistoryPage(1); }} className="text-xs opacity-50 hover:opacity-100 underline mb-1.5">Xoá lọc</button>
                       )}
                     </div>
-                    <div className="rounded-sm overflow-x-auto min-w-0" style={{ border: `1px solid ${LINE}` }}>
+                    <div className="rounded-md overflow-x-auto min-w-0" style={{ border: `1px solid ${LINE}` }}>
                       <table className="w-full text-xs" style={{ minWidth: 460 }}>
                         <thead style={{ background: PAPER }}><tr className="opacity-60">
                           <th className="text-left py-2 px-2">Loại</th><th className="text-left py-2 px-2">Số phiếu</th><th className="text-left py-2 px-2">Ngày</th><th className="text-right py-2 px-2">SL</th><th className="text-right py-2 px-2">Đơn giá</th>
@@ -3748,12 +3760,12 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                             return (
                               <tr key={m.id} style={{ borderTop: `1px dashed ${LINE}` }}>
                                 <td className="py-1.5 px-2"><span style={{ color: m.type === "in" ? FOREST : RUST }}>{label}</span></td>
-                                <td className="py-1.5 px-2" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
+                                <td className="py-1.5 px-2" style={{ fontFamily: "'Inter', sans-serif" }}>
                                   {m.docNo && goToDoc ? <button onClick={() => goToDoc(m.docNo)} className="hover:underline" style={{ color: BLUE }}>{m.docNo}</button> : <span style={{ color: BLUE }}>{m.docNo || "—"}</span>}
                                 </td>
                                 <td className="py-1.5 px-2 whitespace-nowrap">{m.date}</td>
-                                <td className="py-1.5 px-2 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace", color: m.type === "in" ? FOREST : RUST }}>{m.type === "in" ? "+" : "-"}{m.qty}</td>
-                                <td className="py-1.5 px-2 text-right whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{vnd(m.price)}</td>
+                                <td className="py-1.5 px-2 text-right" style={{ fontFamily: "'Inter', sans-serif", color: m.type === "in" ? FOREST : RUST }}>{m.type === "in" ? "+" : "-"}{m.qty}</td>
+                                <td className="py-1.5 px-2 text-right whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(m.price)}</td>
                               </tr>
                             );
                           })}
@@ -3765,8 +3777,8 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                       <div className="flex items-center justify-between mt-2">
                         <span className="text-xs opacity-50">Trang {page}/{totalPages} · {filteredHistory.length} dòng</span>
                         <div className="flex gap-1.5">
-                          <button onClick={() => setHistoryPage((p2) => Math.max(1, p2 - 1))} disabled={page <= 1} className="text-xs px-2.5 py-1 rounded-sm border disabled:opacity-30" style={{ borderColor: LINE, color: INK }}>‹ Trước</button>
-                          <button onClick={() => setHistoryPage((p2) => Math.min(totalPages, p2 + 1))} disabled={page >= totalPages} className="text-xs px-2.5 py-1 rounded-sm border disabled:opacity-30" style={{ borderColor: LINE, color: INK }}>Sau ›</button>
+                          <button onClick={() => setHistoryPage((p2) => Math.max(1, p2 - 1))} disabled={page <= 1} className="text-xs px-2.5 py-1 rounded-md border disabled:opacity-30" style={{ borderColor: LINE, color: INK }}>‹ Trước</button>
+                          <button onClick={() => setHistoryPage((p2) => Math.min(totalPages, p2 + 1))} disabled={page >= totalPages} className="text-xs px-2.5 py-1 rounded-md border disabled:opacity-30" style={{ borderColor: LINE, color: INK }}>Sau ›</button>
                         </div>
                       </div>
                     )}
@@ -3780,17 +3792,17 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
       {editing !== null && (
         <Modal title={editing.id ? "Sửa thông tin sản phẩm" : "Thêm sản phẩm"} onClose={() => setEditing(null)} size="xl"
           headerAction={editing.id ? (
-            <button onClick={submitInfo} className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-sm text-white" style={{ background: INK }}>
+            <button onClick={submitInfo} className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md text-white" style={{ background: INK }}>
               <Save size={12} /> Lưu thay đổi
             </button>
           ) : undefined}>
           {editingSiblings.length > 1 && (
-            <div className="flex items-center justify-between gap-2 mb-4 p-2 rounded-sm border-2" style={{ background: `${PURPLE}0D`, borderColor: PURPLE }}>
-              <button type="button" onClick={() => gotoSibling(-1)} title="Phiên bản trước" className="p-2 rounded-sm shrink-0 border-2 hover:text-white transition-colors" style={{ borderColor: PURPLE, color: PURPLE }} onMouseEnter={(e) => (e.currentTarget.style.background = PURPLE)} onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+            <div className="flex items-center justify-between gap-2 mb-4 p-2 rounded-md border-2" style={{ background: `${PURPLE}0D`, borderColor: PURPLE }}>
+              <button type="button" onClick={() => gotoSibling(-1)} title="Phiên bản trước" className="p-2 rounded-md shrink-0 border-2 hover:text-white transition-colors" style={{ borderColor: PURPLE, color: PURPLE }} onMouseEnter={(e) => (e.currentTarget.style.background = PURPLE)} onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
                 <ChevronLeft size={20} strokeWidth={2.5} />
               </button>
               <span className="text-sm font-bold text-center truncate" style={{ color: PURPLE }}>Phiên bản {editingSiblingIndex + 1}/{editingSiblings.length} — {baseVariantName(editing)}</span>
-              <button type="button" onClick={() => gotoSibling(1)} title="Phiên bản sau" className="p-2 rounded-sm shrink-0 border-2 hover:text-white transition-colors" style={{ borderColor: PURPLE, color: PURPLE }} onMouseEnter={(e) => (e.currentTarget.style.background = PURPLE)} onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+              <button type="button" onClick={() => gotoSibling(1)} title="Phiên bản sau" className="p-2 rounded-md shrink-0 border-2 hover:text-white transition-colors" style={{ borderColor: PURPLE, color: PURPLE }} onMouseEnter={(e) => (e.currentTarget.style.background = PURPLE)} onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
                 <ChevronRight size={20} strokeWidth={2.5} />
               </button>
             </div>
@@ -3800,7 +3812,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
               <input className={inputCls} style={{ borderColor: LINE }} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} disabled={!!editing.id && !isAdmin} />
             </Field>
             <Field label="Mã SKU" hint="Tự sinh — sửa được">
-              <input className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} />
+              <input className={inputCls} style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} />
             </Field>
             {!form.isService && (
               <Field label="Đơn vị tính">
@@ -3857,7 +3869,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
               </select>
             </Field>
             <Field label="Barcode" hint="Bỏ trống nếu không có">
-              <input className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} placeholder="893xxxxxxxxxx" />
+              <input className={inputCls} style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} placeholder="893xxxxxxxxxx" />
             </Field>
           </div>
 
@@ -3867,7 +3879,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
             <Field label="Giá bán sỉ (đ)"><MoneyInput className={inputCls} style={{ borderColor: LINE }} value={form.wholesalePrice} onChange={(v) => setForm({ ...form, wholesalePrice: v })} /></Field>
           </div>
 
-          <label className="flex items-center gap-2 mb-1 text-sm p-2.5 rounded-sm" style={{ color: INK, background: form.isService ? `${BLUE}0D` : "transparent", border: `1px solid ${form.isService ? BLUE : LINE}` }}>
+          <label className="flex items-center gap-2 mb-1 text-sm p-2.5 rounded-md" style={{ color: INK, background: form.isService ? `${BLUE}0D` : "transparent", border: `1px solid ${form.isService ? BLUE : LINE}` }}>
             <input type="checkbox" checked={!!form.isService} onChange={(e) => setForm({ ...form, isService: e.target.checked, hasSeries: e.target.checked ? false : form.hasSeries, openingQty: e.target.checked ? 0 : form.openingQty })} />
             Sản phẩm dịch vụ (VD: phí sửa chữa, phí IT Helpdesk...) — không quản lý tồn kho, không trừ kho khi bán
           </label>
@@ -3908,12 +3920,12 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
               <div className="flex items-center gap-2">
                 {[0, 2, 5, 10].map((n) => (
                   <button key={n} type="button" onClick={() => setForm({ ...form, minStockLevel: n })}
-                    className="px-3 py-1.5 rounded-sm text-sm border"
+                    className="px-3 py-1.5 rounded-md text-sm border"
                     style={{ borderColor: Number(form.minStockLevel) === n ? INK : LINE, background: Number(form.minStockLevel) === n ? INK : "transparent", color: Number(form.minStockLevel) === n ? "#fff" : INK }}>
                     {n}
                   </button>
                 ))}
-                <input type="number" min={0} value={form.minStockLevel} onChange={(e) => setForm({ ...form, minStockLevel: e.target.value })} className="w-20 border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }} placeholder="Khác" />
+                <input type="number" min={0} value={form.minStockLevel} onChange={(e) => setForm({ ...form, minStockLevel: e.target.value })} className="w-20 border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }} placeholder="Khác" />
               </div>
             </Field>
           )}
@@ -3925,7 +3937,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
               <div className="flex gap-2 flex-wrap">
                 {VAT_OPTIONS.map((v) => (
                   <button key={v.id} type="button" onClick={() => setForm({ ...form, vat: v.id })}
-                    className="px-3 py-1.5 rounded-sm text-sm border"
+                    className="px-3 py-1.5 rounded-md text-sm border"
                     style={{ borderColor: form.vat === v.id ? INK : LINE, background: form.vat === v.id ? INK : "transparent", color: form.vat === v.id ? "#fff" : INK }}>
                     {v.label}
                   </button>
@@ -3936,19 +3948,19 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
             <Field label="Bảo hành" hint="Tuỳ sản phẩm — hiện trên đơn hàng và biên bản bàn giao khi in">
               <div className="flex gap-2 flex-wrap">
                 <button type="button" onClick={() => setForm({ ...form, warrantyMonths: 0 })}
-                  className="px-3 py-1.5 rounded-sm text-sm border"
+                  className="px-3 py-1.5 rounded-md text-sm border"
                   style={{ borderColor: !form.warrantyMonths ? INK : LINE, background: !form.warrantyMonths ? INK : "transparent", color: !form.warrantyMonths ? "#fff" : INK }}>
                   Không BH
                 </button>
                 {WARRANTY_OPTIONS.map((m) => (
                   <button key={m} type="button" onClick={() => setForm({ ...form, warrantyMonths: m })}
-                    className="px-3 py-1.5 rounded-sm text-sm border"
+                    className="px-3 py-1.5 rounded-md text-sm border"
                     style={{ borderColor: Number(form.warrantyMonths) === m ? INK : LINE, background: Number(form.warrantyMonths) === m ? INK : "transparent", color: Number(form.warrantyMonths) === m ? "#fff" : INK }}>
                     {m} tháng
                   </button>
                 ))}
                 <button type="button" onClick={() => setForm({ ...form, warrantyMonths: WARRANTY_LIFETIME })}
-                  className="px-3 py-1.5 rounded-sm text-sm border"
+                  className="px-3 py-1.5 rounded-md text-sm border"
                   style={{ borderColor: Number(form.warrantyMonths) === WARRANTY_LIFETIME ? INK : LINE, background: Number(form.warrantyMonths) === WARRANTY_LIFETIME ? INK : "transparent", color: Number(form.warrantyMonths) === WARRANTY_LIFETIME ? "#fff" : INK }}>
                   Vĩnh viễn
                 </button>
@@ -3962,14 +3974,14 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                   {form.image ? (
                     <div className="relative">
                       <img src={form.image} alt="Ảnh chính" onClick={() => setZoomImage({ images: [{ src: form.image, alt: "Ảnh chính" }, ...(form.images || []).map((im, i) => ({ src: im, alt: `Ảnh phụ ${i + 1}` }))], index: 0 })}
-                        className="w-16 h-16 object-cover rounded-sm cursor-zoom-in" style={{ border: `1px solid ${LINE}` }} />
+                        className="w-16 h-16 object-cover rounded-md cursor-zoom-in" style={{ border: `1px solid ${LINE}` }} />
                       <button type="button" onClick={() => setForm({ ...form, image: null })}
                         className="absolute -top-2 -right-2 w-5 h-5 rounded-full flex items-center justify-center text-white" style={{ background: RUST }}>
                         <X size={11} />
                       </button>
                     </div>
                   ) : (
-                    <label className="w-16 h-16 rounded-sm flex flex-col items-center justify-center cursor-pointer gap-0.5"
+                    <label className="w-16 h-16 rounded-md flex flex-col items-center justify-center cursor-pointer gap-0.5"
                       style={{ background: PAPER, border: `1px dashed ${LINE}`, color: INK }}>
                       <ImagePlus size={16} className="opacity-50" />
                       <input type="file" accept="image/*" className="hidden" onChange={onImagePick} />
@@ -3982,14 +3994,14 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                     {(form.images || [])[i] ? (
                       <div className="relative">
                         <img src={form.images[i]} alt={`Ảnh phụ ${i + 1}`} onClick={() => setZoomImage({ images: [{ src: form.image, alt: "Ảnh chính" }, ...(form.images || []).map((im, idx) => ({ src: im, alt: `Ảnh phụ ${idx + 1}` }))].filter((x) => x.src), index: (form.image ? 1 : 0) + i })}
-                          className="w-16 h-16 object-cover rounded-sm cursor-zoom-in" style={{ border: `1px solid ${LINE}` }} />
+                          className="w-16 h-16 object-cover rounded-md cursor-zoom-in" style={{ border: `1px solid ${LINE}` }} />
                         <button type="button" onClick={() => removeGalleryImage(i)}
                           className="absolute -top-2 -right-2 w-5 h-5 rounded-full flex items-center justify-center text-white" style={{ background: RUST }}>
                           <X size={11} />
                         </button>
                       </div>
                     ) : (
-                      <label className="w-16 h-16 rounded-sm flex flex-col items-center justify-center cursor-pointer gap-0.5"
+                      <label className="w-16 h-16 rounded-md flex flex-col items-center justify-center cursor-pointer gap-0.5"
                         style={{ background: PAPER, border: `1px dashed ${LINE}`, color: INK }}>
                         <ImagePlus size={16} className="opacity-50" />
                         <input type="file" accept="image/*" className="hidden" onChange={(e) => onGalleryImagePick(i, e)} />
@@ -4003,7 +4015,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           </div>
 
           {/* ── Đăng lên website bán hàng ── */}
-          <div className="mt-3 rounded-sm p-3" style={{ border: `1px solid ${form.web?.published ? BLUE : LINE}`, background: form.web?.published ? `${BLUE}0D` : "transparent" }}>
+          <div className="mt-3 rounded-md p-3" style={{ border: `1px solid ${form.web?.published ? BLUE : LINE}`, background: form.web?.published ? `${BLUE}0D` : "transparent" }}>
             <label className="flex items-center gap-2 text-sm font-medium" style={{ color: INK }}>
               <input type="checkbox" checked={!!form.web?.published}
                 onChange={(e) => setForm({ ...form, web: { ...normalizeWeb(form.web), published: e.target.checked } })} />
@@ -4039,7 +4051,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                     onChange={(v) => setForm({ ...form, web: { ...form.web, description: v } })} />
                 </Field>
                 <Field label="Thông số kỹ thuật (web)" hint="Mỗi dòng: Nhãn | Giá trị. Dòng KHÔNG có ký tự | sẽ nối tiếp (xuống dòng) vào giá trị phía trên — dùng cho thông số dài nhiều dòng.">
-                  <textarea rows={8} className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }}
+                  <textarea rows={8} className={inputCls} style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }}
                     value={form.web?.specsText ?? webSpecsToText(form.web?.specs)}
                     onChange={(e) => setForm({ ...form, web: { ...form.web, specsText: e.target.value } })}
                     placeholder={"Chuẩn | M.2 2280 NVMe\nBộ nhớ | 2 khe DDR4, tối đa 64GB\n- Hỗ trợ XMP\n- Kênh đôi"} />
@@ -4057,7 +4069,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
               </label>
 
               {form.hasVariants && (
-                <div className="p-3 rounded-sm mb-3" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
+                <div className="p-3 rounded-md mb-3" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
                   <p className="text-xs opacity-60 mb-3">Mỗi tổ hợp giá trị sẽ tạo thành 1 sản phẩm riêng (Mã VT/SKU tự thêm hậu tố, vd <code>{form.code || "HI003"}_BK</code> cho màu Đen). Thông tin nền (nhóm hàng, nhãn hiệu, giá, ảnh, VAT, bảo hành…) ở trên sẽ dùng chung cho mọi phiên bản, sau đó vẫn sửa lại được từng phiên bản riêng.</p>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-1">
@@ -4095,7 +4107,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
             </>
           )}
 
-          <button onClick={submitInfo} className="w-full py-2.5 rounded-sm text-white text-sm mt-2" style={{ background: INK }}>
+          <button onClick={submitInfo} className="w-full py-2.5 rounded-md text-white text-sm mt-2" style={{ background: INK }}>
             {editing.id ? "Lưu thay đổi" : form.hasVariants ? "Tạo các phiên bản sản phẩm" : "Thêm sản phẩm"}
           </button>
         </Modal>
@@ -4116,11 +4128,11 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
             <Field label="Áp dụng mức giá">
               <div className="flex gap-2">
                 <button type="button" onClick={() => setIoForm({ ...ioForm, priceLevel: "retail", price: ioModal.product.retailPrice })}
-                  className="px-3 py-1.5 rounded-sm text-sm border" style={{ borderColor: ioForm.priceLevel === "retail" ? INK : LINE, background: ioForm.priceLevel === "retail" ? INK : "transparent", color: ioForm.priceLevel === "retail" ? "#fff" : INK }}>
+                  className="px-3 py-1.5 rounded-md text-sm border" style={{ borderColor: ioForm.priceLevel === "retail" ? INK : LINE, background: ioForm.priceLevel === "retail" ? INK : "transparent", color: ioForm.priceLevel === "retail" ? "#fff" : INK }}>
                   Giá lẻ · {vnd(ioModal.product.retailPrice)}
                 </button>
                 <button type="button" onClick={() => setIoForm({ ...ioForm, priceLevel: "wholesale", price: ioModal.product.wholesalePrice })}
-                  className="px-3 py-1.5 rounded-sm text-sm border" style={{ borderColor: ioForm.priceLevel === "wholesale" ? INK : LINE, background: ioForm.priceLevel === "wholesale" ? INK : "transparent", color: ioForm.priceLevel === "wholesale" ? "#fff" : INK }}>
+                  className="px-3 py-1.5 rounded-md text-sm border" style={{ borderColor: ioForm.priceLevel === "wholesale" ? INK : LINE, background: ioForm.priceLevel === "wholesale" ? INK : "transparent", color: ioForm.priceLevel === "wholesale" ? "#fff" : INK }}>
                   Giá sỉ · {vnd(ioModal.product.wholesalePrice)}
                 </button>
               </div>
@@ -4148,7 +4160,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           )}
 
           <button onClick={submitIO} disabled={ioModal.product.hasSeries && (ioModal.type === "in" ? ioForm.series.length !== (Number(ioForm.qty) || 0) : ioForm.selectedSeries.length !== (Number(ioForm.qty) || 0))}
-            className="w-full py-2.5 rounded-sm text-white text-sm mt-2 disabled:opacity-40" style={{ background: ioModal.type === "in" ? FOREST : RUST }}>
+            className="w-full py-2.5 rounded-md text-white text-sm mt-2 disabled:opacity-40" style={{ background: ioModal.type === "in" ? FOREST : RUST }}>
             {ioModal.type === "in" ? "Xác nhận nhập kho" : "Xác nhận xuất kho"}
           </button>
         </Modal>
@@ -4156,7 +4168,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
 
       {importResult && (
         <Modal title="Kết quả nhập sản phẩm từ Excel" onClose={() => setImportResult(null)}>
-          <div className="p-3 rounded-sm mb-3" style={{ background: `${FOREST}0D`, border: `1px solid ${FOREST}44` }}>
+          <div className="p-3 rounded-md mb-3" style={{ background: `${FOREST}0D`, border: `1px solid ${FOREST}44` }}>
             <p className="text-sm" style={{ color: FOREST }}>Đã thêm <b>{importResult.added}</b> sản phẩm mới.</p>
             {importResult.webUpdated > 0 && (
               <p className="text-sm mt-1" style={{ color: FOREST }}>Đã cập nhật thông tin web cho <b>{importResult.webUpdated}</b> sản phẩm có sẵn (không đụng giá/tồn kho).</p>
@@ -4166,9 +4178,9 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
             )}
           </div>
           {importResult.skipped.length > 0 && (
-            <div className="p-3 rounded-sm" style={{ background: `${BRASS}0D`, border: `1px solid ${BRASS}44` }}>
+            <div className="p-3 rounded-md" style={{ background: `${BRASS}0D`, border: `1px solid ${BRASS}44` }}>
               <p className="text-sm mb-1.5" style={{ color: BRASS }}>Bỏ qua {importResult.skipped.length} dòng (mã đã tồn tại nhưng không có cột web/Bảo hành/Định mức tồn tối thiểu nào được điền, hoặc trùng mã trong file):</p>
-              <p className="text-xs opacity-70" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{importResult.skipped.join(", ")}</p>
+              <p className="text-xs opacity-70" style={{ fontFamily: "'Inter', sans-serif" }}>{importResult.skipped.join(", ")}</p>
             </div>
           )}
         </Modal>
@@ -4179,10 +4191,10 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           <p className="text-xs opacity-60 mb-3">Đây là danh sách nhóm hàng dùng chung cho toàn bộ sản phẩm — chỉ quản trị viên tạo/xoá được, các sản phẩm chỉ chọn từ danh sách này. Đổi tên (nút bút chì) sẽ tự cập nhật lại tên nhóm cho mọi sản phẩm/nhãn hiệu đang gán — không bị mất khỏi danh mục.</p>
           <div className="flex gap-2 mb-4">
             <input value={newCategoryInput} onChange={(e) => setNewCategoryInput(e.target.value)} placeholder="Tên nhóm hàng mới…"
-              className="flex-1 border rounded-sm py-2 px-3 text-sm" style={{ borderColor: LINE }}
+              className="flex-1 border rounded-md py-2 px-3 text-sm" style={{ borderColor: LINE }}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); const v = newCategoryInput.trim(); if (v && !(categories || []).includes(v)) { setCategories([...(categories || []), v]); addLog("Thêm nhóm hàng", v); } setNewCategoryInput(""); } }} />
             <button onClick={() => { const v = newCategoryInput.trim(); if (v && !(categories || []).includes(v)) { setCategories([...(categories || []), v]); addLog("Thêm nhóm hàng", v); } setNewCategoryInput(""); }}
-              className="px-4 py-2 rounded-sm text-white text-sm shrink-0" style={{ background: INK }}>Thêm</button>
+              className="px-4 py-2 rounded-md text-white text-sm shrink-0" style={{ background: INK }}>Thêm</button>
           </div>
           {categoryOptions.length === 0 ? (
             <p className="text-sm opacity-50 text-center py-8">Chưa có nhóm hàng nào.</p>
@@ -4193,13 +4205,13 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                 const brandCount = (brands || []).filter((b) => b.category === c).length;
                 const isEditing = editingCategory === c;
                 return (
-                  <div key={c} className="flex items-center justify-between p-2.5 rounded-sm gap-2" style={{ border: `1px solid ${LINE}` }}>
+                  <div key={c} className="flex items-center justify-between p-2.5 rounded-md gap-2" style={{ border: `1px solid ${LINE}` }}>
                     {isEditing ? (
                       <input
                         autoFocus value={editCategoryInput} onChange={(e) => setEditCategoryInput(e.target.value)}
                         onKeyDown={(e) => { if (e.key === "Enter") renameCategory(c, editCategoryInput); else if (e.key === "Escape") setEditingCategory(null); }}
                         onBlur={() => setEditingCategory(null)}
-                        className="flex-1 border rounded-sm py-1 px-2 text-sm" style={{ borderColor: BLUE }}
+                        className="flex-1 border rounded-md py-1 px-2 text-sm" style={{ borderColor: BLUE }}
                       />
                     ) : (
                       <div className="flex-1 min-w-0">
@@ -4210,7 +4222,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                     <div className="flex items-center gap-0.5 shrink-0">
                       {!isEditing && (
                         <button onClick={() => { setEditingCategory(c); setEditCategoryInput(c); }} title="Đổi tên"
-                          className="p-1.5 rounded-sm hover:bg-black/5 opacity-60" style={{ color: INK }}>
+                          className="p-1.5 rounded-md hover:bg-black/5 opacity-60" style={{ color: INK }}>
                           <Pencil size={13} />
                         </button>
                       )}
@@ -4228,7 +4240,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                           if (brandCount > 0) setBrands((prev) => prev.map((b) => (b.category === c ? { ...b, category: "" } : b)));
                           addLog("Xoá nhóm hàng", `${c}${parts.length ? ` (bỏ gán ${parts.join(", ")})` : ""}`);
                         }}
-                        className="p-1.5 rounded-sm hover:bg-black/5 opacity-60" style={{ color: RUST }}>
+                        className="p-1.5 rounded-md hover:bg-black/5 opacity-60" style={{ color: RUST }}>
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -4259,7 +4271,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                   setNewBrandInputByCat({ ...newBrandInputByCat, [cat]: "" });
                 };
                 return (
-                  <div key={cat} className="p-3 rounded-sm" style={{ border: `1px solid ${LINE}` }}>
+                  <div key={cat} className="p-3 rounded-md" style={{ border: `1px solid ${LINE}` }}>
                     <p className="text-sm font-medium mb-2" style={{ color: INK }}>{cat}</p>
                     <div className="flex flex-wrap gap-1.5 mb-2">
                       {catBrands.length === 0 && <span className="text-xs opacity-40">Chưa có nhãn hiệu nào trong nhóm này.</span>}
@@ -4284,8 +4296,8 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                     <div className="flex gap-2">
                       <input value={newBrandInputByCat[cat] || ""} onChange={(e) => setNewBrandInputByCat({ ...newBrandInputByCat, [cat]: e.target.value })}
                         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addBrand(); } }}
-                        placeholder={`Thêm nhãn hiệu vào "${cat}"…`} className="flex-1 border rounded-sm py-1.5 px-2.5 text-sm" style={{ borderColor: LINE }} />
-                      <button onClick={addBrand} className="px-3 py-1.5 rounded-sm text-white text-xs shrink-0" style={{ background: INK }}>Thêm</button>
+                        placeholder={`Thêm nhãn hiệu vào "${cat}"…`} className="flex-1 border rounded-md py-1.5 px-2.5 text-sm" style={{ borderColor: LINE }} />
+                      <button onClick={addBrand} className="px-3 py-1.5 rounded-md text-white text-xs shrink-0" style={{ background: INK }}>Thêm</button>
                     </div>
                   </div>
                 );
@@ -4295,14 +4307,14 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                 const unassigned = (brands || []).filter((b) => !b.category || !categoryOptions.includes(b.category));
                 if (unassigned.length === 0) return null;
                 return (
-                  <div className="p-3 rounded-sm" style={{ border: `1px dashed ${RUST}66` }}>
+                  <div className="p-3 rounded-md" style={{ border: `1px dashed ${RUST}66` }}>
                     <p className="text-sm font-medium mb-2" style={{ color: RUST }}>Chưa gán nhóm hàng ({unassigned.length})</p>
                     <div className="space-y-1.5">
                       {unassigned.map((b) => (
                         <div key={b.id} className="flex items-center gap-2">
                           <span className="text-sm flex-1" style={{ color: INK }}>{b.name}</span>
                           <select onChange={(e) => { if (e.target.value) { setBrands((brands || []).map((x) => (x.id === b.id ? { ...x, category: e.target.value } : x))); addLog("Gán nhóm hàng cho nhãn hiệu", `${b.name} → ${e.target.value}`); } }}
-                            defaultValue="" className="border rounded-sm py-1 px-2 text-xs" style={{ borderColor: LINE }}>
+                            defaultValue="" className="border rounded-md py-1 px-2 text-xs" style={{ borderColor: LINE }}>
                             <option value="">— Gán vào nhóm hàng —</option>
                             {categoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
                           </select>
@@ -4313,7 +4325,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                             )) return;
                             if (usedCount > 0) setProducts((prev) => prev.map((p) => (p.brand === b.name ? { ...p, brand: "" } : p)));
                             setBrands((brands || []).filter((x) => x.id !== b.id));
-                          }} className="p-1 rounded-sm hover:bg-black/5 opacity-60" style={{ color: RUST }}><Trash2 size={13} /></button>
+                          }} className="p-1 rounded-md hover:bg-black/5 opacity-60" style={{ color: RUST }}><Trash2 size={13} /></button>
                         </div>
                       ))}
                     </div>
@@ -4356,7 +4368,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
               onKeyDown={(e) => { if (e.key === "Enter") confirmBulkDelete(); }} autoFocus />
           </Field>
           {deletePasswordError && <p className="text-sm mb-2" style={{ color: RUST }}>{deletePasswordError}</p>}
-          <button onClick={confirmBulkDelete} className="w-full py-2.5 rounded-sm text-white text-sm mt-2" style={{ background: RUST }}>Xác nhận xoá</button>
+          <button onClick={confirmBulkDelete} className="w-full py-2.5 rounded-md text-white text-sm mt-2" style={{ background: RUST }}>Xác nhận xoá</button>
         </Modal>
       )}
     </div>
@@ -4418,26 +4430,26 @@ function BulkEditModal({ count, suppliers, categoryOptions, brandOptions, brandO
         <MoneyInput className={inputCls} style={{ borderColor: LINE }} value={form.wholesalePrice.value} onChange={(v) => setField("wholesalePrice", { value: v })} />
       </BulkEditRow>
       <BulkEditRow on={form.supplierId.on} onToggle={(v) => setField("supplierId", { on: v })} label="Nhà cung cấp">
-        <select value={form.supplierId.value} onChange={(e) => setField("supplierId", { value: e.target.value })} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
+        <select value={form.supplierId.value} onChange={(e) => setField("supplierId", { value: e.target.value })} className="w-full border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
           <option value="">— Chọn nhà cung cấp —</option>
           {(suppliers || []).map((s) => <option key={s.id} value={s.id}>{s.code} - {s.name}</option>)}
         </select>
       </BulkEditRow>
       <BulkEditRow on={form.category.on} onToggle={(v) => setField("category", { on: v })} label="Nhóm hàng">
-        <select value={form.category.value} onChange={(e) => setField("category", { value: e.target.value })} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
+        <select value={form.category.value} onChange={(e) => setField("category", { value: e.target.value })} className="w-full border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
           <option value="">— Chọn nhóm hàng —</option>
           {categoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
       </BulkEditRow>
       <BulkEditRow on={form.brand.on} onToggle={(v) => setField("brand", { on: v })} label="Nhãn hiệu">
-        <select value={form.brand.value} onChange={(e) => setField("brand", { value: e.target.value })} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
+        <select value={form.brand.value} onChange={(e) => setField("brand", { value: e.target.value })} className="w-full border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
           <option value="">— Chọn nhãn hiệu —</option>
           {brandChoices.map((b) => <option key={b} value={b}>{b}</option>)}
         </select>
       </BulkEditRow>
 
       <div className="flex items-center gap-3 mt-5">
-        <button onClick={submit} disabled={!anyOn} className="px-4 py-2 rounded-sm text-sm text-white" style={{ background: INK, opacity: anyOn ? 1 : 0.5 }}>
+        <button onClick={submit} disabled={!anyOn} className="px-4 py-2 rounded-md text-sm text-white" style={{ background: INK, opacity: anyOn ? 1 : 0.5 }}>
           Áp dụng cho {count} sản phẩm
         </button>
         <button onClick={onClose} className="text-sm opacity-60 hover:opacity-100">Huỷ</button>
@@ -4497,14 +4509,14 @@ function MergeVariantsModal({ products, onClose, onApply }) {
       </Field>
       <div className="mt-3 space-y-2 max-h-[45vh] overflow-y-auto">
         {products.map((p) => (
-          <div key={p.id} className="flex items-start gap-3 p-2 rounded-sm" style={{ border: `1px solid ${LINE}` }}>
+          <div key={p.id} className="flex items-start gap-3 p-2 rounded-md" style={{ border: `1px solid ${LINE}` }}>
             <span className="flex-1 text-sm min-w-0 break-words" style={{ color: INK }} title={p.name}>{p.name}</span>
-            <input value={values[p.id] || ""} onChange={(e) => setVal(p.id, e.target.value)} placeholder="Giá trị (VD: Đen)" className="w-40 border rounded-sm py-1.5 px-2 text-sm shrink-0" style={{ borderColor: LINE }} />
+            <input value={values[p.id] || ""} onChange={(e) => setVal(p.id, e.target.value)} placeholder="Giá trị (VD: Đen)" className="w-40 border rounded-md py-1.5 px-2 text-sm shrink-0" style={{ borderColor: LINE }} />
           </div>
         ))}
       </div>
       <div className="flex items-center gap-3 mt-5">
-        <button onClick={submit} className="px-4 py-2 rounded-sm text-sm text-white" style={{ background: INK }}>Gộp thành phiên bản</button>
+        <button onClick={submit} className="px-4 py-2 rounded-md text-sm text-white" style={{ background: INK }}>Gộp thành phiên bản</button>
         <button onClick={onClose} className="text-sm opacity-60 hover:opacity-100">Huỷ</button>
       </div>
     </Modal>
@@ -4522,7 +4534,7 @@ function VariantValueTagInput({ values, setValues, placeholder }) {
     setText("");
   };
   return (
-    <div className="w-full border rounded-sm p-2 flex flex-wrap gap-1.5 items-center" style={{ borderColor: LINE, background: "#fff" }}>
+    <div className="w-full border rounded-md p-2 flex flex-wrap gap-1.5 items-center" style={{ borderColor: LINE, background: "#fff" }}>
       {values.map((v, i) => (
         <span key={i} className="inline-flex items-center gap-1 pl-2.5 pr-1.5 py-1 rounded-full text-xs" style={{ background: `${BLUE}17`, color: BLUE }}>
           {v}
@@ -4561,9 +4573,9 @@ function SeriesTagInput({ series, setSeries, placeholder }) {
   const removeAt = (idx) => setSeries(series.filter((_, i) => i !== idx));
 
   return (
-    <div className="w-full border rounded-sm p-2 flex flex-wrap gap-1.5 items-center" style={{ borderColor: LINE, background: "#fff" }}>
+    <div className="w-full border rounded-md p-2 flex flex-wrap gap-1.5 items-center" style={{ borderColor: LINE, background: "#fff" }}>
       {series.map((s, i) => (
-        <span key={i} className="inline-flex items-center gap-1 pl-2.5 pr-1.5 py-1 rounded-full text-xs" style={{ background: `${BLUE}17`, color: BLUE, fontFamily: "'IBM Plex Mono', monospace" }}>
+        <span key={i} className="inline-flex items-center gap-1 pl-2.5 pr-1.5 py-1 rounded-full text-xs" style={{ background: `${BLUE}17`, color: BLUE, fontFamily: "'Inter', sans-serif" }}>
           {s}
           <button type="button" onClick={() => removeAt(i)} className="hover:opacity-60 rounded-full" style={{ padding: 2 }}><X size={11} /></button>
         </span>
@@ -4628,7 +4640,7 @@ function WebCategoryMultiSelect({ webCats, value, onChange }) {
           onChange={(e) => { setQ(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
           placeholder={sel.length ? `${sel.length} danh mục đã chọn — gõ để tìm thêm…` : "Gõ để tìm danh mục…"}
-          className="w-full border rounded-sm py-1.5 pl-2.5 pr-7 text-sm" style={{ borderColor: LINE }}
+          className="w-full border rounded-md py-1.5 pl-2.5 pr-7 text-sm" style={{ borderColor: LINE }}
         />
         <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none" style={{ transform: `translateY(-50%) ${open ? "rotate(180deg)" : ""}`, transition: "transform .15s" }} />
       </div>
@@ -4643,7 +4655,7 @@ function WebCategoryMultiSelect({ webCats, value, onChange }) {
         </div>
       )}
       {open && (
-        <div className="absolute z-50 mt-1 w-full max-h-72 overflow-y-auto rounded-sm shadow-lg p-2" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+        <div className="absolute z-50 mt-1 w-full max-h-72 overflow-y-auto rounded-md shadow-lg p-2" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           {groups.length === 0 ? (
             <div className="px-1 py-2 text-xs opacity-50">Không tìm thấy</div>
           ) : groups.map(([group, subs]) => (
@@ -4652,7 +4664,7 @@ function WebCategoryMultiSelect({ webCats, value, onChange }) {
               {subs.map((c) => {
                 const on = sel.includes(c.name);
                 return (
-                  <label key={c.name} className="flex items-center gap-2 py-1 px-1 rounded-sm hover:bg-black/5 cursor-pointer text-sm" style={{ paddingLeft: 4 + (c.depth - 1) * 14 }}>
+                  <label key={c.name} className="flex items-center gap-2 py-1 px-1 rounded-md hover:bg-black/5 cursor-pointer text-sm" style={{ paddingLeft: 4 + (c.depth - 1) * 14 }}>
                     <input type="checkbox" checked={on} onChange={() => toggle(c.name)} />
                     <span>{c.depth > 1 ? "› " : ""}{c.name}</span>
                   </label>
@@ -4693,7 +4705,7 @@ function ProductPicker({ products, onPick, onQuickCreate, brands }) {
           onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
           placeholder="Gõ tên hoặc mã sản phẩm để tìm…"
-          className="w-full pl-8 pr-8 py-2 text-sm rounded-sm border outline-none"
+          className="w-full pl-8 pr-8 py-2 text-sm rounded-md border outline-none"
           style={{ borderColor: LINE, background: "#fff" }}
         />
         {(open || creatingNew) && (
@@ -4703,39 +4715,39 @@ function ProductPicker({ products, onPick, onQuickCreate, brands }) {
         )}
       </div>
       {(open || creatingNew) && (
-        <div className="absolute z-20 mt-1 w-full rounded-sm shadow-lg overflow-hidden" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+        <div className="absolute z-20 mt-1 w-full rounded-md shadow-lg overflow-hidden" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           {creatingNew ? (
             <div className="p-3 max-h-[70vh] overflow-y-auto">
               <p className="text-xs uppercase tracking-wider opacity-50 mb-2">Tạo nhanh sản phẩm mới</p>
               <div className="grid grid-cols-2 gap-2 mb-2">
-                <input value={newForm.code} onChange={(e) => setNewForm({ ...newForm, code: e.target.value })} placeholder="Mã vật tư *" className="border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} />
-                <select value={newForm.unit} onChange={(e) => setNewForm({ ...newForm, unit: e.target.value })} className="border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
+                <input value={newForm.code} onChange={(e) => setNewForm({ ...newForm, code: e.target.value })} placeholder="Mã vật tư *" className="border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} />
+                <select value={newForm.unit} onChange={(e) => setNewForm({ ...newForm, unit: e.target.value })} className="border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
                   {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
                 </select>
               </div>
-              <input value={newForm.name} onChange={(e) => setNewForm({ ...newForm, name: e.target.value })} placeholder="Tên vật tư *" className="w-full border rounded-sm py-1.5 px-2 text-sm mb-2" style={{ borderColor: LINE }} />
-              <MoneyInput value={newForm.costPrice} onChange={(v) => setNewForm({ ...newForm, costPrice: v })} placeholder="Giá nhập" className="w-full border rounded-sm py-1.5 px-2 text-sm mb-2" style={{ borderColor: LINE }} />
-              <select value={newForm.brand} onChange={(e) => setNewForm({ ...newForm, brand: e.target.value })} className="w-full border rounded-sm py-1.5 px-2 text-sm mb-2" style={{ borderColor: LINE }}>
+              <input value={newForm.name} onChange={(e) => setNewForm({ ...newForm, name: e.target.value })} placeholder="Tên vật tư *" className="w-full border rounded-md py-1.5 px-2 text-sm mb-2" style={{ borderColor: LINE }} />
+              <MoneyInput value={newForm.costPrice} onChange={(v) => setNewForm({ ...newForm, costPrice: v })} placeholder="Giá nhập" className="w-full border rounded-md py-1.5 px-2 text-sm mb-2" style={{ borderColor: LINE }} />
+              <select value={newForm.brand} onChange={(e) => setNewForm({ ...newForm, brand: e.target.value })} className="w-full border rounded-md py-1.5 px-2 text-sm mb-2" style={{ borderColor: LINE }}>
                 <option value="">— Nhãn hiệu (không bắt buộc) —</option>
                 {[...new Set((brands || []).map((b) => (typeof b === "string" ? b : b.name)))].sort().map((b) => <option key={b} value={b}>{b}</option>)}
               </select>
               <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">Bảo hành</p>
               <div className="flex gap-1.5 flex-wrap mb-2">
-                <button type="button" onClick={() => setNewForm({ ...newForm, warrantyMonths: 0 })} className="px-2 py-1 rounded-sm text-xs border" style={{ borderColor: !newForm.warrantyMonths ? INK : LINE, background: !newForm.warrantyMonths ? INK : "transparent", color: !newForm.warrantyMonths ? "#fff" : INK }}>Không BH</button>
+                <button type="button" onClick={() => setNewForm({ ...newForm, warrantyMonths: 0 })} className="px-2 py-1 rounded-md text-xs border" style={{ borderColor: !newForm.warrantyMonths ? INK : LINE, background: !newForm.warrantyMonths ? INK : "transparent", color: !newForm.warrantyMonths ? "#fff" : INK }}>Không BH</button>
                 {WARRANTY_OPTIONS.map((m) => (
-                  <button key={m} type="button" onClick={() => setNewForm({ ...newForm, warrantyMonths: m })} className="px-2 py-1 rounded-sm text-xs border" style={{ borderColor: Number(newForm.warrantyMonths) === m ? INK : LINE, background: Number(newForm.warrantyMonths) === m ? INK : "transparent", color: Number(newForm.warrantyMonths) === m ? "#fff" : INK }}>{m}th</button>
+                  <button key={m} type="button" onClick={() => setNewForm({ ...newForm, warrantyMonths: m })} className="px-2 py-1 rounded-md text-xs border" style={{ borderColor: Number(newForm.warrantyMonths) === m ? INK : LINE, background: Number(newForm.warrantyMonths) === m ? INK : "transparent", color: Number(newForm.warrantyMonths) === m ? "#fff" : INK }}>{m}th</button>
                 ))}
-                <button type="button" onClick={() => setNewForm({ ...newForm, warrantyMonths: WARRANTY_LIFETIME })} className="px-2 py-1 rounded-sm text-xs border" style={{ borderColor: Number(newForm.warrantyMonths) === WARRANTY_LIFETIME ? INK : LINE, background: Number(newForm.warrantyMonths) === WARRANTY_LIFETIME ? INK : "transparent", color: Number(newForm.warrantyMonths) === WARRANTY_LIFETIME ? "#fff" : INK }}>Vĩnh viễn</button>
+                <button type="button" onClick={() => setNewForm({ ...newForm, warrantyMonths: WARRANTY_LIFETIME })} className="px-2 py-1 rounded-md text-xs border" style={{ borderColor: Number(newForm.warrantyMonths) === WARRANTY_LIFETIME ? INK : LINE, background: Number(newForm.warrantyMonths) === WARRANTY_LIFETIME ? INK : "transparent", color: Number(newForm.warrantyMonths) === WARRANTY_LIFETIME ? "#fff" : INK }}>Vĩnh viễn</button>
               </div>
               <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">VAT</p>
               <div className="flex gap-1.5 flex-wrap mb-3">
                 {VAT_OPTIONS.map((v) => (
-                  <button key={v.id} type="button" onClick={() => setNewForm({ ...newForm, vat: v.id })} className="px-2 py-1 rounded-sm text-xs border" style={{ borderColor: newForm.vat === v.id ? INK : LINE, background: newForm.vat === v.id ? INK : "transparent", color: newForm.vat === v.id ? "#fff" : INK }}>{v.label}</button>
+                  <button key={v.id} type="button" onClick={() => setNewForm({ ...newForm, vat: v.id })} className="px-2 py-1 rounded-md text-xs border" style={{ borderColor: newForm.vat === v.id ? INK : LINE, background: newForm.vat === v.id ? INK : "transparent", color: newForm.vat === v.id ? "#fff" : INK }}>{v.label}</button>
                 ))}
               </div>
               <div className="flex gap-2">
-                <button type="button" onClick={() => setCreatingNew(false)} className="flex-1 py-2 rounded-sm text-sm border" style={{ borderColor: LINE, color: INK }}>Huỷ</button>
-                <button type="button" onClick={saveQuickCreate} className="flex-1 py-2 rounded-sm text-sm text-white" style={{ background: INK }}>Tạo & thêm vào báo giá</button>
+                <button type="button" onClick={() => setCreatingNew(false)} className="flex-1 py-2 rounded-md text-sm border" style={{ borderColor: LINE, color: INK }}>Huỷ</button>
+                <button type="button" onClick={saveQuickCreate} className="flex-1 py-2 rounded-md text-sm text-white" style={{ background: INK }}>Tạo & thêm vào báo giá</button>
               </div>
             </div>
           ) : (
@@ -4754,7 +4766,7 @@ function ProductPicker({ products, onPick, onQuickCreate, brands }) {
                     className="w-full text-left px-3 py-2 text-sm hover:bg-black/5 flex items-center justify-between gap-3"
                     style={{ borderBottom: `1px dashed ${LINE}` }}>
                     <span style={{ color: INK }}>{p.name}</span>
-                    <span className="opacity-50 text-xs whitespace-nowrap shrink-0" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.code}{p.hasSeries ? " · series" : ""}</span>
+                    <span className="opacity-50 text-xs whitespace-nowrap shrink-0" style={{ fontFamily: "'Inter', sans-serif" }}>{p.code}{p.hasSeries ? " · series" : ""}</span>
                   </button>
                 ))}
               </div>
@@ -4767,13 +4779,12 @@ function ProductPicker({ products, onPick, onQuickCreate, brands }) {
 }
 
 function ItemsTable({ items, products, onUpdate, onRemove, lockQtyPrice }) {
-  const colCount = onRemove ? 7 : 6;
+  const colCount = onRemove ? 6 : 5;
   return (
-    <div className="rounded-sm overflow-x-auto mb-3" style={{ border: `1px solid ${LINE}` }}>
+    <div className="rounded-md overflow-x-auto mb-3" style={{ border: `1px solid ${LINE}` }}>
       <table className="w-full text-sm table-fixed" style={{ minWidth: 620 }}>
         <colgroup>
           <col style={{ width: 28 }} />
-          <col style={{ width: 90 }} />
           <col />
           <col style={{ width: 76 }} />
           <col style={{ width: 110 }} />
@@ -4782,9 +4793,8 @@ function ItemsTable({ items, products, onUpdate, onRemove, lockQtyPrice }) {
           {onRemove && <col style={{ width: 32 }} />}
         </colgroup>
         <thead>
-          <tr style={{ borderBottom: `2px solid ${INK}`, background: PAPER }}>
+          <tr style={{ borderBottom: `1px solid ${LINE}`, background: PAPER }}>
             <th className="text-left px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-50">#</th>
-            <th className="text-left px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-60">SKU</th>
             <th className="text-left px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-60">Sản phẩm</th>
             <th className="text-center px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-60">SL</th>
             <th className="text-right px-2 py-2.5 text-[11px] uppercase tracking-wider opacity-60">Đơn giá</th>
@@ -4800,42 +4810,41 @@ function ItemsTable({ items, products, onUpdate, onRemove, lockQtyPrice }) {
               <React.Fragment key={it.productId}>
                 <tr style={{ borderBottom: p?.hasSeries ? "none" : `1px dashed ${LINE}` }}>
                   <td className="px-2 py-3 text-xs opacity-40 align-top">{idx + 1}</td>
-                  <td className="px-2 py-3 align-top truncate" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK, opacity: 0.7 }}>{p?.sku || p?.code}</td>
                   <td className="px-2 py-3 align-top">
-                    <div className="font-semibold text-base leading-snug" style={{ color: INK }}>{p?.name}</div>
-                    {p?.hasSeries && <span className="mt-1 inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${BLUE}1A`, color: BLUE }}><Barcode size={10} /> Series</span>}
+                    <div className="font-medium text-sm leading-snug" style={{ color: INK }}>{p?.name}</div>
+                    <div className="text-xs mt-0.5" style={{ color: INK, opacity: 0.55 }}>{p?.sku || p?.code}</div>
                   </td>
                   <td className="px-1 py-3 align-top">
                     {lockQtyPrice ? (
-                      <span className="block text-center text-[15px] font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{it.qty}</span>
+                      <span className="block text-center text-sm" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{it.qty}</span>
                     ) : (
                       <input type="number" min={1} value={it.qty || ""} onChange={(e) => { const v = e.target.value; onUpdate(it.productId, { qty: v === "" ? "" : Math.max(0, Number(v)) }); }}
                         onBlur={() => { if (!it.qty || it.qty < 1) onUpdate(it.productId, { qty: 1 }); }}
-                        className="w-full border rounded-sm py-2 px-1 text-center text-[15px] font-medium" style={{ borderColor: LINE }} />
+                        className="w-full border rounded-md py-2 px-1 text-center text-[15px] font-medium" style={{ borderColor: LINE }} />
                     )}
                   </td>
                   <td className="px-1 py-3 align-top">
                     {lockQtyPrice ? (
-                      <span className="block text-right text-[15px] font-medium whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{vnd(it.price)}</span>
+                      <span className="block text-right text-sm whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(it.price)}</span>
                     ) : (
                       <MoneyInput value={it.price} onChange={(v) => onUpdate(it.productId, { price: v === "" ? 0 : v })}
-                        className="w-full border rounded-sm py-2 px-2 text-right text-[15px] font-medium" style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} />
+                        className="w-full border rounded-md py-2 px-2 text-right text-[15px] font-medium" style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} />
                     )}
                   </td>
                   <td className="px-1 py-3 align-top">
                     <select value={it.vat} onChange={(e) => onUpdate(it.productId, { vat: e.target.value })}
-                      className="text-[11px] border rounded-sm py-1 px-1 opacity-70 w-full" style={{ borderColor: LINE }}>
+                      className="text-[11px] border rounded-md py-1 px-1 opacity-70 w-full" style={{ borderColor: LINE }}>
                       {VAT_OPTIONS.map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}
                     </select>
                   </td>
-                  <td className="px-2 py-3 text-right font-bold text-base whitespace-nowrap align-top" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{vnd(it.qty * it.price)}</td>
+                  <td className="px-2 py-3 text-right font-semibold text-sm whitespace-nowrap align-top" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(it.qty * it.price)}</td>
                   {onRemove && <td className="px-1 py-3 align-top"><button onClick={() => onRemove(it.productId)} style={{ color: RUST }}><X size={14} /></button></td>}
                 </tr>
                 {p?.hasSeries && (
                   <tr style={{ borderBottom: `1px dashed ${LINE}` }}>
                     <td></td>
                     <td colSpan={colCount - 1} className="px-2 pb-3">
-                      <span className="block opacity-60 mb-1 text-xs">Số series — cần {it.qty}</span>
+                      <span className="block opacity-60 mb-1 text-xs">Series ({(it.series || []).length}/{it.qty})</span>
                       <SeriesTagInput series={it.series} setSeries={(arr) => onUpdate(it.productId, { series: arr })} placeholder="VD: 03305377170620" />
                     </td>
                   </tr>
@@ -4850,29 +4859,31 @@ function ItemsTable({ items, products, onUpdate, onRemove, lockQtyPrice }) {
   );
 }
 
+function DocSteps({ steps }) {
+  return (
+    <div className="flex items-center gap-x-2 gap-y-1.5 flex-wrap mb-4 text-xs">
+      {steps.map((st, i) => (
+        <React.Fragment key={i}>
+          {i > 0 && <span className="w-5 h-px" style={{ background: LINE }} />}
+          <span className="inline-flex items-center gap-1.5" style={{ color: INK, opacity: st.done ? 1 : 0.45 }} title={st.done && st.at ? formatDateTime(st.at) : undefined}>
+            <span className="w-4 h-4 rounded-full flex items-center justify-center" style={{ background: st.done ? INK : "#fff", border: `1.5px solid ${st.done ? INK : LINE}` }}>
+              {st.done && <Check size={10} color="#fff" />}
+            </span>
+            <span className={st.done ? "font-medium" : ""}>{st.label}</span>
+          </span>
+        </React.Fragment>
+      ))}
+    </div>
+  );
+}
+
 function POProgressStepper({ po }) {
   const steps = [
     { label: "Đặt hàng", done: true, at: po.createdAt },
     { label: "Đã giao", done: po.status === "received", at: po.receivedAt },
     { label: "Đã thanh toán", done: po.paid, at: po.paidAt },
-    { label: po.paid ? "Hoàn thành" : "Đang giao dịch", done: po.paid, at: po.paidAt },
   ];
-  return (
-    <div className="flex items-start mb-5">
-      {steps.map((s, i) => (
-        <React.Fragment key={i}>
-          <div className="flex flex-col items-center text-center shrink-0" style={{ width: 96 }}>
-            <div className="w-7 h-7 rounded-full flex items-center justify-center mb-1.5" style={{ background: s.done ? FOREST : "#fff", border: `2px solid ${s.done ? FOREST : LINE}` }}>
-              {s.done ? <Check size={14} color="#fff" /> : <span className="text-[11px] opacity-40">{i + 1}</span>}
-            </div>
-            <span className="text-[11px] font-medium leading-tight" style={{ color: INK, opacity: s.done ? 1 : 0.45 }}>{s.label}</span>
-            {s.done && s.at && <span className="text-[10px] opacity-45 mt-0.5" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{formatDateTime(s.at)}</span>}
-          </div>
-          {i < steps.length - 1 && <div className="flex-1 h-0.5 mt-3.5" style={{ background: steps[i + 1].done ? FOREST : LINE }} />}
-        </React.Fragment>
-      ))}
-    </div>
-  );
+  return <DocSteps steps={steps} />;
 }
 
 // Danh sách đơn bán/đơn nhập: tối đa 30 dòng mỗi trang.
@@ -4884,9 +4895,9 @@ function DocPager({ page, total, unit, onPage }) {
     <div className="flex items-center justify-between mt-2.5 text-xs" style={{ color: INK, opacity: 0.7 }}>
       <span>{(page - 1) * DOC_PAGE_SIZE + 1}–{Math.min(page * DOC_PAGE_SIZE, total)} / {total} {unit}</span>
       <div className="flex items-center gap-1">
-        <button onClick={() => onPage(page - 1)} disabled={page <= 1} className="px-2 py-1 rounded-sm disabled:opacity-30" style={{ border: `1px solid ${LINE}` }}><ChevronLeft size={14} /></button>
+        <button onClick={() => onPage(page - 1)} disabled={page <= 1} className="px-2 py-1 rounded-md disabled:opacity-30" style={{ border: `1px solid ${LINE}` }}><ChevronLeft size={14} /></button>
         <span className="px-2">Trang {page} / {totalPages}</span>
-        <button onClick={() => onPage(page + 1)} disabled={page >= totalPages} className="px-2 py-1 rounded-sm disabled:opacity-30" style={{ border: `1px solid ${LINE}` }}><ChevronRight size={14} /></button>
+        <button onClick={() => onPage(page + 1)} disabled={page >= totalPages} className="px-2 py-1 rounded-md disabled:opacity-30" style={{ border: `1px solid ${LINE}` }}><ChevronRight size={14} /></button>
       </div>
     </div>
   );
@@ -4897,6 +4908,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
   const [form, setForm] = useState({});
   const [expanded, setExpanded] = useState(null);
   const [viewingId, setViewingId] = useState(null); // id của đơn đang xem/sửa
+  const [showPOInfo, setShowPOInfo] = useState(false);
   const [editForm, setEditForm] = useState(null);
   const [returningPO, setReturningPO] = useState(null); // po đang lập phiếu trả hàng NCC
   const [returnForm, setReturnForm] = useState(null);
@@ -5071,7 +5083,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
     });
     setViewingId(po.id);
   };
-  const closeView = () => { setViewingId(null); setEditForm(null); };
+  const closeView = () => { setViewingId(null); setEditForm(null); setShowPOInfo(false); };
 
   useEffect(() => {
     if (focusPOId) {
@@ -5152,7 +5164,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
   return (
     <div>
       {dueSoonPOs.length > 0 && (
-        <div className="mb-4 p-3 rounded-sm flex items-start gap-2.5" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44` }}>
+        <div className="mb-4 p-3 rounded-md flex items-start gap-2.5" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44` }}>
           <AlertTriangle size={16} style={{ color: RUST }} className="mt-0.5 shrink-0" />
           <div className="text-sm" style={{ color: INK }}>
             <span className="font-medium" style={{ color: RUST }}>Công nợ NCC sắp/đã đến hạn: </span>
@@ -5163,16 +5175,16 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
       <div className="flex items-center justify-between mb-5">
         <p className="text-sm opacity-60">{purchaseOrders.length} đơn nhập hàng</p>
         <div className="flex gap-2">
-          <button onClick={openQuickAddSupplier} className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm border" style={{ borderColor: LINE, color: INK }}>
+          <button onClick={openQuickAddSupplier} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: LINE, color: INK }}>
             <Truck size={15} /> Thêm nhà cung cấp
           </button>
-          <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-sm text-sm text-white" style={{ background: INK }}>
+          <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white" style={{ background: INK }}>
             <Plus size={15} /> Tạo đơn nhập hàng
           </button>
         </div>
       </div>
 
-      <div key={poSafePage} className="rounded-sm overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "65vh" }}>
+      <div key={poSafePage} className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "65vh" }}>
         <table className="w-full text-sm" style={{ minWidth: 720 }}>
           <thead>
             <tr style={{ borderBottom: `2px solid ${INK}` }}>
@@ -5195,15 +5207,15 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
                       </button>
                     </td>
                     <td className="px-3 py-3 font-medium">
-                      <button onClick={() => openView(po)} className="hover:underline" style={{ fontFamily: "'IBM Plex Mono', monospace", color: BLUE }}>{po.code}</button>
+                      <button onClick={() => openView(po)} className="hover:underline" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{po.code}</button>
                     </td>
-                    <td className="px-3 py-3 whitespace-nowrap opacity-80" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{formatDateTime(po.createdAt)}</td>
+                    <td className="px-3 py-3 whitespace-nowrap opacity-80" style={{ fontFamily: "'Inter', sans-serif" }}>{formatDateTime(po.createdAt)}</td>
                     <td className="px-3 py-3">
-                      <span style={{ borderColor: s.color, color: s.color, fontFamily: "'IBM Plex Mono', monospace" }} className="inline-block border rounded-full px-2.5 py-0.5 text-[11px]">{s.label}</span>
+                      <span style={{ borderColor: s.color, color: s.color, fontFamily: "'Inter', sans-serif" }} className="inline-block border rounded-full px-2.5 py-0.5 text-[11px]">{s.label}</span>
                     </td>
                     <td className="px-3 py-3 opacity-70 whitespace-nowrap">{po.branch}</td>
                     <td className="px-3 py-3 opacity-70 whitespace-nowrap">{po.supplier || "—"}</td>
-                    <td className="px-3 py-3 opacity-70 whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{po.invoiceNo || "—"}</td>
+                    <td className="px-3 py-3 opacity-70 whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>{po.invoiceNo || "—"}</td>
                     <td className="px-3 py-3 opacity-70 whitespace-nowrap">{po.createdBy || "—"}</td>
                     <td className="px-3 py-3">
                       <span className="inline-block rounded-full px-2.5 py-0.5 text-[11px] whitespace-nowrap"
@@ -5211,13 +5223,13 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
                         {po.paid ? "Hoàn thành" : "Đang giao dịch"}
                       </span>
                     </td>
-                    <td className="px-3 py-3 text-right font-medium whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>
+                    <td className="px-3 py-3 text-right font-medium whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>
                       {vnd(total)}
                       {(po.returns || []).length > 0 && <span className="block text-[10px] font-normal" style={{ color: RUST }}>đã trả {vnd(poReturnedValue(po))}</span>}
                     </td>
                     <td className="px-3 py-3">
                       {po.status === "pending" && (
-                        <button onClick={() => confirmReceive(po)} className="text-[11px] px-2.5 py-1.5 rounded-sm text-white whitespace-nowrap" style={{ background: FOREST }}>
+                        <button onClick={() => confirmReceive(po)} className="text-[11px] px-2.5 py-1.5 rounded-md text-white whitespace-nowrap" style={{ background: FOREST }}>
                           Xác nhận nhập hàng
                         </button>
                       )}
@@ -5238,10 +5250,10 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
                                   <td className="py-1.5 pr-2 opacity-50">{i + 1}</td>
                                   <td className="py-1.5">{p?.name || "?"}</td>
                                   <td className="py-1.5">{it.qty}</td>
-                                  <td className="py-1.5" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{vnd(it.price)}</td>
+                                  <td className="py-1.5" style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(it.price)}</td>
                                   <td className="py-1.5">{VAT_OPTIONS.find((v) => v.id === it.vat)?.label || it.vat}</td>
-                                  <td className="py-1.5" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{vnd(it.qty * it.price)}</td>
-                                  <td className="py-1.5" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{it.series?.length ? it.series.join(", ") : "—"}</td>
+                                  <td className="py-1.5" style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(it.qty * it.price)}</td>
+                                  <td className="py-1.5" style={{ fontFamily: "'Inter', sans-serif" }}>{it.series?.length ? it.series.join(", ") : "—"}</td>
                                 </tr>
                               );
                             })}
@@ -5294,7 +5306,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
             <div className="flex gap-2 items-center flex-wrap">
               {PAYMENT_METHODS.map((m) => (
                 <button key={m.id} type="button" onClick={() => setForm({ ...form, paymentMethod: m.id })}
-                  className="px-3.5 py-1.5 rounded-sm text-sm border"
+                  className="px-3.5 py-1.5 rounded-md text-sm border"
                   style={{ borderColor: form.paymentMethod === m.id ? INK : LINE, background: form.paymentMethod === m.id ? INK : "transparent", color: form.paymentMethod === m.id ? "#fff" : INK }}>
                   {m.label}
                 </button>
@@ -5302,7 +5314,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
               {form.paymentMethod === "credit" && (
                 <label className="flex items-center gap-1.5 text-xs ml-1" style={{ color: INK }}>
                   Số ngày công nợ:
-                  <input type="number" min={1} value={form.creditDays} onChange={(e) => setForm({ ...form, creditDays: e.target.value })} className="w-16 border rounded-sm py-1 px-2 text-sm" style={{ borderColor: LINE }} />
+                  <input type="number" min={1} value={form.creditDays} onChange={(e) => setForm({ ...form, creditDays: e.target.value })} className="w-16 border rounded-md py-1 px-2 text-sm" style={{ borderColor: LINE }} />
                 </label>
               )}
             </div>
@@ -5318,14 +5330,14 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
 
           <div className="flex justify-between items-center py-2 mb-1" style={{ borderTop: `2px solid ${INK}` }}>
             <span className="text-sm uppercase tracking-wider opacity-60">Tổng giá trị đơn</span>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }} className="text-lg">{vnd(total)}</span>
+            <span style={{ fontFamily: "'Inter', sans-serif", color: INK }} className="text-lg">{vnd(total)}</span>
           </div>
 
           <TagsNotesCompact tags={form.tags} setTags={(arr) => setForm({ ...form, tags: arr })} notes={form.notes} setNotes={(v) => setForm({ ...form, notes: v })} />
 
           <div className="flex flex-col sm:flex-row gap-3 mt-4">
-            <button onClick={() => submit("pending")} disabled={!form.supplierId || itemsInvalid(form.items)} className="flex-1 py-2.5 rounded-sm text-sm border disabled:opacity-40" style={{ borderColor: BRASS, color: BRASS }}>Chờ giao</button>
-            <button onClick={() => submit("received")} disabled={!form.supplierId || itemsInvalid(form.items)} className="flex-1 py-2.5 rounded-sm text-white text-sm disabled:opacity-40" style={{ background: FOREST }}>Nhập hàng</button>
+            <button onClick={() => submit("pending")} disabled={!form.supplierId || itemsInvalid(form.items)} className="flex-1 py-2.5 rounded-md text-sm border disabled:opacity-40" style={{ borderColor: BRASS, color: BRASS }}>Chờ giao</button>
+            <button onClick={() => submit("received")} disabled={!form.supplierId || itemsInvalid(form.items)} className="flex-1 py-2.5 rounded-md text-white text-sm disabled:opacity-40" style={{ background: FOREST }}>Nhập hàng</button>
           </div>
         </Modal>
       )}
@@ -5337,36 +5349,52 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
 
           {(() => {
             const due = poDueInfo(viewingPO);
-            return due ? (
-              <div className="mb-3 p-2.5 rounded-sm flex items-center gap-2 text-xs" style={{ background: due.nearDue ? `${RUST}10` : PAPER, border: `1px solid ${due.nearDue ? RUST + "44" : LINE}` }}>
-                <AlertTriangle size={13} style={{ color: due.nearDue ? RUST : BRASS }} />
-                <span style={{ color: due.nearDue ? RUST : INK }}>
-                  Hạn công nợ: {due.dueDate.toLocaleDateString("vi-VN")} — {due.overdue ? `đã quá hạn ${-due.daysLeft} ngày` : due.daysLeft === 0 ? "đến hạn hôm nay" : `còn ${due.daysLeft} ngày`}
-                </span>
+            const dueText = !due ? (viewingPO.paid ? "Đã thanh toán" : "Không có") : due.overdue ? `Quá hạn ${-due.daysLeft} ngày` : due.daysLeft === 0 ? "Đến hạn hôm nay" : `Còn ${due.daysLeft} ngày`;
+            return (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-lg mb-4" style={{ background: PAPER }}>
+                <div className="col-span-2 min-w-0">
+                  <p className="text-xs opacity-60 mb-0.5">Nhà cung cấp</p>
+                  <p className="text-sm font-semibold" style={{ color: INK }}>{viewingPO.supplier || "—"}</p>
+                  <p className="text-xs opacity-60 mt-0.5">HĐ {viewingPO.invoiceNo || "—"} · {viewingPO.branch} · {viewingPO.createdBy}</p>
+                </div>
+                <div>
+                  <p className="text-xs opacity-60 mb-0.5">Hạn công nợ</p>
+                  <p className="text-sm font-semibold" style={{ color: due?.nearDue ? RUST : INK }}>{dueText}</p>
+                  {due && <p className="text-xs opacity-60 mt-0.5">{due.dueDate.toLocaleDateString("vi-VN")}</p>}
+                </div>
+                <div className="md:text-right">
+                  <p className="text-xs opacity-60 mb-0.5">Tổng giá trị</p>
+                  <p className="text-xl font-bold" style={{ color: INK }}>{vnd(editTotal)}</p>
+                </div>
               </div>
-            ) : null;
+            );
           })()}
 
-          <div className="flex gap-2 flex-wrap mb-5">
+          <div className="flex gap-2 flex-wrap mb-4">
             {!viewingPO.paid && (
-              <button onClick={() => markPaid(viewingPO)} className="px-3.5 py-1.5 rounded-sm text-sm border" style={{ borderColor: FOREST, color: FOREST }}>
-                Đánh dấu đã thanh toán cho nhà cung cấp
+              <button onClick={() => markPaid(viewingPO)} className="px-3.5 py-1.5 rounded-md text-sm font-medium text-white" style={{ background: INK }}>
+                Đã thanh toán NCC
               </button>
             )}
             {viewingPO.status === "received" && (
-              <button onClick={() => openReturn(viewingPO)} className="px-3.5 py-1.5 rounded-sm text-sm border" style={{ borderColor: RUST, color: RUST }}>
+              <button onClick={() => openReturn(viewingPO)} className="px-3.5 py-1.5 rounded-md text-sm border" style={{ borderColor: LINE, color: RUST }}>
                 Trả hàng NCC
+              </button>
+            )}
+            {viewingPO.status !== "pending" && (
+              <button onClick={() => setShowPOInfo((v) => !v)} className="px-3.5 py-1.5 rounded-md text-sm border inline-flex items-center gap-1.5" style={{ borderColor: LINE, color: INK }}>
+                <Pencil size={13} /> {showPOInfo ? "Ẩn thông tin đơn" : "Sửa thông tin đơn"}
               </button>
             )}
           </div>
 
           {(viewingPO.returns || []).length > 0 && (
-            <div className="mb-5 p-3 rounded-sm" style={{ background: `${RUST}08`, border: `1px solid ${RUST}33` }}>
+            <div className="mb-5 p-3 rounded-md" style={{ background: `${RUST}08`, border: `1px solid ${RUST}33` }}>
               <p className="text-xs uppercase tracking-wider mb-2" style={{ color: RUST }}>Đã trả hàng NCC ({viewingPO.returns.length} phiếu · tổng {vnd(poReturnedValue(viewingPO))})</p>
               <div className="space-y-2">
                 {viewingPO.returns.map((r) => (
                   <div key={r.id} className="text-xs">
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{r.code}</span>
+                    <span style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{r.code}</span>
                     <span className="opacity-50"> · {formatDateTime(r.createdAt)} · </span>
                     {r.items.map((it) => {
                       const p = products.find((x) => x.id === it.productId);
@@ -5379,10 +5407,9 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
             </div>
           )}
 
-          <div className="my-4" style={{ borderTop: `1px dashed ${LINE}` }} />
-
+          {(viewingPO.status === "pending" || showPOInfo) && (<>
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Nhà cung cấp" hint="Chọn “+ Tạo nhà cung cấp mới…” để thêm nhanh ngay tại đây">
+            <Field label="Nhà cung cấp">
               <select className={inputCls} style={{ borderColor: LINE }} value={editForm.supplierId || ""}
                 onChange={(e) => {
                   if (e.target.value === "__new__") { openQuickAddSupplier(); return; }
@@ -5413,7 +5440,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
             <div className="flex gap-2 items-center flex-wrap">
               {PAYMENT_METHODS.map((m) => (
                 <button key={m.id} type="button" onClick={() => setEditForm({ ...editForm, paymentMethod: m.id })}
-                  className="px-3.5 py-1.5 rounded-sm text-sm border"
+                  className="px-3.5 py-1.5 rounded-md text-sm border"
                   style={{ borderColor: editForm.paymentMethod === m.id ? INK : LINE, background: editForm.paymentMethod === m.id ? INK : "transparent", color: editForm.paymentMethod === m.id ? "#fff" : INK }}>
                   {m.label}
                 </button>
@@ -5421,13 +5448,12 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
               {editForm.paymentMethod === "credit" && (
                 <label className="flex items-center gap-1.5 text-xs ml-1" style={{ color: INK }}>
                   Số ngày công nợ:
-                  <input type="number" min={1} value={editForm.creditDays} onChange={(e) => setEditForm({ ...editForm, creditDays: e.target.value })} className="w-16 border rounded-sm py-1 px-2 text-sm" style={{ borderColor: LINE }} />
+                  <input type="number" min={1} value={editForm.creditDays} onChange={(e) => setEditForm({ ...editForm, creditDays: e.target.value })} className="w-16 border rounded-md py-1 px-2 text-sm" style={{ borderColor: LINE }} />
                 </label>
               )}
             </div>
           </Field>
-
-          <div className="my-4" style={{ borderTop: `1px dashed ${LINE}` }} />
+          </>)}
 
           {viewingPO.status === "pending" ? (
             <>
@@ -5439,24 +5465,24 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
               )}
               <div className="flex justify-between items-center py-2 mb-1" style={{ borderTop: `2px solid ${INK}` }}>
                 <span className="text-sm uppercase tracking-wider opacity-60">Tổng giá trị đơn</span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }} className="text-lg">{vnd(editTotal)}</span>
+                <span style={{ fontFamily: "'Inter', sans-serif", color: INK }} className="text-lg">{vnd(editTotal)}</span>
               </div>
               <TagsNotesCompact tags={editForm.tags} setTags={(arr) => setEditForm({ ...editForm, tags: arr })} notes={editForm.notes} setNotes={(v) => setEditForm({ ...editForm, notes: v })} />
               <div className="flex flex-col sm:flex-row gap-3 mt-4">
-                <button onClick={savePendingItems} disabled={itemsInvalid(editForm.items)} className="flex-1 py-2.5 rounded-sm text-sm border disabled:opacity-40" style={{ borderColor: LINE, color: INK }}>Lưu thay đổi</button>
-                <button onClick={confirmReceiveFromEdit} disabled={itemsInvalid(editForm.items)} className="flex-1 py-2.5 rounded-sm text-white text-sm disabled:opacity-40" style={{ background: FOREST }}>Xác nhận nhập hàng</button>
+                <button onClick={savePendingItems} disabled={itemsInvalid(editForm.items)} className="flex-1 py-2.5 rounded-md text-sm border disabled:opacity-40" style={{ borderColor: LINE, color: INK }}>Lưu thay đổi</button>
+                <button onClick={confirmReceiveFromEdit} disabled={itemsInvalid(editForm.items)} className="flex-1 py-2.5 rounded-md text-white text-sm disabled:opacity-40" style={{ background: FOREST }}>Xác nhận nhập hàng</button>
               </div>
             </>
           ) : (
             <>
-              <p className="text-xs mb-3 px-3 py-2 rounded-sm" style={{ background: `${BLUE}10`, color: INK }}>Đơn đã nhập hàng — số lượng và đơn giá đã cộng vào tồn kho nên khoá lại. Vẫn có thể sửa <b>số series</b> hoặc <b>VAT</b> nếu nhập nhầm.</p>
+              <p className="text-xs mb-2 opacity-60">Đơn đã nhập kho: chỉ sửa được series và VAT.</p>
               <ItemsTable items={editForm.items} products={products} onUpdate={editUpdateItem} lockQtyPrice />
               <div className="flex justify-between items-center py-2 mb-1" style={{ borderTop: `2px solid ${INK}` }}>
                 <span className="text-sm uppercase tracking-wider opacity-60">Tổng giá trị đơn</span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }} className="text-lg">{vnd(editTotal)}</span>
+                <span style={{ fontFamily: "'Inter', sans-serif", color: INK }} className="text-lg">{vnd(editTotal)}</span>
               </div>
               <TagsNotesCompact tags={editForm.tags} setTags={(arr) => setEditForm({ ...editForm, tags: arr })} notes={editForm.notes} setNotes={(v) => setEditForm({ ...editForm, notes: v })} />
-              <button onClick={saveReceivedEdits} disabled={itemsInvalid(editForm.items)} className="w-full py-2.5 rounded-sm text-white text-sm disabled:opacity-40 mt-4" style={{ background: INK }}>Lưu thay đổi</button>
+              <button onClick={saveReceivedEdits} disabled={itemsInvalid(editForm.items)} className="w-full py-2.5 rounded-md text-white text-sm disabled:opacity-40 mt-4" style={{ background: INK }}>Lưu thay đổi</button>
             </>
           )}
         </Modal>
@@ -5477,7 +5503,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
               const maxQty = p?.hasSeries ? Math.min(maxByOrder, availSeries.length) : Math.min(maxByOrder, stats.closingQty);
               if (maxByOrder <= 0) return null;
               return (
-                <div key={it.productId} className="p-3 rounded-sm" style={{ border: `1px solid ${LINE}` }}>
+                <div key={it.productId} className="p-3 rounded-md" style={{ border: `1px solid ${LINE}` }}>
                   <div className="flex items-center justify-between gap-3 mb-2">
                     <div>
                       <p className="text-sm font-medium" style={{ color: INK }}>{p?.name}</p>
@@ -5486,7 +5512,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
                     <input type="number" min={0} max={maxQty} value={it.qty || ""} onChange={(e) => {
                       const v = Math.max(0, Math.min(maxQty, Number(e.target.value) || 0));
                       updateReturnItem(it.productId, { qty: v, series: p?.hasSeries ? [] : it.series });
-                    }} className="w-20 border rounded-sm py-1.5 px-2 text-center text-sm" style={{ borderColor: LINE }} />
+                    }} className="w-20 border rounded-md py-1.5 px-2 text-center text-sm" style={{ borderColor: LINE }} />
                   </div>
                   {p?.hasSeries && it.qty > 0 && (
                     <SeriesPicker available={availSeries} selected={it.series} setSelected={(arr) => updateReturnItem(it.productId, { series: arr })} need={it.qty} />
@@ -5496,9 +5522,9 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
             })}
           </div>
           <Field label="Lý do trả hàng">
-            <textarea rows={2} className="w-full border rounded-sm p-2 text-sm" style={{ borderColor: LINE }} value={returnForm.note} onChange={(e) => setReturnForm({ ...returnForm, note: e.target.value })} placeholder="VD: nhập sai model, hàng lỗi, NCC giao thừa…" />
+            <textarea rows={2} className="w-full border rounded-md p-2 text-sm" style={{ borderColor: LINE }} value={returnForm.note} onChange={(e) => setReturnForm({ ...returnForm, note: e.target.value })} placeholder="VD: nhập sai model, hàng lỗi, NCC giao thừa…" />
           </Field>
-          <button onClick={submitReturn} disabled={returnInvalid()} className="w-full py-2.5 rounded-sm text-white text-sm mt-2 disabled:opacity-40" style={{ background: RUST }}>
+          <button onClick={submitReturn} disabled={returnInvalid()} className="w-full py-2.5 rounded-md text-white text-sm mt-2 disabled:opacity-40" style={{ background: RUST }}>
             Xác nhận trả hàng NCC
           </button>
         </Modal>
@@ -5509,7 +5535,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
         <Modal title="Thêm nhà cung cấp" onClose={() => setQuickAddingSupplier(false)}>
           <div className="grid grid-cols-2 gap-4">
             <Field label="Mã NCC" hint="Tự động sinh — có thể sửa lại">
-              <input className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} value={quickSupplierForm.code} onChange={(e) => setQuickSupplierForm({ ...quickSupplierForm, code: e.target.value })} />
+              <input className={inputCls} style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} value={quickSupplierForm.code} onChange={(e) => setQuickSupplierForm({ ...quickSupplierForm, code: e.target.value })} />
             </Field>
             <Field label="Mã số thuế"><input className={inputCls} style={{ borderColor: LINE }} inputMode="numeric" value={quickSupplierForm.taxCode} onChange={(e) => setQuickSupplierForm({ ...quickSupplierForm, taxCode: e.target.value.replace(/\D/g, "") })} /></Field>
           </div>
@@ -5523,7 +5549,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
             <div className="flex gap-2 items-center flex-wrap">
               {SUPPLIER_PAYMENT_TERMS.map((m) => (
                 <button key={m.id} type="button" onClick={() => setQuickSupplierForm({ ...quickSupplierForm, paymentTerm: m.id })}
-                  className="px-3.5 py-1.5 rounded-sm text-sm border"
+                  className="px-3.5 py-1.5 rounded-md text-sm border"
                   style={{ borderColor: quickSupplierForm.paymentTerm === m.id ? INK : LINE, background: quickSupplierForm.paymentTerm === m.id ? INK : "transparent", color: quickSupplierForm.paymentTerm === m.id ? "#fff" : INK }}>
                   {m.label}
                 </button>
@@ -5531,12 +5557,12 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
               {quickSupplierForm.paymentTerm === "credit" && (
                 <label className="flex items-center gap-1.5 text-xs ml-1" style={{ color: INK }}>
                   Số ngày công nợ:
-                  <input type="number" min={1} value={quickSupplierForm.creditDays} onChange={(e) => setQuickSupplierForm({ ...quickSupplierForm, creditDays: e.target.value })} className="w-16 border rounded-sm py-1 px-2 text-sm" style={{ borderColor: LINE }} />
+                  <input type="number" min={1} value={quickSupplierForm.creditDays} onChange={(e) => setQuickSupplierForm({ ...quickSupplierForm, creditDays: e.target.value })} className="w-16 border rounded-md py-1 px-2 text-sm" style={{ borderColor: LINE }} />
                 </label>
               )}
             </div>
           </Field>
-          <button onClick={submitQuickAddSupplier} className="w-full py-2.5 rounded-sm text-white text-sm mt-2" style={{ background: INK }}>Thêm nhà cung cấp</button>
+          <button onClick={submitQuickAddSupplier} className="w-full py-2.5 rounded-md text-white text-sm mt-2" style={{ background: INK }}>Thêm nhà cung cấp</button>
         </Modal>
       )}
     </div>
@@ -5669,9 +5695,9 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
             <div className="relative flex-1 max-w-xs">
               <Search size={15} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50" />
               <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm theo mã, tên hoặc người liên hệ…"
-                className="w-full pl-7 pr-2 py-2 text-sm rounded-sm border outline-none" style={{ borderColor: LINE, background: "#fff" }} />
+                className="w-full pl-7 pr-2 py-2 text-sm rounded-md border outline-none" style={{ borderColor: LINE, background: "#fff" }} />
             </div>
-            <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-sm text-sm text-white" style={{ background: INK }}>
+            <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white" style={{ background: INK }}>
               <Plus size={15} /> Thêm nhà cung cấp
             </button>
           </div>
@@ -5680,17 +5706,17 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
 
       {view === "debt" ? (
         <div>
-          <div className="p-5 rounded-sm mb-5 flex items-center justify-between flex-wrap gap-3" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+          <div className="p-5 rounded-md mb-5 flex items-center justify-between flex-wrap gap-3" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
             <div>
               <p className="text-xs uppercase tracking-wider opacity-55 mb-1">Tổng phải trả nhà cung cấp</p>
-              <p className="text-2xl" style={{ fontFamily: "'IBM Plex Mono', monospace", color: RUST }}>{vnd(grandTotal)}</p>
+              <p className="text-2xl" style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>{vnd(grandTotal)}</p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex gap-1.5">
                 <button onClick={() => setDebtSort("amount")} className="text-xs px-3 py-1.5 rounded-full border" style={{ borderColor: debtSort === "amount" ? INK : LINE, background: debtSort === "amount" ? INK : "transparent", color: debtSort === "amount" ? "#fff" : INK }}>Số tiền</button>
                 <button onClick={() => setDebtSort("due")} className="text-xs px-3 py-1.5 rounded-full border" style={{ borderColor: debtSort === "due" ? INK : LINE, background: debtSort === "due" ? INK : "transparent", color: debtSort === "due" ? "#fff" : INK }}>Hạn công nợ</button>
               </div>
-              <button onClick={exportAllDebt} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm border" style={{ borderColor: FOREST, color: FOREST }}>
+              <button onClick={exportAllDebt} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: FOREST, color: FOREST }}>
                 <FileSpreadsheet size={13} /> Xuất Excel
               </button>
             </div>
@@ -5698,7 +5724,7 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
           {sortedDebt.length === 0 ? (
             <p className="text-sm opacity-50 text-center py-16">Không có nhà cung cấp nào đang nợ.</p>
           ) : (
-            <div className="rounded-sm overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+            <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
               <table className="w-full text-sm" style={{ minWidth: 700 }}>
                 <thead>
                   <tr style={{ borderBottom: `2px solid ${INK}` }}>
@@ -5712,10 +5738,10 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
                     <tr key={d.supplier.id} style={{ borderBottom: `1px dashed ${LINE}` }} className="hover:bg-black/[0.02]">
                       <td className="px-3 py-3">
                         <p style={{ color: INK }}>{d.supplier.name}</p>
-                        <p className="text-xs opacity-50" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{d.supplier.code}</p>
+                        <p className="text-xs opacity-50" style={{ fontFamily: "'Inter', sans-serif" }}>{d.supplier.code}</p>
                       </td>
-                      <td className="px-3 py-3" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{d.poCount}</td>
-                      <td className="px-3 py-3 font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: RUST }}>{vnd(d.total)}</td>
+                      <td className="px-3 py-3" style={{ fontFamily: "'Inter', sans-serif" }}>{d.poCount}</td>
+                      <td className="px-3 py-3 font-medium" style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>{vnd(d.total)}</td>
                       <td className="px-3 py-3 whitespace-nowrap">
                         {d.nearestDue ? (
                           <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: d.nearestDue.nearDue ? `${RUST}1A` : PAPER, color: d.nearestDue.nearDue ? RUST : INK }}>
@@ -5724,7 +5750,7 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
                         ) : <span className="opacity-40">—</span>}
                       </td>
                       <td className="px-3 py-3 text-right">
-                        <button onClick={() => setDebtDetail(d)} className="text-xs px-2.5 py-1 rounded-sm border whitespace-nowrap" style={{ borderColor: LINE, color: INK }}>Chi tiết</button>
+                        <button onClick={() => setDebtDetail(d)} className="text-xs px-2.5 py-1 rounded-md border whitespace-nowrap" style={{ borderColor: LINE, color: INK }}>Chi tiết</button>
                       </td>
                     </tr>
                   ))}
@@ -5734,7 +5760,7 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
           )}
         </div>
       ) : (
-      <div className="rounded-sm overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "65vh" }}>
+      <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "65vh" }}>
         <table className="w-full text-sm" style={{ minWidth: 720 }}>
           <thead>
             <tr style={{ borderBottom: `2px solid ${INK}` }}>
@@ -5746,11 +5772,11 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
           <tbody>
             {filtered.map((s) => (
               <tr key={s.id} style={{ borderBottom: `1px dashed ${LINE}` }} className="hover:bg-black/[0.02]">
-                <td className="px-3 py-3 font-medium whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: BLUE }}>{s.code}</td>
+                <td className="px-3 py-3 font-medium whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{s.code}</td>
                 <td className="px-3 py-3" style={{ color: INK }}>{s.name}</td>
-                <td className="px-3 py-3 opacity-70 whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{s.taxCode || "—"}</td>
+                <td className="px-3 py-3 opacity-70 whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>{s.taxCode || "—"}</td>
                 <td className="px-3 py-3 opacity-70 whitespace-nowrap">{s.contactPerson || "—"}</td>
-                <td className="px-3 py-3 opacity-70 whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{s.phone || "—"}</td>
+                <td className="px-3 py-3 opacity-70 whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>{s.phone || "—"}</td>
                 <td className="px-3 py-3 opacity-70 max-w-[220px] truncate">{s.address || "—"}</td>
                 <td className="px-3 py-3 whitespace-nowrap">
                   <span className="inline-block text-[11px] px-2 py-0.5 rounded-full" style={{ background: s.paymentTerm === "cash" ? `${FOREST}1A` : `${BRASS}1A`, color: s.paymentTerm === "cash" ? FOREST : BRASS }}>
@@ -5759,9 +5785,9 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
                 </td>
                 <td className="px-3 py-3">
                   <div className="flex gap-1.5 justify-end whitespace-nowrap">
-                    <button onClick={() => openEdit(s)} title="Sửa" className="p-1.5 rounded-sm hover:bg-black/5 opacity-60"><Pencil size={14} /></button>
+                    <button onClick={() => openEdit(s)} title="Sửa" className="p-1.5 rounded-md hover:bg-black/5 opacity-60"><Pencil size={14} /></button>
                     {(currentUser.isOwner || currentUser.perms?.deleteSuppliers) && (
-                      <button onClick={() => remove(s.id)} title="Xoá" className="p-1.5 rounded-sm hover:bg-black/5 opacity-60" style={{ color: RUST }}><Trash2 size={14} /></button>
+                      <button onClick={() => remove(s.id)} title="Xoá" className="p-1.5 rounded-md hover:bg-black/5 opacity-60" style={{ color: RUST }}><Trash2 size={14} /></button>
                     )}
                   </div>
                 </td>
@@ -5777,7 +5803,7 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
         <Modal title={editing.id ? "Sửa nhà cung cấp" : "Thêm nhà cung cấp"} onClose={() => setEditing(null)}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Mã NCC" hint="Tự động sinh — có thể sửa lại">
-              <input className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
+              <input className={inputCls} style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
             </Field>
             <Field label="Mã số thuế">
               <input className={inputCls} style={{ borderColor: LINE }} inputMode="numeric" value={form.taxCode} onChange={(e) => setForm({ ...form, taxCode: e.target.value.replace(/\D/g, "") })} />
@@ -5805,7 +5831,7 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
             <div className="flex gap-2 mb-2">
               {SUPPLIER_PAYMENT_TERMS.map((t) => (
                 <button key={t.id} type="button" onClick={() => setForm({ ...form, paymentTerm: t.id })}
-                  className="px-3.5 py-1.5 rounded-sm text-sm border"
+                  className="px-3.5 py-1.5 rounded-md text-sm border"
                   style={{ borderColor: form.paymentTerm === t.id ? INK : LINE, background: form.paymentTerm === t.id ? INK : "transparent", color: form.paymentTerm === t.id ? "#fff" : INK }}>
                   {t.label}
                 </button>
@@ -5814,12 +5840,12 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
             {form.paymentTerm === "credit" && (
               <label className="text-xs block max-w-[180px]">
                 <span className="block opacity-60 mb-1">Số ngày công nợ</span>
-                <input type="number" min={1} value={form.creditDays} onChange={(e) => setForm({ ...form, creditDays: e.target.value })} className="w-full border rounded-sm py-1.5 px-2" style={{ borderColor: LINE }} />
+                <input type="number" min={1} value={form.creditDays} onChange={(e) => setForm({ ...form, creditDays: e.target.value })} className="w-full border rounded-md py-1.5 px-2" style={{ borderColor: LINE }} />
               </label>
             )}
           </Field>
 
-          <button onClick={submit} className="w-full py-2.5 rounded-sm text-white text-sm mt-2" style={{ background: INK }}>
+          <button onClick={submit} className="w-full py-2.5 rounded-md text-white text-sm mt-2" style={{ background: INK }}>
             {editing.id ? "Lưu thay đổi" : "Thêm nhà cung cấp"}
           </button>
         </Modal>
@@ -5829,11 +5855,11 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
         <Modal title={`Công nợ — ${debtDetail.supplier.name}`} onClose={() => setDebtDetail(null)} size="2xl">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <p className="text-sm opacity-60">{debtDetail.poCount} đơn chưa thanh toán · Tổng nợ <b style={{ color: RUST }}>{vnd(debtDetail.total)}</b></p>
-            <button onClick={() => exportSupplierDebt(debtDetail)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm border" style={{ borderColor: FOREST, color: FOREST }}>
+            <button onClick={() => exportSupplierDebt(debtDetail)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: FOREST, color: FOREST }}>
               <FileSpreadsheet size={12} /> Xuất Excel
             </button>
           </div>
-          <div className="rounded-sm overflow-auto" style={{ border: `1px solid ${LINE}`, maxHeight: "55vh" }}>
+          <div className="rounded-md overflow-auto" style={{ border: `1px solid ${LINE}`, maxHeight: "55vh" }}>
             <table className="w-full text-sm">
               <thead style={{ background: PAPER, position: "sticky", top: 0 }}><tr>
                 <th className="text-left px-3 py-2 text-xs uppercase tracking-wider opacity-60">Mã đơn nhập</th>
@@ -5849,11 +5875,11 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
                     <tr key={po.id} style={{ borderTop: `1px dashed ${LINE}` }}>
                       <td className="px-3 py-2">
                         {goToDoc ? (
-                          <a href={`${window.location.pathname}?po=${encodeURIComponent(po.id)}`} target="_blank" rel="noopener" className="hover:underline" style={{ fontFamily: "'IBM Plex Mono', monospace", color: BLUE }}>{po.code}</a>
-                        ) : <span style={{ fontFamily: "'IBM Plex Mono', monospace", color: BLUE }}>{po.code}</span>}
+                          <a href={`${window.location.pathname}?po=${encodeURIComponent(po.id)}`} target="_blank" rel="noopener" className="hover:underline" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{po.code}</a>
+                        ) : <span style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{po.code}</span>}
                       </td>
-                      <td className="px-3 py-2" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{po.invoiceNo || "—"}</td>
-                      <td className="px-3 py-2 whitespace-nowrap opacity-80" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{formatDateTime(po.createdAt)}</td>
+                      <td className="px-3 py-2" style={{ fontFamily: "'Inter', sans-serif" }}>{po.invoiceNo || "—"}</td>
+                      <td className="px-3 py-2 whitespace-nowrap opacity-80" style={{ fontFamily: "'Inter', sans-serif" }}>{formatDateTime(po.createdAt)}</td>
                       <td className="px-3 py-2 whitespace-nowrap">
                         {due ? (
                           <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: due.nearDue ? `${RUST}1A` : PAPER, color: due.nearDue ? RUST : INK }}>
@@ -5861,7 +5887,7 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
                           </span>
                         ) : <span className="opacity-40">—</span>}
                       </td>
-                      <td className="px-3 py-2 text-right font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>
+                      <td className="px-3 py-2 text-right font-medium" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>
                         {vnd(poNetTotal(po))}
                         {poReturnedValue(po) > 0 && <span className="block text-[10px] font-normal opacity-50">(đã trừ {vnd(poReturnedValue(po))} trả NCC)</span>}
                       </td>
@@ -6118,16 +6144,16 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
       <div>
         <button onClick={() => { resetForm(); setView("history"); }} className="text-sm mb-4 opacity-60 hover:opacity-100">← Quay lại danh sách phiếu bảo hành</button>
 
-        <div className="p-5 rounded-sm mb-5" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+        <div className="p-5 rounded-md mb-5" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           <p className="text-xs uppercase tracking-wider mb-3 opacity-60">Liên kết đơn hàng (không bắt buộc)</p>
           <div className="relative mb-2">
             <input value={orderQuery} onChange={(e) => setOrderQuery(e.target.value)} placeholder="Tìm theo mã đơn hoặc tên khách hàng…"
-              className="w-full border rounded-sm py-2 px-3 text-sm" style={{ borderColor: LINE }} />
+              className="w-full border rounded-md py-2 px-3 text-sm" style={{ borderColor: LINE }} />
             {orderMatches.length > 0 && (
-              <div className="absolute z-20 mt-1 w-full max-h-52 overflow-y-auto rounded-sm shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+              <div className="absolute z-20 mt-1 w-full max-h-52 overflow-y-auto rounded-md shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
                 {orderMatches.map((o) => (
                   <button key={o.id} onClick={() => pickOrder(o)} className="w-full text-left px-3 py-2 text-sm hover:bg-black/5 flex justify-between gap-3" style={{ borderBottom: `1px dashed ${LINE}` }}>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", color: BLUE }}>{o.code}</span>
+                    <span style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{o.code}</span>
                     <span className="opacity-60 truncate">{customers.find((c) => c.id === o.customerId)?.name || "Khách lẻ"}</span>
                   </button>
                 ))}
@@ -6135,18 +6161,18 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
             )}
           </div>
           {selectedOrder && (
-            <div className="p-3 rounded-sm" style={{ background: PAPER }}>
+            <div className="p-3 rounded-md" style={{ background: PAPER }}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium" style={{ color: BLUE, fontFamily: "'IBM Plex Mono', monospace" }}>{selectedOrder.code}</span>
+                <span className="text-sm font-medium" style={{ color: BLUE, fontFamily: "'Inter', sans-serif" }}>{selectedOrder.code}</span>
                 <button onClick={() => setSelectedOrder(null)} className="text-xs underline opacity-60">Bỏ chọn</button>
               </div>
               <div className="space-y-1.5">
                 {selectedOrder.items.map((it) => {
                   const p = products.find((x) => x.id === it.productId);
                   return (
-                    <div key={it.productId} className="flex items-center justify-between gap-3 text-sm p-2 rounded-sm" style={{ background: "#fff", border: `1px dashed ${LINE}` }}>
+                    <div key={it.productId} className="flex items-center justify-between gap-3 text-sm p-2 rounded-md" style={{ background: "#fff", border: `1px dashed ${LINE}` }}>
                       <span className="truncate">{p?.name} <span className="opacity-50 text-xs">(đã mua {it.qty}{it.series?.length ? ` · series: ${it.series.join(", ")}` : ""})</span></span>
-                      <button onClick={() => addLineFromOrder(selectedOrder, it)} className="text-xs px-2.5 py-1 rounded-sm border shrink-0" style={{ borderColor: LINE, color: INK }}>+ Thêm vào phiếu</button>
+                      <button onClick={() => addLineFromOrder(selectedOrder, it)} className="text-xs px-2.5 py-1 rounded-md border shrink-0" style={{ borderColor: LINE, color: INK }}>+ Thêm vào phiếu</button>
                     </div>
                   );
                 })}
@@ -6161,12 +6187,12 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
         </div>
         <Field label="Địa chỉ khách hàng"><input className={inputCls} style={{ borderColor: LINE }} value={form.customerAddress} onChange={(e) => setForm({ ...form, customerAddress: e.target.value })} /></Field>
 
-        <div className="p-5 rounded-sm my-5" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+        <div className="p-5 rounded-md my-5" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs uppercase tracking-wider opacity-60">Sản phẩm bảo hành ({lines.length})</p>
           </div>
           {lines.length > 0 && (
-            <div className="rounded-sm overflow-x-auto mb-3" style={{ border: `1px solid ${LINE}` }}>
+            <div className="rounded-md overflow-x-auto mb-3" style={{ border: `1px solid ${LINE}` }}>
               <table className="w-full text-sm" style={{ minWidth: 640 }}>
                 <thead><tr style={{ background: PAPER }}>
                   <th className="text-left py-2 px-2 text-xs uppercase tracking-wider opacity-60">Sản phẩm</th>
@@ -6179,12 +6205,12 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
                 <tbody>
                   {lines.map((l) => (
                     <tr key={l.key} style={{ borderTop: `1px dashed ${LINE}` }}>
-                      <td className="py-2 px-2">{l.productName}{l.orderCode ? <span className="block text-[10px] opacity-40" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>Đơn {l.orderCode}</span> : null}</td>
-                      <td className="py-2 px-2"><input value={l.seriesText} onChange={(e) => updateLine(l.key, { seriesText: e.target.value })} placeholder="Cách nhau bởi dấu phẩy" className="w-32 border rounded-sm py-1 px-1.5 text-xs" style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} /></td>
-                      <td className="py-2 px-2 text-right"><input type="number" min={1} value={l.qty} onChange={(e) => updateLine(l.key, { qty: Number(e.target.value) || 1 })} className="w-14 border rounded-sm py-1 px-1.5 text-right text-sm" style={{ borderColor: LINE }} /></td>
-                      <td className="py-2 px-2 text-right"><input type="number" min={0} value={l.warrantyMonths} onChange={(e) => updateLine(l.key, { warrantyMonths: Number(e.target.value) || 0 })} className="w-16 border rounded-sm py-1 px-1.5 text-right text-sm" style={{ borderColor: LINE }} /></td>
-                      <td className="py-2 px-2"><input value={l.condition} onChange={(e) => updateLine(l.key, { condition: e.target.value })} placeholder="VD: không lên nguồn…" className="w-40 border rounded-sm py-1 px-1.5 text-xs" style={{ borderColor: LINE }} /></td>
-                      <td className="py-2 px-2 text-right"><button onClick={() => removeLine(l.key)} className="p-1 rounded-sm hover:bg-black/5 opacity-50"><X size={13} /></button></td>
+                      <td className="py-2 px-2">{l.productName}{l.orderCode ? <span className="block text-[10px] opacity-40" style={{ fontFamily: "'Inter', sans-serif" }}>Đơn {l.orderCode}</span> : null}</td>
+                      <td className="py-2 px-2"><input value={l.seriesText} onChange={(e) => updateLine(l.key, { seriesText: e.target.value })} placeholder="Cách nhau bởi dấu phẩy" className="w-32 border rounded-md py-1 px-1.5 text-xs" style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} /></td>
+                      <td className="py-2 px-2 text-right"><input type="number" min={1} value={l.qty} onChange={(e) => updateLine(l.key, { qty: Number(e.target.value) || 1 })} className="w-14 border rounded-md py-1 px-1.5 text-right text-sm" style={{ borderColor: LINE }} /></td>
+                      <td className="py-2 px-2 text-right"><input type="number" min={0} value={l.warrantyMonths} onChange={(e) => updateLine(l.key, { warrantyMonths: Number(e.target.value) || 0 })} className="w-16 border rounded-md py-1 px-1.5 text-right text-sm" style={{ borderColor: LINE }} /></td>
+                      <td className="py-2 px-2"><input value={l.condition} onChange={(e) => updateLine(l.key, { condition: e.target.value })} placeholder="VD: không lên nguồn…" className="w-40 border rounded-md py-1 px-1.5 text-xs" style={{ borderColor: LINE }} /></td>
+                      <td className="py-2 px-2 text-right"><button onClick={() => removeLine(l.key)} className="p-1 rounded-md hover:bg-black/5 opacity-50"><X size={13} /></button></td>
                     </tr>
                   ))}
                 </tbody>
@@ -6201,10 +6227,10 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
         </div>
         <Field label="Địa chỉ nhận bảo hành"><p className="text-sm py-1.5 px-1 opacity-70">{COMPANY_INFO.address}</p></Field>
         <Field label="Ghi chú chung (không bắt buộc)">
-          <textarea rows={2} className="w-full border rounded-sm p-2 text-sm" style={{ borderColor: LINE }} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
+          <textarea rows={2} className="w-full border rounded-md p-2 text-sm" style={{ borderColor: LINE }} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
         </Field>
 
-        <button onClick={submitTicket} className="w-full py-2.5 rounded-sm text-white text-sm mt-2" style={{ background: INK }}>Tạo phiếu bảo hành</button>
+        <button onClick={submitTicket} className="w-full py-2.5 rounded-md text-white text-sm mt-2" style={{ background: INK }}>Tạo phiếu bảo hành</button>
       </div>
     );
   }
@@ -6212,13 +6238,13 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
   return (
     <div>
       {warrantyStockList.length > 0 && (
-        <div className="p-4 rounded-sm mb-5" style={{ background: `${BRASS}0A`, border: `1px solid ${BRASS}44` }}>
+        <div className="p-4 rounded-md mb-5" style={{ background: `${BRASS}0A`, border: `1px solid ${BRASS}44` }}>
           <button onClick={() => setShowWarrantyStock((v) => !v)} className="flex items-center justify-between w-full text-left">
             <span className="text-xs uppercase tracking-wider" style={{ color: BRASS }}>Kho bảo hành — đang giữ, chờ xử lý với NCC ({warrantyStockList.reduce((s, w) => s + w.qty, 0)} sản phẩm)</span>
             <span className="text-xs opacity-60">{showWarrantyStock ? "Thu gọn ▲" : "Xem chi tiết ▼"}</span>
           </button>
           {showWarrantyStock && (
-            <div className="mt-3 rounded-sm overflow-x-auto" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+            <div className="mt-3 rounded-md overflow-x-auto" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
               <table className="w-full text-sm" style={{ minWidth: 560 }}>
                 <thead><tr style={{ background: PAPER }}>
                   <th className="text-left py-2 px-2 text-xs uppercase tracking-wider opacity-60">Sản phẩm</th>
@@ -6230,16 +6256,16 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
                 <tbody>
                   {warrantyStockList.map((w) => (
                     <tr key={w.key} style={{ borderTop: `1px dashed ${LINE}` }}>
-                      <td className="py-2 px-2">{w.productName}<span className="opacity-40 text-xs" style={{ fontFamily: "'IBM Plex Mono', monospace" }}> · {w.productCode}</span></td>
-                      <td className="py-2 px-2" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{w.serial || "—"}</td>
-                      <td className="py-2 px-2 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{w.qty}</td>
+                      <td className="py-2 px-2">{w.productName}<span className="opacity-40 text-xs" style={{ fontFamily: "'Inter', sans-serif" }}> · {w.productCode}</span></td>
+                      <td className="py-2 px-2" style={{ fontFamily: "'Inter', sans-serif" }}>{w.serial || "—"}</td>
+                      <td className="py-2 px-2 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>{w.qty}</td>
                       <td className="py-2 px-2 whitespace-nowrap">
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: w.source === "supplier" ? `${FOREST}1A` : `${BRASS}1A`, color: w.source === "supplier" ? FOREST : BRASS }}>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider" style={{ background: w.source === "supplier" ? `${FOREST}1A` : `${BRASS}1A`, color: w.source === "supplier" ? FOREST : BRASS }}>
                           {w.source === "supplier" ? "NCC trả lại" : "Khách mang tới"}
                         </span>
                       </td>
                       <td className="py-2 px-2">
-                        <button onClick={() => openViewingTicket(w.ticket)} className="hover:underline" style={{ color: BLUE, fontFamily: "'IBM Plex Mono', monospace" }}>{w.ticket.code}</button>
+                        <button onClick={() => openViewingTicket(w.ticket)} className="hover:underline" style={{ color: BLUE, fontFamily: "'Inter', sans-serif" }}>{w.ticket.code}</button>
                       </td>
                     </tr>
                   ))}
@@ -6255,7 +6281,7 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
           <FilterChip active={statusFilter === "all"} onClick={() => setStatusFilter("all")}>Tất cả</FilterChip>
           {WARRANTY_TICKET_STATUSES.map((s) => <FilterChip key={s.id} active={statusFilter === s.id} onClick={() => setStatusFilter(s.id)} color={s.color}>{s.label}</FilterChip>)}
         </div>
-        <button onClick={() => { resetForm(); setView("new"); }} className="flex items-center gap-1.5 px-4 py-2 rounded-sm text-sm text-white shrink-0" style={{ background: INK }}>
+        <button onClick={() => { resetForm(); setView("new"); }} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white shrink-0" style={{ background: INK }}>
           <Plus size={15} /> Tạo phiếu bảo hành
         </button>
       </div>
@@ -6268,10 +6294,10 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
             const st = WARRANTY_TICKET_STATUSES.find((s) => s.id === t.status);
             const relatedOrders = [...new Set(t.items.map((it) => it.orderCode).filter(Boolean))];
             return (
-              <button key={t.id} onClick={() => openViewingTicket(t)} className="w-full text-left p-4 rounded-sm hover:bg-black/[0.02]" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+              <button key={t.id} onClick={() => openViewingTicket(t)} className="w-full text-left p-4 rounded-md hover:bg-black/[0.02]" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div>
-                    <p className="font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: BLUE }}>{t.code}</p>
+                    <p className="font-medium" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{t.code}</p>
                     <p className="text-xs opacity-50">{t.customerName} · {t.items.length} sản phẩm · {formatDateTime(t.createdAt)}{relatedOrders.length > 0 ? ` · Đơn: ${relatedOrders.join(", ")}` : ""}</p>
                   </div>
                   <span className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: `${st.color}1A`, color: st.color }}>{st.label}</span>
@@ -6310,33 +6336,33 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
                 )}
                 {viewingTicket.status === "pending" && (
                   <>
-                    <select value={printPaperSize} onChange={(e) => setPrintPaperSize(e.target.value)} className="ml-auto border rounded-sm py-1.5 px-2 text-xs" style={{ borderColor: LINE }}>
+                    <select value={printPaperSize} onChange={(e) => setPrintPaperSize(e.target.value)} className="ml-auto border rounded-md py-1.5 px-2 text-xs" style={{ borderColor: LINE }}>
                       <option value="A5">Khổ A5</option>
                       <option value="A4">Khổ A4</option>
                     </select>
-                    <button onClick={() => doPrint(viewingTicket)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm border" style={{ borderColor: LINE, color: INK }}>
+                    <button onClick={() => doPrint(viewingTicket)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>
                       <Printer size={13} /> In phiếu tiếp nhận BH
                     </button>
                   </>
                 )}
                 {viewingTicket.status === "completed" && (
                   <>
-                    <select value={printPaperSize} onChange={(e) => setPrintPaperSize(e.target.value)} className="ml-auto border rounded-sm py-1.5 px-2 text-xs" style={{ borderColor: LINE }}>
+                    <select value={printPaperSize} onChange={(e) => setPrintPaperSize(e.target.value)} className="ml-auto border rounded-md py-1.5 px-2 text-xs" style={{ borderColor: LINE }}>
                       <option value="A5">Khổ A5</option>
                       <option value="A4">Khổ A4</option>
                     </select>
-                    <button onClick={() => doPrintXTBH(viewingTicket)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm border" style={{ borderColor: FOREST, color: FOREST }}>
+                    <button onClick={() => doPrintXTBH(viewingTicket)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: FOREST, color: FOREST }}>
                       <Printer size={13} /> In phiếu xuất trả BH
                     </button>
                   </>
                 )}
                 {viewingTicket.status === "rejected" && (
                   <>
-                    <select value={printPaperSize} onChange={(e) => setPrintPaperSize(e.target.value)} className="ml-auto border rounded-sm py-1.5 px-2 text-xs" style={{ borderColor: LINE }}>
+                    <select value={printPaperSize} onChange={(e) => setPrintPaperSize(e.target.value)} className="ml-auto border rounded-md py-1.5 px-2 text-xs" style={{ borderColor: LINE }}>
                       <option value="A5">Khổ A5</option>
                       <option value="A4">Khổ A4</option>
                     </select>
-                    <button onClick={() => doPrintReject(viewingTicket)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm border" style={{ borderColor: RUST, color: RUST }}>
+                    <button onClick={() => doPrintReject(viewingTicket)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: RUST, color: RUST }}>
                       <Printer size={13} /> In phiếu từ chối BH
                     </button>
                   </>
@@ -6346,30 +6372,30 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
           })()}
 
           {viewingTicket.xtbhCode && (
-            <p className="text-xs mb-4"><span className="opacity-50">Phiếu xuất trả bảo hành: </span><b style={{ color: FOREST, fontFamily: "'IBM Plex Mono', monospace" }}>{viewingTicket.xtbhCode}</b></p>
+            <p className="text-xs mb-4"><span className="opacity-50">Phiếu xuất trả bảo hành: </span><b style={{ color: FOREST, fontFamily: "'Inter', sans-serif" }}>{viewingTicket.xtbhCode}</b></p>
           )}
 
           {(viewingTicket.status === "pending" || viewingTicket.status === "confirmed") && (
             <div className="mb-4">
-              <button onClick={() => setAddingReplacement((v) => !v)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm border" style={{ borderColor: FOREST, color: FOREST }}>
+              <button onClick={() => setAddingReplacement((v) => !v)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: FOREST, color: FOREST }}>
                 <ArrowDownToLine size={13} /> Nhập hàng thay thế NCC vào Kho bảo hành
               </button>
               {addingReplacement && (
-                <div className="p-3 rounded-sm mt-2" style={{ background: `${FOREST}0A`, border: `1px solid ${FOREST}33` }}>
+                <div className="p-3 rounded-md mt-2" style={{ background: `${FOREST}0A`, border: `1px solid ${FOREST}33` }}>
                   <p className="text-xs opacity-60 mb-2">Ghi nhận sản phẩm NCC đã trả lại (sửa xong hoặc hàng thay thế) — nhập thẳng vào Kho bảo hành, chưa động tới kho chính.</p>
                   <ProductPicker products={products} onPick={(id) => setReplProductId(id)} />
                   {replProductId && <p className="text-xs opacity-70 mt-1.5">Sản phẩm: <b>{products.find((p) => p.id === replProductId)?.name}</b></p>}
                   <div className="grid grid-cols-2 gap-3 mt-2">
                     <label className="text-xs">
                       <span className="block opacity-60 mb-1">Serial (nếu có)</span>
-                      <input value={replSeriesText} onChange={(e) => setReplSeriesText(e.target.value)} placeholder="Cách nhau bởi dấu phẩy" className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
+                      <input value={replSeriesText} onChange={(e) => setReplSeriesText(e.target.value)} placeholder="Cách nhau bởi dấu phẩy" className="w-full border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
                     </label>
                     <label className="text-xs">
                       <span className="block opacity-60 mb-1">Số lượng</span>
-                      <input type="number" min={1} value={replQty} onChange={(e) => setReplQty(Number(e.target.value) || 1)} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
+                      <input type="number" min={1} value={replQty} onChange={(e) => setReplQty(Number(e.target.value) || 1)} className="w-full border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
                     </label>
                   </div>
-                  <button onClick={() => addReplacement(viewingTicket)} className="w-full py-2 rounded-sm text-white text-sm mt-3" style={{ background: FOREST }}>Ghi nhận vào Kho bảo hành</button>
+                  <button onClick={() => addReplacement(viewingTicket)} className="w-full py-2 rounded-md text-white text-sm mt-3" style={{ background: FOREST }}>Ghi nhận vào Kho bảo hành</button>
                 </div>
               )}
               {viewingTicket.replacementReceived && viewingTicket.replacementReceived.length > 0 && (
@@ -6383,14 +6409,14 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
           )}
 
           {statusDraft === "confirmed" && (
-            <div className="p-4 rounded-sm mb-4" style={{ background: `${BLUE}0A`, border: `1px solid ${BLUE}44` }}>
+            <div className="p-4 rounded-md mb-4" style={{ background: `${BLUE}0A`, border: `1px solid ${BLUE}44` }}>
               <p className="text-xs uppercase tracking-wider mb-3" style={{ color: BLUE }}>Xác nhận xử lý bảo hành</p>
               <div className="flex gap-2 mb-3">
-                <button onClick={() => setResolutionType("exchange")} className="px-3.5 py-1.5 rounded-sm text-sm border"
+                <button onClick={() => setResolutionType("exchange")} className="px-3.5 py-1.5 rounded-md text-sm border"
                   style={{ borderColor: resolutionType === "exchange" ? INK : LINE, background: resolutionType === "exchange" ? INK : "transparent", color: resolutionType === "exchange" ? "#fff" : INK }}>
                   Đổi sản phẩm
                 </button>
-                <button onClick={() => setResolutionType("refund")} className="px-3.5 py-1.5 rounded-sm text-sm border"
+                <button onClick={() => setResolutionType("refund")} className="px-3.5 py-1.5 rounded-md text-sm border"
                   style={{ borderColor: resolutionType === "refund" ? INK : LINE, background: resolutionType === "refund" ? INK : "transparent", color: resolutionType === "refund" ? "#fff" : INK }}>
                   Hoàn tiền
                 </button>
@@ -6399,11 +6425,11 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
                 <div className="space-y-2.5">
                   <p className="text-[10px] uppercase tracking-wider opacity-50">Nguồn hàng đổi</p>
                   <div className="flex gap-2 mb-1">
-                    <button onClick={() => setExchangeSource("main")} className="px-3 py-1.5 rounded-sm text-xs border"
+                    <button onClick={() => setExchangeSource("main")} className="px-3 py-1.5 rounded-md text-xs border"
                       style={{ borderColor: exchangeSource === "main" ? INK : LINE, background: exchangeSource === "main" ? INK : "transparent", color: exchangeSource === "main" ? "#fff" : INK }}>
                       Kho chính (trả trước cho khách)
                     </button>
-                    <button onClick={() => setExchangeSource("warranty")} className="px-3 py-1.5 rounded-sm text-xs border"
+                    <button onClick={() => setExchangeSource("warranty")} className="px-3 py-1.5 rounded-md text-xs border"
                       style={{ borderColor: exchangeSource === "warranty" ? INK : LINE, background: exchangeSource === "warranty" ? INK : "transparent", color: exchangeSource === "warranty" ? "#fff" : INK }}>
                       Kho bảo hành (NCC đã trả lại)
                     </button>
@@ -6416,11 +6442,11 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
                       <div className="grid grid-cols-2 gap-3">
                         <label className="text-xs">
                           <span className="block opacity-60 mb-1">Serial đổi (nếu có)</span>
-                          <input value={exchangeSeriesText} onChange={(e) => setExchangeSeriesText(e.target.value)} placeholder="Cách nhau bởi dấu phẩy" className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
+                          <input value={exchangeSeriesText} onChange={(e) => setExchangeSeriesText(e.target.value)} placeholder="Cách nhau bởi dấu phẩy" className="w-full border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
                         </label>
                         <label className="text-xs">
                           <span className="block opacity-60 mb-1">Số lượng</span>
-                          <input type="number" min={1} value={exchangeQty} onChange={(e) => setExchangeQty(Number(e.target.value) || 1)} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
+                          <input type="number" min={1} value={exchangeQty} onChange={(e) => setExchangeQty(Number(e.target.value) || 1)} className="w-full border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
                         </label>
                       </div>
                     </>
@@ -6430,7 +6456,7 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
                     ) : (
                       <div className="space-y-1.5">
                         {viewingTicket.replacementReceived.map((r) => (
-                          <label key={r.id} className="flex items-center gap-2 p-2 rounded-sm text-sm cursor-pointer" style={{ border: `1px solid ${selectedReplacementId === r.id ? INK : LINE}` }}>
+                          <label key={r.id} className="flex items-center gap-2 p-2 rounded-md text-sm cursor-pointer" style={{ border: `1px solid ${selectedReplacementId === r.id ? INK : LINE}` }}>
                             <input type="radio" name="replacement" checked={selectedReplacementId === r.id} onChange={() => setSelectedReplacementId(r.id)} />
                             <span>{r.productName}{r.series.length ? ` · Serial: ${r.series.join(", ")}` : ""} · SL {r.qty}</span>
                           </label>
@@ -6442,42 +6468,42 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
               ) : (
                 <label className="text-xs block">
                   <span className="block opacity-60 mb-1">Số tiền hoàn lại cho khách</span>
-                  <MoneyInput className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }} value={refundAmount} onChange={(v) => setRefundAmount(v)} />
+                  <MoneyInput className="w-full border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }} value={refundAmount} onChange={(v) => setRefundAmount(v)} />
                 </label>
               )}
               <div className="flex gap-2 mt-3">
-                <button onClick={() => setStatusDraft(null)} className="flex-1 py-2 rounded-sm text-sm border" style={{ borderColor: LINE, color: INK }}>Huỷ</button>
-                <button onClick={() => saveConfirm(viewingTicket)} className="flex-1 py-2 rounded-sm text-white text-sm" style={{ background: BLUE }}>Lưu xác nhận</button>
+                <button onClick={() => setStatusDraft(null)} className="flex-1 py-2 rounded-md text-sm border" style={{ borderColor: LINE, color: INK }}>Huỷ</button>
+                <button onClick={() => saveConfirm(viewingTicket)} className="flex-1 py-2 rounded-md text-white text-sm" style={{ background: BLUE }}>Lưu xác nhận</button>
               </div>
             </div>
           )}
 
           {statusDraft === "rejected" && (
-            <div className="p-4 rounded-sm mb-4" style={{ background: `${RUST}0A`, border: `1px solid ${RUST}44` }}>
+            <div className="p-4 rounded-md mb-4" style={{ background: `${RUST}0A`, border: `1px solid ${RUST}44` }}>
               <p className="text-xs uppercase tracking-wider mb-3" style={{ color: RUST }}>Từ chối bảo hành</p>
-              <textarea rows={2} className="w-full border rounded-sm p-2 text-sm" style={{ borderColor: LINE }} value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="VD: sản phẩm ngoài phạm vi bảo hành, hết hạn bảo hành, lỗi do va đập/vào nước…" />
+              <textarea rows={2} className="w-full border rounded-md p-2 text-sm" style={{ borderColor: LINE }} value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="VD: sản phẩm ngoài phạm vi bảo hành, hết hạn bảo hành, lỗi do va đập/vào nước…" />
               <div className="flex gap-2 mt-3">
-                <button onClick={() => setStatusDraft(null)} className="flex-1 py-2 rounded-sm text-sm border" style={{ borderColor: LINE, color: INK }}>Huỷ</button>
-                <button onClick={() => saveReject(viewingTicket)} className="flex-1 py-2 rounded-sm text-white text-sm" style={{ background: RUST }}>Lưu từ chối</button>
+                <button onClick={() => setStatusDraft(null)} className="flex-1 py-2 rounded-md text-sm border" style={{ borderColor: LINE, color: INK }}>Huỷ</button>
+                <button onClick={() => saveReject(viewingTicket)} className="flex-1 py-2 rounded-md text-white text-sm" style={{ background: RUST }}>Lưu từ chối</button>
               </div>
             </div>
           )}
 
           {!statusDraft && viewingTicket.status === "confirmed" && (
-            <div className="p-3 rounded-sm mb-4 text-sm" style={{ background: `${BLUE}0A`, border: `1px solid ${BLUE}33` }}>
+            <div className="p-3 rounded-md mb-4 text-sm" style={{ background: `${BLUE}0A`, border: `1px solid ${BLUE}33` }}>
               {viewingTicket.resolutionType === "exchange"
                 ? <p><span className="opacity-60">Đã xác nhận đổi ({viewingTicket.exchangeSource === "warranty" ? "Kho bảo hành" : "Kho chính"}): </span><b>{viewingTicket.exchangeProductName}</b>{viewingTicket.exchangeSeries.length ? ` · Serial: ${viewingTicket.exchangeSeries.join(", ")}` : ""} · SL {viewingTicket.exchangeQty}</p>
                 : <p><span className="opacity-60">Đã xác nhận hoàn tiền: </span><b>{vnd(viewingTicket.refundAmount)}</b></p>}
             </div>
           )}
           {!statusDraft && viewingTicket.status === "rejected" && (
-            <div className="p-3 rounded-sm mb-4 text-sm" style={{ background: `${RUST}0A`, border: `1px solid ${RUST}33` }}>
+            <div className="p-3 rounded-md mb-4 text-sm" style={{ background: `${RUST}0A`, border: `1px solid ${RUST}33` }}>
               <span className="opacity-60">Lý do từ chối: </span>{viewingTicket.rejectReason}
             </div>
           )}
 
           {printBlockedUrl && (
-            <div className="mb-4 p-3 rounded-sm text-xs" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44`, color: INK }}>
+            <div className="mb-4 p-3 rounded-md text-xs" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44`, color: INK }}>
               <p className="mb-2">Trình duyệt đã chặn cửa sổ in tự động. Bấm vào liên kết bên dưới để mở phiếu, sau đó tự bấm in (Ctrl+P / biểu tượng in) trong tab mới đó:</p>
               <a href={printBlockedUrl} target="_blank" rel="noreferrer" className="underline font-medium" style={{ color: BLUE }}>Mở phiếu bảo hành để in</a>
             </div>
@@ -6512,7 +6538,7 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
             );
           })()}
 
-          <div className="rounded-sm overflow-x-auto mb-4" style={{ border: `1px solid ${LINE}` }}>
+          <div className="rounded-md overflow-x-auto mb-4" style={{ border: `1px solid ${LINE}` }}>
             <table className="w-full text-sm" style={{ minWidth: 620 }}>
               <thead><tr style={{ background: PAPER }}>
                 <th className="text-left py-2 px-2 text-xs uppercase tracking-wider opacity-60">Sản phẩm</th>
@@ -6527,9 +6553,9 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
                   <tr key={i} style={{ borderTop: `1px dashed ${LINE}` }}>
                     <td className="py-2 px-2">{it.productName}</td>
                     <td className="py-2 px-2 whitespace-nowrap">
-                      {it.orderCode ? (goToDoc ? <button onClick={() => goToDoc(it.orderCode)} className="hover:underline" style={{ color: BLUE, fontFamily: "'IBM Plex Mono', monospace" }}>{it.orderCode}</button> : <span style={{ color: BLUE, fontFamily: "'IBM Plex Mono', monospace" }}>{it.orderCode}</span>) : <span className="opacity-40">—</span>}
+                      {it.orderCode ? (goToDoc ? <button onClick={() => goToDoc(it.orderCode)} className="hover:underline" style={{ color: BLUE, fontFamily: "'Inter', sans-serif" }}>{it.orderCode}</button> : <span style={{ color: BLUE, fontFamily: "'Inter', sans-serif" }}>{it.orderCode}</span>) : <span className="opacity-40">—</span>}
                     </td>
-                    <td className="py-2 px-2" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{it.series.length ? it.series.join(", ") : "—"}</td>
+                    <td className="py-2 px-2" style={{ fontFamily: "'Inter', sans-serif" }}>{it.series.length ? it.series.join(", ") : "—"}</td>
                     <td className="py-2 px-2 text-right">{it.qty}</td>
                     <td className="py-2 px-2 text-right">{warrantyLabel(it.warrantyMonths)}</td>
                     <td className="py-2 px-2">{it.condition || "—"}</td>
@@ -6619,13 +6645,13 @@ function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, a
       <div className="max-w-3xl">
         <button onClick={() => { setForm(blank()); setEditingId(null); setView("list"); }} className="text-sm mb-4 opacity-60 hover:opacity-100">← Quay lại danh sách phiếu gửi hàng</button>
 
-        <div className="p-4 rounded-sm mb-4" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+        <div className="p-4 rounded-md mb-4" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           <p className="text-xs uppercase tracking-wider mb-2 opacity-60">Điền nhanh từ khách hàng có sẵn (không bắt buộc)</p>
           <div className="relative">
             <input value={custQuery} onChange={(e) => setCustQuery(e.target.value)} placeholder="Tìm theo tên / SĐT khách…"
-              className="w-full border rounded-sm py-2 px-3 text-sm" style={{ borderColor: LINE }} />
+              className="w-full border rounded-md py-2 px-3 text-sm" style={{ borderColor: LINE }} />
             {custMatches.length > 0 && (
-              <div className="absolute z-20 mt-1 w-full max-h-52 overflow-y-auto rounded-sm shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+              <div className="absolute z-20 mt-1 w-full max-h-52 overflow-y-auto rounded-md shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
                 {custMatches.map((c) => (
                   <button key={c.id} onClick={() => pickCust(c)} className="w-full text-left px-3 py-2 text-sm hover:bg-black/5 flex justify-between gap-3" style={{ borderBottom: `1px dashed ${LINE}` }}>
                     <span>{c.name}</span><span className="opacity-60">{c.phone}</span>
@@ -6636,7 +6662,7 @@ function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, a
           </div>
         </div>
 
-        <div className="p-4 rounded-sm mb-4 space-y-4" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+        <div className="p-4 rounded-md mb-4 space-y-4" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           <p className="text-sm font-medium" style={{ color: INK }}>Bên nhận (khách)</p>
           <div className="grid sm:grid-cols-2 gap-4">
             <Field label="Tên công ty"><input className={inputCls} style={{ borderColor: LINE }} value={form.company} onChange={(e) => set("company", e.target.value)} placeholder="CÔNG TY TNHH …" /></Field>
@@ -6650,7 +6676,7 @@ function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, a
           <Field label="Địa chỉ nhận"><input className={inputCls} style={{ borderColor: LINE }} value={form.recipientAddress} onChange={(e) => set("recipientAddress", e.target.value)} /></Field>
         </div>
 
-        <details className="p-4 rounded-sm mb-4" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+        <details className="p-4 rounded-md mb-4" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           <summary className="text-sm font-medium cursor-pointer" style={{ color: INK }}>Bên gửi (mặc định theo công ty — bấm để sửa)</summary>
           <div className="grid sm:grid-cols-2 gap-4 mt-3">
             <Field label="Tên bên gửi"><input className={inputCls} style={{ borderColor: LINE }} value={form.senderName} onChange={(e) => set("senderName", e.target.value)} /></Field>
@@ -6663,13 +6689,13 @@ function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, a
 
         <div className="mt-4">
           <Field label="Ghi chú nội bộ (không in ra nhãn)">
-            <textarea rows={3} className="w-full border rounded-sm py-2 px-3 text-sm" style={{ borderColor: LINE, background: `${BRASS}0D` }}
+            <textarea rows={3} className="w-full border rounded-md py-2 px-3 text-sm" style={{ borderColor: LINE, background: `${BRASS}0D` }}
               value={form.internalNote || ""} onChange={(e) => set("internalNote", e.target.value)}
               placeholder="VD: gửi chành xe lúc 17h, khách thanh toán cước khi nhận, liên hệ anh Nguyên trước khi gửi…" />
           </Field>
         </div>
 
-        <button onClick={save} className="w-full py-2.5 rounded-sm text-white text-sm mt-3" style={{ background: INK }}>{editingId ? "Lưu thay đổi" : "Lưu phiếu gửi hàng"}</button>
+        <button onClick={save} className="w-full py-2.5 rounded-md text-white text-sm mt-3" style={{ background: INK }}>{editingId ? "Lưu thay đổi" : "Lưu phiếu gửi hàng"}</button>
       </div>
     );
   }
@@ -6678,8 +6704,8 @@ function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, a
     <div>
       <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm công ty / người nhận / SĐT / tuyến…"
-          className="border rounded-sm py-2 px-3 text-sm flex-1 min-w-[220px]" style={{ borderColor: LINE }} />
-        <button onClick={openNew} className="px-4 py-2 rounded-sm text-white text-sm shrink-0" style={{ background: INK }}>+ Tạo phiếu gửi hàng</button>
+          className="border rounded-md py-2 px-3 text-sm flex-1 min-w-[220px]" style={{ borderColor: LINE }} />
+        <button onClick={openNew} className="px-4 py-2 rounded-md text-white text-sm shrink-0" style={{ background: INK }}>+ Tạo phiếu gửi hàng</button>
       </div>
 
       {list.length === 0 ? (
@@ -6687,7 +6713,7 @@ function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, a
       ) : (
         <div className="space-y-2">
           {list.map((p) => (
-            <div key={p.id} className="p-3 rounded-sm flex items-start justify-between gap-3 flex-wrap" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+            <div key={p.id} className="p-3 rounded-md flex items-start justify-between gap-3 flex-wrap" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
               <div className="min-w-0">
                 <p className="font-medium" style={{ color: INK }}>{p.company || p.recipientName || "—"}</p>
                 <p className="text-xs opacity-60">
@@ -6696,15 +6722,15 @@ function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, a
                 </p>
                 <p className="text-xs opacity-50 truncate">{p.recipientAddress}</p>
                 {p.internalNote && (
-                  <p className="text-xs mt-1 px-2 py-1 rounded-sm whitespace-pre-line" style={{ background: `${BRASS}14`, color: INK }} title="Ghi chú nội bộ — không in ra nhãn">
+                  <p className="text-xs mt-1 px-2 py-1 rounded-md whitespace-pre-line" style={{ background: `${BRASS}14`, color: INK }} title="Ghi chú nội bộ — không in ra nhãn">
                     📝 {p.internalNote}
                   </p>
                 )}
               </div>
               <div className="flex gap-1.5 shrink-0">
-                <button onClick={() => { setPrintFor(p); setPrintOpts({ copies: 2, boxes: 1, paper: "A4" }); }} className="text-xs px-2.5 py-1.5 rounded-sm text-white" style={{ background: BLUE }}>🖨 In nhãn</button>
-                <button onClick={() => openEdit(p)} className="text-xs px-2 py-1.5 rounded-sm border" style={{ borderColor: LINE, color: INK }}>Sửa</button>
-                <button onClick={() => dup(p)} className="text-xs px-2 py-1.5 rounded-sm border" style={{ borderColor: LINE, color: INK }}>Nhân bản</button>
+                <button onClick={() => { setPrintFor(p); setPrintOpts({ copies: 2, boxes: 1, paper: "A4" }); }} className="text-xs px-2.5 py-1.5 rounded-md text-white" style={{ background: BLUE }}>🖨 In nhãn</button>
+                <button onClick={() => openEdit(p)} className="text-xs px-2 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>Sửa</button>
+                <button onClick={() => dup(p)} className="text-xs px-2 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>Nhân bản</button>
                 <button onClick={() => del(p)} className="text-xs px-2 py-1.5" style={{ color: RUST }}>Xoá</button>
               </div>
             </div>
@@ -6730,7 +6756,7 @@ function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, a
               {printOpts.boxes > 1 ? ` Mỗi kiện đánh số 1/${printOpts.boxes} … ${printOpts.boxes}/${printOpts.boxes}.` : ""}
               {" "}Trong hộp thoại in, chọn <b>Layout: Landscape</b> nếu trình duyệt chưa tự nhận.
             </p>
-            <button onClick={doPrint} className="w-full py-2.5 rounded-sm text-white text-sm" style={{ background: INK }}>🖨 In</button>
+            <button onClick={doPrint} className="w-full py-2.5 rounded-md text-white text-sm" style={{ background: INK }}>🖨 In</button>
           </div>
         </Modal>
       )}
@@ -6738,7 +6764,7 @@ function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, a
       {printBlockedUrl && (
         <Modal title="Trình duyệt chặn cửa sổ in" onClose={() => setPrintBlockedUrl(null)}>
           <p className="text-sm mb-3">Cho phép pop-up cho trang này, hoặc mở nhãn ở tab mới:</p>
-          <a href={printBlockedUrl} target="_blank" rel="noreferrer" className="inline-block px-4 py-2 rounded-sm text-white text-sm" style={{ background: INK }}>Mở nhãn để in</a>
+          <a href={printBlockedUrl} target="_blank" rel="noreferrer" className="inline-block px-4 py-2 rounded-md text-white text-sm" style={{ background: INK }}>Mở nhãn để in</a>
         </Modal>
       )}
     </div>
@@ -6848,16 +6874,16 @@ function Shipping({ shippingTickets, setShippingTickets, parcelLabels, setParcel
         {subTabBar}
         <button onClick={() => { setForm(emptyForm()); setEditingId(null); setView("history"); }} className="text-sm mb-4 opacity-60 hover:opacity-100">← Quay lại danh sách vận đơn</button>
 
-        <div className="p-5 rounded-sm mb-5" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+        <div className="p-5 rounded-md mb-5" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           <p className="text-xs uppercase tracking-wider mb-3 opacity-60">Liên kết đơn hàng (không bắt buộc)</p>
           <div className="relative mb-2">
             <input value={orderQuery} onChange={(e) => setOrderQuery(e.target.value)} placeholder="Tìm theo mã đơn hoặc tên khách hàng…"
-              className="w-full border rounded-sm py-2 px-3 text-sm" style={{ borderColor: LINE }} />
+              className="w-full border rounded-md py-2 px-3 text-sm" style={{ borderColor: LINE }} />
             {orderMatches.length > 0 && (
-              <div className="absolute z-20 mt-1 w-full max-h-52 overflow-y-auto rounded-sm shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+              <div className="absolute z-20 mt-1 w-full max-h-52 overflow-y-auto rounded-md shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
                 {orderMatches.map((o) => (
                   <button key={o.id} onClick={() => pickOrder(o)} className="w-full text-left px-3 py-2 text-sm hover:bg-black/5 flex justify-between gap-3" style={{ borderBottom: `1px dashed ${LINE}` }}>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", color: BLUE }}>{o.code}</span>
+                    <span style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{o.code}</span>
                     <span className="opacity-60 truncate">{customers.find((c) => c.id === o.customerId)?.name || "Khách lẻ"}</span>
                   </button>
                 ))}
@@ -6865,8 +6891,8 @@ function Shipping({ shippingTickets, setShippingTickets, parcelLabels, setParcel
             )}
           </div>
           {form.orderCode && (
-            <div className="flex items-center justify-between p-2.5 rounded-sm text-sm" style={{ background: PAPER }}>
-              <span style={{ color: BLUE, fontFamily: "'IBM Plex Mono', monospace" }}>{form.orderCode}</span>
+            <div className="flex items-center justify-between p-2.5 rounded-md text-sm" style={{ background: PAPER }}>
+              <span style={{ color: BLUE, fontFamily: "'Inter', sans-serif" }}>{form.orderCode}</span>
               <button onClick={() => setForm({ ...form, orderId: "", orderCode: "" })} className="text-xs underline opacity-60">Bỏ chọn</button>
             </div>
           )}
@@ -6886,7 +6912,7 @@ function Shipping({ shippingTickets, setShippingTickets, parcelLabels, setParcel
             </select>
           </Field>
           <Field label="Mã vận đơn" hint="Copy từ app/web của đơn vị vận chuyển">
-            <input className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} value={form.trackingCode} onChange={(e) => setForm({ ...form, trackingCode: e.target.value })} />
+            <input className={inputCls} style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} value={form.trackingCode} onChange={(e) => setForm({ ...form, trackingCode: e.target.value })} />
           </Field>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -6899,9 +6925,9 @@ function Shipping({ shippingTickets, setShippingTickets, parcelLabels, setParcel
           <Field label="Ngày giao hàng"><input type="date" className={inputCls} style={{ borderColor: LINE }} value={form.deliveredDate} onChange={(e) => setForm({ ...form, deliveredDate: e.target.value })} /></Field>
         </div>
         <Field label="Ghi chú giao hàng">
-          <textarea rows={2} className="w-full border rounded-sm p-2 text-sm" style={{ borderColor: LINE }} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="VD: cho xem hàng, không cho thử…" />
+          <textarea rows={2} className="w-full border rounded-md p-2 text-sm" style={{ borderColor: LINE }} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="VD: cho xem hàng, không cho thử…" />
         </Field>
-        <button onClick={submitTicket} className="w-full py-2.5 rounded-sm text-white text-sm mt-2" style={{ background: INK }}>{editingId ? "Lưu thay đổi" : "Tạo phiếu vận chuyển"}</button>
+        <button onClick={submitTicket} className="w-full py-2.5 rounded-md text-white text-sm mt-2" style={{ background: INK }}>{editingId ? "Lưu thay đổi" : "Tạo phiếu vận chuyển"}</button>
       </div>
     );
   }
@@ -6909,9 +6935,9 @@ function Shipping({ shippingTickets, setShippingTickets, parcelLabels, setParcel
   return (
     <div>
       {subTabBar}
-      <div className="mb-4 p-3 rounded-sm flex items-center gap-3 flex-wrap" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+      <div className="mb-4 p-3 rounded-md flex items-center gap-3 flex-wrap" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
         <span className="text-xs uppercase tracking-wider opacity-60">Kết nối GHN</span>
-        <button onClick={testGhn} disabled={ghnPing?.loading} className="text-xs px-3 py-1.5 rounded-sm border disabled:opacity-50" style={{ borderColor: BLUE, color: BLUE }}>
+        <button onClick={testGhn} disabled={ghnPing?.loading} className="text-xs px-3 py-1.5 rounded-md border disabled:opacity-50" style={{ borderColor: BLUE, color: BLUE }}>
           {ghnPing?.loading ? "Đang kiểm tra…" : "Kiểm tra kết nối GHN"}
         </button>
         {ghnPing && !ghnPing.loading && (
@@ -6929,12 +6955,12 @@ function Shipping({ shippingTickets, setShippingTickets, parcelLabels, setParcel
             <FilterChip active={statusFilter === "all"} onClick={() => setStatusFilter("all")}>Tất cả</FilterChip>
             {SHIPPING_STATUSES.map((s) => <FilterChip key={s.id} active={statusFilter === s.id} onClick={() => setStatusFilter(s.id)} color={s.color}>{s.label}</FilterChip>)}
           </div>
-          <select value={carrierFilter} onChange={(e) => setCarrierFilter(e.target.value)} className="border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
+          <select value={carrierFilter} onChange={(e) => setCarrierFilter(e.target.value)} className="border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
             <option value="all">Tất cả đối tác</option>
             {SHIPPING_CARRIERS.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
-        <button onClick={() => { setForm(emptyForm()); setEditingId(null); setView("new"); }} className="flex items-center gap-1.5 px-4 py-2 rounded-sm text-sm text-white shrink-0" style={{ background: INK }}>
+        <button onClick={() => { setForm(emptyForm()); setEditingId(null); setView("new"); }} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white shrink-0" style={{ background: INK }}>
           <Plus size={15} /> Tạo phiếu vận chuyển
         </button>
       </div>
@@ -6946,14 +6972,14 @@ function Shipping({ shippingTickets, setShippingTickets, parcelLabels, setParcel
           {filtered.map((t) => {
             const st = SHIPPING_STATUSES.find((s) => s.id === t.status);
             return (
-              <button key={t.id} onClick={() => { setViewingTicket(t); setPrintBlockedUrl(null); }} className="w-full text-left p-4 rounded-sm hover:bg-black/[0.02]" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+              <button key={t.id} onClick={() => { setViewingTicket(t); setPrintBlockedUrl(null); }} className="w-full text-left p-4 rounded-md hover:bg-black/[0.02]" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div>
-                    <p className="font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: BLUE }}>{t.code}{t.orderCode ? <span className="opacity-50 font-normal"> · Đơn {t.orderCode}</span> : null}</p>
+                    <p className="font-medium" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{t.code}{t.orderCode ? <span className="opacity-50 font-normal"> · Đơn {t.orderCode}</span> : null}</p>
                     <p className="text-xs opacity-50">{t.recipientName} · {t.carrier}{t.trackingCode ? ` · ${t.trackingCode}` : ""} · {formatDateTime(t.createdAt)}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    {t.codAmount > 0 && <span className="text-[11px] px-2 py-1 rounded-sm" style={{ background: `${BRASS}1A`, color: BRASS }}>COD {vnd(t.codAmount)}</span>}
+                    {t.codAmount > 0 && <span className="text-[11px] px-2 py-1 rounded-md" style={{ background: `${BRASS}1A`, color: BRASS }}>COD {vnd(t.codAmount)}</span>}
                     <span className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: `${st.color}1A`, color: st.color }}>{st.label}</span>
                   </div>
                 </div>
@@ -6974,20 +7000,20 @@ function Shipping({ shippingTickets, setShippingTickets, parcelLabels, setParcel
             ))}
           </div>
           <div className="flex items-center gap-2 mb-4 flex-wrap">
-            <button onClick={() => { setViewingTicket(null); openEditInfo(viewingTicket); }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm border" style={{ borderColor: BLUE, color: BLUE }}>
+            <button onClick={() => { setViewingTicket(null); openEditInfo(viewingTicket); }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: BLUE, color: BLUE }}>
               <Pencil size={13} /> Sửa thông tin
             </button>
-            <select value={printPaperSize} onChange={(e) => setPrintPaperSize(e.target.value)} className="ml-auto border rounded-sm py-1.5 px-2 text-xs" style={{ borderColor: LINE }}>
+            <select value={printPaperSize} onChange={(e) => setPrintPaperSize(e.target.value)} className="ml-auto border rounded-md py-1.5 px-2 text-xs" style={{ borderColor: LINE }}>
               <option value="A5">Khổ A5</option>
               <option value="A4">Khổ A4</option>
             </select>
-            <button onClick={() => doPrint(viewingTicket)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm border" style={{ borderColor: LINE, color: INK }}>
+            <button onClick={() => doPrint(viewingTicket)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>
               <Printer size={13} /> In phiếu vận chuyển
             </button>
           </div>
 
           {printBlockedUrl && (
-            <div className="mb-4 p-3 rounded-sm text-xs" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44`, color: INK }}>
+            <div className="mb-4 p-3 rounded-md text-xs" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44`, color: INK }}>
               <p className="mb-2">Trình duyệt đã chặn cửa sổ in tự động. Bấm vào liên kết bên dưới để mở phiếu, sau đó tự bấm in (Ctrl+P / biểu tượng in) trong tab mới đó:</p>
               <a href={printBlockedUrl} target="_blank" rel="noreferrer" className="underline font-medium" style={{ color: BLUE }}>Mở phiếu vận chuyển để in</a>
             </div>
@@ -7017,11 +7043,11 @@ function Shipping({ shippingTickets, setShippingTickets, parcelLabels, setParcel
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
               <p className="text-xs opacity-50 mb-1">Phí giao hàng</p>
-              <p className="font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{vnd(viewingTicket.shippingFee)}</p>
+              <p className="font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(viewingTicket.shippingFee)}</p>
             </div>
             <div>
               <p className="text-xs opacity-50 mb-1">Tiền thu hộ (COD)</p>
-              <p className="font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: viewingTicket.codAmount > 0 ? BRASS : INK }}>{vnd(viewingTicket.codAmount)}</p>
+              <p className="font-medium" style={{ fontFamily: "'Inter', sans-serif", color: viewingTicket.codAmount > 0 ? BRASS : INK }}>{vnd(viewingTicket.codAmount)}</p>
             </div>
           </div>
           {viewingTicket.note && <p className="text-sm opacity-70"><b>Ghi chú:</b> {viewingTicket.note}</p>}
@@ -7127,7 +7153,7 @@ function Stocktake({ products, setProducts, stocktakes, setStocktakes, currentUs
       <div>
         <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
           <p className="text-sm opacity-60">{stocktakes.length} phiếu kiểm kê</p>
-          <button onClick={() => { resetSession(); setView("new"); }} className="flex items-center gap-1.5 px-4 py-2 rounded-sm text-sm text-white" style={{ background: INK }}>
+          <button onClick={() => { resetSession(); setView("new"); }} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white" style={{ background: INK }}>
             <Plus size={15} /> Bắt đầu kiểm kê mới
           </button>
         </div>
@@ -7138,10 +7164,10 @@ function Stocktake({ products, setProducts, stocktakes, setStocktakes, currentUs
             {stocktakes.map((s) => {
               const diffLines = s.lines.filter((l) => l.diff !== 0);
               return (
-                <button key={s.id} onClick={() => setViewingStocktake(s)} className="w-full text-left p-4 rounded-sm hover:bg-black/[0.02]" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+                <button key={s.id} onClick={() => setViewingStocktake(s)} className="w-full text-left p-4 rounded-md hover:bg-black/[0.02]" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
                   <div className="flex items-center justify-between gap-3 flex-wrap">
                     <div>
-                      <p className="font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: BLUE }}>{s.code}</p>
+                      <p className="font-medium" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{s.code}</p>
                       <p className="text-xs opacity-50">{formatDateTime(s.createdAt)} · {s.createdBy}</p>
                     </div>
                     <div className="text-right">
@@ -7158,7 +7184,7 @@ function Stocktake({ products, setProducts, stocktakes, setStocktakes, currentUs
         {viewingStocktake && (
           <Modal title={`Phiếu kiểm kê ${viewingStocktake.code}`} onClose={() => setViewingStocktake(null)} size="xl">
             <p className="text-xs opacity-50 mb-4">{formatDateTime(viewingStocktake.createdAt)} · Thực hiện bởi {viewingStocktake.createdBy}{viewingStocktake.note ? ` · Ghi chú: ${viewingStocktake.note}` : ""}</p>
-            <div className="rounded-sm overflow-x-auto mb-4" style={{ border: `1px solid ${LINE}` }}>
+            <div className="rounded-md overflow-x-auto mb-4" style={{ border: `1px solid ${LINE}` }}>
               <table className="w-full text-sm" style={{ minWidth: 480 }}>
                 <thead><tr style={{ background: PAPER }}>
                   <th className="text-left py-2 px-2 text-xs uppercase tracking-wider opacity-60">Sản phẩm</th>
@@ -7169,17 +7195,17 @@ function Stocktake({ products, setProducts, stocktakes, setStocktakes, currentUs
                 <tbody>
                   {viewingStocktake.lines.map((l, i) => (
                     <tr key={i} style={{ borderTop: `1px dashed ${LINE}` }}>
-                      <td className="py-2 px-2">{l.productName}<span className="opacity-40 text-xs" style={{ fontFamily: "'IBM Plex Mono', monospace" }}> · {l.productCode}</span></td>
-                      <td className="py-2 px-2 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{l.systemQty}</td>
-                      <td className="py-2 px-2 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{l.countedQty}</td>
-                      <td className="py-2 px-2 text-right font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: l.diff === 0 ? INK : l.diff > 0 ? FOREST : RUST }}>{l.diff > 0 ? `+${l.diff}` : l.diff}</td>
+                      <td className="py-2 px-2">{l.productName}<span className="opacity-40 text-xs" style={{ fontFamily: "'Inter', sans-serif" }}> · {l.productCode}</span></td>
+                      <td className="py-2 px-2 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>{l.systemQty}</td>
+                      <td className="py-2 px-2 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>{l.countedQty}</td>
+                      <td className="py-2 px-2 text-right font-medium" style={{ fontFamily: "'Inter', sans-serif", color: l.diff === 0 ? INK : l.diff > 0 ? FOREST : RUST }}>{l.diff > 0 ? `+${l.diff}` : l.diff}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
             {viewingStocktake.warnings.length > 0 && (
-              <div className="p-3 rounded-sm" style={{ background: `${RUST}0D`, border: `1px solid ${RUST}44` }}>
+              <div className="p-3 rounded-md" style={{ background: `${RUST}0D`, border: `1px solid ${RUST}44` }}>
                 <p className="text-xs uppercase tracking-wider mb-2" style={{ color: RUST }}>Cảnh báo trong phiên kiểm kê này</p>
                 <ul className="space-y-1">
                   {viewingStocktake.warnings.map((w, i) => <li key={i} className="text-xs opacity-80">• {w}</li>)}
@@ -7197,7 +7223,7 @@ function Stocktake({ products, setProducts, stocktakes, setStocktakes, currentUs
     <div>
       <button onClick={() => { resetSession(); setView("history"); }} className="text-sm mb-4 opacity-60 hover:opacity-100">← Quay lại lịch sử kiểm kê</button>
 
-      <div className="p-5 rounded-sm mb-5" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+      <div className="p-5 rounded-md mb-5" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
         <p className="text-xs uppercase tracking-wider mb-3 opacity-60">Chế độ đếm</p>
         <div className="flex gap-2 mb-4 flex-wrap">
           {[{ id: "series", label: "Quét Series" }, { id: "barcode", label: "Quét Barcode" }, { id: "manual", label: "Nhập tay số lượng" }].map((m) => (
@@ -7213,7 +7239,7 @@ function Stocktake({ products, setProducts, stocktakes, setStocktakes, currentUs
             <input ref={scanRef} autoFocus value={scanInput} onChange={(e) => setScanInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleScan(); } }}
               placeholder={mode === "series" ? "Quét hoặc gõ số series rồi Enter…" : "Quét hoặc gõ mã vạch rồi Enter…"}
-              className="w-full border rounded-sm py-2.5 px-3 text-sm" style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} />
+              className="w-full border rounded-md py-2.5 px-3 text-sm" style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} />
             <p className="text-xs opacity-50 mt-1.5">{mode === "series" ? "Mỗi số series quét được sẽ cộng 1 vào tồn đếm của đúng sản phẩm sở hữu series đó." : "Mỗi lần quét trùng 1 mã vạch sẽ cộng thêm 1 vào số lượng đếm của sản phẩm có mã vạch đó."}</p>
           </div>
         )}
@@ -7223,7 +7249,7 @@ function Stocktake({ products, setProducts, stocktakes, setStocktakes, currentUs
       </div>
 
       {warnings.length > 0 && (
-        <div className="p-4 rounded-sm mb-5" style={{ background: `${RUST}0D`, border: `1px solid ${RUST}44` }}>
+        <div className="p-4 rounded-md mb-5" style={{ background: `${RUST}0D`, border: `1px solid ${RUST}44` }}>
           <p className="text-xs uppercase tracking-wider mb-2" style={{ color: RUST }}>Cảnh báo cần kiểm tra thủ công ({warnings.length})</p>
           <ul className="space-y-1 max-h-40 overflow-y-auto">
             {warnings.map((w) => <li key={w.id} className="text-xs opacity-80">• {w.message}</li>)}
@@ -7231,14 +7257,14 @@ function Stocktake({ products, setProducts, stocktakes, setStocktakes, currentUs
         </div>
       )}
 
-      <div className="p-5 rounded-sm mb-5" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+      <div className="p-5 rounded-md mb-5" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs uppercase tracking-wider opacity-60">Kết quả kiểm kê ({lineList.length} sản phẩm{diffCount > 0 ? ` · ${diffCount} lệch` : ""})</p>
         </div>
         {lineList.length === 0 ? (
           <p className="text-sm opacity-50 text-center py-10">Chưa có sản phẩm nào được đếm — bắt đầu quét hoặc chọn sản phẩm ở trên.</p>
         ) : (
-          <div className="rounded-sm overflow-x-auto" style={{ border: `1px solid ${LINE}` }}>
+          <div className="rounded-md overflow-x-auto" style={{ border: `1px solid ${LINE}` }}>
             <table className="w-full text-sm" style={{ minWidth: 520 }}>
               <thead><tr style={{ background: PAPER }}>
                 <th className="text-left py-2 px-2 text-xs uppercase tracking-wider opacity-60">Sản phẩm</th>
@@ -7252,18 +7278,18 @@ function Stocktake({ products, setProducts, stocktakes, setStocktakes, currentUs
                   const diff = l.countedQty - l.systemQty;
                   return (
                     <tr key={l.productId} style={{ borderTop: `1px dashed ${LINE}` }}>
-                      <td className="py-2 px-2">{l.productName}<span className="opacity-40 text-xs" style={{ fontFamily: "'IBM Plex Mono', monospace" }}> · {l.productCode}</span></td>
-                      <td className="py-2 px-2 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{l.systemQty}</td>
+                      <td className="py-2 px-2">{l.productName}<span className="opacity-40 text-xs" style={{ fontFamily: "'Inter', sans-serif" }}> · {l.productCode}</span></td>
+                      <td className="py-2 px-2 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>{l.systemQty}</td>
                       <td className="py-2 px-2 text-right">
                         {mode === "manual" ? (
                           <input type="number" min={0} value={l.countedQty} onChange={(e) => updateManualQty(l.productId, Number(e.target.value) || 0)}
-                            className="w-20 border rounded-sm py-1 px-2 text-right text-sm" style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} />
+                            className="w-20 border rounded-md py-1 px-2 text-right text-sm" style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} />
                         ) : (
-                          <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{l.countedQty}</span>
+                          <span style={{ fontFamily: "'Inter', sans-serif" }}>{l.countedQty}</span>
                         )}
                       </td>
-                      <td className="py-2 px-2 text-right font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: diff === 0 ? INK : diff > 0 ? FOREST : RUST }}>{diff > 0 ? `+${diff}` : diff}</td>
-                      <td className="py-2 px-2 text-right"><button onClick={() => removeLine(l.productId)} className="p-1 rounded-sm hover:bg-black/5 opacity-50"><X size={13} /></button></td>
+                      <td className="py-2 px-2 text-right font-medium" style={{ fontFamily: "'Inter', sans-serif", color: diff === 0 ? INK : diff > 0 ? FOREST : RUST }}>{diff > 0 ? `+${diff}` : diff}</td>
+                      <td className="py-2 px-2 text-right"><button onClick={() => removeLine(l.productId)} className="p-1 rounded-md hover:bg-black/5 opacity-50"><X size={13} /></button></td>
                     </tr>
                   );
                 })}
@@ -7274,10 +7300,10 @@ function Stocktake({ products, setProducts, stocktakes, setStocktakes, currentUs
       </div>
 
       <Field label="Ghi chú / lý do chênh lệch (không bắt buộc)">
-        <textarea rows={2} className="w-full border rounded-sm p-2 text-sm" style={{ borderColor: LINE }} value={note} onChange={(e) => setNote(e.target.value)} placeholder="VD: kiểm kê định kỳ cuối tháng, phát hiện thất thoát khu vực kho A…" />
+        <textarea rows={2} className="w-full border rounded-md p-2 text-sm" style={{ borderColor: LINE }} value={note} onChange={(e) => setNote(e.target.value)} placeholder="VD: kiểm kê định kỳ cuối tháng, phát hiện thất thoát khu vực kho A…" />
       </Field>
 
-      <button onClick={finishStocktake} disabled={lineList.length === 0} className="w-full py-2.5 rounded-sm text-white text-sm mt-2 disabled:opacity-40" style={{ background: INK }}>
+      <button onClick={finishStocktake} disabled={lineList.length === 0} className="w-full py-2.5 rounded-md text-white text-sm mt-2 disabled:opacity-40" style={{ background: INK }}>
         Hoàn tất kiểm kê & tạo phiếu điều chỉnh
       </button>
     </div>
@@ -7351,9 +7377,9 @@ function RepairTickets({ repairTickets, setRepairTickets, currentUser, addLog })
           <Field label="Tên thiết bị / sản phẩm"><input className={inputCls} style={{ borderColor: LINE }} value={form.deviceName} onChange={(e) => setForm({ ...form, deviceName: e.target.value })} placeholder="VD: PC Gaming, Laptop Dell..." /></Field>
           <Field label="Hãng / thương hiệu"><input className={inputCls} style={{ borderColor: LINE }} value={form.deviceBrand} onChange={(e) => setForm({ ...form, deviceBrand: e.target.value })} /></Field>
         </div>
-        <Field label="Serial / IMEI (nếu có)"><input className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} value={form.serial} onChange={(e) => setForm({ ...form, serial: e.target.value })} /></Field>
+        <Field label="Serial / IMEI (nếu có)"><input className={inputCls} style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} value={form.serial} onChange={(e) => setForm({ ...form, serial: e.target.value })} /></Field>
         <Field label="Mô tả tình trạng / lỗi">
-          <textarea rows={3} className="w-full border rounded-sm p-2 text-sm" style={{ borderColor: LINE }} value={form.issueDescription} onChange={(e) => setForm({ ...form, issueDescription: e.target.value })} placeholder="VD: không lên nguồn, màn hình bị sọc..." />
+          <textarea rows={3} className="w-full border rounded-md p-2 text-sm" style={{ borderColor: LINE }} value={form.issueDescription} onChange={(e) => setForm({ ...form, issueDescription: e.target.value })} placeholder="VD: không lên nguồn, màn hình bị sọc..." />
         </Field>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <Field label="Ngày nhận"><input type="date" className={inputCls} style={{ borderColor: LINE }} value={form.receivedDate} onChange={(e) => setForm({ ...form, receivedDate: e.target.value })} /></Field>
@@ -7366,7 +7392,7 @@ function RepairTickets({ repairTickets, setRepairTickets, currentUser, addLog })
         <Field label="VAT" hint="Chi phí trên đã bao gồm VAT theo mức chọn">
           <div className="flex gap-2">
             {VAT_OPTIONS.map((v) => (
-              <button key={v.id} type="button" onClick={() => setForm({ ...form, vat: v.id })} className="px-3.5 py-1.5 rounded-sm text-sm border"
+              <button key={v.id} type="button" onClick={() => setForm({ ...form, vat: v.id })} className="px-3.5 py-1.5 rounded-md text-sm border"
                 style={{ borderColor: form.vat === v.id ? INK : LINE, background: form.vat === v.id ? INK : "transparent", color: form.vat === v.id ? "#fff" : INK }}>
                 {v.label}
               </button>
@@ -7374,9 +7400,9 @@ function RepairTickets({ repairTickets, setRepairTickets, currentUser, addLog })
           </div>
         </Field>
         <Field label="Ghi chú">
-          <textarea rows={2} className="w-full border rounded-sm p-2 text-sm" style={{ borderColor: LINE }} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
+          <textarea rows={2} className="w-full border rounded-md p-2 text-sm" style={{ borderColor: LINE }} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
         </Field>
-        <button onClick={submitTicket} className="w-full py-2.5 rounded-sm text-white text-sm mt-2" style={{ background: INK }}>{editingId ? "Lưu thay đổi" : "Tạo phiếu dịch vụ sửa chữa"}</button>
+        <button onClick={submitTicket} className="w-full py-2.5 rounded-md text-white text-sm mt-2" style={{ background: INK }}>{editingId ? "Lưu thay đổi" : "Tạo phiếu dịch vụ sửa chữa"}</button>
       </div>
     );
   }
@@ -7388,7 +7414,7 @@ function RepairTickets({ repairTickets, setRepairTickets, currentUser, addLog })
           <FilterChip active={statusFilter === "all"} onClick={() => setStatusFilter("all")}>Tất cả</FilterChip>
           {REPAIR_STATUSES.map((s) => <FilterChip key={s.id} active={statusFilter === s.id} onClick={() => setStatusFilter(s.id)} color={s.color}>{s.label}</FilterChip>)}
         </div>
-        <button onClick={() => { setForm(emptyForm()); setView("new"); }} className="flex items-center gap-1.5 px-4 py-2 rounded-sm text-sm text-white shrink-0" style={{ background: INK }}>
+        <button onClick={() => { setForm(emptyForm()); setView("new"); }} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white shrink-0" style={{ background: INK }}>
           <Plus size={15} /> Tạo phiếu sửa chữa
         </button>
       </div>
@@ -7399,10 +7425,10 @@ function RepairTickets({ repairTickets, setRepairTickets, currentUser, addLog })
           {filtered.map((t) => {
             const st = REPAIR_STATUSES.find((s) => s.id === t.status);
             return (
-              <button key={t.id} onClick={() => setViewingTicket(t)} className="w-full text-left p-4 rounded-sm hover:bg-black/[0.02]" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+              <button key={t.id} onClick={() => setViewingTicket(t)} className="w-full text-left p-4 rounded-md hover:bg-black/[0.02]" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div>
-                    <p className="font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: BLUE }}>{t.code}</p>
+                    <p className="font-medium" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{t.code}</p>
                     <p className="text-xs opacity-50">{t.customerName} · {t.deviceName} · {formatDateTime(t.createdAt)}</p>
                   </div>
                   <span className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: `${st.color}1A`, color: st.color }}>{st.label}</span>
@@ -7422,20 +7448,20 @@ function RepairTickets({ repairTickets, setRepairTickets, currentUser, addLog })
                 {s.label}
               </button>
             ))}
-            <button onClick={() => { setViewingTicket(null); openEditInfo(viewingTicket); }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm border ml-auto" style={{ borderColor: BLUE, color: BLUE }}>
+            <button onClick={() => { setViewingTicket(null); openEditInfo(viewingTicket); }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border ml-auto" style={{ borderColor: BLUE, color: BLUE }}>
               <Pencil size={13} /> Sửa thông tin
             </button>
-            <select value={printPaperSize} onChange={(e) => setPrintPaperSize(e.target.value)} className="border rounded-sm py-1.5 px-2 text-xs" style={{ borderColor: LINE }}>
+            <select value={printPaperSize} onChange={(e) => setPrintPaperSize(e.target.value)} className="border rounded-md py-1.5 px-2 text-xs" style={{ borderColor: LINE }}>
               <option value="A5">Khổ A5</option>
               <option value="A4">Khổ A4</option>
             </select>
-            <button onClick={() => doPrintReceipt(viewingTicket)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm border" style={{ borderColor: LINE, color: INK }}>
+            <button onClick={() => doPrintReceipt(viewingTicket)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>
               <Printer size={13} /> {viewingTicket.status === "received" ? "In phiếu tiếp nhận & báo giá" : "In phiếu báo giá thực tế"}
             </button>
           </div>
 
           {printBlockedUrl && (
-            <div className="mb-4 p-3 rounded-sm text-xs" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44`, color: INK }}>
+            <div className="mb-4 p-3 rounded-md text-xs" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44`, color: INK }}>
               <p className="mb-2">Trình duyệt đã chặn cửa sổ in tự động. Bấm vào liên kết bên dưới để mở phiếu, sau đó tự bấm in (Ctrl+P / biểu tượng in) trong tab mới đó:</p>
               <a href={printBlockedUrl} target="_blank" rel="noreferrer" className="underline font-medium" style={{ color: BLUE }}>Mở phiếu tiếp nhận để in</a>
             </div>
@@ -7453,21 +7479,21 @@ function RepairTickets({ repairTickets, setRepairTickets, currentUser, addLog })
               <p><span className="opacity-50">Hẹn trả: </span>{viewingTicket.returnDate ? new Date(viewingTicket.returnDate).toLocaleDateString("vi-VN") : "—"}</p>
             </div>
           </div>
-          <div className="p-3 rounded-sm mb-4 text-sm" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
+          <div className="p-3 rounded-md mb-4 text-sm" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
             <p><span className="opacity-50">Thiết bị: </span><b>{viewingTicket.deviceName}</b>{viewingTicket.deviceBrand ? ` · ${viewingTicket.deviceBrand}` : ""}{viewingTicket.serial ? ` · SN: ${viewingTicket.serial}` : ""}</p>
             <p className="mt-1"><span className="opacity-50">Tình trạng/lỗi: </span>{viewingTicket.issueDescription || "—"}</p>
           </div>
           <div className="grid grid-cols-2 gap-4 mb-2">
             <div>
               <p className="text-xs opacity-50 mb-1">Chi phí dự kiến</p>
-              <p className="font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{vnd(viewingTicket.estimatedCost)}</p>
+              <p className="font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(viewingTicket.estimatedCost)}</p>
             </div>
             <div>
               <p className="text-xs opacity-50 mb-1">Chi phí thực tế{viewingTicket.status !== "received" ? " (có thể sửa)" : ""}</p>
               {viewingTicket.status !== "received" ? (
-                <MoneyInput className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} value={viewingTicket.actualCost} onChange={(v) => updateTicketField(viewingTicket, "actualCost", v)} />
+                <MoneyInput className={inputCls} style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} value={viewingTicket.actualCost} onChange={(v) => updateTicketField(viewingTicket, "actualCost", v)} />
               ) : (
-                <p className="font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: viewingTicket.actualCost > 0 ? FOREST : INK }}>{vnd(viewingTicket.actualCost)}</p>
+                <p className="font-medium" style={{ fontFamily: "'Inter', sans-serif", color: viewingTicket.actualCost > 0 ? FOREST : INK }}>{vnd(viewingTicket.actualCost)}</p>
               )}
             </div>
           </div>
@@ -7583,7 +7609,7 @@ function HelpdeskTickets({ helpdeskTickets, setHelpdeskTickets, products, setPro
         <Field label="Loại yêu cầu">
           <div className="flex gap-2 flex-wrap">
             {HELPDESK_TYPES.map((tp) => (
-              <button key={tp} type="button" onClick={() => setForm({ ...form, requestType: tp })} className="px-3.5 py-1.5 rounded-sm text-sm border"
+              <button key={tp} type="button" onClick={() => setForm({ ...form, requestType: tp })} className="px-3.5 py-1.5 rounded-md text-sm border"
                 style={{ borderColor: form.requestType === tp ? INK : LINE, background: form.requestType === tp ? INK : "transparent", color: form.requestType === tp ? "#fff" : INK }}>
                 {tp}
               </button>
@@ -7591,7 +7617,7 @@ function HelpdeskTickets({ helpdeskTickets, setHelpdeskTickets, products, setPro
           </div>
         </Field>
         <Field label="Mô tả yêu cầu / sự cố">
-          <textarea rows={3} className="w-full border rounded-sm p-2 text-sm" style={{ borderColor: LINE }} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+          <textarea rows={3} className="w-full border rounded-md p-2 text-sm" style={{ borderColor: LINE }} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
         </Field>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <Field label="Người xử lý">
@@ -7609,7 +7635,7 @@ function HelpdeskTickets({ helpdeskTickets, setHelpdeskTickets, products, setPro
           <Field label="VAT">
             <div className="flex gap-2">
               {VAT_OPTIONS.map((v) => (
-                <button key={v.id} type="button" onClick={() => setForm({ ...form, vat: v.id })} className="px-3.5 py-1.5 rounded-sm text-sm border"
+                <button key={v.id} type="button" onClick={() => setForm({ ...form, vat: v.id })} className="px-3.5 py-1.5 rounded-md text-sm border"
                   style={{ borderColor: form.vat === v.id ? INK : LINE, background: form.vat === v.id ? INK : "transparent", color: form.vat === v.id ? "#fff" : INK }}>
                   {v.label}
                 </button>
@@ -7618,9 +7644,9 @@ function HelpdeskTickets({ helpdeskTickets, setHelpdeskTickets, products, setPro
           </Field>
         </div>
         <Field label="Ghi chú">
-          <textarea rows={2} className="w-full border rounded-sm p-2 text-sm" style={{ borderColor: LINE }} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
+          <textarea rows={2} className="w-full border rounded-md p-2 text-sm" style={{ borderColor: LINE }} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
         </Field>
-        <button onClick={submitTicket} className="w-full py-2.5 rounded-sm text-white text-sm mt-2" style={{ background: INK }}>{editingId ? "Lưu thay đổi" : "Tạo phiếu IT Helpdesk"}</button>
+        <button onClick={submitTicket} className="w-full py-2.5 rounded-md text-white text-sm mt-2" style={{ background: INK }}>{editingId ? "Lưu thay đổi" : "Tạo phiếu IT Helpdesk"}</button>
       </div>
     );
   }
@@ -7632,7 +7658,7 @@ function HelpdeskTickets({ helpdeskTickets, setHelpdeskTickets, products, setPro
           <FilterChip active={statusFilter === "all"} onClick={() => setStatusFilter("all")}>Tất cả</FilterChip>
           {HELPDESK_STATUSES.map((s) => <FilterChip key={s.id} active={statusFilter === s.id} onClick={() => setStatusFilter(s.id)} color={s.color}>{s.label}</FilterChip>)}
         </div>
-        <button onClick={() => { setForm(emptyForm()); setView("new"); }} className="flex items-center gap-1.5 px-4 py-2 rounded-sm text-sm text-white shrink-0" style={{ background: INK }}>
+        <button onClick={() => { setForm(emptyForm()); setView("new"); }} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white shrink-0" style={{ background: INK }}>
           <Plus size={15} /> Tạo phiếu IT Helpdesk
         </button>
       </div>
@@ -7643,10 +7669,10 @@ function HelpdeskTickets({ helpdeskTickets, setHelpdeskTickets, products, setPro
           {filtered.map((t) => {
             const st = HELPDESK_STATUSES.find((s) => s.id === t.status);
             return (
-              <button key={t.id} onClick={() => setViewingTicket(t)} className="w-full text-left p-4 rounded-sm hover:bg-black/[0.02]" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+              <button key={t.id} onClick={() => setViewingTicket(t)} className="w-full text-left p-4 rounded-md hover:bg-black/[0.02]" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div>
-                    <p className="font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: BLUE }}>{t.code}</p>
+                    <p className="font-medium" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{t.code}</p>
                     <p className="text-xs opacity-50">{t.customerName} · {t.requestType}{t.assignee ? ` · Người xử lý: ${t.assignee}` : ""} · {formatDateTime(t.createdAt)}</p>
                   </div>
                   <span className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: `${st.color}1A`, color: st.color }}>{st.label}</span>
@@ -7666,20 +7692,20 @@ function HelpdeskTickets({ helpdeskTickets, setHelpdeskTickets, products, setPro
                 {s.label}
               </button>
             ))}
-            <button onClick={() => { setViewingTicket(null); openEditInfo(viewingTicket); }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm border ml-auto" style={{ borderColor: BLUE, color: BLUE }}>
+            <button onClick={() => { setViewingTicket(null); openEditInfo(viewingTicket); }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border ml-auto" style={{ borderColor: BLUE, color: BLUE }}>
               <Pencil size={13} /> Sửa thông tin
             </button>
-            <select value={printPaperSize} onChange={(e) => setPrintPaperSize(e.target.value)} className="border rounded-sm py-1.5 px-2 text-xs" style={{ borderColor: LINE }}>
+            <select value={printPaperSize} onChange={(e) => setPrintPaperSize(e.target.value)} className="border rounded-md py-1.5 px-2 text-xs" style={{ borderColor: LINE }}>
               <option value="A5">Khổ A5</option>
               <option value="A4">Khổ A4</option>
             </select>
-            <button onClick={() => doPrint(viewingTicket)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm border" style={{ borderColor: LINE, color: INK }}>
+            <button onClick={() => doPrint(viewingTicket)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>
               <Printer size={13} /> In phiếu
             </button>
           </div>
 
           {printBlockedUrl && (
-            <div className="mb-4 p-3 rounded-sm text-xs" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44`, color: INK }}>
+            <div className="mb-4 p-3 rounded-md text-xs" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44`, color: INK }}>
               <p className="mb-2">Trình duyệt đã chặn cửa sổ in tự động. Bấm vào liên kết bên dưới để mở phiếu, sau đó tự bấm in (Ctrl+P / biểu tượng in) trong tab mới đó:</p>
               <a href={printBlockedUrl} target="_blank" rel="noreferrer" className="underline font-medium" style={{ color: BLUE }}>Mở phiếu IT Helpdesk để in</a>
             </div>
@@ -7697,7 +7723,7 @@ function HelpdeskTickets({ helpdeskTickets, setHelpdeskTickets, products, setPro
               <p><span className="opacity-50">Ngày tiếp nhận: </span>{viewingTicket.receivedDate ? new Date(viewingTicket.receivedDate).toLocaleDateString("vi-VN") : "—"}</p>
             </div>
           </div>
-          <div className="p-3 rounded-sm mb-4 text-sm" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
+          <div className="p-3 rounded-md mb-4 text-sm" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
             <p><span className="opacity-50">Loại yêu cầu: </span><b>{viewingTicket.requestType}</b></p>
             <p className="mt-1"><span className="opacity-50">Mô tả: </span>{viewingTicket.description || "—"}</p>
           </div>
@@ -7705,22 +7731,22 @@ function HelpdeskTickets({ helpdeskTickets, setHelpdeskTickets, products, setPro
             <div className="flex-1 min-w-[160px]">
               <p className="text-xs opacity-50 mb-1">Giá dịch vụ</p>
               {viewingTicket.convertedOrderId ? (
-                <p className="font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: FOREST }}>{vnd(viewingTicket.price)}</p>
+                <p className="font-medium" style={{ fontFamily: "'Inter', sans-serif", color: FOREST }}>{vnd(viewingTicket.price)}</p>
               ) : (
-                <MoneyInput className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} value={viewingTicket.price} onChange={(v) => updateTicketField(viewingTicket, "price", v)} />
+                <MoneyInput className={inputCls} style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} value={viewingTicket.price} onChange={(v) => updateTicketField(viewingTicket, "price", v)} />
               )}
             </div>
             {viewingTicket.convertedOrderId ? (
-              <span className="text-xs px-3 py-2 rounded-sm" style={{ background: `${FOREST}1A`, color: FOREST }}>Đã chuyển thành đơn bán</span>
+              <span className="text-xs px-3 py-2 rounded-md" style={{ background: `${FOREST}1A`, color: FOREST }}>Đã chuyển thành đơn bán</span>
             ) : (
-              <button onClick={() => convertToOrder(viewingTicket)} disabled={!viewingTicket.price || viewingTicket.price <= 0} className="flex items-center gap-1.5 text-sm px-3.5 py-2 rounded-sm text-white disabled:opacity-40" style={{ background: FOREST }}>
+              <button onClick={() => convertToOrder(viewingTicket)} disabled={!viewingTicket.price || viewingTicket.price <= 0} className="flex items-center gap-1.5 text-sm px-3.5 py-2 rounded-md text-white disabled:opacity-40" style={{ background: FOREST }}>
                 <ArrowUpFromLine size={14} /> Chuyển thành đơn bán
               </button>
             )}
           </div>
           {viewingTicket.status === "done" && (
             <Field label="Giải pháp / kết quả xử lý">
-              <textarea rows={2} className="w-full border rounded-sm p-2 text-sm" style={{ borderColor: LINE }} value={viewingTicket.solution}
+              <textarea rows={2} className="w-full border rounded-md p-2 text-sm" style={{ borderColor: LINE }} value={viewingTicket.solution}
                 onChange={(e) => { const v = e.target.value; setHelpdeskTickets((prev) => prev.map((t) => (t.id === viewingTicket.id ? { ...t, solution: v } : t))); setViewingTicket({ ...viewingTicket, solution: v }); }} />
             </Field>
           )}
@@ -7805,23 +7831,23 @@ function ProductsSection({ products, setProducts, purchaseOrders, setPurchaseOrd
   return (
     <div>
       {missingMoves.length > 0 && (
-        <div className="mb-4 p-3 rounded-sm flex items-start gap-2.5 flex-wrap" style={{ background: `${RUST}0D`, border: `1px solid ${RUST}55` }}>
+        <div className="mb-4 p-3 rounded-md flex items-start gap-2.5 flex-wrap" style={{ background: `${RUST}0D`, border: `1px solid ${RUST}55` }}>
           <AlertTriangle size={16} style={{ color: RUST }} className="mt-0.5 shrink-0" />
           <p className="text-sm flex-1" style={{ color: INK }}>
             <span className="font-medium" style={{ color: RUST }}>{missingMoves.length} phiếu kho bị thiếu so với chứng từ (tồn kho đang sai): </span>
             {missingMoves.slice(0, 6).map((x) => `${x.mv.type === "in" ? "nhập" : "xuất"} ${x.docNo} — ${x.productName}`).join(", ")}{missingMoves.length > 6 ? ` +${missingMoves.length - 6} phiếu khác` : ""}
           </p>
-          <button onClick={restoreMissingMoves} className="text-xs px-3 py-1.5 rounded-sm text-white shrink-0" style={{ background: RUST }}>Khôi phục tồn kho</button>
+          <button onClick={restoreMissingMoves} className="text-xs px-3 py-1.5 rounded-md text-white shrink-0" style={{ background: RUST }}>Khôi phục tồn kho</button>
         </div>
       )}
       {incompleteProducts.length > 0 && (
-        <div className="mb-4 p-3 rounded-sm flex items-start gap-2.5 flex-wrap" style={{ background: `${BRASS}10`, border: `1px solid ${BRASS}44` }}>
+        <div className="mb-4 p-3 rounded-md flex items-start gap-2.5 flex-wrap" style={{ background: `${BRASS}10`, border: `1px solid ${BRASS}44` }}>
           <AlertTriangle size={16} style={{ color: BRASS }} className="mt-0.5 shrink-0" />
           <p className="text-sm flex-1" style={{ color: INK }}>
             <span className="font-medium" style={{ color: BRASS }}>{incompleteProducts.length} sản phẩm thiếu thông tin: </span>
             {incompleteProducts.slice(0, 5).map((p) => p.name).join(", ")}{incompleteProducts.length > 5 ? ` +${incompleteProducts.length - 5} sản phẩm khác` : ""} — cần bổ sung nhóm hàng/nhãn hiệu/giá nhập/giá lẻ.
           </p>
-          <button onClick={() => setSub("list")} className="text-xs px-3 py-1.5 rounded-sm border shrink-0" style={{ borderColor: BRASS, color: BRASS }}>Xem danh sách</button>
+          <button onClick={() => setSub("list")} className="text-xs px-3 py-1.5 rounded-md border shrink-0" style={{ borderColor: BRASS, color: BRASS }}>Xem danh sách</button>
         </div>
       )}
       <div className="flex gap-1.5 mb-5 flex-wrap">
@@ -7871,12 +7897,12 @@ function ProvinceSelect({ value, onChange }) {
         {value || "Chọn Tỉnh/Thành phố"}
       </button>
       {open && (
-        <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto rounded-sm shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+        <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto rounded-md shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           <div className="p-2 sticky top-0 flex items-center gap-2" style={{ background: "#fff", borderBottom: `1px solid ${LINE}` }}>
             <div className="relative flex-1">
               <Search size={13} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-40" />
               <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm kiếm tỉnh/thành…"
-                className="w-full pl-7 pr-2 py-1.5 text-sm rounded-sm border outline-none" style={{ borderColor: LINE }} />
+                className="w-full pl-7 pr-2 py-1.5 text-sm rounded-md border outline-none" style={{ borderColor: LINE }} />
             </div>
             <button type="button" onClick={() => { setOpen(false); setQuery(""); }} title="Đóng" className="shrink-0 opacity-60 hover:opacity-100 p-1" style={{ color: INK }}><X size={16} /></button>
           </div>
@@ -7908,12 +7934,12 @@ function WardSelect({ province, value, onChange }) {
         {value || "Chọn Phường/Xã"}
       </button>
       {open && (
-        <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto rounded-sm shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+        <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto rounded-md shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           <div className="p-2 sticky top-0 flex items-center gap-2" style={{ background: "#fff", borderBottom: `1px solid ${LINE}` }}>
             <div className="relative flex-1">
               <Search size={13} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-40" />
               <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm kiếm phường/xã…"
-                className="w-full pl-7 pr-2 py-1.5 text-sm rounded-sm border outline-none" style={{ borderColor: LINE }} />
+                className="w-full pl-7 pr-2 py-1.5 text-sm rounded-md border outline-none" style={{ borderColor: LINE }} />
             </div>
             <button type="button" onClick={() => { setOpen(false); setQuery(""); }} title="Đóng" className="shrink-0 opacity-60 hover:opacity-100 p-1" style={{ color: INK }}><X size={16} /></button>
           </div>
@@ -8212,26 +8238,26 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
             <div className="relative flex-1 max-w-xs">
               <Search size={15} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50" />
               <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm theo mã, tên, SĐT…"
-                className="w-full pl-7 pr-2 py-2 text-sm rounded-sm border outline-none" style={{ borderColor: LINE, background: "#fff" }} />
+                className="w-full pl-7 pr-2 py-2 text-sm rounded-md border outline-none" style={{ borderColor: LINE, background: "#fff" }} />
             </div>
-            <button onClick={exportCustomerList} className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm border" style={{ borderColor: FOREST, color: FOREST }}>
+            <button onClick={exportCustomerList} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: FOREST, color: FOREST }}>
               <FileSpreadsheet size={15} /> Xuất Excel
             </button>
-            <button onClick={triggerImportFile} title="Dùng file đã tải từ nút Xuất Excel — thêm dòng khách hàng mới rồi tải lên lại" className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm border whitespace-nowrap" style={{ borderColor: BLUE, color: BLUE }}>
+            <button onClick={triggerImportFile} title="Dùng file đã tải từ nút Xuất Excel — thêm dòng khách hàng mới rồi tải lên lại" className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border whitespace-nowrap" style={{ borderColor: BLUE, color: BLUE }}>
               <ArrowUpFromLine size={15} /> Nhập từ Excel
             </button>
             <input ref={importFileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleImportFile} />
-            <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-sm text-sm text-white" style={{ background: INK }}><Plus size={15} /> Thêm khách hàng</button>
+            <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white" style={{ background: INK }}><Plus size={15} /> Thêm khách hàng</button>
           </div>
         )}
       </div>
 
       {view === "debt" ? (
         <div>
-          <div className="p-5 rounded-sm mb-5 flex items-center justify-between flex-wrap gap-3" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+          <div className="p-5 rounded-md mb-5 flex items-center justify-between flex-wrap gap-3" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
             <div>
               <p className="text-xs uppercase tracking-wider opacity-55 mb-1">Tổng phải thu khách hàng</p>
-              <p className="text-2xl" style={{ fontFamily: "'IBM Plex Mono', monospace", color: RUST }}>{vnd(grandDebtTotal)}</p>
+              <p className="text-2xl" style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>{vnd(grandDebtTotal)}</p>
             </div>
             <div className="flex gap-1.5">
               <button onClick={() => setDebtSort("amount")} className="text-xs px-3 py-1.5 rounded-full border" style={{ borderColor: debtSort === "amount" ? INK : LINE, background: debtSort === "amount" ? INK : "transparent", color: debtSort === "amount" ? "#fff" : INK }}>Số tiền</button>
@@ -8241,7 +8267,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
           {sortedDebt.length === 0 ? (
             <p className="text-sm opacity-50 text-center py-16">Không có khách hàng nào đang nợ.</p>
           ) : (
-            <div className="rounded-sm overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+            <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
               <table className="w-full text-sm" style={{ minWidth: 700 }}>
                 <thead>
                   <tr style={{ borderBottom: `2px solid ${INK}` }}>
@@ -8255,10 +8281,10 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
                     <tr key={d.customer.id} style={{ borderBottom: `1px dashed ${LINE}` }} className="hover:bg-black/[0.02] cursor-pointer" onClick={() => setViewingId(d.customer.id)}>
                       <td className="px-3 py-3">
                         <p style={{ color: INK }}>{d.customer.name}</p>
-                        <p className="text-xs opacity-50" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{d.customer.code}</p>
+                        <p className="text-xs opacity-50" style={{ fontFamily: "'Inter', sans-serif" }}>{d.customer.code}</p>
                       </td>
-                      <td className="px-3 py-3" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{d.orderCount}</td>
-                      <td className="px-3 py-3 font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: RUST }}>{vnd(d.debt)}</td>
+                      <td className="px-3 py-3" style={{ fontFamily: "'Inter', sans-serif" }}>{d.orderCount}</td>
+                      <td className="px-3 py-3 font-medium" style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>{vnd(d.debt)}</td>
                       <td className="px-3 py-3 whitespace-nowrap">
                         {d.nearestDue ? (
                           <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: d.nearestDue.overdue3 ? `${RUST}1A` : PAPER, color: d.nearestDue.overdue3 ? RUST : INK }}>
@@ -8276,7 +8302,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
       ) : (
       <>
 
-      <div className="rounded-sm overflow-x-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+      <div className="rounded-md overflow-x-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
         <table className="w-full text-sm" style={{ minWidth: 760 }}>
           <thead>
             <tr style={{ borderBottom: `2px solid ${INK}` }}>
@@ -8292,25 +8318,25 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
               return (
                 <tr key={c.id} style={{ borderBottom: `1px dashed ${LINE}` }} className="hover:bg-black/[0.02]">
                   <td className="px-3 py-3 font-medium whitespace-nowrap">
-                    <button onClick={() => setViewingId(c.id)} className="hover:underline" style={{ fontFamily: "'IBM Plex Mono', monospace", color: BLUE }}>{c.code}</button>
+                    <button onClick={() => setViewingId(c.id)} className="hover:underline" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{c.code}</button>
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap" style={{ color: INK }}>{c.name}</td>
-                  <td className="px-3 py-3 whitespace-nowrap opacity-70" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{c.phone || "—"}</td>
+                  <td className="px-3 py-3 whitespace-nowrap opacity-70" style={{ fontFamily: "'Inter', sans-serif" }}>{c.phone || "—"}</td>
                   <td className="px-3 py-3 whitespace-nowrap">
                     <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: `${BLUE}15`, color: BLUE }}>{g.label}</span>
                   </td>
                   {isAdmin && (
                     <td className="px-3 py-3 whitespace-nowrap text-sm opacity-70">{c.assignedTo || <span className="opacity-40">—</span>}</td>
                   )}
-                  <td className="px-3 py-3 text-right whitespace-nowrap font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: s.debt > 0 ? RUST : "inherit", opacity: s.debt > 0 ? 1 : 0.4 }}>{vnd(s.debt)}</td>
-                  <td className="px-3 py-3 text-right whitespace-nowrap font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{vnd(s.totalSpent)}</td>
-                  <td className="px-3 py-3 text-right whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{s.orderCount}</td>
+                  <td className="px-3 py-3 text-right whitespace-nowrap font-medium" style={{ fontFamily: "'Inter', sans-serif", color: s.debt > 0 ? RUST : "inherit", opacity: s.debt > 0 ? 1 : 0.4 }}>{vnd(s.debt)}</td>
+                  <td className="px-3 py-3 text-right whitespace-nowrap font-medium" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(s.totalSpent)}</td>
+                  <td className="px-3 py-3 text-right whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>{s.orderCount}</td>
                   <td className="px-3 py-3">
                     {isAdmin && (
                       <div className="flex gap-1.5 justify-end whitespace-nowrap">
-                        <button onClick={() => openEdit(c)} className="p-1.5 rounded-sm hover:bg-black/5 opacity-60"><Pencil size={14} /></button>
+                        <button onClick={() => openEdit(c)} className="p-1.5 rounded-md hover:bg-black/5 opacity-60"><Pencil size={14} /></button>
                         {(currentUser.isOwner || currentUser.perms?.deleteCustomers) && (
-                          <button onClick={() => remove(c.id)} className="p-1.5 rounded-sm hover:bg-black/5 opacity-60" style={{ color: RUST }}><Trash2 size={14} /></button>
+                          <button onClick={() => remove(c.id)} className="p-1.5 rounded-md hover:bg-black/5 opacity-60" style={{ color: RUST }}><Trash2 size={14} /></button>
                         )}
                       </div>
                     )}
@@ -8328,13 +8354,13 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
       {/* Modal chi tiết khách hàng */}
       {importResult && (
         <Modal title="Kết quả nhập khách hàng từ Excel" onClose={() => setImportResult(null)}>
-          <div className="p-3 rounded-sm mb-3" style={{ background: `${FOREST}0D`, border: `1px solid ${FOREST}44` }}>
+          <div className="p-3 rounded-md mb-3" style={{ background: `${FOREST}0D`, border: `1px solid ${FOREST}44` }}>
             <p className="text-sm" style={{ color: FOREST }}>Đã thêm <b>{importResult.added}</b> khách hàng mới.</p>
           </div>
           {importResult.skipped.length > 0 && (
-            <div className="p-3 rounded-sm" style={{ background: `${BRASS}0D`, border: `1px solid ${BRASS}44` }}>
+            <div className="p-3 rounded-md" style={{ background: `${BRASS}0D`, border: `1px solid ${BRASS}44` }}>
               <p className="text-sm mb-1.5" style={{ color: BRASS }}>Bỏ qua {importResult.skipped.length} mã KH đã tồn tại (không ghi đè):</p>
-              <p className="text-xs opacity-70" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{importResult.skipped.join(", ")}</p>
+              <p className="text-xs opacity-70" style={{ fontFamily: "'Inter', sans-serif" }}>{importResult.skipped.join(", ")}</p>
             </div>
           )}
         </Modal>
@@ -8348,14 +8374,14 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
           <Modal title={viewingCustomer.name} onClose={() => { setViewingId(null); setDetailTab("orders"); }} size="xl">
             <div className="flex items-center gap-2 mb-4 flex-wrap">
               <span className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: `${BLUE}15`, color: BLUE }}>{g.label}</span>
-              <span className="text-xs opacity-50" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{viewingCustomer.code}</span>
-              <button onClick={() => exportCustomerHistory(viewingCustomer)} className="ml-auto text-xs px-3 py-1.5 rounded-sm border flex items-center gap-1" style={{ borderColor: FOREST, color: FOREST }}><FileSpreadsheet size={12} /> Xuất lịch sử mua hàng</button>
+              <span className="text-xs opacity-50" style={{ fontFamily: "'Inter', sans-serif" }}>{viewingCustomer.code}</span>
+              <button onClick={() => exportCustomerHistory(viewingCustomer)} className="ml-auto text-xs px-3 py-1.5 rounded-md border flex items-center gap-1" style={{ borderColor: FOREST, color: FOREST }}><FileSpreadsheet size={12} /> Xuất lịch sử mua hàng</button>
               {isAdmin && (
-                <button onClick={() => { setViewingId(null); openEdit(viewingCustomer); }} className="text-xs px-3 py-1.5 rounded-sm border flex items-center gap-1" style={{ borderColor: LINE, color: INK }}><Pencil size={12} /> Sửa thông tin</button>
+                <button onClick={() => { setViewingId(null); openEdit(viewingCustomer); }} className="text-xs px-3 py-1.5 rounded-md border flex items-center gap-1" style={{ borderColor: LINE, color: INK }}><Pencil size={12} /> Sửa thông tin</button>
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm mb-4 p-3 rounded-sm" style={{ background: PAPER }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm mb-4 p-3 rounded-md" style={{ background: PAPER }}>
               <p><span className="opacity-50">SĐT: </span>{viewingCustomer.phone || "—"}</p>
               {viewingCustomer.contactPerson && <p><span className="opacity-50">Người liên hệ: </span>{viewingCustomer.contactPerson}</p>}
               <p><span className="opacity-50">Email: </span>{viewingCustomer.email || "—"}</p>
@@ -8369,30 +8395,30 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
             </div>
 
             <div className={"grid grid-cols-2 gap-2 mb-5 " + (loyaltyOn ? "sm:grid-cols-5" : "sm:grid-cols-4")}>
-              <div className="p-3 rounded-sm text-center" style={{ border: `1px solid ${LINE}` }}>
+              <div className="p-3 rounded-md text-center" style={{ border: `1px solid ${LINE}` }}>
                 <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">Tổng chi tiêu</p>
-                <p className="text-sm font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{vnd(s.totalSpent)}</p>
+                <p className="text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(s.totalSpent)}</p>
               </div>
-              <div className="p-3 rounded-sm text-center" style={{ border: `1px solid ${LINE}` }}>
+              <div className="p-3 rounded-md text-center" style={{ border: `1px solid ${LINE}` }}>
                 <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">Tổng SL đơn</p>
-                <p className="text-sm font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{s.orderCount}</p>
+                <p className="text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{s.orderCount}</p>
               </div>
-              <div className="p-3 rounded-sm text-center" style={{ border: `1px solid ${LINE}` }}>
+              <div className="p-3 rounded-md text-center" style={{ border: `1px solid ${LINE}` }}>
                 <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">Công nợ hiện tại</p>
-                <p className="text-sm font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: s.debt > 0 ? RUST : FOREST }}>{vnd(s.debt)}</p>
+                <p className="text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: s.debt > 0 ? RUST : FOREST }}>{vnd(s.debt)}</p>
               </div>
-              <div className="p-3 rounded-sm text-center" style={{ border: `1px solid ${LINE}` }}>
+              <div className="p-3 rounded-md text-center" style={{ border: `1px solid ${LINE}` }}>
                 <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">Mua gần nhất</p>
                 <p className="text-sm font-semibold" style={{ color: INK }}>{s.lastOrderAt ? new Date(s.lastOrderAt).toLocaleDateString("vi-VN") : "—"}</p>
               </div>
               {loyaltyOn && (() => {
                 const pts = pointsOf(viewingCustomer);
                 return (
-                  <div className="p-3 rounded-sm text-center relative" style={{ border: `1px solid ${LINE}` }}>
+                  <div className="p-3 rounded-md text-center relative" style={{ border: `1px solid ${LINE}` }}>
                     <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">Điểm tích luỹ</p>
-                    <p className="text-sm font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: BRASS }}>{pts.points}</p>
+                    <p className="text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: BRASS }}>{pts.points}</p>
                     {isAdmin && (
-                      <button onClick={() => setAdjustOpen((v) => !v)} className="absolute top-1 right-1 p-1 rounded-sm hover:bg-black/5" title="Điều chỉnh điểm" style={{ opacity: 0.5 }}>
+                      <button onClick={() => setAdjustOpen((v) => !v)} className="absolute top-1 right-1 p-1 rounded-md hover:bg-black/5" title="Điều chỉnh điểm" style={{ opacity: 0.5 }}>
                         <Pencil size={11} />
                       </button>
                     )}
@@ -8405,26 +8431,26 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
               const pts = pointsOf(viewingCustomer);
               const history = (pointAdjustments || []).filter((a) => normalizePhone(a.phone) === normalizePhone(viewingCustomer.phone));
               return (
-                <div className="mb-5 p-3 rounded-sm space-y-3" style={{ border: `1px solid ${LINE}`, background: PAPER }}>
+                <div className="mb-5 p-3 rounded-md space-y-3" style={{ border: `1px solid ${LINE}`, background: PAPER }}>
                   <p className="text-xs opacity-60">
                     Điểm tự tính từ đơn hàng: <b>{pts.fromOrders}</b> · Điểm điều chỉnh tay: <b>{pts.fromAdjustments}</b>
                   </p>
                   <div className="flex gap-2 flex-wrap items-end">
                     <label className="text-xs">
                       <span className="block opacity-60 mb-1">Số điểm (+/-)</span>
-                      <input type="number" value={adjustAmount} onChange={(e) => setAdjustAmount(e.target.value)} placeholder="VD: 50 hoặc -20" className="border rounded-sm py-1.5 px-2 text-sm w-32" style={{ borderColor: LINE }} />
+                      <input type="number" value={adjustAmount} onChange={(e) => setAdjustAmount(e.target.value)} placeholder="VD: 50 hoặc -20" className="border rounded-md py-1.5 px-2 text-sm w-32" style={{ borderColor: LINE }} />
                     </label>
                     <label className="text-xs flex-1 min-w-[200px]">
                       <span className="block opacity-60 mb-1">Lý do</span>
-                      <input value={adjustReason} onChange={(e) => setAdjustReason(e.target.value)} placeholder="VD: Tặng điểm sự kiện khai trương" className="border rounded-sm py-1.5 px-2 text-sm w-full" style={{ borderColor: LINE }} />
+                      <input value={adjustReason} onChange={(e) => setAdjustReason(e.target.value)} placeholder="VD: Tặng điểm sự kiện khai trương" className="border rounded-md py-1.5 px-2 text-sm w-full" style={{ borderColor: LINE }} />
                     </label>
-                    <button onClick={() => submitAdjust(viewingCustomer)} className="px-3 py-1.5 rounded-sm text-sm text-white" style={{ background: INK }}>Lưu</button>
+                    <button onClick={() => submitAdjust(viewingCustomer)} className="px-3 py-1.5 rounded-md text-sm text-white" style={{ background: INK }}>Lưu</button>
                   </div>
                   {history.length > 0 && (
                     <div className="space-y-1 pt-2" style={{ borderTop: `1px dashed ${LINE}` }}>
                       {history.map((a) => (
                         <div key={a.id} className="flex items-center gap-2 text-xs">
-                          <span style={{ color: a.amount > 0 ? FOREST : RUST, fontFamily: "'IBM Plex Mono', monospace" }}>{a.amount > 0 ? "+" : ""}{a.amount}</span>
+                          <span style={{ color: a.amount > 0 ? FOREST : RUST, fontFamily: "'Inter', sans-serif" }}>{a.amount > 0 ? "+" : ""}{a.amount}</span>
                           <span className="opacity-70">{a.reason}</span>
                           <span className="opacity-40">· {new Date(a.createdAt).toLocaleDateString("vi-VN")} · {a.createdBy}</span>
                           <button onClick={() => removeAdjust(a)} className="ml-auto opacity-40 hover:opacity-100" title="Xoá"><X size={12} /></button>
@@ -8442,7 +8468,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
             </div>
 
             {detailTab === "orders" && (
-              <div className="rounded-sm overflow-x-auto min-w-0" style={{ border: `1px solid ${LINE}` }}>
+              <div className="rounded-md overflow-x-auto min-w-0" style={{ border: `1px solid ${LINE}` }}>
                 <table className="w-full text-xs" style={{ minWidth: 560 }}>
                   <thead style={{ background: PAPER }}><tr className="opacity-60">
                     <th className="text-left py-2 px-2">Mã đơn</th><th className="text-left py-2 px-2">Trạng thái</th><th className="text-left py-2 px-2">Xuất hoá đơn</th><th className="text-right py-2 px-2">Giá trị</th><th className="text-right py-2 px-2">Còn phải trả</th><th className="text-left py-2 px-2">Ngày</th>
@@ -8452,17 +8478,17 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
                       const oc = orderCalc(o);
                       return (
                         <tr key={o.id} style={{ borderTop: `1px dashed ${LINE}` }}>
-                          <td className="py-1.5 px-2" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
+                          <td className="py-1.5 px-2" style={{ fontFamily: "'Inter', sans-serif" }}>
                             {goToDoc ? <button onClick={() => goToDoc(o.code)} className="hover:underline" style={{ color: BLUE }}>{o.code}</button> : <span style={{ color: BLUE }}>{o.code}</span>}
                           </td>
                           <td className="py-1.5 px-2"><Stamp status={o.status} /></td>
                           <td className="py-1.5 px-2 whitespace-nowrap">
                             {o.status === "cancelled" ? <span className="opacity-40">—</span> : o.invoiceStatus === "issued" ? (
-                              <span style={{ color: FOREST, fontFamily: "'IBM Plex Mono', monospace" }}>{o.invoiceNo || "Đã xuất"}</span>
+                              <span style={{ color: FOREST, fontFamily: "'Inter', sans-serif" }}>{o.invoiceNo || "Đã xuất"}</span>
                             ) : <span style={{ color: RUST, opacity: 0.8 }}>Chờ</span>}
                           </td>
-                          <td className="py-1.5 px-2 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{vnd(oc.payable)}</td>
-                          <td className="py-1.5 px-2 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace", color: oc.remaining > 0 ? RUST : "inherit" }}>{vnd(oc.remaining)}</td>
+                          <td className="py-1.5 px-2 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(oc.payable)}</td>
+                          <td className="py-1.5 px-2 text-right" style={{ fontFamily: "'Inter', sans-serif", color: oc.remaining > 0 ? RUST : "inherit" }}>{vnd(oc.remaining)}</td>
                           <td className="py-1.5 px-2 whitespace-nowrap">{formatDateTime(o.createdAt)}</td>
                         </tr>
                       );
@@ -8476,7 +8502,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
             {detailTab === "addresses" && (
               <div>
                 <div className="flex justify-end mb-3">
-                  <button onClick={() => openNewAddress(viewingCustomer)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm text-white" style={{ background: INK }}>
+                  <button onClick={() => openNewAddress(viewingCustomer)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md text-white" style={{ background: INK }}>
                     <Plus size={13} /> Thêm địa chỉ mới
                   </button>
                 </div>
@@ -8485,7 +8511,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
                 ) : (
                   <div className="space-y-2.5">
                     {addresses.map((a) => (
-                      <div key={a.id} className="p-3 rounded-sm flex items-start justify-between gap-3 flex-wrap" style={{ border: `1px solid ${a.isDefault ? BLUE : LINE}`, background: a.isDefault ? `${BLUE}08` : "#fff" }}>
+                      <div key={a.id} className="p-3 rounded-md flex items-start justify-between gap-3 flex-wrap" style={{ border: `1px solid ${a.isDefault ? BLUE : LINE}`, background: a.isDefault ? `${BLUE}08` : "#fff" }}>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 flex-wrap mb-1">
                             <span className="text-sm font-medium" style={{ color: INK }}>{a.label || "Địa chỉ"}</span>
@@ -8495,9 +8521,9 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
                           <p className="text-sm opacity-70">{fullAddressOf(a) || "—"}</p>
                         </div>
                         <div className="flex gap-1.5 shrink-0">
-                          {!a.isDefault && <button onClick={() => setDefaultAddress(viewingCustomer, a.id)} className="text-xs px-2.5 py-1 rounded-sm border" style={{ borderColor: LINE, color: INK }}>Đặt mặc định</button>}
-                          <button onClick={() => (a.isPrimary ? (() => { setViewingId(null); openEdit(viewingCustomer); })() : openEditAddress(viewingCustomer, a))} title={a.isPrimary ? "Sửa trong thông tin khách hàng" : "Sửa địa chỉ"} className="p-1.5 rounded-sm hover:bg-black/5 opacity-60"><Pencil size={13} /></button>
-                          {!a.isPrimary && <button onClick={() => removeAddress(viewingCustomer, a.id)} className="p-1.5 rounded-sm hover:bg-black/5 opacity-60" style={{ color: RUST }}><Trash2 size={13} /></button>}
+                          {!a.isDefault && <button onClick={() => setDefaultAddress(viewingCustomer, a.id)} className="text-xs px-2.5 py-1 rounded-md border" style={{ borderColor: LINE, color: INK }}>Đặt mặc định</button>}
+                          <button onClick={() => (a.isPrimary ? (() => { setViewingId(null); openEdit(viewingCustomer); })() : openEditAddress(viewingCustomer, a))} title={a.isPrimary ? "Sửa trong thông tin khách hàng" : "Sửa địa chỉ"} className="p-1.5 rounded-md hover:bg-black/5 opacity-60"><Pencil size={13} /></button>
+                          {!a.isPrimary && <button onClick={() => removeAddress(viewingCustomer, a.id)} className="p-1.5 rounded-md hover:bg-black/5 opacity-60" style={{ color: RUST }}><Trash2 size={13} /></button>}
                         </div>
                       </div>
                     ))}
@@ -8532,7 +8558,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
             <input type="checkbox" checked={!!addrForm.isDefault} onChange={(e) => setAddrForm({ ...addrForm, isDefault: e.target.checked })} />
             Đặt làm địa chỉ mặc định
           </label>
-          <button onClick={submitAddress} className="w-full py-2.5 rounded-sm text-white text-sm" style={{ background: INK }}>{addrForm.id ? "Lưu thay đổi" : "Thêm địa chỉ"}</button>
+          <button onClick={submitAddress} className="w-full py-2.5 rounded-md text-white text-sm" style={{ background: INK }}>{addrForm.id ? "Lưu thay đổi" : "Thêm địa chỉ"}</button>
         </Modal>
       )}
 
@@ -8547,7 +8573,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Field label="Mã khách hàng" hint="Tự động sinh — có thể sửa lại">
-              <input className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
+              <input className={inputCls} style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
             </Field>
             <Field label="Mã số thuế"><input className={inputCls} style={{ borderColor: LINE }} inputMode="numeric" value={form.taxCode} onChange={(e) => setForm({ ...form, taxCode: e.target.value.replace(/\D/g, "") })} /></Field>
           </div>
@@ -8558,7 +8584,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
               <div className="flex gap-2 flex-wrap">
                 {CUSTOMER_GROUPS.map((g) => (
                   <button key={g.id} type="button" onClick={() => setForm({ ...form, group: g.id })}
-                    className="px-3.5 py-1.5 rounded-sm text-sm border"
+                    className="px-3.5 py-1.5 rounded-md text-sm border"
                     style={{ borderColor: form.group === g.id ? INK : LINE, background: form.group === g.id ? INK : "transparent", color: form.group === g.id ? "#fff" : INK }}>
                     {g.label}
                   </button>
@@ -8602,7 +8628,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
           <Field label="Địa chỉ cụ thể"><input className={inputCls} style={{ borderColor: LINE }} value={form.addressDetail} onChange={(e) => setForm({ ...form, addressDetail: e.target.value })} placeholder="Số nhà, tên đường, thôn/khu vực…" /></Field>
 
           <Field label="Ghi chú"><input className={inputCls} style={{ borderColor: LINE }} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} /></Field>
-          <button onClick={submit} className="mt-2 w-full py-2.5 rounded-sm text-white text-sm" style={{ background: INK }}>{editing.id ? "Lưu thay đổi" : "Thêm khách hàng"}</button>
+          <button onClick={submit} className="mt-2 w-full py-2.5 rounded-md text-white text-sm" style={{ background: INK }}>{editing.id ? "Lưu thay đổi" : "Thêm khách hàng"}</button>
         </Modal>
       )}
     </div>
@@ -8644,7 +8670,7 @@ function CustomerPicker({ customers, setCustomers, onPick, placeholder, currentU
           value={query} onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
           placeholder={placeholder || "Tìm theo tên, SĐT khách hàng…"}
-          className="w-full pl-8 pr-8 py-2.5 text-sm rounded-sm border outline-none" style={{ borderColor: LINE, background: "#fff" }}
+          className="w-full pl-8 pr-8 py-2.5 text-sm rounded-md border outline-none" style={{ borderColor: LINE, background: "#fff" }}
         />
         {(open || creatingNew) && (
           <button type="button" onClick={() => { setOpen(false); setCreatingNew(false); }} title="Đóng bảng" className="absolute right-2 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100" style={{ color: INK }}>
@@ -8653,17 +8679,17 @@ function CustomerPicker({ customers, setCustomers, onPick, placeholder, currentU
         )}
       </div>
       {(open || creatingNew) && (
-        <div className="absolute z-20 mt-1 w-full max-h-72 overflow-y-auto rounded-sm shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+        <div className="absolute z-20 mt-1 w-full max-h-72 overflow-y-auto rounded-md shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           {creatingNew ? (
             <div className="p-3">
               <p className="text-xs uppercase tracking-wider mb-2 opacity-60">Tạo khách hàng mới</p>
               <input autoFocus value={newForm.name} onChange={(e) => setNewForm({ ...newForm, name: e.target.value })} placeholder="Tên khách hàng"
-                className="w-full border rounded-sm py-2 px-2.5 text-sm mb-2" style={{ borderColor: LINE }} />
+                className="w-full border rounded-md py-2 px-2.5 text-sm mb-2" style={{ borderColor: LINE }} />
               <input value={newForm.phone} onChange={(e) => setNewForm({ ...newForm, phone: e.target.value.replace(/\D/g, "") })} placeholder="Số điện thoại" inputMode="numeric"
-                className="w-full border rounded-sm py-2 px-2.5 text-sm mb-3" style={{ borderColor: LINE }} />
+                className="w-full border rounded-md py-2 px-2.5 text-sm mb-3" style={{ borderColor: LINE }} />
               <div className="flex gap-2">
-                <button onMouseDown={cancelNew} className="flex-1 py-1.5 rounded-sm text-sm border" style={{ borderColor: LINE, color: INK }}>Huỷ</button>
-                <button onMouseDown={saveNew} className="flex-1 py-1.5 rounded-sm text-sm text-white" style={{ background: INK }}>Lưu &amp; chọn</button>
+                <button onMouseDown={cancelNew} className="flex-1 py-1.5 rounded-md text-sm border" style={{ borderColor: LINE, color: INK }}>Huỷ</button>
+                <button onMouseDown={saveNew} className="flex-1 py-1.5 rounded-md text-sm text-white" style={{ background: INK }}>Lưu &amp; chọn</button>
               </div>
             </div>
           ) : (
@@ -8680,7 +8706,7 @@ function CustomerPicker({ customers, setCustomers, onPick, placeholder, currentU
                 <button key={c.id} onMouseDown={() => { onPick(c.id); setQuery(""); setOpen(false); }}
                   className="w-full text-left px-3 py-2 text-sm hover:bg-black/5 flex items-center justify-between gap-3" style={{ borderBottom: `1px dashed ${LINE}` }}>
                   <span style={{ color: INK }}>{c.name}</span>
-                  <span className="opacity-50 text-xs whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{c.phone}</span>
+                  <span className="opacity-50 text-xs whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>{c.phone}</span>
                 </button>
               ))}
             </>
@@ -8718,7 +8744,7 @@ function SeriesPicker({ available, selected, setSelected, need, growable }) {
       {selected.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-1.5">
           {selected.map((s) => (
-            <span key={s} className="inline-flex items-center gap-1 pl-2.5 pr-1.5 py-1 rounded-full text-xs" style={{ background: `${BLUE}17`, color: BLUE, fontFamily: "'IBM Plex Mono', monospace" }}>
+            <span key={s} className="inline-flex items-center gap-1 pl-2.5 pr-1.5 py-1 rounded-full text-xs" style={{ background: `${BLUE}17`, color: BLUE, fontFamily: "'Inter', sans-serif" }}>
               {s}
               <button type="button" onMouseDown={() => removeAt(s)} className="hover:opacity-60 rounded-full" style={{ padding: 2 }}><X size={11} /></button>
             </span>
@@ -8732,7 +8758,7 @@ function SeriesPicker({ available, selected, setSelected, need, growable }) {
             value={query} onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
             onFocus={() => setOpen(true)}
             placeholder={full ? `Đã đủ ${need} series` : `Bấm để tích chọn series (${selected.length}/${need}) — gõ để lọc…`}
-            className="w-full pl-8 pr-8 py-2 text-xs rounded-sm border outline-none" style={{ borderColor: LINE, background: "#fff" }}
+            className="w-full pl-8 pr-8 py-2 text-xs rounded-md border outline-none" style={{ borderColor: LINE, background: "#fff" }}
           />
           {open && (
             <button type="button" onClick={() => setOpen(false)} title="Đóng" className="absolute right-2 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100" style={{ color: INK }}>
@@ -8741,7 +8767,7 @@ function SeriesPicker({ available, selected, setSelected, need, growable }) {
           )}
         </div>
         {open && (
-          <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto rounded-sm shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+          <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto rounded-md shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
             {matches.length === 0 ? (
               <p className="text-xs opacity-50 p-2">Không tìm thấy series phù hợp.</p>
             ) : (<>
@@ -8755,7 +8781,7 @@ function SeriesPicker({ available, selected, setSelected, need, growable }) {
                 return (
                   <label key={s.serial} onMouseDown={(e) => e.preventDefault()}
                     className={"flex items-center gap-2 px-3 py-1.5 text-xs " + (disabled ? "opacity-40" : "cursor-pointer hover:bg-black/5")}
-                    style={{ fontFamily: "'IBM Plex Mono', monospace", borderBottom: `1px dashed ${LINE}`, background: on ? `${BLUE}0D` : undefined }}>
+                    style={{ fontFamily: "'Inter', sans-serif", borderBottom: `1px dashed ${LINE}`, background: on ? `${BLUE}0D` : undefined }}>
                     <input type="checkbox" checked={on} disabled={disabled} onChange={() => toggle(s.serial)} />
                     {s.serial}
                   </label>
@@ -8771,7 +8797,7 @@ function SeriesPicker({ available, selected, setSelected, need, growable }) {
 
 function SalesItemsTable({ items, products, onUpdate, onRemove, role }) {
   return (
-    <div className="rounded-sm overflow-x-auto" style={{ border: `1px solid ${LINE}` }}>
+    <div className="rounded-md overflow-x-auto" style={{ border: `1px solid ${LINE}` }}>
       <table className="w-full text-sm table-fixed" style={{ minWidth: 560 }}>
         <colgroup>
           <col style={{ width: 28 }} />
@@ -8804,31 +8830,31 @@ function SalesItemsTable({ items, products, onUpdate, onRemove, role }) {
                 <tr style={{ borderBottom: p?.hasSeries ? "none" : `1px dashed ${LINE}` }}>
                   <td className="px-2 py-3 text-xs opacity-40 align-top">{idx + 1}</td>
                   <td className="px-2 py-3 align-top">
-                    {p?.image ? <img src={p.image} alt={p.name} className="w-9 h-9 object-cover rounded-sm" style={{ border: `1px solid ${LINE}` }} /> : (
-                      <div className="w-9 h-9 rounded-sm flex items-center justify-center" style={{ background: PAPER, border: `1px dashed ${LINE}` }}><ImageOff size={12} className="opacity-30" /></div>
+                    {p?.image ? <img src={p.image} alt={p.name} className="w-9 h-9 object-cover rounded-md" style={{ border: `1px solid ${LINE}` }} /> : (
+                      <div className="w-9 h-9 rounded-md flex items-center justify-center" style={{ background: PAPER, border: `1px dashed ${LINE}` }}><ImageOff size={12} className="opacity-30" /></div>
                     )}
                   </td>
                   <td className="px-2 py-3 align-top">
                     <div className="font-semibold text-base leading-snug" style={{ color: INK }}>{p?.name}</div>
-                    <div className="text-xs opacity-50 mt-0.5" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p?.sku || p?.code}</div>
+                    <div className="text-xs opacity-50 mt-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>{p?.sku || p?.code}</div>
                   </td>
                   <td className="px-1 py-3 align-top">
                     <input type="number" min={1} value={it.qty || ""} onChange={(e) => { const v = e.target.value; onUpdate(it.productId, { qty: v === "" ? "" : Math.max(0, Number(v)) }); }}
                       onBlur={() => { if (!it.qty || it.qty < 1) onUpdate(it.productId, { qty: 1 }); }}
-                      className="w-full border rounded-sm py-2 px-1 text-center text-[15px] font-medium" style={{ borderColor: LINE }} />
+                      className="w-full border rounded-md py-2 px-1 text-center text-[15px] font-medium" style={{ borderColor: LINE }} />
                   </td>
                   <td className="px-1 py-3 align-top">
                     <MoneyInput value={it.price} onChange={(v) => onUpdate(it.productId, { price: v === "" ? 0 : v })}
-                      className="w-full border rounded-sm py-2 px-2 text-right text-[15px] font-medium" style={{ borderColor: belowFloor ? RUST : LINE, fontFamily: "'IBM Plex Mono', monospace", color: belowFloor ? RUST : INK }} />
+                      className="w-full border rounded-md py-2 px-2 text-right text-[15px] font-medium" style={{ borderColor: belowFloor ? RUST : LINE, fontFamily: "'Inter', sans-serif", color: belowFloor ? RUST : INK }} />
                     {p && (
                       <div className="flex gap-1 mt-1">
-                        <button type="button" onClick={() => onUpdate(it.productId, { price: p.wholesalePrice })} className="text-[10px] px-1.5 py-0.5 rounded-sm border" style={{ borderColor: LINE, color: INK }}>Giá sỉ</button>
-                        <button type="button" onClick={() => onUpdate(it.productId, { price: p.retailPrice })} className="text-[10px] px-1.5 py-0.5 rounded-sm border" style={{ borderColor: LINE, color: INK }}>Giá lẻ</button>
+                        <button type="button" onClick={() => onUpdate(it.productId, { price: p.wholesalePrice })} className="text-[10px] px-1.5 py-0.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>Giá sỉ</button>
+                        <button type="button" onClick={() => onUpdate(it.productId, { price: p.retailPrice })} className="text-[10px] px-1.5 py-0.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>Giá lẻ</button>
                       </div>
                     )}
                     {belowFloor && <span className="block text-[10px] mt-0.5" style={{ color: RUST }}>Dưới giá niêm yết tối thiểu ({vnd(floor)})</span>}
                   </td>
-                  <td className="px-2 py-3 text-right font-bold text-base whitespace-nowrap align-top" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{vnd(orderLineTotal(it))}</td>
+                  <td className="px-2 py-3 text-right font-semibold text-sm whitespace-nowrap align-top" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(orderLineTotal(it))}</td>
                   <td className="px-1 py-3 align-top"><button onClick={() => onRemove(it.productId)} style={{ color: RUST }}><X size={14} /></button></td>
                 </tr>
                 {p?.hasSeries && (
@@ -8838,7 +8864,7 @@ function SalesItemsTable({ items, products, onUpdate, onRemove, role }) {
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-xs opacity-60">Chọn series xuất bán — cần {it.qty} (còn tồn {available.length})</span>
                         {it.series.length < it.qty && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${BRASS}1A`, color: BRASS }}>Sẽ ở trạng thái chờ hàng</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider" style={{ background: `${BRASS}1A`, color: BRASS }}>Sẽ ở trạng thái chờ hàng</span>
                         )}
                       </div>
                       <SeriesPicker growable available={available} selected={it.series} setSelected={(arr) => onUpdate(it.productId, { series: arr, qty: Math.max(Number(it.qty) || 0, arr.length) })} need={it.qty} />
@@ -8859,11 +8885,11 @@ function SalesItemsTable({ items, products, onUpdate, onRemove, role }) {
 function OrderProgressStepper({ order }) {
   if (order.status === "cancelled") {
     return (
-      <div className="flex items-center gap-2 mb-5 px-3 py-2.5 rounded-sm" style={{ background: `${RUST}10`, border: `1px solid ${RUST}33` }}>
+      <div className="flex items-center gap-2 mb-5 px-3 py-2.5 rounded-md" style={{ background: `${RUST}10`, border: `1px solid ${RUST}33` }}>
         <span className="w-6 h-6 rounded-full flex items-center justify-center shrink-0" style={{ background: RUST }}><X size={13} color="#fff" /></span>
         <div>
           <p className="text-sm font-medium" style={{ color: RUST }}>Đã huỷ</p>
-          {order.cancelledAt && <p className="text-[11px] opacity-60" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{formatDateTime(order.cancelledAt)}</p>}
+          {order.cancelledAt && <p className="text-[11px] opacity-60" style={{ fontFamily: "'Inter', sans-serif" }}>{formatDateTime(order.cancelledAt)}</p>}
           {order.cancelReason && <p className="text-[11px] opacity-70 mt-0.5">Lý do: {order.cancelReason}</p>}
         </div>
       </div>
@@ -8880,22 +8906,7 @@ function OrderProgressStepper({ order }) {
     { label: "Đã thanh toán", done: !!order.paidCompleteAt, at: order.paidCompleteAt },
     { label: "Hoàn thành", done: rank >= 3, at: order.deliveredAt && order.paidCompleteAt ? (order.deliveredAt > order.paidCompleteAt ? order.deliveredAt : order.paidCompleteAt) : (order.deliveredAt || order.paidCompleteAt) },
   ];
-  return (
-    <div className="flex items-start mb-5 overflow-x-auto">
-      {steps.map((s, i) => (
-        <React.Fragment key={i}>
-          <div className="flex flex-col items-center text-center shrink-0" style={{ width: 86 }}>
-            <div className="w-7 h-7 rounded-full flex items-center justify-center mb-1.5" style={{ background: s.done ? FOREST : "#fff", border: `2px solid ${s.done ? FOREST : LINE}` }}>
-              {s.done ? <Check size={14} color="#fff" /> : <span className="text-[11px] opacity-40">{i + 1}</span>}
-            </div>
-            <span className="text-[11px] font-medium leading-tight" style={{ color: INK, opacity: s.done ? 1 : 0.45 }}>{s.label}</span>
-            {s.done && s.at && <span className="text-[10px] opacity-45 mt-0.5" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{formatDateTime(s.at)}</span>}
-          </div>
-          {i < steps.length - 1 && <div className="flex-1 h-0.5 mt-3.5" style={{ background: steps[i + 1].done ? FOREST : LINE, minWidth: 16 }} />}
-        </React.Fragment>
-      ))}
-    </div>
-  );
+  return <DocSteps steps={steps} />;
 }
 
 function escapeHtml(s) {
@@ -9933,7 +9944,7 @@ const QUOTE_STATUS_LABEL = { active: "Còn hiệu lực", converted: "Đã chuy�
 
 function QuoteItemsTable({ items, products, onUpdate, onRemove }) {
   return (
-    <div className="rounded-sm overflow-x-auto" style={{ border: `1px solid ${LINE}` }}>
+    <div className="rounded-md overflow-x-auto" style={{ border: `1px solid ${LINE}` }}>
       <table className="w-full text-sm table-fixed" style={{ minWidth: 480 }}>
         <colgroup><col style={{ width: 28 }} /><col /><col style={{ width: 70 }} /><col style={{ width: 130 }} /><col style={{ width: 120 }} /><col style={{ width: 32 }} /></colgroup>
         <thead>
@@ -9954,18 +9965,18 @@ function QuoteItemsTable({ items, products, onUpdate, onRemove }) {
                 <td className="px-2 py-3 text-xs opacity-40 align-top">{idx + 1}</td>
                 <td className="px-2 py-3 align-top">
                   <div className="font-semibold text-base leading-snug" style={{ color: INK }}>{p?.name}</div>
-                  <div className="text-xs opacity-50 mt-0.5" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p?.sku || p?.code}</div>
+                  <div className="text-xs opacity-50 mt-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>{p?.sku || p?.code}</div>
                 </td>
                 <td className="px-1 py-3 align-top">
                   <input type="number" min={1} value={it.qty || ""} onChange={(e) => { const v = e.target.value; onUpdate(it.productId, { qty: v === "" ? "" : Math.max(0, Number(v)) }); }}
                     onBlur={() => { if (!it.qty || it.qty < 1) onUpdate(it.productId, { qty: 1 }); }}
-                    className="w-full border rounded-sm py-2 px-1 text-center text-[15px] font-medium" style={{ borderColor: LINE }} />
+                    className="w-full border rounded-md py-2 px-1 text-center text-[15px] font-medium" style={{ borderColor: LINE }} />
                 </td>
                 <td className="px-1 py-3 align-top">
                   <MoneyInput value={it.price} onChange={(v) => onUpdate(it.productId, { price: v === "" ? 0 : v })}
-                    className="w-full border rounded-sm py-2 px-2 text-right text-[15px] font-medium" style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} />
+                    className="w-full border rounded-md py-2 px-2 text-right text-[15px] font-medium" style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} />
                 </td>
-                <td className="px-2 py-3 text-right font-bold text-base whitespace-nowrap align-top" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{vnd(it.qty * it.price)}</td>
+                <td className="px-2 py-3 text-right font-semibold text-sm whitespace-nowrap align-top" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(it.qty * it.price)}</td>
                 <td className="px-1 py-3 align-top"><button onClick={() => onRemove(it.productId)} style={{ color: RUST }}><X size={14} /></button></td>
               </tr>
             );
@@ -10152,14 +10163,14 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
         <div className="relative flex-1 max-w-xs">
           <Search size={15} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50" />
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm theo mã hoặc tên khách…"
-            className="w-full pl-7 pr-2 py-2 text-sm rounded-sm border outline-none" style={{ borderColor: LINE, background: "#fff" }} />
+            className="w-full pl-7 pr-2 py-2 text-sm rounded-md border outline-none" style={{ borderColor: LINE, background: "#fff" }} />
         </div>
-        <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-sm text-sm text-white" style={{ background: INK }}>
+        <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white" style={{ background: INK }}>
           <Plus size={15} /> Tạo báo giá
         </button>
       </div>
 
-      <div className="rounded-sm overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "65vh" }}>
+      <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "65vh" }}>
         <table className="w-full text-sm" style={{ minWidth: 920 }}>
           <thead>
             <tr style={{ borderBottom: `2px solid ${INK}` }}>
@@ -10176,11 +10187,11 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
               const convertedOrder = q.convertedOrderId ? orders.find((o) => o.id === q.convertedOrderId) : null;
               return (
                 <tr key={q.id} style={{ borderBottom: `1px dashed ${LINE}` }} className="hover:bg-black/[0.02]">
-                  <td className="px-4 py-3.5 font-medium whitespace-nowrap"><button onClick={() => setViewingId(q.id)} className="hover:underline" style={{ fontFamily: "'IBM Plex Mono', monospace", color: BLUE }}>{q.code}</button></td>
-                  <td className="px-4 py-3.5 whitespace-nowrap opacity-80" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{formatDateTime(q.createdAt)}</td>
+                  <td className="px-4 py-3.5 font-medium whitespace-nowrap"><button onClick={() => setViewingId(q.id)} className="hover:underline" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{q.code}</button></td>
+                  <td className="px-4 py-3.5 whitespace-nowrap opacity-80" style={{ fontFamily: "'Inter', sans-serif" }}>{formatDateTime(q.createdAt)}</td>
                   <td className="px-4 py-3.5 whitespace-nowrap">{q.customerName || "—"}</td>
                   <td className="px-4 py-3.5 whitespace-nowrap" style={{ color: exp.expired ? RUST : INK }}>{new Date(q.expiryDate).toLocaleDateString("vi-VN")}</td>
-                  <td className="px-4 py-3.5 text-right whitespace-nowrap font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{vnd(c.total)}</td>
+                  <td className="px-4 py-3.5 text-right whitespace-nowrap font-medium" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(c.total)}</td>
                   <td className="px-4 py-3.5 whitespace-nowrap">
                     <span className="text-[11px] px-2 py-0.5 rounded-full" style={{
                       background: effectiveStatus === "converted" ? `${FOREST}1A` : effectiveStatus === "cancelled" ? "rgba(0,0,0,0.08)" : effectiveStatus === "expired" ? `${RUST}1A` : `${BLUE}1A`,
@@ -10191,12 +10202,12 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
                   </td>
                   <td className="px-4 py-3.5 whitespace-nowrap">
                     {convertedOrder ? (
-                      <button onClick={() => goToDoc && goToDoc(convertedOrder.code)} className="hover:underline font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: FOREST }}>{convertedOrder.code}</button>
+                      <button onClick={() => goToDoc && goToDoc(convertedOrder.code)} className="hover:underline font-medium" style={{ fontFamily: "'Inter', sans-serif", color: FOREST }}>{convertedOrder.code}</button>
                     ) : <span className="opacity-30">—</span>}
                   </td>
                   <td className="px-4 py-3.5 text-right">
                     {q.status === "active" && !exp.expired && (
-                      <button onClick={() => convertToOrder(q)} className="text-xs px-2.5 py-1 rounded-sm text-white whitespace-nowrap" style={{ background: FOREST }}>Chuyển đơn hàng</button>
+                      <button onClick={() => convertToOrder(q)} className="text-xs px-2.5 py-1 rounded-md text-white whitespace-nowrap" style={{ background: FOREST }}>Chuyển đơn hàng</button>
                     )}
                   </td>
                 </tr>
@@ -10243,29 +10254,29 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
               <input type="number" min={1} value={form.validDays ?? 7}
                 onChange={(e) => setForm({ ...form, validDays: e.target.value === "" ? "" : Math.max(1, Number(e.target.value)) })}
                 onBlur={() => { if (!form.validDays) setForm({ ...form, validDays: 7 }); }}
-                className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} />
+                className={inputCls} style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} />
             </Field>
             <Field label="Chiết khấu">
               <div className="flex items-center gap-1.5">
-                <div className="flex rounded-sm border overflow-hidden" style={{ borderColor: LINE }}>
+                <div className="flex rounded-md border overflow-hidden" style={{ borderColor: LINE }}>
                   <button type="button" onClick={() => setForm({ ...form, discountType: "amount" })} className="px-2 py-1.5 text-xs" style={{ background: (form.discountType || "amount") === "amount" ? INK : "transparent", color: (form.discountType || "amount") === "amount" ? "#fff" : INK }}>đ</button>
                   <button type="button" onClick={() => setForm({ ...form, discountType: "percent" })} className="px-2 py-1.5 text-xs" style={{ background: form.discountType === "percent" ? INK : "transparent", color: form.discountType === "percent" ? "#fff" : INK }}>%</button>
                 </div>
-                <MoneyInput value={form.orderDiscount} onChange={(v) => setForm({ ...form, orderDiscount: v })} className="flex-1 border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} />
+                <MoneyInput value={form.orderDiscount} onChange={(v) => setForm({ ...form, orderDiscount: v })} className="flex-1 border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} />
               </div>
             </Field>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Phí giao hàng"><MoneyInput value={form.shippingFee} onChange={(v) => setForm({ ...form, shippingFee: v })} className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} /></Field>
+            <Field label="Phí giao hàng"><MoneyInput value={form.shippingFee} onChange={(v) => setForm({ ...form, shippingFee: v })} className={inputCls} style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} /></Field>
           </div>
 
-          <div className="p-3 rounded-sm space-y-1.5 mb-3" style={{ background: PAPER }}>
-            <div className="flex justify-between text-sm"><span className="opacity-60">Tạm tính</span><span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{vnd(calc.subtotal)}</span></div>
-            <div className="flex justify-between text-sm font-semibold" style={{ color: INK }}><span>Tổng cộng</span><span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{vnd(calc.total)}</span></div>
+          <div className="p-3 rounded-md space-y-1.5 mb-3" style={{ background: PAPER }}>
+            <div className="flex justify-between text-sm"><span className="opacity-60">Tạm tính</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(calc.subtotal)}</span></div>
+            <div className="flex justify-between text-sm font-semibold" style={{ color: INK }}><span>Tổng cộng</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(calc.total)}</span></div>
           </div>
 
           <TagsNotesCompact tags={form.tags} setTags={(arr) => setForm({ ...form, tags: arr })} notes={form.notes} setNotes={(v) => setForm({ ...form, notes: v })} />
-          <button onClick={submit} className="w-full py-2.5 rounded-sm text-white text-sm mt-4" style={{ background: INK }}>
+          <button onClick={submit} className="w-full py-2.5 rounded-md text-white text-sm mt-4" style={{ background: INK }}>
             {editingQuoteId ? "Lưu thay đổi (kích hoạt lại)" : `Tạo báo giá (hiệu lực ${form.validDays || 7} ngày)`}
           </button>
         </Modal>
@@ -10290,26 +10301,26 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
             {viewingQuote.customerTaxCode && <p className="text-sm mb-1"><b>MST:</b> {viewingQuote.customerTaxCode}</p>}
             <p className="text-sm mb-4"><b>Bán bởi:</b> {viewingQuote.seller}</p>
             <QuoteItemsTable items={viewingQuote.items} products={products} onUpdate={() => {}} onRemove={() => {}} />
-            <div className="p-3 rounded-sm space-y-1.5 my-4" style={{ background: PAPER }}>
-              <div className="flex justify-between text-sm"><span className="opacity-60">Tạm tính</span><span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{vnd(c.subtotal)}</span></div>
-              {viewingQuote.orderDiscount > 0 && <div className="flex justify-between text-sm"><span className="opacity-60">Chiết khấu</span><span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{vnd(c.discountAmount)}</span></div>}
-              <div className="flex justify-between text-sm font-semibold" style={{ color: INK }}><span>Tổng cộng</span><span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{vnd(c.total)}</span></div>
+            <div className="p-3 rounded-md space-y-1.5 my-4" style={{ background: PAPER }}>
+              <div className="flex justify-between text-sm"><span className="opacity-60">Tạm tính</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(c.subtotal)}</span></div>
+              {viewingQuote.orderDiscount > 0 && <div className="flex justify-between text-sm"><span className="opacity-60">Chiết khấu</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(c.discountAmount)}</span></div>}
+              <div className="flex justify-between text-sm font-semibold" style={{ color: INK }}><span>Tổng cộng</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(c.total)}</span></div>
             </div>
 
             {/* Báo giá hết hiệu lực: chỉ quản trị viên được kích hoạt lại hoặc sửa đổi */}
             {isExpired && viewingQuote.status !== "converted" && (
-              <div className="p-3 rounded-sm mb-4" style={{ background: `${RUST}0D`, border: `1px solid ${RUST}33` }}>
+              <div className="p-3 rounded-md mb-4" style={{ background: `${RUST}0D`, border: `1px solid ${RUST}33` }}>
                 <p className="text-sm mb-2" style={{ color: RUST }}>Báo giá này đã hết hiệu lực và tự động bị huỷ.</p>
                 {isAdmin ? (
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs opacity-70">Kích hoạt lại thêm</span>
                     <input type="number" min={1} value={reactivateDays} onChange={(e) => setReactivateDays(Math.max(1, Number(e.target.value) || 1))}
-                      className="w-16 border rounded-sm py-1 px-2 text-sm text-center" style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} />
+                      className="w-16 border rounded-md py-1 px-2 text-sm text-center" style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} />
                     <span className="text-xs opacity-70">ngày</span>
-                    <button onClick={() => reactivateQuote(viewingQuote, reactivateDays)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm text-white" style={{ background: FOREST }}>
+                    <button onClick={() => reactivateQuote(viewingQuote, reactivateDays)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md text-white" style={{ background: FOREST }}>
                       <RotateCcw size={13} /> Kích hoạt lại
                     </button>
-                    <button onClick={() => openEdit(viewingQuote)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm border" style={{ borderColor: LINE, color: INK }}>
+                    <button onClick={() => openEdit(viewingQuote)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>
                       <Pencil size={13} /> Sửa báo giá
                     </button>
                   </div>
@@ -10320,49 +10331,49 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
             )}
 
             <div className="flex gap-2 flex-wrap">
-              <button onClick={() => { setPrintPaperSize("A4"); setPrintBlockedUrl(null); setPrintModalOpen(true); }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm border" style={{ borderColor: LINE, color: INK }}>
+              <button onClick={() => { setPrintPaperSize("A4"); setPrintBlockedUrl(null); setPrintModalOpen(true); }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>
                 <Printer size={13} /> In báo giá
               </button>
               {viewingQuote.status === "active" && !exp.expired && (
-                <button onClick={() => convertToOrder(viewingQuote)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm text-white" style={{ background: FOREST }}>
+                <button onClick={() => convertToOrder(viewingQuote)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md text-white" style={{ background: FOREST }}>
                   <Check size={13} /> Chuyển thành đơn hàng
                 </button>
               )}
               {viewingQuote.status === "active" && (
-                <button onClick={() => openEdit(viewingQuote)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm border" style={{ borderColor: LINE, color: INK }}>
+                <button onClick={() => openEdit(viewingQuote)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>
                   <Pencil size={13} /> Sửa báo giá
                 </button>
               )}
               {viewingQuote.status === "active" && (
-                <button onClick={() => cancelQuote(viewingQuote)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm border" style={{ borderColor: RUST, color: RUST }}>
+                <button onClick={() => cancelQuote(viewingQuote)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: RUST, color: RUST }}>
                   <XCircle size={13} /> Huỷ báo giá
                 </button>
               )}
               {isAdmin && (
-                <button onClick={() => { removeQuote(viewingQuote.id); setViewingId(null); }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm border ml-auto" style={{ borderColor: RUST, color: RUST }}>
+                <button onClick={() => { removeQuote(viewingQuote.id); setViewingId(null); }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border ml-auto" style={{ borderColor: RUST, color: RUST }}>
                   <Trash2 size={13} /> Xoá
                 </button>
               )}
             </div>
 
             {printModalOpen && (
-              <div className="mt-4 p-4 rounded-sm" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
+              <div className="mt-4 p-4 rounded-md" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
                 <Field label="Khổ giấy">
                   <div className="grid grid-cols-2 gap-2">
                     {PAPER_SIZES.map((p) => (
                       <button key={p.id} type="button" onClick={() => setPrintPaperSize(p.id)}
-                        className="px-3 py-2 rounded-sm text-sm border text-center"
+                        className="px-3 py-2 rounded-md text-sm border text-center"
                         style={{ borderColor: printPaperSize === p.id ? INK : LINE, background: printPaperSize === p.id ? INK : "transparent", color: printPaperSize === p.id ? "#fff" : INK }}>
                         {p.label}
                       </button>
                     ))}
                   </div>
                 </Field>
-                <button onClick={executePrint} className="w-full py-2.5 rounded-sm text-white text-sm flex items-center justify-center gap-1.5" style={{ background: INK }}>
+                <button onClick={executePrint} className="w-full py-2.5 rounded-md text-white text-sm flex items-center justify-center gap-1.5" style={{ background: INK }}>
                   <Printer size={14} /> In ngay
                 </button>
                 {printBlockedUrl && (
-                  <div className="mt-3 p-3 rounded-sm text-xs" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44`, color: INK }}>
+                  <div className="mt-3 p-3 rounded-md text-xs" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44`, color: INK }}>
                     <p className="mb-2">Trình duyệt đã chặn cửa sổ in tự động. Bấm vào liên kết bên dưới:</p>
                     <a href={printBlockedUrl} target="_blank" rel="noreferrer" className="underline font-medium" style={{ color: BLUE }}>Mở phiếu báo giá để in</a>
                   </div>
@@ -10960,19 +10971,19 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
         </div>
         <div className="flex gap-2 flex-wrap">
           {filterStatus === "pending" && selectedIds.size > 0 && (
-            <button onClick={() => bulkSetStatus("shipping")} className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm border" style={{ borderColor: STATUSES.find((s) => s.id === "shipping")?.color, color: STATUSES.find((s) => s.id === "shipping")?.color }}>
+            <button onClick={() => bulkSetStatus("shipping")} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: STATUSES.find((s) => s.id === "shipping")?.color, color: STATUSES.find((s) => s.id === "shipping")?.color }}>
               <Truck size={15} /> Chuyển sang Đang giao ({selectedIds.size})
             </button>
           )}
           {filterStatus === "shipping" && selectedIds.size > 0 && (
-            <button onClick={() => bulkSetStatus("delivered")} className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm border" style={{ borderColor: STATUSES.find((s) => s.id === "delivered")?.color, color: STATUSES.find((s) => s.id === "delivered")?.color }}>
+            <button onClick={() => bulkSetStatus("delivered")} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: STATUSES.find((s) => s.id === "delivered")?.color, color: STATUSES.find((s) => s.id === "delivered")?.color }}>
               <PackageCheck size={15} /> Chuyển sang Đã giao ({selectedIds.size})
             </button>
           )}
-          <button onClick={exportOrders} className="flex items-center gap-1.5 px-3.5 py-2 rounded-sm text-sm border" style={{ borderColor: FOREST, color: FOREST }}>
+          <button onClick={exportOrders} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: FOREST, color: FOREST }}>
             <FileSpreadsheet size={15} /> Xuất Excel{selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}
           </button>
-          <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-sm text-sm text-white" style={{ background: INK }}><Plus size={15} /> Tạo đơn và giao hàng</button>
+          <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white" style={{ background: INK }}><Plus size={15} /> Tạo đơn và giao hàng</button>
         </div>
       </div>
 
@@ -10980,19 +10991,19 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
         <div className="relative flex-1 min-w-[220px] max-w-sm">
           <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 opacity-40" />
           <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Tìm theo mã đơn, tên hoặc số điện thoại khách…"
-            className="w-full pl-8 pr-2 py-2 text-sm rounded-sm border outline-none" style={{ borderColor: LINE, background: "#fff" }} />
+            className="w-full pl-8 pr-2 py-2 text-sm rounded-md border outline-none" style={{ borderColor: LINE, background: "#fff" }} />
         </div>
-        <button onClick={() => setShowFilters((s) => !s)} className="flex items-center gap-1.5 text-sm px-3.5 py-2 rounded-sm border" style={{ borderColor: activeFilterCount ? INK : LINE, color: INK, background: showFilters ? PAPER : "#fff" }}>
+        <button onClick={() => setShowFilters((s) => !s)} className="flex items-center gap-1.5 text-sm px-3.5 py-2 rounded-md border" style={{ borderColor: activeFilterCount ? INK : LINE, color: INK, background: showFilters ? PAPER : "#fff" }}>
           <Filter size={14} /> Bộ lọc {activeFilterCount > 0 && <span className="text-[10px] px-1.5 rounded-full text-white" style={{ background: INK }}>{activeFilterCount}</span>}
         </button>
         {activeFilterCount > 0 && <button onClick={clearFilters} className="text-xs opacity-50 hover:opacity-100 underline">Xoá bộ lọc</button>}
       </div>
 
       {showFilters && (
-        <div className="flex flex-wrap items-end gap-3 mb-5 p-4 rounded-sm overflow-x-auto" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+        <div className="flex flex-wrap items-end gap-3 mb-5 p-4 rounded-md overflow-x-auto" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           <label className="text-xs shrink-0" style={{ width: 150 }}>
             <span className="block opacity-60 mb-1">Nhân viên tạo</span>
-            <select value={filterSeller} onChange={(e) => setFilterSeller(e.target.value)} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
+            <select value={filterSeller} onChange={(e) => setFilterSeller(e.target.value)} className="w-full border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
               <option value="">Tất cả</option>
               {employeeNames.map((e2) => <option key={e2} value={e2}>{e2}</option>)}
             </select>
@@ -11007,23 +11018,23 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
           </label>
           <label className="text-xs shrink-0" style={{ width: 140 }}>
             <span className="block opacity-60 mb-1">Từ ngày</span>
-            <input type="date" value={filterFrom} onChange={(e) => setFilterFrom(e.target.value)} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
+            <input type="date" value={filterFrom} onChange={(e) => setFilterFrom(e.target.value)} className="w-full border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
           </label>
           <label className="text-xs shrink-0" style={{ width: 140 }}>
             <span className="block opacity-60 mb-1">Đến ngày</span>
-            <input type="date" value={filterTo} onChange={(e) => setFilterTo(e.target.value)} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
+            <input type="date" value={filterTo} onChange={(e) => setFilterTo(e.target.value)} className="w-full border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
           </label>
           <label className="text-xs shrink-0" style={{ width: 140 }}>
             <span className="block opacity-60 mb-1">Giao hàng từ</span>
-            <input type="date" value={filterDeliveredFrom} onChange={(e) => setFilterDeliveredFrom(e.target.value)} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
+            <input type="date" value={filterDeliveredFrom} onChange={(e) => setFilterDeliveredFrom(e.target.value)} className="w-full border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
           </label>
           <label className="text-xs shrink-0" style={{ width: 140 }}>
             <span className="block opacity-60 mb-1">Giao hàng đến</span>
-            <input type="date" value={filterDeliveredTo} onChange={(e) => setFilterDeliveredTo(e.target.value)} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
+            <input type="date" value={filterDeliveredTo} onChange={(e) => setFilterDeliveredTo(e.target.value)} className="w-full border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
           </label>
           <label className="text-xs shrink-0" style={{ width: 140 }}>
             <span className="block opacity-60 mb-1">Xuất hoá đơn</span>
-            <select value={filterInvoice} onChange={(e) => setFilterInvoice(e.target.value)} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
+            <select value={filterInvoice} onChange={(e) => setFilterInvoice(e.target.value)} className="w-full border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
               <option value="">Tất cả</option>
               <option value="issued">Đã xuất</option>
               <option value="pending">Chờ xuất</option>
@@ -11031,7 +11042,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
           </label>
           <label className="text-xs flex-1" style={{ minWidth: 160 }}>
             <span className="block opacity-60 mb-1">Ghi chú / Tag</span>
-            <input value={filterText} onChange={(e) => setFilterText(e.target.value)} placeholder="Tìm trong ghi chú, tag…" className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
+            <input value={filterText} onChange={(e) => setFilterText(e.target.value)} placeholder="Tìm trong ghi chú, tag…" className="w-full border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
           </label>
           <label className="flex items-center gap-1.5 text-xs shrink-0 pb-1.5">
             <input type="checkbox" checked={filterApprovalOnly} onChange={(e) => setFilterApprovalOnly(e.target.checked)} />
@@ -11048,7 +11059,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
         </div>
       )}
 
-      <div key={orderSafePage} className="rounded-sm overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "65vh" }}>
+      <div key={orderSafePage} className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "65vh" }}>
         <table className="w-full text-sm" style={{ minWidth: 900 }}>
           <thead className="sticky top-0" style={{ zIndex: 2 }}>
             <tr style={{ borderBottom: `2px solid ${INK}` }}>
@@ -11066,18 +11077,18 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                 <tr key={o.id} style={{ borderBottom: `1px dashed ${LINE}` }} className="hover:bg-black/[0.02]">
                   <td className="px-3 py-3"><input type="checkbox" checked={selectedIds.has(o.id)} onChange={() => toggleSelect(o.id)} /></td>
                   <td className="px-3 py-3 font-medium whitespace-nowrap">
-                    <button onClick={() => { setViewingId(o.id); setPayInput(""); }} className="hover:underline" style={{ fontFamily: "'IBM Plex Mono', monospace", color: BLUE }}>{o.code}</button>
+                    <button onClick={() => { setViewingId(o.id); setPayInput(""); }} className="hover:underline" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{o.code}</button>
                   </td>
-                  <td className="px-3 py-3 whitespace-nowrap opacity-80" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{formatDateTime(o.createdAt)}</td>
+                  <td className="px-3 py-3 whitespace-nowrap opacity-80" style={{ fontFamily: "'Inter', sans-serif" }}>{formatDateTime(o.createdAt)}</td>
                   <td className="px-3 py-3 whitespace-nowrap">{cust?.name || "Khách lẻ"}</td>
                   <td className="px-3 py-3 whitespace-nowrap opacity-70">{o.branch}</td>
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-1.5">
                       <Stamp status={o.status} />
-                      {o.status !== "cancelled" && o.items.some((it) => !it.fulfilled) && <span className="text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${BRASS}1A`, color: BRASS }}>Chờ hàng</span>}
-                      {o.status !== "cancelled" && o.approvalStatus === "pending" && <span className="text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${RUST}1A`, color: RUST }}>Chờ duyệt</span>}
-                      {o.status !== "cancelled" && o.cancelRequest && <span className="text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${RUST}1A`, color: RUST }}>Yêu cầu huỷ</span>}
-                      {o.status !== "cancelled" && o.returnRequest && <span className="text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${BRASS}1A`, color: BRASS }}>Yêu cầu đổi trả</span>}
+                      {o.status !== "cancelled" && o.items.some((it) => !it.fulfilled) && <span className="text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider" style={{ background: `${BRASS}1A`, color: BRASS }}>Chờ hàng</span>}
+                      {o.status !== "cancelled" && o.approvalStatus === "pending" && <span className="text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider" style={{ background: `${RUST}1A`, color: RUST }}>Chờ duyệt</span>}
+                      {o.status !== "cancelled" && o.cancelRequest && <span className="text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider" style={{ background: `${RUST}1A`, color: RUST }}>Yêu cầu huỷ</span>}
+                      {o.status !== "cancelled" && o.returnRequest && <span className="text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider" style={{ background: `${BRASS}1A`, color: BRASS }}>Yêu cầu đổi trả</span>}
                     </div>
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap">
@@ -11085,8 +11096,8 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                       {o.status === "cancelled" ? "Huỷ" : o.invoiceStatus === "issued" ? `Đã xuất${o.invoiceNo ? ` · ${o.invoiceNo}` : ""}` : "Chờ xuất"}
                     </span>
                   </td>
-                  <td className="px-3 py-3 text-right whitespace-nowrap font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{vnd(c.payable)}</td>
-                  <td className="px-3 py-3 text-right whitespace-nowrap font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: c.remaining > 0 ? RUST : FOREST }}>{vnd(c.remaining)}</td>
+                  <td className="px-3 py-3 text-right whitespace-nowrap font-medium" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(c.payable)}</td>
+                  <td className="px-3 py-3 text-right whitespace-nowrap font-medium" style={{ fontFamily: "'Inter', sans-serif", color: c.remaining > 0 ? RUST : FOREST }}>{vnd(c.remaining)}</td>
                   <td className="px-3 py-3">
                     {/* Chỉ tài khoản CHỦ (isOwner) mới xoá được đơn — QTV thường không thấy nút này */}
                     {currentUser.isOwner && (
@@ -11107,7 +11118,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
         <Modal title={editingOrderId ? "Sửa đơn hàng" : "Tạo đơn và giao hàng"} onClose={() => { setCreating(false); setEditingOrderId(null); }} size="3xl">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
             <div className="lg:col-span-2 space-y-5 min-w-0">
-              <div className="p-4 rounded-sm" style={{ border: `2px solid ${INK}`, background: "#fff" }}>
+              <div className="p-4 rounded-md" style={{ border: `2px solid ${INK}`, background: "#fff" }}>
                 <p className="text-xs uppercase tracking-wider mb-2 font-medium" style={{ color: INK }}>Thông tin khách hàng</p>
                 <CustomerPicker customers={customers} setCustomers={setCustomers} currentUser={currentUser} onPick={(id) => {
                   const cust = customers.find((c) => c.id === id);
@@ -11120,11 +11131,11 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                 {form.customerId && (() => {
                   const cust = customers.find((c) => c.id === form.customerId);
                   return (
-                    <div className="mt-2.5 p-3 rounded-sm flex items-center justify-between" style={{ background: `${FOREST}0F`, border: `1px solid ${FOREST}44` }}>
+                    <div className="mt-2.5 p-3 rounded-md flex items-center justify-between" style={{ background: `${FOREST}0F`, border: `1px solid ${FOREST}44` }}>
                       <div>
                         <p className="text-[10px] uppercase tracking-wider opacity-60 mb-0.5">Khách hàng</p>
                         <p className="text-lg font-bold uppercase" style={{ color: INK, letterSpacing: "0.02em" }}>{cust?.name}</p>
-                        {cust?.phone && <p className="text-xs opacity-60 mt-0.5" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{cust.phone}</p>}
+                        {cust?.phone && <p className="text-xs opacity-60 mt-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>{cust.phone}</p>}
                       </div>
                       <button onClick={() => setForm({ ...form, customerId: "", shippingAddress: null })} className="text-xs opacity-50 hover:opacity-100 underline shrink-0">Bỏ chọn</button>
                     </div>
@@ -11137,7 +11148,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                   const addr = form.shippingAddress;
                   const hasAddr = addr && (addr.addressDetail || addr.province || addr.ward);
                   return (
-                    <div className="mt-2.5 p-3 rounded-sm" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
+                    <div className="mt-2.5 p-3 rounded-md" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
                       <div className="flex items-center justify-between mb-1">
                         <p className="text-[10px] uppercase tracking-wider opacity-60">Địa chỉ giao hàng</p>
                         {customerAddressBook(cust).length > 1 && (
@@ -11157,7 +11168,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                 })()}
               </div>
 
-              <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+              <div className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
                 <p className="text-xs uppercase tracking-wider mb-3 opacity-60">Thông tin xuất hàng</p>
                 <div className="grid grid-cols-2 gap-3">
                   <Field label="Bán tại">
@@ -11173,7 +11184,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                   <div className="flex gap-2">
                     {CHANNELS.map((c) => (
                       <button key={c.id} type="button" onClick={() => setForm({ ...form, channel: c.id })}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-sm border"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm border"
                         style={{ borderColor: form.channel === c.id ? INK : LINE, background: form.channel === c.id ? INK : "transparent", color: form.channel === c.id ? "#fff" : INK }}>
                         <c.icon size={14} /> {c.label}
                       </button>
@@ -11192,7 +11203,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
               </div>
 
               {belowListPriceItems.length > 0 && (
-                <div className="p-3 rounded-sm flex items-start gap-2.5" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44` }}>
+                <div className="p-3 rounded-md flex items-start gap-2.5" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44` }}>
                   <AlertTriangle size={15} style={{ color: RUST }} className="mt-0.5 shrink-0" />
                   <p className="text-xs" style={{ color: INK }}>
                     <span className="font-medium" style={{ color: RUST }}>Có sản phẩm bán dưới giá niêm yết: </span>
@@ -11202,7 +11213,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                 </div>
               )}
 
-              <div className="p-4 rounded-sm" style={{ border: `2px solid ${INK}`, background: "#fff" }}>
+              <div className="p-4 rounded-md" style={{ border: `2px solid ${INK}`, background: "#fff" }}>
                 <p className="text-xs uppercase tracking-wider mb-2 font-medium" style={{ color: INK }}>Thông tin sản phẩm</p>
                 <ProductPicker products={products} onPick={addItem} />
                 <div className="mt-3">
@@ -11212,47 +11223,47 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
             </div>
 
             <div className="space-y-4 min-w-0">
-              <div className="p-4 rounded-sm space-y-2.5" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+              <div className="p-4 rounded-md space-y-2.5" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
                 <div className="text-sm">
-                  <div className="flex justify-between mb-1.5"><span className="opacity-60">Tổng tiền ({form.items?.length || 0} sản phẩm)</span><span style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{vnd(calc.subtotal)}</span></div>
+                  <div className="flex justify-between mb-1.5"><span className="opacity-60">Tổng tiền ({form.items?.length || 0} sản phẩm)</span><span style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(calc.subtotal)}</span></div>
                   <span className="opacity-60 block mb-1.5">VAT</span>
                   <div className="flex gap-1.5 flex-wrap">
                     {VAT_OPTIONS.map((v) => (
                       <button key={v.id} type="button" onClick={() => setForm({ ...form, vat: v.id })}
-                        className="px-2.5 py-1.5 rounded-sm text-xs border"
+                        className="px-2.5 py-1.5 rounded-md text-xs border"
                         style={{ borderColor: form.vat === v.id ? INK : LINE, background: form.vat === v.id ? INK : "transparent", color: form.vat === v.id ? "#fff" : INK }}>
                         {v.label}
                       </button>
                     ))}
                   </div>
                 </div>
-                <div className="flex justify-between text-sm opacity-60"><span>Trong đó VAT</span><span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{vnd(calc.vatTotal)}</span></div>
+                <div className="flex justify-between text-sm opacity-60"><span>Trong đó VAT</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(calc.vatTotal)}</span></div>
                 <div className="flex justify-between items-center text-sm">
                   <span className="opacity-60">Chiết khấu</span>
                   <div className="flex items-center gap-1.5">
-                    <div className="flex rounded-sm border overflow-hidden" style={{ borderColor: LINE }}>
+                    <div className="flex rounded-md border overflow-hidden" style={{ borderColor: LINE }}>
                       <button type="button" onClick={() => setForm({ ...form, discountType: "amount" })} className="px-2 py-1 text-[11px]" style={{ background: (form.discountType || "amount") === "amount" ? INK : "transparent", color: (form.discountType || "amount") === "amount" ? "#fff" : INK }}>đ</button>
                       <button type="button" onClick={() => setForm({ ...form, discountType: "percent" })} className="px-2 py-1 text-[11px]" style={{ background: form.discountType === "percent" ? INK : "transparent", color: form.discountType === "percent" ? "#fff" : INK }}>%</button>
                     </div>
-                    <MoneyInput value={form.orderDiscount} onChange={(v) => setForm({ ...form, orderDiscount: v })} className="w-20 border rounded-sm py-1 px-2 text-right text-sm" style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} />
+                    <MoneyInput value={form.orderDiscount} onChange={(v) => setForm({ ...form, orderDiscount: v })} className="w-20 border rounded-md py-1 px-2 text-right text-sm" style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} />
                   </div>
                 </div>
                 {calc.discountAmount > 0 && form.discountType === "percent" && (
-                  <div className="flex justify-between text-xs opacity-50"><span>Số tiền chiết khấu</span><span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{vnd(calc.discountAmount)}</span></div>
+                  <div className="flex justify-between text-xs opacity-50"><span>Số tiền chiết khấu</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(calc.discountAmount)}</span></div>
                 )}
                 <div className="flex justify-between items-center text-sm">
                   <span className="opacity-60">Phí giao hàng</span>
-                  <MoneyInput value={form.shippingFee} onChange={(v) => setForm({ ...form, shippingFee: v })} className="w-28 border rounded-sm py-1 px-2 text-right text-sm" style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} />
+                  <MoneyInput value={form.shippingFee} onChange={(v) => setForm({ ...form, shippingFee: v })} className="w-28 border rounded-md py-1 px-2 text-right text-sm" style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} />
                 </div>
-                <div className="flex justify-between text-sm font-semibold pt-2" style={{ borderTop: `1px dashed ${LINE}`, color: INK }}><span>Khách phải trả</span><span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{vnd(calc.payable)}</span></div>
+                <div className="flex justify-between text-sm font-semibold pt-2" style={{ borderTop: `1px dashed ${LINE}`, color: INK }}><span>Khách phải trả</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(calc.payable)}</span></div>
                 <div className="flex justify-between items-center text-sm">
                   <span className="opacity-60">Khách đã trả</span>
-                  <MoneyInput value={form.paidAmount} onChange={(v) => setForm({ ...form, paidAmount: v })} className="w-28 border rounded-sm py-1 px-2 text-right text-sm" style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} />
+                  <MoneyInput value={form.paidAmount} onChange={(v) => setForm({ ...form, paidAmount: v })} className="w-28 border rounded-md py-1 px-2 text-right text-sm" style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} />
                 </div>
-                <div className="flex justify-between text-sm font-semibold pt-2" style={{ borderTop: `1px dashed ${LINE}`, color: calc.remaining > 0 ? RUST : FOREST }}><span>Còn phải trả</span><span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{vnd(calc.remaining)}</span></div>
+                <div className="flex justify-between text-sm font-semibold pt-2" style={{ borderTop: `1px dashed ${LINE}`, color: calc.remaining > 0 ? RUST : FOREST }}><span>Còn phải trả</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(calc.remaining)}</span></div>
               </div>
 
-              <button onClick={submit} disabled={itemsInvalid()} className="w-full py-3 rounded-sm text-white text-sm font-medium disabled:opacity-40" style={{ background: INK }}>{editingOrderId ? "Lưu thay đổi" : "Tạo đơn hàng"}</button>
+              <button onClick={submit} disabled={itemsInvalid()} className="w-full py-3 rounded-md text-white text-sm font-medium disabled:opacity-40" style={{ background: INK }}>{editingOrderId ? "Lưu thay đổi" : "Tạo đơn hàng"}</button>
             </div>
           </div>
 
@@ -11274,7 +11285,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                   <button key={a.id} onClick={() => {
                     setForm({ ...form, shippingAddress: { recipientName: a.recipientName || cust.name, recipientPhone: a.recipientPhone || cust.phone, province: a.province, ward: a.ward, addressDetail: a.addressDetail } });
                     setPickingAddress(false);
-                  }} className="w-full text-left p-3 rounded-sm border hover:bg-black/5" style={{ borderColor: LINE }}>
+                  }} className="w-full text-left p-3 rounded-md border hover:bg-black/5" style={{ borderColor: LINE }}>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-sm font-medium" style={{ color: INK }}>{a.label || "Địa chỉ"}</span>
                       {a.isDefault && <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${BLUE}1A`, color: BLUE }}>Mặc định</span>}
@@ -11300,20 +11311,20 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
 
             <div className="flex items-center gap-2 mb-4 flex-wrap">
               <Stamp status={viewingOrder.status} />
-              <span className="text-xs opacity-50" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{formatDateTime(viewingOrder.createdAt)}</span>
+              <span className="text-xs opacity-50" style={{ fontFamily: "'Inter', sans-serif" }}>{formatDateTime(viewingOrder.createdAt)}</span>
               <span className="text-xs opacity-50 flex items-center gap-1"><ch.icon size={12} /> {ch.label}</span>
             </div>
 
             <div className="flex flex-wrap gap-1.5 mb-1.5">
               {viewingOrder.status === "cancelled" ? (
-                <span className="text-[11px] px-2.5 py-1.5 rounded-sm opacity-50" style={{ background: PAPER, color: RUST }}>Đơn đã huỷ — không thể đổi trạng thái giao hàng</span>
+                <span className="text-[11px] px-2.5 py-1.5 rounded-md opacity-50" style={{ background: PAPER, color: RUST }}>Đơn đã huỷ — không thể đổi trạng thái giao hàng</span>
               ) : STATUSES.filter((s) => s.id !== "cancelled").map((s) => {
                 const rank = { pending: 0, shipping: 1, delivered: 2, done: 3 };
                 const isPast = rank[s.id] < rank[viewingOrder.status];
                 if (s.id === "done") {
                   const blocked = orderCalc(viewingOrder).remaining > 0 || isPast;
                   return (
-                    <button key={s.id} onClick={() => setStatus(viewingOrder.id, s.id)} disabled={blocked} className="text-[11px] px-2.5 py-1.5 rounded-sm disabled:opacity-35"
+                    <button key={s.id} onClick={() => setStatus(viewingOrder.id, s.id)} disabled={blocked} className="text-[11px] px-2.5 py-1.5 rounded-md disabled:opacity-35"
                       style={{ background: s.id === viewingOrder.status ? `${s.color}22` : PAPER, color: s.color }}
                       title={isPast ? "Đã qua bước này — không thể quay lại" : blocked ? "Chỉ hoàn thành được khi khách đã thanh toán đủ" : undefined}>{s.label}</button>
                   );
@@ -11322,7 +11333,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                 const blockedByPaid = viewingOrder.paidAmount > 0;
                 const blocked = blockedByFlow || blockedByPaid || isPast;
                 return (
-                  <button key={s.id} onClick={() => setStatus(viewingOrder.id, s.id)} disabled={blocked} className="text-[11px] px-2.5 py-1.5 rounded-sm disabled:opacity-35"
+                  <button key={s.id} onClick={() => setStatus(viewingOrder.id, s.id)} disabled={blocked} className="text-[11px] px-2.5 py-1.5 rounded-md disabled:opacity-35"
                     style={{ background: s.id === viewingOrder.status ? `${s.color}22` : PAPER, color: s.color }}
                     title={isPast ? "Đã qua bước này — không thể quay lại" : blockedByPaid ? "Đơn đã ghi nhận thanh toán — chỉ có thể chuyển sang Hoàn thành" : blockedByFlow ? "Còn sản phẩm chờ hàng hoặc đơn chưa được duyệt" : undefined}>{s.label}</button>
                 );
@@ -11335,14 +11346,14 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
               <p className="text-[11px] mb-1" style={{ color: FOREST }}>✓ Đơn đã có thanh toán — Chờ xử lý/Đang giao/Đã giao đã khoá, dùng nút "Hoàn thành" khi đã thanh toán đủ.</p>
             )}
             {viewingOrder.approvalStatus === "pending" && (
-              <div className="flex items-center gap-2 mb-3 p-3 rounded-sm flex-wrap" style={{ background: `${RUST}0D`, border: `1px solid ${RUST}44` }}>
+              <div className="flex items-center gap-2 mb-3 p-3 rounded-md flex-wrap" style={{ background: `${RUST}0D`, border: `1px solid ${RUST}44` }}>
                 <span className="text-[11px]" style={{ color: RUST }}>⚠ Đơn cần duyệt{viewingOrder.approvalReason ? ` — Lý do: ${viewingOrder.approvalReason}` : ""} — đang chờ quản trị viên duyệt.</span>
                 {isAdmin && (
                   <div className="flex gap-2 ml-auto">
-                    <button onClick={() => rejectOrder(viewingOrder)} className="text-[11px] px-3 py-1.5 rounded-sm border flex items-center gap-1" style={{ borderColor: RUST, color: RUST }}>
+                    <button onClick={() => rejectOrder(viewingOrder)} className="text-[11px] px-3 py-1.5 rounded-md border flex items-center gap-1" style={{ borderColor: RUST, color: RUST }}>
                       <XCircle size={12} /> Không duyệt
                     </button>
-                    <button onClick={() => approveOrder(viewingOrder)} className="text-[11px] px-3 py-1.5 rounded-sm text-white flex items-center gap-1" style={{ background: FOREST }}>
+                    <button onClick={() => approveOrder(viewingOrder)} className="text-[11px] px-3 py-1.5 rounded-md text-white flex items-center gap-1" style={{ background: FOREST }}>
                       <ShieldCheck size={12} /> Duyệt đơn
                     </button>
                   </div>
@@ -11351,15 +11362,15 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
             )}
 
             {viewingOrder.cancelRequest && (
-              <div className="flex items-center gap-2 mb-3 p-3 rounded-sm flex-wrap" style={{ background: `${RUST}0D`, border: `1px solid ${RUST}44` }}>
+              <div className="flex items-center gap-2 mb-3 p-3 rounded-md flex-wrap" style={{ background: `${RUST}0D`, border: `1px solid ${RUST}44` }}>
                 <span className="text-[11px]" style={{ color: RUST }}>
                   ⚠ {viewingOrder.cancelRequest.requestedByName} ({ACCOUNT_ROLES.find((r) => r.id === viewingOrder.cancelRequest.requestedByRole)?.label}) yêu cầu huỷ đơn
                   {viewingOrder.cancelRequest.reason ? ` — Lý do: ${viewingOrder.cancelRequest.reason}` : ""}. Đang chờ quản trị viên duyệt.
                 </span>
                 {isAdmin && (
                   <div className="flex gap-2 ml-auto">
-                    <button onClick={() => rejectCancelRequest(viewingOrder)} className="text-[11px] px-3 py-1.5 rounded-sm border" style={{ borderColor: LINE, color: INK }}>Từ chối</button>
-                    <button onClick={() => approveCancelRequest(viewingOrder)} className="text-[11px] px-3 py-1.5 rounded-sm text-white flex items-center gap-1" style={{ background: RUST }}>
+                    <button onClick={() => rejectCancelRequest(viewingOrder)} className="text-[11px] px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>Từ chối</button>
+                    <button onClick={() => approveCancelRequest(viewingOrder)} className="text-[11px] px-3 py-1.5 rounded-md text-white flex items-center gap-1" style={{ background: RUST }}>
                       <XCircle size={12} /> Duyệt huỷ
                     </button>
                   </div>
@@ -11368,15 +11379,15 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
             )}
 
             {viewingOrder.returnRequest && (
-              <div className="flex items-center gap-2 mb-3 p-3 rounded-sm flex-wrap" style={{ background: `${BRASS}0D`, border: `1px solid ${BRASS}44` }}>
+              <div className="flex items-center gap-2 mb-3 p-3 rounded-md flex-wrap" style={{ background: `${BRASS}0D`, border: `1px solid ${BRASS}44` }}>
                 <span className="text-[11px]" style={{ color: BRASS }}>
                   ⚠ {viewingOrder.returnRequest.requestedByName} ({ACCOUNT_ROLES.find((r) => r.id === viewingOrder.returnRequest.requestedByRole)?.label}) yêu cầu {viewingOrder.returnRequest.type === "exchange" ? "đổi hàng" : "hoàn tiền"}
                   {viewingOrder.returnRequest.note ? ` — Lý do: ${viewingOrder.returnRequest.note}` : ""}. Đang chờ quản trị viên duyệt.
                 </span>
                 {isAdmin && (
                   <div className="flex gap-2 ml-auto">
-                    <button onClick={() => rejectReturnRequest(viewingOrder)} className="text-[11px] px-3 py-1.5 rounded-sm border" style={{ borderColor: LINE, color: INK }}>Từ chối</button>
-                    <button onClick={() => approveReturnRequest(viewingOrder)} className="text-[11px] px-3 py-1.5 rounded-sm text-white flex items-center gap-1" style={{ background: BRASS }}>
+                    <button onClick={() => rejectReturnRequest(viewingOrder)} className="text-[11px] px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>Từ chối</button>
+                    <button onClick={() => approveReturnRequest(viewingOrder)} className="text-[11px] px-3 py-1.5 rounded-md text-white flex items-center gap-1" style={{ background: BRASS }}>
                       <RotateCcw size={12} /> Duyệt đổi trả
                     </button>
                   </div>
@@ -11386,24 +11397,24 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
 
             <div className="flex flex-wrap gap-2 mb-4">
               {!isCtv && (
-                <button onClick={() => { setPrintDocType("invoice"); setPrintPaperSize(printSettings?.defaultPaperSize || "A4"); setPrintBlockedUrl(null); setPrintModalOpen(true); }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm border" style={{ borderColor: LINE, color: INK }}>
+                <button onClick={() => { setPrintDocType("invoice"); setPrintPaperSize(printSettings?.defaultPaperSize || "A4"); setPrintBlockedUrl(null); setPrintModalOpen(true); }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>
                   <Printer size={13} /> In đơn hàng
                 </button>
               )}
               {viewingOrder.status === "pending" && (
-                <button onClick={() => openEditOrder(viewingOrder)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm border" style={{ borderColor: BLUE, color: BLUE }}>
+                <button onClick={() => openEditOrder(viewingOrder)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: BLUE, color: BLUE }}>
                   <Pencil size={13} /> Sửa đơn hàng
                 </button>
               )}
               {!viewingOrder.returnRequest && viewingOrder.status !== "cancelled" && viewingOrder.approvalStatus !== "pending" && (
-                <button onClick={() => openReturn(viewingOrder)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm border" style={{ borderColor: BRASS, color: BRASS }}>
+                <button onClick={() => openReturn(viewingOrder)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: BRASS, color: BRASS }}>
                   <RotateCcw size={13} /> {isAdmin ? "Đổi trả hàng" : "Yêu cầu đổi trả hàng"}
                 </button>
               )}
             </div>
             {viewingOrder.status === "pending" && viewingOrder.paidAmount === 0 && (
               <div className="-mt-2 mb-4">
-                <button onClick={() => setCancelling(true)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm border" style={{ borderColor: RUST, color: RUST }}>
+                <button onClick={() => setCancelling(true)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: RUST, color: RUST }}>
                   <XCircle size={13} /> Huỷ đơn
                 </button>
               </div>
@@ -11414,13 +11425,13 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
 
 
             {!isCtv && viewingOrder.status !== "cancelled" && viewingOrder.approvalStatus !== "pending" && (
-              <div className="flex items-center gap-2 mb-4 p-3 rounded-sm flex-wrap" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
+              <div className="flex items-center gap-2 mb-4 p-3 rounded-md flex-wrap" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
                 <span className="text-xs opacity-60 shrink-0">Xuất hoá đơn:</span>
                 <button onClick={() => setInvoiceStatus(viewingOrder.id, "pending")} className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: viewingOrder.invoiceStatus === "pending" ? `${RUST}1A` : "transparent", color: RUST, border: `1px solid ${viewingOrder.invoiceStatus === "pending" ? RUST : LINE}` }}>Chờ xuất</button>
                 <button onClick={() => setInvoiceStatus(viewingOrder.id, "issued", viewingOrder.invoiceNo)} className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: viewingOrder.invoiceStatus === "issued" ? `${FOREST}1A` : "transparent", color: FOREST, border: `1px solid ${viewingOrder.invoiceStatus === "issued" ? FOREST : LINE}` }}>Đã xuất</button>
                 {viewingOrder.invoiceStatus === "issued" && (
                   <input defaultValue={viewingOrder.invoiceNo} onBlur={(e) => setInvoiceStatus(viewingOrder.id, "issued", e.target.value)} placeholder="Số hoá đơn"
-                    className="text-xs border rounded-sm py-1 px-2 flex-1 min-w-[120px]" style={{ borderColor: LINE }} />
+                    className="text-xs border rounded-md py-1 px-2 flex-1 min-w-[120px]" style={{ borderColor: LINE }} />
                 )}
               </div>
             )}
@@ -11432,7 +11443,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
             )}
 
             <p className="text-[10px] uppercase tracking-wider opacity-50 mb-0.5">Khách hàng</p>
-            <p className="text-base font-bold uppercase mb-1" style={{ color: INK, letterSpacing: "0.02em" }}>{cust?.name || "Khách lẻ"}</p>
+            <p className="text-base font-semibold mb-1" style={{ color: INK }}>{cust?.name || "Khách lẻ"}</p>
             {viewingOrder.shippingAddress && (viewingOrder.shippingAddress.addressDetail || viewingOrder.shippingAddress.province || viewingOrder.shippingAddress.ward) && (
               <p className="text-sm mb-1 flex items-start gap-1.5" style={{ color: INK, opacity: 0.8 }}>
                 <MapPin size={13} className="shrink-0 mt-0.5 opacity-50" />
@@ -11448,7 +11459,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
             <div className="my-3" style={{ borderTop: `1px dashed ${LINE}` }} />
 
             <p className="text-xs uppercase tracking-wider mb-2 opacity-60">Thông tin sản phẩm</p>
-            <div className="rounded-sm overflow-x-auto mb-4" style={{ border: `1px solid ${LINE}` }}>
+            <div className="rounded-md overflow-x-auto mb-4" style={{ border: `1px solid ${LINE}` }}>
               <table className="w-full text-sm" style={{ minWidth: isAdmin && viewingOrder.approvalStatus === "pending" ? 720 : 520 }}>
                 <thead><tr className="opacity-60" style={{ background: PAPER }}>
                   <th className="text-left py-2 px-2 text-xs uppercase tracking-wider whitespace-nowrap">Sản phẩm</th><th className="text-right py-2 px-2 text-xs uppercase tracking-wider whitespace-nowrap">SL</th><th className="text-right py-2 px-2 text-xs uppercase tracking-wider whitespace-nowrap">Đơn giá</th><th className="text-right py-2 px-2 text-xs uppercase tracking-wider whitespace-nowrap">Thành tiền</th>
@@ -11469,18 +11480,18 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                         <td className="py-2.5 px-2">
                           <span className="font-medium" style={{ color: INK }}>{p?.name || "?"}</span>
                           {returnedQty > 0 && <span className="ml-1.5 text-[10px] whitespace-nowrap" style={{ color: RUST }}>(đã trả {returnedQty})</span>}
-                          {!it.fulfilled && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider whitespace-nowrap" style={{ background: `${BRASS}1A`, color: BRASS }}>Chờ hàng</span>}
+                          {!it.fulfilled && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider whitespace-nowrap" style={{ background: `${BRASS}1A`, color: BRASS }}>Chờ hàng</span>}
                         </td>
-                        <td className="py-2.5 px-2 text-right whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{it.qty}</td>
-                        <td className="py-2.5 px-2 text-right whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{vnd(it.price)}</td>
-                        <td className="py-2.5 px-2 text-right font-semibold whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{vnd(orderLineTotal(it))}</td>
+                        <td className="py-2.5 px-2 text-right whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{it.qty}</td>
+                        <td className="py-2.5 px-2 text-right whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(it.price)}</td>
+                        <td className="py-2.5 px-2 text-right font-semibold whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(orderLineTotal(it))}</td>
                         {isAdmin && viewingOrder.approvalStatus === "pending" && (<>
-                          <td className="py-2.5 px-2 text-right whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK, opacity: 0.75 }}>{cost > 0 ? vnd(cost) : "—"}</td>
-                          <td className="py-2.5 px-2 text-right font-semibold whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: profitPct === null ? INK : profitPct >= 0 ? FOREST : RUST }}>
+                          <td className="py-2.5 px-2 text-right whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: INK, opacity: 0.75 }}>{cost > 0 ? vnd(cost) : "—"}</td>
+                          <td className="py-2.5 px-2 text-right font-semibold whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: profitPct === null ? INK : profitPct >= 0 ? FOREST : RUST }}>
                             {profitPct === null ? "—" : `${profitPct >= 0 ? "+" : ""}${profitPct.toFixed(1)}%`}
                           </td>
                         </>)}
-                        <td className="py-2.5 px-2 whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{it.series?.length ? it.series.join(", ") : "—"}</td>
+                        <td className="py-2.5 px-2 whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>{it.series?.length ? it.series.join(", ") : "—"}</td>
                       </tr>
                     );
                   })}
@@ -11489,7 +11500,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
             </div>
 
             {viewingOrder.items.some((it) => !it.fulfilled) && (
-              <div className="mb-4 p-4 rounded-sm" style={{ background: `${BRASS}0D`, border: `1px solid ${BRASS}44` }}>
+              <div className="mb-4 p-4 rounded-md" style={{ background: `${BRASS}0D`, border: `1px solid ${BRASS}44` }}>
                 <p className="text-sm font-medium mb-1" style={{ color: BRASS }}>Sản phẩm chờ hàng — xuất kho khi đã có hàng về</p>
                 <p className="text-xs opacity-60 mb-3">Đơn <b>chưa trừ kho</b> cho các sản phẩm này (không tính tồn âm). Với hàng có series: chọn đủ series. Với hàng không series: bấm xác nhận khi đã nhập hàng về — sau đó mới chuyển được sang "Đang giao".</p>
                 <div className="space-y-3">
@@ -11500,7 +11511,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                     const closing = p ? productStats(p).closingQty : 0;
                     const draft = pendingFulfillDraft[it.productId] || it.series || [];
                     return (
-                      <div key={it.productId} className="p-3 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+                      <div key={it.productId} className="p-3 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
                         <div className="flex items-center justify-between text-sm mb-2">
                           <span style={{ color: INK }} className="font-medium">{p?.name}</span>
                           <span className="text-xs opacity-50">cần {it.qty} · còn tồn hiện tại {hasSeries ? available.length : closing}</span>
@@ -11511,7 +11522,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                             <button
                               onClick={() => { fulfillPendingItem(viewingOrder, it.productId, draft); setPendingFulfillDraft((d) => { const n = { ...d }; delete n[it.productId]; return n; }); }}
                               disabled={draft.length !== it.qty}
-                              className="mt-2 text-xs px-3 py-1.5 rounded-sm text-white disabled:opacity-40" style={{ background: FOREST }}>
+                              className="mt-2 text-xs px-3 py-1.5 rounded-md text-white disabled:opacity-40" style={{ background: FOREST }}>
                               Xác nhận đã có hàng — xuất kho
                             </button>
                           </>
@@ -11520,7 +11531,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                             {it.qty > closing && <p className="text-[11px] mb-1.5" style={{ color: RUST }}>Tồn hiện tại ({closing}) chưa đủ {it.qty} — xuất kho ngay sẽ tạo tồn âm.</p>}
                             <button
                               onClick={() => fulfillPendingItem(viewingOrder, it.productId, [])}
-                              className="text-xs px-3 py-1.5 rounded-sm text-white" style={{ background: FOREST }}>
+                              className="text-xs px-3 py-1.5 rounded-md text-white" style={{ background: FOREST }}>
                               Xác nhận đã có hàng — xuất kho
                             </button>
                           </>
@@ -11539,13 +11550,13 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                   {viewingOrder.returns.map((r) => {
                     const rTotal = r.returnedItems.reduce((s, it) => s + returnLineTotal(it), 0);
                     return (
-                      <button key={r.id} onClick={() => setViewingReturnId(r.id)} className="w-full flex items-center justify-between px-4 py-3 rounded-sm text-left hover:brightness-95" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
+                      <button key={r.id} onClick={() => setViewingReturnId(r.id)} className="w-full flex items-center justify-between px-4 py-3 rounded-md text-left hover:brightness-95" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
                         <div>
-                          <span className="text-sm font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: BLUE }}>{r.code}</span>
+                          <span className="text-sm font-medium" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{r.code}</span>
                           <span className="ml-2 text-[11px] px-2 py-0.5 rounded-full" style={{ background: r.type === "exchange" ? `${FOREST}1A` : `${BRASS}1A`, color: r.type === "exchange" ? FOREST : BRASS }}>{r.type === "exchange" ? "Đổi hàng" : "Hoàn tiền"}</span>
                           <p className="text-xs opacity-50 mt-1">{formatDateTime(r.createdAt)}</p>
                         </div>
-                        <span className="text-sm font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{vnd(rTotal)}</span>
+                        <span className="text-sm font-medium" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(rTotal)}</span>
                       </button>
                     );
                   })}
@@ -11553,32 +11564,32 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
               </div>
             )}
 
-            <div className="p-4 rounded-sm space-y-2.5 mb-4" style={{ border: `1px solid ${LINE}`, background: PAPER }}>
-              <div className="flex justify-between text-sm"><span className="opacity-60">Tổng tiền</span><span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{vnd(c.subtotal)}</span></div>
-              <div className="flex justify-between text-sm opacity-60"><span>Trong đó VAT ({VAT_OPTIONS.find((v) => v.id === viewingOrder.vat)?.label})</span><span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{vnd(c.vatTotal)}</span></div>
-              <div className="flex justify-between text-sm"><span className="opacity-60">Chiết khấu{viewingOrder.discountType === "percent" ? ` (${viewingOrder.orderDiscount}%)` : ""}</span><span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{vnd(c.discountAmount)}</span></div>
-              <div className="flex justify-between text-sm"><span className="opacity-60">Phí giao hàng</span><span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{vnd(viewingOrder.shippingFee)}</span></div>
-              {c.returnedValue > 0 && <div className="flex justify-between text-sm"><span className="opacity-60">Giá trị hàng trả</span><span style={{ fontFamily: "'IBM Plex Mono', monospace", color: RUST }}>-{vnd(c.returnedValue)}</span></div>}
-              {c.exchangeValue > 0 && <div className="flex justify-between text-sm"><span className="opacity-60">Giá trị hàng đổi</span><span style={{ fontFamily: "'IBM Plex Mono', monospace", color: FOREST }}>+{vnd(c.exchangeValue)}</span></div>}
-              <div className="flex justify-between text-sm font-semibold pt-2" style={{ borderTop: `1px dashed ${LINE}`, color: INK }}><span>Khách phải trả</span><span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{vnd(c.payable)}</span></div>
-              <div className="flex justify-between text-sm"><span className="opacity-60">Khách đã trả</span><span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{vnd(viewingOrder.paidAmount)}</span></div>
+            <div className="p-4 rounded-md space-y-2.5 mb-4" style={{ border: `1px solid ${LINE}`, background: PAPER }}>
+              <div className="flex justify-between text-sm"><span className="opacity-60">Tổng tiền</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(c.subtotal)}</span></div>
+              <div className="flex justify-between text-sm opacity-60"><span>Trong đó VAT ({VAT_OPTIONS.find((v) => v.id === viewingOrder.vat)?.label})</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(c.vatTotal)}</span></div>
+              <div className="flex justify-between text-sm"><span className="opacity-60">Chiết khấu{viewingOrder.discountType === "percent" ? ` (${viewingOrder.orderDiscount}%)` : ""}</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(c.discountAmount)}</span></div>
+              <div className="flex justify-between text-sm"><span className="opacity-60">Phí giao hàng</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(viewingOrder.shippingFee)}</span></div>
+              {c.returnedValue > 0 && <div className="flex justify-between text-sm"><span className="opacity-60">Giá trị hàng trả</span><span style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>-{vnd(c.returnedValue)}</span></div>}
+              {c.exchangeValue > 0 && <div className="flex justify-between text-sm"><span className="opacity-60">Giá trị hàng đổi</span><span style={{ fontFamily: "'Inter', sans-serif", color: FOREST }}>+{vnd(c.exchangeValue)}</span></div>}
+              <div className="flex justify-between text-sm font-semibold pt-2" style={{ borderTop: `1px dashed ${LINE}`, color: INK }}><span>Khách phải trả</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(c.payable)}</span></div>
+              <div className="flex justify-between text-sm"><span className="opacity-60">Khách đã trả</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(viewingOrder.paidAmount)}</span></div>
               <div className="flex justify-between text-sm font-semibold pt-2" style={{ borderTop: `1px dashed ${LINE}`, color: c.remaining > 0 ? RUST : FOREST }}>
-                <span>{c.remaining >= 0 ? "Còn phải trả" : "Cần hoàn lại cho khách"}</span><span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{vnd(Math.abs(c.remaining))}</span>
+                <span>{c.remaining >= 0 ? "Còn phải trả" : "Cần hoàn lại cho khách"}</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(Math.abs(c.remaining))}</span>
               </div>
             </div>
 
             {viewingOrder.status !== "cancelled" && viewingOrder.approvalStatus !== "pending" && c.remaining > 0 && (
               <div className="flex gap-2">
                 <MoneyInput value={payInput === "" ? "" : Number(payInput)} onChange={(v) => setPayInput(v)} placeholder="Số tiền khách trả thêm"
-                  className="flex-1 border rounded-sm py-2 px-3 text-sm" style={{ borderColor: LINE }} />
-                <button onClick={addPayment} className="px-4 py-2 rounded-sm text-white text-sm" style={{ background: FOREST }}>Ghi nhận thanh toán</button>
+                  className="flex-1 border rounded-md py-2 px-3 text-sm" style={{ borderColor: LINE }} />
+                <button onClick={addPayment} className="px-4 py-2 rounded-md text-white text-sm" style={{ background: FOREST }}>Ghi nhận thanh toán</button>
               </div>
             )}
             {viewingOrder.status !== "cancelled" && viewingOrder.approvalStatus !== "pending" && c.remaining < 0 && (
               <div className="flex gap-2">
                 <MoneyInput value={refundInput === "" ? "" : Number(refundInput)} onChange={(v) => setRefundInput(v)} placeholder="Số tiền đã hoàn cho khách"
-                  className="flex-1 border rounded-sm py-2 px-3 text-sm" style={{ borderColor: LINE }} />
-                <button onClick={addRefund} className="px-4 py-2 rounded-sm text-white text-sm" style={{ background: FOREST }}>Ghi nhận hoàn tiền</button>
+                  className="flex-1 border rounded-md py-2 px-3 text-sm" style={{ borderColor: LINE }} />
+                <button onClick={addRefund} className="px-4 py-2 rounded-md text-white text-sm" style={{ background: FOREST }}>Ghi nhận hoàn tiền</button>
               </div>
             )}
           </Modal>
@@ -11591,11 +11602,11 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
           {!isAdmin && <p className="text-xs opacity-60 mb-3">Yêu cầu của bạn sẽ được gửi tới quản trị viên để duyệt trước khi tồn kho được điều chỉnh.</p>}
           <Field label="Hình thức">
             <div className="flex gap-2">
-              <button type="button" onClick={() => setReturnForm({ ...returnForm, type: "refund" })} className="px-3.5 py-1.5 rounded-sm text-sm border"
+              <button type="button" onClick={() => setReturnForm({ ...returnForm, type: "refund" })} className="px-3.5 py-1.5 rounded-md text-sm border"
                 style={{ borderColor: returnForm.type === "refund" ? INK : LINE, background: returnForm.type === "refund" ? INK : "transparent", color: returnForm.type === "refund" ? "#fff" : INK }}>
                 Hoàn tiền
               </button>
-              <button type="button" onClick={() => setReturnForm({ ...returnForm, type: "exchange" })} className="px-3.5 py-1.5 rounded-sm text-sm border"
+              <button type="button" onClick={() => setReturnForm({ ...returnForm, type: "exchange" })} className="px-3.5 py-1.5 rounded-md text-sm border"
                 style={{ borderColor: returnForm.type === "exchange" ? INK : LINE, background: returnForm.type === "exchange" ? INK : "transparent", color: returnForm.type === "exchange" ? "#fff" : INK }}>
                 Đổi hàng
               </button>
@@ -11612,7 +11623,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
               const allowedSeries = orig.series.filter((s) => !returnedSeriesOf(viewingOrder, orig.productId).includes(s));
               if (maxReturnable <= 0) return null;
               return (
-                <div key={orig.productId} className="p-3 rounded-sm" style={{ border: `1px solid ${LINE}` }}>
+                <div key={orig.productId} className="p-3 rounded-md" style={{ border: `1px solid ${LINE}` }}>
                   <div className="flex items-center justify-between text-sm mb-2">
                     <span style={{ color: INK }} className="font-medium">{p?.name}</span>
                     <span className="text-xs opacity-50">Đã mua {orig.qty}{already > 0 ? ` · đã trả ${already}` : ""} · tối đa {maxReturnable}</span>
@@ -11624,7 +11635,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                         const qty = Math.min(maxReturnable, Math.max(0, Number(e.target.value)));
                         updateReturnedItem(orig.productId, { qty, series: qty === 0 ? [] : it.series.slice(0, qty) });
                       }}
-                      className="w-20 border rounded-sm py-1.5 px-2 text-center" style={{ borderColor: LINE }} />
+                      className="w-20 border rounded-md py-1.5 px-2 text-center" style={{ borderColor: LINE }} />
                   </label>
                   {p?.hasSeries && it.qty > 0 && (
                     <div className="mt-2">
@@ -11636,7 +11647,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                             <button key={s} type="button" onClick={() => {
                               const newSeries = picked ? it.series.filter((x) => x !== s) : (it.series.length < it.qty ? [...it.series, s] : it.series);
                               updateReturnedItem(orig.productId, { series: newSeries });
-                            }} className="text-xs px-2 py-1 rounded-full border" style={{ borderColor: picked ? BLUE : LINE, background: picked ? `${BLUE}17` : "transparent", color: picked ? BLUE : INK, fontFamily: "'IBM Plex Mono', monospace" }}>
+                            }} className="text-xs px-2 py-1 rounded-full border" style={{ borderColor: picked ? BLUE : LINE, background: picked ? `${BLUE}17` : "transparent", color: picked ? BLUE : INK, fontFamily: "'Inter', sans-serif" }}>
                               {s}
                             </button>
                           );
@@ -11661,10 +11672,10 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
           )}
 
           <Field label="Ghi chú" hint="VD: lý do đổi trả">
-            <textarea rows={2} className="w-full border rounded-sm p-2 text-sm mt-1" style={{ borderColor: LINE }} value={returnForm.note} onChange={(e) => setReturnForm({ ...returnForm, note: e.target.value })} />
+            <textarea rows={2} className="w-full border rounded-md p-2 text-sm mt-1" style={{ borderColor: LINE }} value={returnForm.note} onChange={(e) => setReturnForm({ ...returnForm, note: e.target.value })} />
           </Field>
 
-          <button onClick={submitReturn} disabled={returnInvalid()} className="w-full py-2.5 rounded-sm text-white text-sm disabled:opacity-40 mt-2" style={{ background: INK }}>
+          <button onClick={submitReturn} disabled={returnInvalid()} className="w-full py-2.5 rounded-md text-white text-sm disabled:opacity-40 mt-2" style={{ background: INK }}>
             {isAdmin ? (returnForm.type === "exchange" ? "Tạo phiếu đổi hàng" : "Tạo phiếu hoàn tiền") : "Gửi yêu cầu đổi trả"}
           </button>
         </Modal>
@@ -11680,12 +11691,12 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
               <span className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: viewingReturn.type === "exchange" ? `${FOREST}1A` : `${BRASS}1A`, color: viewingReturn.type === "exchange" ? FOREST : BRASS }}>
                 {viewingReturn.type === "exchange" ? "Đổi hàng" : "Hoàn tiền"}
               </span>
-              <span className="text-xs opacity-50" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{formatDateTime(viewingReturn.createdAt)}</span>
+              <span className="text-xs opacity-50" style={{ fontFamily: "'Inter', sans-serif" }}>{formatDateTime(viewingReturn.createdAt)}</span>
               <span className="text-xs opacity-40">· thuộc đơn {viewingReturnOrder.code}</span>
             </div>
 
             <p className="text-xs uppercase tracking-wider mb-2 opacity-60">Sản phẩm trả lại</p>
-            <div className="rounded-sm overflow-x-auto mb-4" style={{ border: `1px solid ${LINE}` }}>
+            <div className="rounded-md overflow-x-auto mb-4" style={{ border: `1px solid ${LINE}` }}>
               <table className="w-full text-xs" style={{ minWidth: 380 }}>
                 <thead style={{ background: PAPER }}><tr className="opacity-60">
                   <th className="text-left py-2 px-2">Sản phẩm</th><th className="text-left py-2 px-2">SL</th><th className="text-right py-2 px-2">Giá</th><th className="text-left py-2 px-2">Series</th>
@@ -11697,8 +11708,8 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                       <tr key={i} style={{ borderTop: `1px dashed ${LINE}` }}>
                         <td className="py-1.5 px-2">{p?.name || "?"}</td>
                         <td className="py-1.5 px-2">{it.qty}</td>
-                        <td className="py-1.5 px-2 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{vnd(it.price)}</td>
-                        <td className="py-1.5 px-2" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{it.series?.length ? it.series.join(", ") : "—"}</td>
+                        <td className="py-1.5 px-2 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(it.price)}</td>
+                        <td className="py-1.5 px-2" style={{ fontFamily: "'Inter', sans-serif" }}>{it.series?.length ? it.series.join(", ") : "—"}</td>
                       </tr>
                     );
                   })}
@@ -11710,7 +11721,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
             {viewingReturn.type === "exchange" && viewingReturn.exchangeItems.length > 0 && (
               <>
                 <p className="text-xs uppercase tracking-wider mb-2 opacity-60">Sản phẩm đổi lấy</p>
-                <div className="rounded-sm overflow-x-auto mb-2" style={{ border: `1px solid ${LINE}` }}>
+                <div className="rounded-md overflow-x-auto mb-2" style={{ border: `1px solid ${LINE}` }}>
                   <table className="w-full text-xs" style={{ minWidth: 380 }}>
                     <thead style={{ background: PAPER }}><tr className="opacity-60">
                       <th className="text-left py-2 px-2">Sản phẩm</th><th className="text-left py-2 px-2">SL</th><th className="text-right py-2 px-2">Giá</th><th className="text-left py-2 px-2">Series</th>
@@ -11722,8 +11733,8 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                           <tr key={i} style={{ borderTop: `1px dashed ${LINE}` }}>
                             <td className="py-1.5 px-2">{p?.name || "?"}</td>
                             <td className="py-1.5 px-2">{it.qty}</td>
-                            <td className="py-1.5 px-2 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{vnd(it.price)}</td>
-                            <td className="py-1.5 px-2" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{it.series?.length ? it.series.join(", ") : "—"}</td>
+                            <td className="py-1.5 px-2 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(it.price)}</td>
+                            <td className="py-1.5 px-2" style={{ fontFamily: "'Inter', sans-serif" }}>{it.series?.length ? it.series.join(", ") : "—"}</td>
                           </tr>
                         );
                       })}
@@ -11735,7 +11746,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
             )}
 
             <Field label="Ghi chú">
-              <textarea rows={2} className="w-full border rounded-sm p-2 text-sm" style={{ borderColor: LINE }} defaultValue={viewingReturn.note} onBlur={(e) => saveReturnNote(e.target.value)} placeholder="Lý do đổi trả…" />
+              <textarea rows={2} className="w-full border rounded-md p-2 text-sm" style={{ borderColor: LINE }} defaultValue={viewingReturn.note} onBlur={(e) => saveReturnNote(e.target.value)} placeholder="Lý do đổi trả…" />
             </Field>
             <p className="text-xs opacity-40 mt-1">Số lượng/sản phẩm trong phiếu đã khoá vì đã cập nhật tồn kho — chỉ có thể sửa ghi chú.</p>
           </Modal>
@@ -11747,9 +11758,9 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
         <Modal title={`Huỷ đơn hàng ${viewingOrder.code}`} onClose={() => setCancelling(false)}>
           {!isAdmin && <p className="text-xs opacity-60 mb-3">Đơn sẽ bị huỷ ngay và tự động hoàn lại kho. Quản trị viên sẽ nhận được thông báo về việc này.</p>}
           <Field label="Lý do huỷ đơn">
-            <textarea rows={3} className="w-full border rounded-sm p-2 text-sm" style={{ borderColor: LINE }} value={cancelReasonInput} onChange={(e) => setCancelReasonInput(e.target.value)} placeholder="VD: khách đổi ý, hết hàng, đặt nhầm…" />
+            <textarea rows={3} className="w-full border rounded-md p-2 text-sm" style={{ borderColor: LINE }} value={cancelReasonInput} onChange={(e) => setCancelReasonInput(e.target.value)} placeholder="VD: khách đổi ý, hết hàng, đặt nhầm…" />
           </Field>
-          <button onClick={cancelOrder} className="w-full py-2.5 rounded-sm text-white text-sm mt-2" style={{ background: RUST }}>Xác nhận huỷ đơn</button>
+          <button onClick={cancelOrder} className="w-full py-2.5 rounded-md text-white text-sm mt-2" style={{ background: RUST }}>Xác nhận huỷ đơn</button>
         </Modal>
       )}
 
@@ -11763,7 +11774,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
               onKeyDown={(e) => { if (e.key === "Enter") confirmDeleteOrder(); }} autoFocus />
           </Field>
           {deletePasswordError && <p className="text-sm mb-2" style={{ color: RUST }}>{deletePasswordError}</p>}
-          <button onClick={confirmDeleteOrder} className="w-full py-2.5 rounded-sm text-white text-sm mt-2" style={{ background: RUST }}>Xác nhận xoá</button>
+          <button onClick={confirmDeleteOrder} className="w-full py-2.5 rounded-md text-white text-sm mt-2" style={{ background: RUST }}>Xác nhận xoá</button>
         </Modal>
       )}
 
@@ -11773,12 +11784,12 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
           <Field label="Loại chứng từ">
             <div className="grid grid-cols-2 gap-2">
               <button type="button" onClick={() => setPrintDocType("invoice")}
-                className="px-3 py-2 rounded-sm text-sm border text-center"
+                className="px-3 py-2 rounded-md text-sm border text-center"
                 style={{ borderColor: printDocType === "invoice" ? INK : LINE, background: printDocType === "invoice" ? INK : "transparent", color: printDocType === "invoice" ? "#fff" : INK }}>
                 Đơn hàng
               </button>
               <button type="button" onClick={() => { setPrintDocType("handover"); if (printPaperSize !== "A4" && printPaperSize !== "A5") setPrintPaperSize("A4"); }}
-                className="px-3 py-2 rounded-sm text-sm border text-center"
+                className="px-3 py-2 rounded-md text-sm border text-center"
                 style={{ borderColor: printDocType === "handover" ? INK : LINE, background: printDocType === "handover" ? INK : "transparent", color: printDocType === "handover" ? "#fff" : INK }}>
                 Biên bản bàn giao (BBBG)
               </button>
@@ -11789,7 +11800,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
             <div className="grid grid-cols-2 gap-2">
               {(printDocType === "handover" ? PAPER_SIZES.filter((p) => p.id === "A4" || p.id === "A5") : PAPER_SIZES).map((p) => (
                 <button key={p.id} type="button" onClick={() => setPrintPaperSize(p.id)}
-                  className="px-3 py-2 rounded-sm text-sm border text-center"
+                  className="px-3 py-2 rounded-md text-sm border text-center"
                   style={{ borderColor: printPaperSize === p.id ? INK : LINE, background: printPaperSize === p.id ? INK : "transparent", color: printPaperSize === p.id ? "#fff" : INK }}>
                   {p.label}
                 </button>
@@ -11815,7 +11826,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
           )}
 
           {printDocType === "invoice" && showPrintOptions && (
-            <div className="p-3 rounded-sm mb-3 space-y-1.5" style={{ background: PAPER }}>
+            <div className="p-3 rounded-md mb-3 space-y-1.5" style={{ background: PAPER }}>
               {[
                 ["showCompanyInfo", "Thông tin công ty (tên, địa chỉ, MST)"],
                 ["showBankAccount", "Số tài khoản ngân hàng"],
@@ -11834,12 +11845,12 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
             </div>
           )}
 
-          <button onClick={executePrint} className="w-full py-2.5 rounded-sm text-white text-sm flex items-center justify-center gap-1.5" style={{ background: INK }}>
+          <button onClick={executePrint} className="w-full py-2.5 rounded-md text-white text-sm flex items-center justify-center gap-1.5" style={{ background: INK }}>
             <Printer size={14} /> In ngay
           </button>
 
           {printBlockedUrl && (
-            <div className="mt-3 p-3 rounded-sm text-xs" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44`, color: INK }}>
+            <div className="mt-3 p-3 rounded-md text-xs" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44`, color: INK }}>
               <p className="mb-2">Trình duyệt đã chặn cửa sổ in tự động. Bấm vào liên kết bên dưới để mở hoá đơn, sau đó tự bấm in (Ctrl+P / biểu tượng in) trong tab mới đó:</p>
               <a href={printBlockedUrl} target="_blank" rel="noreferrer" className="underline font-medium" style={{ color: BLUE }}>Mở hoá đơn để in</a>
             </div>
@@ -11890,7 +11901,7 @@ function FilterSearchSelect({ options, value, onChange, placeholder, onFreeText,
           else if (e.key === "Escape" && open) { e.preventDefault(); e.stopPropagation(); setOpen(false); }
         }}
         placeholder={placeholder}
-        className="w-full border rounded-sm py-1.5 pl-2 pr-6 text-sm" style={{ borderColor: LINE }}
+        className="w-full border rounded-md py-1.5 pl-2 pr-6 text-sm" style={{ borderColor: LINE }}
       />
       {(selected || freeText) && !open && (
         <button type="button" onClick={clearAll} title="Bỏ chọn" className="absolute right-1.5 top-1/2 -translate-y-1/2 opacity-40 hover:opacity-100"><X size={12} /></button>
@@ -11899,7 +11910,7 @@ function FilterSearchSelect({ options, value, onChange, placeholder, onFreeText,
         <button type="button" onClick={() => setOpen(false)} title="Đóng" className="absolute right-1.5 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100" style={{ color: INK }}><X size={13} /></button>
       )}
       {open && (
-        <div className="absolute z-50 mt-1 w-full max-h-52 overflow-y-auto rounded-sm shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+        <div className="absolute z-50 mt-1 w-full max-h-52 overflow-y-auto rounded-md shadow-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           {(value || freeText) && (
             <button type="button" onClick={() => { clearAll(); setOpen(false); }} className="w-full text-left px-2.5 py-1.5 text-xs opacity-50 hover:bg-black/5" style={{ borderBottom: `1px dashed ${LINE}` }}>✕ Bỏ chọn</button>
           )}
@@ -11955,25 +11966,25 @@ function ActivityLog({ log, accounts }) {
       <div className="flex items-end gap-2 mb-5 flex-wrap">
         <label className="text-xs">
           <span className="block opacity-60 mb-1">Nhân sự</span>
-          <select value={filterUser} onChange={(e) => setFilterUser(e.target.value)} className="text-sm border rounded-sm py-1.5 px-2" style={{ borderColor: LINE }}>
+          <select value={filterUser} onChange={(e) => setFilterUser(e.target.value)} className="text-sm border rounded-md py-1.5 px-2" style={{ borderColor: LINE }}>
             <option value="">Tất cả nhân sự</option>
             {accounts.map((a) => <option key={a.id} value={a.id}>{a.fullName}</option>)}
           </select>
         </label>
         <label className="text-xs">
           <span className="block opacity-60 mb-1">Từ ngày</span>
-          <input type="date" value={filterFrom} onChange={(e) => setFilterFrom(e.target.value)} className="text-sm border rounded-sm py-1.5 px-2" style={{ borderColor: LINE }} />
+          <input type="date" value={filterFrom} onChange={(e) => setFilterFrom(e.target.value)} className="text-sm border rounded-md py-1.5 px-2" style={{ borderColor: LINE }} />
         </label>
         <label className="text-xs">
           <span className="block opacity-60 mb-1">Đến ngày</span>
-          <input type="date" value={filterTo} onChange={(e) => setFilterTo(e.target.value)} className="text-sm border rounded-sm py-1.5 px-2" style={{ borderColor: LINE }} />
+          <input type="date" value={filterTo} onChange={(e) => setFilterTo(e.target.value)} className="text-sm border rounded-md py-1.5 px-2" style={{ borderColor: LINE }} />
         </label>
         <label className="text-xs flex-1" style={{ minWidth: 200 }}>
           <span className="block opacity-60 mb-1">Tìm trong hoạt động/chi tiết</span>
-          <input value={filterText} onChange={(e) => setFilterText(e.target.value)} placeholder="VD: xoá, đăng web, HI034…" className="w-full text-sm border rounded-sm py-1.5 px-2" style={{ borderColor: LINE }} />
+          <input value={filterText} onChange={(e) => setFilterText(e.target.value)} placeholder="VD: xoá, đăng web, HI034…" className="w-full text-sm border rounded-md py-1.5 px-2" style={{ borderColor: LINE }} />
         </label>
       </div>
-      <div className="rounded-sm overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "70vh" }}>
+      <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "70vh" }}>
         <table className="w-full text-sm" style={{ minWidth: 640 }}>
           <thead className="sticky top-0" style={{ zIndex: 2 }}>
             <tr style={{ borderBottom: `2px solid ${INK}` }}>
@@ -11985,7 +11996,7 @@ function ActivityLog({ log, accounts }) {
           <tbody>
             {filtered.map((l) => (
               <tr key={l.id} style={{ borderBottom: `1px dashed ${LINE}` }}>
-                <td className="px-3 py-2.5 whitespace-nowrap opacity-70" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{formatDateTime(l.at)}</td>
+                <td className="px-3 py-2.5 whitespace-nowrap opacity-70" style={{ fontFamily: "'Inter', sans-serif" }}>{formatDateTime(l.at)}</td>
                 <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: INK }}>{l.userName}</td>
                 <td className="px-3 py-2.5 whitespace-nowrap">
                   <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: l.role === "admin" ? `${BRASS}1A` : l.role === "ctv" ? `${RUST}1A` : `${BLUE}15`, color: l.role === "admin" ? BRASS : l.role === "ctv" ? RUST : BLUE }}>
@@ -12088,7 +12099,7 @@ function Plans({ plans, setPlans, orders, purchaseOrders, products, employeeName
         </button>
       </div>
 
-      <div className="p-5 rounded-sm mb-6" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+      <div className="p-5 rounded-md mb-6" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
         <h4 className="text-sm uppercase tracking-wider mb-4" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>
           Xu hướng 6 tháng — mục tiêu so với thực tế {sub === "sales" ? "(toàn công ty, theo giá trị)" : sub === "purchase" ? "(theo giá trị)" : sub === "stock" ? "(số mã mới thêm vào kho)" : "(số mã đăng lên website)"}
         </h4>
@@ -12111,7 +12122,7 @@ function Plans({ plans, setPlans, orders, purchaseOrders, products, employeeName
             : sub === "stock" ? "chỉ tiêu thêm mã sản phẩm mới vào kho mỗi ngày, có thể giao riêng cho từng nhân viên"
             : "chỉ tiêu đăng sản phẩm lên website mỗi ngày, có thể giao riêng cho từng nhân viên"}
         </p>
-        <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-sm text-sm text-white shrink-0" style={{ background: INK }}><Plus size={15} /> Thêm kế hoạch</button>
+        <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white shrink-0" style={{ background: INK }}><Plus size={15} /> Thêm kế hoạch</button>
       </div>
 
       {list.length === 0 ? (
@@ -12127,11 +12138,11 @@ function Plans({ plans, setPlans, orders, purchaseOrders, products, employeeName
             const statusLabel = over ? "Đạt mục tiêu" : pct >= 80 ? "Sắp đạt" : isCurrentMonth ? "Đang trong tháng" : "Chưa đạt";
             const statusColor = over ? FOREST : pct >= 80 ? BRASS : isCurrentMonth ? BLUE : RUST;
             return (
-              <div key={p.id} className="p-4 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+              <div key={p.id} className="p-4 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-medium" style={{ color: INK, fontFamily: "'Fraunces', serif" }}>{monthLabel(p.month)}</p>
+                      <p className="font-medium" style={{ color: INK, fontFamily: "'Inter', sans-serif", fontWeight: 700 }}>{monthLabel(p.month)}</p>
                       {p.sellerName ? (
                         <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: `${PURPLE}1A`, color: PURPLE }}>{p.sellerName}</span>
                       ) : (
@@ -12143,14 +12154,14 @@ function Plans({ plans, setPlans, orders, purchaseOrders, products, employeeName
                     {p.note && <p className="text-xs opacity-50 mt-1">{p.note}</p>}
                   </div>
                   <div className="flex gap-1.5 shrink-0">
-                    <button onClick={() => openEdit(p)} className="p-1.5 rounded-sm hover:bg-black/5 opacity-60"><Pencil size={14} /></button>
-                    <button onClick={() => remove(p.id)} className="p-1.5 rounded-sm hover:bg-black/5 opacity-60" style={{ color: RUST }}><Trash2 size={14} /></button>
+                    <button onClick={() => openEdit(p)} className="p-1.5 rounded-md hover:bg-black/5 opacity-60"><Pencil size={14} /></button>
+                    <button onClick={() => remove(p.id)} className="p-1.5 rounded-md hover:bg-black/5 opacity-60" style={{ color: RUST }}><Trash2 size={14} /></button>
                   </div>
                 </div>
                 <div className="flex justify-between items-baseline text-sm mb-1.5">
-                  <span className="opacity-60">Thực tế: <span style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK, fontWeight: 600 }}>{fmtValue(p, actual)}</span></span>
+                  <span className="opacity-60">Thực tế: <span style={{ fontFamily: "'Inter', sans-serif", color: INK, fontWeight: 600 }}>{fmtValue(p, actual)}</span></span>
                   <span className="opacity-60">
-                    Mục tiêu: <span style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>
+                    Mục tiêu: <span style={{ fontFamily: "'Inter', sans-serif", color: INK }}>
                       {p.metric === "qty_per_day" ? `${p.targetValue.toLocaleString("vi-VN")} mã/ngày (~${effTarget.toLocaleString("vi-VN")} mã/tháng)` : fmtValue(p, p.targetValue)}
                     </span>
                   </span>
@@ -12176,7 +12187,7 @@ function Plans({ plans, setPlans, orders, purchaseOrders, products, employeeName
               <div className="grid grid-cols-3 gap-2">
                 {[["company", "Toàn công ty"], ["category", "Theo nhóm hàng"], ["product", "Theo sản phẩm"]].map(([id, label]) => (
                   <button key={id} type="button" onClick={() => setForm({ ...form, scope: id })}
-                    className="px-2 py-2 rounded-sm text-xs border text-center"
+                    className="px-2 py-2 rounded-md text-xs border text-center"
                     style={{ borderColor: form.scope === id ? INK : LINE, background: form.scope === id ? INK : "transparent", color: form.scope === id ? "#fff" : INK }}>
                     {label}
                   </button>
@@ -12202,11 +12213,11 @@ function Plans({ plans, setPlans, orders, purchaseOrders, products, employeeName
           {!isDailyType && (
             <Field label="Đơn vị mục tiêu">
               <div className="grid grid-cols-2 gap-2">
-                <button type="button" onClick={() => setForm({ ...form, metric: "revenue" })} className="px-3 py-2 rounded-sm text-sm border text-center"
+                <button type="button" onClick={() => setForm({ ...form, metric: "revenue" })} className="px-3 py-2 rounded-md text-sm border text-center"
                   style={{ borderColor: (form.metric || "revenue") === "revenue" ? INK : LINE, background: (form.metric || "revenue") === "revenue" ? INK : "transparent", color: (form.metric || "revenue") === "revenue" ? "#fff" : INK }}>
                   Giá trị (đ)
                 </button>
-                <button type="button" onClick={() => setForm({ ...form, metric: "qty" })} className="px-3 py-2 rounded-sm text-sm border text-center"
+                <button type="button" onClick={() => setForm({ ...form, metric: "qty" })} className="px-3 py-2 rounded-md text-sm border text-center"
                   style={{ borderColor: form.metric === "qty" ? INK : LINE, background: form.metric === "qty" ? INK : "transparent", color: form.metric === "qty" ? "#fff" : INK }}>
                   Số lượng (SL)
                 </button>
@@ -12219,7 +12230,7 @@ function Plans({ plans, setPlans, orders, purchaseOrders, products, employeeName
             hint={isDailyType ? "VD: 3 = mỗi ngày thêm 3 mã sản phẩm mới. Hệ thống tự nhân số ngày trong tháng để ra chỉ tiêu cả tháng." : undefined}
           >
             {isDailyType || form.metric === "qty" ? (
-              <input type="number" min={0} className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} value={form.targetValue} onChange={(e) => setForm({ ...form, targetValue: e.target.value })} />
+              <input type="number" min={0} className={inputCls} style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} value={form.targetValue} onChange={(e) => setForm({ ...form, targetValue: e.target.value })} />
             ) : (
               <MoneyInput className={inputCls} style={{ borderColor: LINE }} value={form.targetValue} onChange={(v) => setForm({ ...form, targetValue: v })} />
             )}
@@ -12233,7 +12244,7 @@ function Plans({ plans, setPlans, orders, purchaseOrders, products, employeeName
             </Field>
           )}
           <Field label="Ghi chú"><input className={inputCls} style={{ borderColor: LINE }} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} /></Field>
-          <button onClick={submit} className="w-full py-2.5 rounded-sm text-white text-sm mt-2" style={{ background: INK }}>{editing.id ? "Lưu thay đổi" : "Thêm kế hoạch"}</button>
+          <button onClick={submit} className="w-full py-2.5 rounded-md text-white text-sm mt-2" style={{ background: INK }}>{editing.id ? "Lưu thay đổi" : "Thêm kế hoạch"}</button>
         </Modal>
       )}
     </div>
@@ -12313,17 +12324,17 @@ function SalesRanking({ orders, products, accounts }) {
         <div className="flex items-end gap-3 flex-wrap">
           <label className="text-xs">
             <span className="block opacity-60 mb-1">Từ ngày</span>
-            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
+            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
           </label>
           <label className="text-xs">
             <span className="block opacity-60 mb-1">Đến ngày</span>
-            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
+            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
           </label>
           {(dateFrom || dateTo) && (
             <button onClick={() => { setDateFrom(""); setDateTo(""); }} className="text-xs underline opacity-60 hover:opacity-100 mb-1.5">Xoá lọc</button>
           )}
         </div>
-        <button onClick={exportRanking} className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-sm border shrink-0" style={{ borderColor: FOREST, color: FOREST }}>
+        <button onClick={exportRanking} className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md border shrink-0" style={{ borderColor: FOREST, color: FOREST }}>
           <FileSpreadsheet size={13} /> Xuất Excel xếp hạng
         </button>
       </div>
@@ -12331,7 +12342,7 @@ function SalesRanking({ orders, products, accounts }) {
       {ranking.length === 0 ? (
         <p className="text-sm opacity-50 text-center py-14">Chưa có dữ liệu bán hàng trong khoảng thời gian này.</p>
       ) : (
-        <div className="p-5 sm:p-6 rounded-sm mb-6" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+        <div className="p-5 sm:p-6 rounded-md mb-6" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           <h4 className="text-sm uppercase tracking-wider mb-5" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Biểu đồ xếp hạng doanh số</h4>
           <ResponsiveContainer width="100%" height={Math.max(220, ranking.length * 42)}>
             <BarChart data={ranking} layout="vertical" margin={{ left: 8, right: 24 }}>
@@ -12352,7 +12363,7 @@ function SalesRanking({ orders, products, accounts }) {
       {ranking.length === 0 ? null : (
         <div className="space-y-3">
           {ranking.map((r, i) => (
-            <div key={r.name} className="p-4 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+            <div key={r.name} className="p-4 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
               <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold shrink-0"
@@ -12361,18 +12372,18 @@ function SalesRanking({ orders, products, accounts }) {
                     <p className="font-medium truncate" style={{ color: INK }}>{r.name}</p>
                     <p className="text-[11px] opacity-50">{ACCOUNT_ROLES.find((x) => x.id === r.role)?.label || "—"} · {r.orderCount} đơn · {r.qty} sản phẩm</p>
                     <div className="flex gap-1.5 mt-1 flex-wrap">
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: r.cancelRate >= 15 ? `${RUST}1A` : PAPER, color: r.cancelRate >= 15 ? RUST : INK, opacity: r.cancelRate >= 15 ? 1 : 0.6 }}>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider" style={{ background: r.cancelRate >= 15 ? `${RUST}1A` : PAPER, color: r.cancelRate >= 15 ? RUST : INK, opacity: r.cancelRate >= 15 ? 1 : 0.6 }}>
                         Huỷ {r.cancelRate.toFixed(1)}% ({r.cancelledCount}/{r.totalOrderCount})
                       </span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: r.returnRate >= 15 ? `${RUST}1A` : PAPER, color: r.returnRate >= 15 ? RUST : INK, opacity: r.returnRate >= 15 ? 1 : 0.6 }}>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-md uppercase tracking-wider" style={{ background: r.returnRate >= 15 ? `${RUST}1A` : PAPER, color: r.returnRate >= 15 ? RUST : INK, opacity: r.returnRate >= 15 ? 1 : 0.6 }}>
                         Đổi trả {r.returnRate.toFixed(1)}% ({r.returnedCount}/{r.totalOrderCount})
                       </span>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-sm font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{vnd(r.revenue)}</span>
-                  <button onClick={() => setDetailSeller(r)} className="text-xs px-2.5 py-1 rounded-sm border" style={{ borderColor: LINE, color: INK }}>Chi tiết</button>
+                  <span className="text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(r.revenue)}</span>
+                  <button onClick={() => setDetailSeller(r)} className="text-xs px-2.5 py-1 rounded-md border" style={{ borderColor: LINE, color: INK }}>Chi tiết</button>
                 </div>
               </div>
               <div className="h-2 rounded-full" style={{ background: PAPER }}>
@@ -12387,11 +12398,11 @@ function SalesRanking({ orders, products, accounts }) {
         <Modal title={`Chi tiết bán hàng — ${detailSeller.name}`} onClose={() => setDetailSeller(null)} size="lg">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <p className="text-sm opacity-60">{detailSeller.orderCount} đơn · {detailSeller.qty} sản phẩm · Doanh số {vnd(detailSeller.revenue)}</p>
-            <button onClick={() => exportSellerDetail(detailSeller)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm border" style={{ borderColor: FOREST, color: FOREST }}>
+            <button onClick={() => exportSellerDetail(detailSeller)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: FOREST, color: FOREST }}>
               <FileSpreadsheet size={12} /> Xuất Excel
             </button>
           </div>
-          <div className="rounded-sm overflow-auto" style={{ border: `1px solid ${LINE}`, maxHeight: "50vh" }}>
+          <div className="rounded-md overflow-auto" style={{ border: `1px solid ${LINE}`, maxHeight: "50vh" }}>
             <table className="w-full text-sm">
               <thead style={{ background: PAPER, position: "sticky", top: 0 }}><tr>
                 <th className="text-left px-3 py-2 text-xs uppercase tracking-wider opacity-60">Sản phẩm</th>
@@ -12401,9 +12412,9 @@ function SalesRanking({ orders, products, accounts }) {
               <tbody>
                 {productBreakdown(detailSeller.orders).map((p, i) => (
                   <tr key={i} style={{ borderTop: `1px dashed ${LINE}` }}>
-                    <td className="px-3 py-2" style={{ color: INK }}>{p.name}<span className="opacity-40 text-xs" style={{ fontFamily: "'IBM Plex Mono', monospace" }}> · {p.code}</span></td>
-                    <td className="px-3 py-2 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.qty}</td>
-                    <td className="px-3 py-2 text-right font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{vnd(p.revenue)}</td>
+                    <td className="px-3 py-2" style={{ color: INK }}>{p.name}<span className="opacity-40 text-xs" style={{ fontFamily: "'Inter', sans-serif" }}> · {p.code}</span></td>
+                    <td className="px-3 py-2 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>{p.qty}</td>
+                    <td className="px-3 py-2 text-right font-medium" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(p.revenue)}</td>
                   </tr>
                 ))}
                 {productBreakdown(detailSeller.orders).length === 0 && <tr><td colSpan={3} className="text-center py-8 opacity-40">Chưa có sản phẩm nào.</td></tr>}
@@ -12455,17 +12466,17 @@ function DebtOverviewReport({ orders, customers }) {
   }, [orders]);
 
   return (
-    <div className="p-5 sm:p-6 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+    <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
       <h4 className="text-sm uppercase tracking-wider mb-5" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Công nợ phải thu</h4>
 
       <div className="grid grid-cols-2 gap-4 mb-6 max-w-md">
         <div>
           <p className="text-xs opacity-50 mb-1">Tổng công nợ phải thu</p>
-          <p className="text-xl font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: RUST }}>{vnd(totalDebt)}</p>
+          <p className="text-xl font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>{vnd(totalDebt)}</p>
         </div>
         <div>
           <p className="text-xs opacity-50 mb-1">Số khách đang nợ</p>
-          <p className="text-xl font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{debtByCustomer.length}</p>
+          <p className="text-xl font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{debtByCustomer.length}</p>
         </div>
       </div>
 
@@ -12594,7 +12605,7 @@ function CashFlowReport({ orders, purchaseOrders, customers }) {
   ];
 
   return (
-    <div className="p-5 sm:p-6 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+    <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
       <h4 className="text-sm uppercase tracking-wider mb-1" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Dòng tiền thu / chi</h4>
       <p className="text-xs opacity-50 mb-4">Thu = tiền khách thanh toán (trừ hoàn tiền) · Chi = đơn nhập hàng đã thanh toán cho NCC · Bấm vào 1 cột để xem từng khoản</p>
 
@@ -12611,11 +12622,11 @@ function CashFlowReport({ orders, purchaseOrders, customers }) {
         <div className="flex items-end gap-3 flex-wrap mb-4">
           <label className="text-xs">
             <span className="block opacity-60 mb-1">Từ ngày</span>
-            <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
+            <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
           </label>
           <label className="text-xs">
             <span className="block opacity-60 mb-1">Đến ngày</span>
-            <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
+            <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
           </label>
         </div>
       )}
@@ -12623,15 +12634,15 @@ function CashFlowReport({ orders, purchaseOrders, customers }) {
       <div className="grid grid-cols-3 gap-4 mb-5 max-w-lg">
         <div>
           <p className="text-xs opacity-50 mb-1">Tổng thu</p>
-          <p className="text-lg font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: FOREST }}>{vnd(totalIn)}</p>
+          <p className="text-lg font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: FOREST }}>{vnd(totalIn)}</p>
         </div>
         <div>
           <p className="text-xs opacity-50 mb-1">Tổng chi</p>
-          <p className="text-lg font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: RUST }}>{vnd(totalOut)}</p>
+          <p className="text-lg font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>{vnd(totalOut)}</p>
         </div>
         <div>
           <p className="text-xs opacity-50 mb-1">Chênh lệch</p>
-          <p className="text-lg font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: totalIn - totalOut >= 0 ? FOREST : RUST }}>{vnd(totalIn - totalOut)}</p>
+          <p className="text-lg font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: totalIn - totalOut >= 0 ? FOREST : RUST }}>{vnd(totalIn - totalOut)}</p>
         </div>
       </div>
 
@@ -12664,7 +12675,7 @@ function CashFlowReport({ orders, purchaseOrders, customers }) {
                 {detail.thu.map((r, i) => (
                   <div key={i} className="flex items-center justify-between text-sm py-1.5" style={{ borderBottom: `1px dashed ${LINE}` }}>
                     <span style={{ color: INK }}>{r.code} · {r.name}{r.isReturn ? " (hoàn tiền)" : ""}</span>
-                    <span className="font-medium whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: r.amount < 0 ? RUST : FOREST }}>{vnd(r.amount)}</span>
+                    <span className="font-medium whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: r.amount < 0 ? RUST : FOREST }}>{vnd(r.amount)}</span>
                   </div>
                 ))}
               </div>
@@ -12677,7 +12688,7 @@ function CashFlowReport({ orders, purchaseOrders, customers }) {
                 {detail.chi.map((r, i) => (
                   <div key={i} className="flex items-center justify-between text-sm py-1.5" style={{ borderBottom: `1px dashed ${LINE}` }}>
                     <span style={{ color: INK }}>{r.code} · {r.name}</span>
-                    <span className="font-medium whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: RUST }}>{vnd(r.amount)}</span>
+                    <span className="font-medium whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>{vnd(r.amount)}</span>
                   </div>
                 ))}
               </div>
@@ -12714,7 +12725,7 @@ function DeadStockReport({ products }) {
   const totalDeadValue = deadStock.reduce((s, p) => s + p.value, 0);
 
   return (
-    <div className="p-5 sm:p-6 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+    <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
       <div className="flex items-center justify-between mb-1 flex-wrap gap-3">
         <h4 className="text-sm uppercase tracking-wider" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Hàng tồn kho lâu ngày ("hàng chết")</h4>
         <div className="flex gap-1.5">
@@ -12730,11 +12741,11 @@ function DeadStockReport({ products }) {
 
       <div className="mb-5">
         <p className="text-xs opacity-50 mb-1">Tổng vốn bị đọng</p>
-        <p className="text-xl font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: RUST }}>{vnd(totalDeadValue)}</p>
+        <p className="text-xl font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>{vnd(totalDeadValue)}</p>
       </div>
 
       {deadStock.length === 0 ? <p className="text-sm opacity-50 text-center py-10">Không có sản phẩm nào tồn đọng quá lâu — tốt!</p> : (
-        <div className="rounded-sm overflow-x-auto" style={{ border: `1px solid ${LINE}`, maxHeight: 360, overflowY: "auto" }}>
+        <div className="rounded-md overflow-x-auto" style={{ border: `1px solid ${LINE}`, maxHeight: 360, overflowY: "auto" }}>
           <table className="w-full text-sm" style={{ minWidth: 560 }}>
             <thead><tr style={{ background: PAPER, position: "sticky", top: 0 }}>
               <th className="text-left py-2 px-2 text-xs uppercase tracking-wider opacity-60">Sản phẩm</th>
@@ -12746,9 +12757,9 @@ function DeadStockReport({ products }) {
             <tbody>
               {deadStock.map((p, i) => (
                 <tr key={i} style={{ borderTop: `1px dashed ${LINE}` }}>
-                  <td className="py-2 px-2">{p.name}<span className="opacity-40 text-xs" style={{ fontFamily: "'IBM Plex Mono', monospace" }}> · {p.code}</span></td>
-                  <td className="py-2 px-2 text-right whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.qty}</td>
-                  <td className="py-2 px-2 text-right font-medium whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: RUST }}>{vnd(p.value)}</td>
+                  <td className="py-2 px-2">{p.name}<span className="opacity-40 text-xs" style={{ fontFamily: "'Inter', sans-serif" }}> · {p.code}</span></td>
+                  <td className="py-2 px-2 text-right whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>{p.qty}</td>
+                  <td className="py-2 px-2 text-right font-medium whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>{vnd(p.value)}</td>
                   <td className="py-2 px-2 whitespace-nowrap">{p.lastSold ? new Date(p.lastSold).toLocaleDateString("vi-VN") : "Chưa từng bán"}</td>
                   <td className="py-2 px-2 whitespace-nowrap">{p.daysSince !== null ? `${p.daysSince} ngày` : "—"}</td>
                 </tr>
@@ -12802,7 +12813,7 @@ function InventoryTurnoverReport({ orders, products }) {
   const PERIODS = [{ d: 30, label: "30 ngày" }, { d: 90, label: "90 ngày" }, { d: 180, label: "180 ngày" }, { d: 365, label: "1 năm" }];
 
   return (
-    <div className="p-5 sm:p-6 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+    <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
       <div className="flex items-center justify-between mb-1 flex-wrap gap-3">
         <h4 className="text-sm uppercase tracking-wider" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Vòng quay tồn kho</h4>
         <div className="flex gap-1.5">
@@ -12837,9 +12848,9 @@ function InventoryTurnoverReport({ orders, products }) {
       {slowestProducts.length === 0 ? <p className="text-sm opacity-50 text-center py-8">Chưa đủ dữ liệu bán hàng trong khoảng thời gian này.</p> : (
         <div className="space-y-1.5">
           {slowestProducts.map((p, i) => (
-            <div key={i} className="flex items-center justify-between text-sm p-2 rounded-sm" style={{ border: `1px dashed ${LINE}` }}>
+            <div key={i} className="flex items-center justify-between text-sm p-2 rounded-md" style={{ border: `1px dashed ${LINE}` }}>
               <span className="truncate" style={{ color: INK }}>{i + 1}. {p.name}</span>
-              <span className="whitespace-nowrap font-medium ml-2" style={{ fontFamily: "'IBM Plex Mono', monospace", color: RUST }}>~{Math.round(p.turnoverDays)} ngày</span>
+              <span className="whitespace-nowrap font-medium ml-2" style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>~{Math.round(p.turnoverDays)} ngày</span>
             </div>
           ))}
         </div>
@@ -12889,18 +12900,18 @@ function WarrantyRateReport({ orders, products, warrantyTickets }) {
   const totalConfirmedDefect = data.reduce((s, d) => s + d.confirmed, 0);
 
   return (
-    <div className="p-5 sm:p-6 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+    <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
       <h4 className="text-sm uppercase tracking-wider mb-1" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Sản phẩm có tỷ lệ bảo hành cao</h4>
       <p className="text-xs opacity-50 mb-5">Tỷ lệ = tổng số lượng yêu cầu bảo hành ÷ số lượng đã bán × 100% · giúp phát hiện sản phẩm lỗi/chất lượng kém qua tỷ lệ khách mang bảo hành</p>
 
       <div className="grid grid-cols-2 gap-4 mb-6 max-w-md">
         <div>
           <p className="text-xs opacity-50 mb-1">Tổng lượt bảo hành</p>
-          <p className="text-xl font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: RUST }}>{totalWarranty}</p>
+          <p className="text-xl font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>{totalWarranty}</p>
         </div>
         <div>
           <p className="text-xs opacity-50 mb-1">Đã xác nhận lỗi thực sự</p>
-          <p className="text-xl font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{totalConfirmedDefect}</p>
+          <p className="text-xl font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{totalConfirmedDefect}</p>
         </div>
       </div>
 
@@ -12923,7 +12934,7 @@ function WarrantyRateReport({ orders, products, warrantyTickets }) {
 
       <p className="text-xs uppercase tracking-wider mb-3 mt-7 opacity-60">Chi tiết đầy đủ theo sản phẩm</p>
       {data.length === 0 ? <p className="text-sm opacity-50 text-center py-10">Chưa có phiếu bảo hành nào.</p> : (
-        <div className="rounded-sm overflow-x-auto" style={{ border: `1px solid ${LINE}` }}>
+        <div className="rounded-md overflow-x-auto" style={{ border: `1px solid ${LINE}` }}>
           <table className="w-full text-sm" style={{ minWidth: 720 }}>
             <thead><tr style={{ background: PAPER }}>
               <th className="text-left py-2 px-2 text-xs uppercase tracking-wider opacity-60">Sản phẩm</th>
@@ -12938,14 +12949,14 @@ function WarrantyRateReport({ orders, products, warrantyTickets }) {
             <tbody>
               {data.map((d) => (
                 <tr key={d.productId} style={{ borderTop: `1px dashed ${LINE}` }}>
-                  <td className="py-2 px-2">{d.name}<span className="opacity-40 text-xs" style={{ fontFamily: "'IBM Plex Mono', monospace" }}> · {d.code}</span></td>
-                  <td className="py-2 px-2 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{d.sold}</td>
-                  <td className="py-2 px-2 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{d.total}</td>
-                  <td className="py-2 px-2 text-right font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: d.rate === null ? INK : d.rate >= 10 ? RUST : d.rate >= 3 ? BRASS : FOREST }}>{d.rate === null ? "—" : `${d.rate.toFixed(1)}%`}</td>
-                  <td className="py-2 px-2 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace", color: BRASS }}>{d.pending || "—"}</td>
-                  <td className="py-2 px-2 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace", color: RUST }}>{d.confirmed || "—"}</td>
-                  <td className="py-2 px-2 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace", opacity: 0.6 }}>{d.rejected || "—"}</td>
-                  <td className="py-2 px-2 text-right whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{d.refundTotal > 0 ? vnd(d.refundTotal) : "—"}</td>
+                  <td className="py-2 px-2">{d.name}<span className="opacity-40 text-xs" style={{ fontFamily: "'Inter', sans-serif" }}> · {d.code}</span></td>
+                  <td className="py-2 px-2 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>{d.sold}</td>
+                  <td className="py-2 px-2 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>{d.total}</td>
+                  <td className="py-2 px-2 text-right font-medium" style={{ fontFamily: "'Inter', sans-serif", color: d.rate === null ? INK : d.rate >= 10 ? RUST : d.rate >= 3 ? BRASS : FOREST }}>{d.rate === null ? "—" : `${d.rate.toFixed(1)}%`}</td>
+                  <td className="py-2 px-2 text-right" style={{ fontFamily: "'Inter', sans-serif", color: BRASS }}>{d.pending || "—"}</td>
+                  <td className="py-2 px-2 text-right" style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>{d.confirmed || "—"}</td>
+                  <td className="py-2 px-2 text-right" style={{ fontFamily: "'Inter', sans-serif", opacity: 0.6 }}>{d.rejected || "—"}</td>
+                  <td className="py-2 px-2 text-right whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>{d.refundTotal > 0 ? vnd(d.refundTotal) : "—"}</td>
                 </tr>
               ))}
             </tbody>
@@ -12979,7 +12990,7 @@ function TopReturnedProductsReport({ orders, products }) {
   }, [orders, products]);
 
   return (
-    <div className="p-5 sm:p-6 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+    <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
       <h4 className="text-sm uppercase tracking-wider mb-1" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Sản phẩm bị trả lại nhiều nhất</h4>
       <p className="text-xs opacity-50 mb-5">Giúp phát hiện sản phẩm lỗi/chất lượng kém · Tỷ lệ trả = số lượng trả ÷ số lượng đã bán</p>
       {data.length === 0 ? <p className="text-sm opacity-50 text-center py-14">Chưa có dữ liệu đổi/trả hàng.</p> : (
@@ -12997,7 +13008,7 @@ function TopReturnedProductsReport({ orders, products }) {
           </ResponsiveContainer>
           <div className="space-y-1.5 pt-1">
             {data.map((p, i) => (
-              <div key={i} className="flex items-center justify-between text-sm p-2.5 rounded-sm" style={{ border: `1px dashed ${LINE}` }}>
+              <div key={i} className="flex items-center justify-between text-sm p-2.5 rounded-md" style={{ border: `1px dashed ${LINE}` }}>
                 <span className="truncate" style={{ color: INK }}>{i + 1}. {p.name}</span>
                 <span className="opacity-70 whitespace-nowrap ml-2 text-xs">{p.qty} trả / {p.sold} bán{p.rate !== null ? ` · ${p.rate.toFixed(1)}%` : ""}</span>
               </div>
@@ -13047,7 +13058,7 @@ function ProfitMarginReport({ orders, products }) {
   const topByRevenue = [...productData].sort((a, b) => b.revenue - a.revenue).slice(0, 12);
 
   return (
-    <div className="p-5 sm:p-6 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+    <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
       <div className="flex items-center justify-between mb-1 flex-wrap gap-3">
         <h4 className="text-sm uppercase tracking-wider" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Biên lợi nhuận gộp theo nhóm hàng / sản phẩm</h4>
         <div className="flex gap-1.5">
@@ -13080,7 +13091,7 @@ function ProfitMarginReport({ orders, products }) {
 
       <p className="text-xs uppercase tracking-wider mb-3 mt-7 opacity-60">Sản phẩm bán chạy nhất — kèm biên lợi nhuận</p>
       {topByRevenue.length === 0 ? <p className="text-sm opacity-50 text-center py-8">Chưa có dữ liệu bán hàng trong khoảng thời gian này.</p> : (
-        <div className="rounded-sm overflow-x-auto" style={{ border: `1px solid ${LINE}` }}>
+        <div className="rounded-md overflow-x-auto" style={{ border: `1px solid ${LINE}` }}>
           <table className="w-full text-sm" style={{ minWidth: 520 }}>
             <thead><tr style={{ background: PAPER }}>
               <th className="text-left py-2 px-2 text-xs uppercase tracking-wider opacity-60">Sản phẩm</th>
@@ -13092,9 +13103,9 @@ function ProfitMarginReport({ orders, products }) {
               {topByRevenue.map((p, i) => (
                 <tr key={i} style={{ borderTop: `1px dashed ${LINE}` }}>
                   <td className="py-2 px-2">{p.name}</td>
-                  <td className="py-2 px-2 text-right whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{vnd(p.revenue)}</td>
-                  <td className="py-2 px-2 text-right whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: p.profit >= 0 ? FOREST : RUST }}>{vnd(p.profit)}</td>
-                  <td className="py-2 px-2 text-right font-medium whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: p.margin >= 20 ? FOREST : p.margin >= 8 ? BRASS : RUST }}>{p.margin.toFixed(1)}%</td>
+                  <td className="py-2 px-2 text-right whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(p.revenue)}</td>
+                  <td className="py-2 px-2 text-right whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: p.profit >= 0 ? FOREST : RUST }}>{vnd(p.profit)}</td>
+                  <td className="py-2 px-2 text-right font-medium whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: p.margin >= 20 ? FOREST : p.margin >= 8 ? BRASS : RUST }}>{p.margin.toFixed(1)}%</td>
                 </tr>
               ))}
             </tbody>
@@ -13152,7 +13163,7 @@ function PeriodComparisonReport({ orders, products }) {
   ];
 
   return (
-    <div className="p-5 sm:p-6 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+    <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
       <div className="flex items-center justify-between mb-1 flex-wrap gap-3">
         <h4 className="text-sm uppercase tracking-wider" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>So sánh kỳ này với kỳ trước</h4>
         <div className="flex gap-1.5">
@@ -13171,11 +13182,11 @@ function PeriodComparisonReport({ orders, products }) {
           const change = pct(m.cur, m.prev);
           const up = change >= 0;
           return (
-            <div key={m.key} className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}` }}>
+            <div key={m.key} className="p-4 rounded-md" style={{ border: `1px solid ${LINE}` }}>
               <p className="text-xs opacity-50 mb-1.5">{m.label}</p>
-              <p className="text-xl font-semibold mb-1" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{m.format(m.cur)}</p>
+              <p className="text-xl font-semibold mb-1" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{m.format(m.cur)}</p>
               <div className="flex items-center gap-1.5 text-xs">
-                <span className="px-1.5 py-0.5 rounded-sm font-medium" style={{ background: up ? `${FOREST}1A` : `${RUST}1A`, color: up ? FOREST : RUST }}>
+                <span className="px-1.5 py-0.5 rounded-md font-medium" style={{ background: up ? `${FOREST}1A` : `${RUST}1A`, color: up ? FOREST : RUST }}>
                   {up ? "▲" : "▼"} {Math.abs(change).toFixed(1)}%
                 </span>
                 <span className="opacity-50">so với {m.format(m.prev)}</span>
@@ -13267,7 +13278,7 @@ function BusinessActivityChart({ orders, products, onBarClick }) {
   };
 
   return (
-    <div className="p-5 sm:p-6 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+    <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
       <h4 className="text-sm uppercase tracking-wider mb-1" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Hoạt động kinh doanh</h4>
       <p className="text-xs opacity-50 mb-4">Ghi nhận theo ngày giao hàng thành công · Lợi nhuận gộp = (giá bán − giá nhập) × số lượng{onBarClick && " · Bấm vào 1 cột để xem đơn hàng đúng khoảng đó"}</p>
 
@@ -13284,11 +13295,11 @@ function BusinessActivityChart({ orders, products, onBarClick }) {
         <div className="flex items-end gap-3 flex-wrap mb-4">
           <label className="text-xs">
             <span className="block opacity-60 mb-1">Từ ngày</span>
-            <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
+            <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
           </label>
           <label className="text-xs">
             <span className="block opacity-60 mb-1">Đến ngày</span>
-            <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
+            <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
           </label>
         </div>
       )}
@@ -13296,15 +13307,15 @@ function BusinessActivityChart({ orders, products, onBarClick }) {
       <div className="grid grid-cols-3 gap-4 mb-5 max-w-2xl">
         <div>
           <p className="text-xs opacity-50 mb-1">Tổng doanh thu</p>
-          <p className="text-xl font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: BLUE }}>{vnd(totalRevenue)}</p>
+          <p className="text-xl font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{vnd(totalRevenue)}</p>
         </div>
         <div>
           <p className="text-xs opacity-50 mb-1">Tổng lợi nhuận gộp</p>
-          <p className="text-xl font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#C97F0F" }}>{vnd(totalProfit)}</p>
+          <p className="text-xl font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: "#C97F0F" }}>{vnd(totalProfit)}</p>
         </div>
         <div>
           <p className="text-xs opacity-50 mb-1">Tỉ lệ lợi nhuận</p>
-          <p className="text-xl font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: FOREST }}>{totalRevenue > 0 ? `${((totalProfit / totalRevenue) * 100).toFixed(1)}%` : "—"}</p>
+          <p className="text-xl font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: FOREST }}>{totalRevenue > 0 ? `${((totalProfit / totalRevenue) * 100).toFixed(1)}%` : "—"}</p>
         </div>
       </div>
 
@@ -13439,7 +13450,7 @@ function ProductAdditionReport({ products, employeeNames, onBarClick }) {
   };
 
   return (
-    <div className="p-5 sm:p-6 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+    <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
       <h4 className="text-sm uppercase tracking-wider mb-1" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Tốc độ thêm mã sản phẩm mới</h4>
       <p className="text-xs opacity-50 mb-4">Số mã sản phẩm mới thêm vào kho và số mã đăng lên website — so với chỉ tiêu ở màn "Kế hoạch"{onBarClick && " · Bấm vào 1 cột để xem đúng sản phẩm khoảng đó"}</p>
 
@@ -13455,11 +13466,11 @@ function ProductAdditionReport({ products, employeeNames, onBarClick }) {
       <div className="grid grid-cols-2 gap-4 mb-5 max-w-md">
         <div>
           <p className="text-xs opacity-50 mb-1">Tổng mã mới vào kho</p>
-          <p className="text-xl font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: FOREST }}>{totalAdded.toLocaleString("vi-VN")}</p>
+          <p className="text-xl font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: FOREST }}>{totalAdded.toLocaleString("vi-VN")}</p>
         </div>
         <div>
           <p className="text-xs opacity-50 mb-1">Tổng mã đăng web</p>
-          <p className="text-xl font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: BLUE }}>{totalPublished.toLocaleString("vi-VN")}</p>
+          <p className="text-xl font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{totalPublished.toLocaleString("vi-VN")}</p>
         </div>
       </div>
 
@@ -13596,7 +13607,7 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
       <TopReturnedProductsReport orders={orders} products={products} />
       <WarrantyRateReport orders={orders} products={products} warrantyTickets={warrantyTickets} />
 
-      <div className="p-5 sm:p-6 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+      <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
         <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
           <h4 className="text-sm uppercase tracking-wider" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Top 10 sản phẩm bán chạy nhất</h4>
           <div className="flex gap-1.5">
@@ -13615,7 +13626,7 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
                 <div key={i}>
                   <div className="flex justify-between items-baseline gap-3 mb-1">
                     <span className="text-sm truncate" style={{ color: INK }}>{i + 1}. {p.name}</span>
-                    <span className="text-sm font-medium whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{p.qty} SP</span>
+                    <span className="text-sm font-medium whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{p.qty} SP</span>
                   </div>
                   <div className="h-1.5 rounded-full" style={{ background: PAPER }}>
                     <div className="h-1.5 rounded-full" style={{ width: `${(p.qty / top10Products[0].qty) * 100}%`, background: chartColors[i % chartColors.length] }} />
@@ -13635,7 +13646,7 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
         )}
       </div>
 
-      <div className="p-5 sm:p-6 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+      <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
         <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
           <h4 className="text-sm uppercase tracking-wider" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Top sản phẩm bán chạy theo nhóm hàng</h4>
           <div className="flex gap-1.5">
@@ -13652,7 +13663,7 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
         ) : (
           <>
             <div className="mb-5">
-              <select value={topCategory} onChange={(e) => setTopCategory(e.target.value)} className="border rounded-sm py-1.5 px-2.5 text-sm" style={{ borderColor: LINE }}>
+              <select value={topCategory} onChange={(e) => setTopCategory(e.target.value)} className="border rounded-md py-1.5 px-2.5 text-sm" style={{ borderColor: LINE }}>
                 {productCategoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
@@ -13663,7 +13674,7 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
                     <div key={i}>
                       <div className="flex justify-between items-baseline gap-3 mb-1">
                         <span className="text-sm truncate" style={{ color: INK }}>{i + 1}. {p.name}</span>
-                        <span className="text-sm font-medium whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{p.qty} SP</span>
+                        <span className="text-sm font-medium whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{p.qty} SP</span>
                       </div>
                       <div className="h-1.5 rounded-full" style={{ background: PAPER }}>
                         <div className="h-1.5 rounded-full" style={{ width: `${(p.qty / topCategoryProducts[0].qty) * 100}%`, background: chartColors[i % chartColors.length] }} />
@@ -13686,7 +13697,7 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
-        <div className="p-5 sm:p-6 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+        <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           <h4 className="text-sm uppercase tracking-wider mb-5" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Doanh số xuất theo nhóm hàng</h4>
           {byCategory.length === 0 ? <p className="text-sm opacity-50 text-center py-14">Chưa có dữ liệu.</p> : (
             <ResponsiveContainer width="100%" height={240}>
@@ -13703,7 +13714,7 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
           )}
         </div>
 
-        <div className="p-5 sm:p-6 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+        <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           <h4 className="text-sm uppercase tracking-wider mb-5" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Khách hàng chi tiêu nhiều nhất</h4>
           {topCustomers.length === 0 ? <p className="text-sm opacity-50 text-center py-14">Chưa có dữ liệu bán hàng.</p> : (
             <div className="space-y-3.5 pt-1">
@@ -13711,7 +13722,7 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
                 <div key={i}>
                   <div className="flex justify-between items-baseline mb-1">
                     <span className="text-sm" style={{ color: INK }}>{i + 1}. {c.name}</span>
-                    <span className="text-sm font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{vnd(c.total)}</span>
+                    <span className="text-sm font-medium" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(c.total)}</span>
                   </div>
                   <div className="h-1.5 rounded-full" style={{ background: PAPER }}>
                     <div className="h-1.5 rounded-full" style={{ width: `${(c.total / topCustomers[0].total) * 100}%`, background: chartColors[i % chartColors.length] }} />
@@ -13723,14 +13734,14 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
         </div>
       </div>
 
-      <div className="p-5 sm:p-6 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+      <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
         <h4 className="text-sm uppercase tracking-wider mb-5" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Doanh thu mảng dịch vụ</h4>
         {serviceRevenue.items.length === 0 ? (
           <p className="text-sm opacity-50 text-center py-14">Chưa có doanh thu dịch vụ nào — chuyển phiếu sửa chữa/IT Helpdesk đã hoàn thành thành đơn bán để tính vào đây.</p>
         ) : (
           <>
             <div className="flex items-baseline gap-2 mb-5">
-              <span className="text-2xl font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{vnd(serviceRevenue.total)}</span>
+              <span className="text-2xl font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(serviceRevenue.total)}</span>
               <span className="text-sm opacity-50">· {serviceRevenue.count} lượt dịch vụ</span>
             </div>
             <div className="space-y-3.5">
@@ -13738,7 +13749,7 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
                 <div key={i}>
                   <div className="flex justify-between items-baseline gap-3 mb-1">
                     <span className="text-sm truncate" style={{ color: INK }}>{s.name}</span>
-                    <span className="text-sm font-medium whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>{vnd(s.total)} · {s.count} lượt</span>
+                    <span className="text-sm font-medium whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>{vnd(s.total)} · {s.count} lượt</span>
                   </div>
                   <div className="h-1.5 rounded-full" style={{ background: PAPER }}>
                     <div className="h-1.5 rounded-full" style={{ width: `${(s.total / serviceRevenue.items[0].total) * 100}%`, background: chartColors[i % chartColors.length] }} />
@@ -13750,7 +13761,7 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
         )}
       </div>
 
-      <div className="p-5 sm:p-6 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+      <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
         <h4 className="text-sm uppercase tracking-wider mb-5" style={{ color: INK, opacity: 0.55, letterSpacing: "0.06em" }}>Giá trị tồn kho theo mã VT</h4>
         {stockAging.length === 0 ? <p className="text-sm opacity-50 text-center py-8">Chưa có sản phẩm.</p> : (
           <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
@@ -13760,11 +13771,11 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
                 <div key={s.code}>
                   <div className="flex justify-between items-baseline mb-1 gap-3">
                     <span className="text-sm truncate" style={{ color: INK }}>
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", color: BLUE }}>{s.code}</span>
+                      <span style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{s.code}</span>
                       <span className="opacity-50"> · {s.name}</span>
                       <span className="opacity-40"> ({s.ton} đvt)</span>
                     </span>
-                    <span className="text-sm font-medium shrink-0" style={{ fontFamily: "'IBM Plex Mono', monospace", color: negative ? RUST : INK }}>{vnd(s.giaTri)}</span>
+                    <span className="text-sm font-medium shrink-0" style={{ fontFamily: "'Inter', sans-serif", color: negative ? RUST : INK }}>{vnd(s.giaTri)}</span>
                   </div>
                   <div className="h-1.5 rounded-full" style={{ background: PAPER }}>
                     <div className="h-1.5 rounded-full" style={{ width: `${Math.min(100, (Math.abs(s.giaTri) / maxStockValue) * 100)}%`, background: negative ? RUST : FOREST }} />
@@ -13818,10 +13829,10 @@ function LoginScreen({ accounts, onLogin, onUpgradeHash }) {
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-5" style={{ background: PAPER, fontFamily: "'Inter', sans-serif" }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');`}</style>
-      <div className="w-full max-w-md p-9 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+      <div className="w-full max-w-md p-9 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
         <div className="flex items-center gap-3.5 mb-2">
           <HiliLogo size={52} />
-          <h1 style={{ fontFamily: "'Fraunces', serif", color: INK }} className="text-2xl leading-tight">Quản lý bán hàng Hilitek</h1>
+          <h1 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, color: INK }} className="text-2xl leading-tight">Quản lý bán hàng Hilitek</h1>
         </div>
         <p className="text-xs uppercase tracking-widest mb-8" style={{ color: BRASS }}>đăng nhập để tiếp tục</p>
 
@@ -13839,7 +13850,7 @@ function LoginScreen({ accounts, onLogin, onUpgradeHash }) {
           </div>
         </Field>
         {error && <p className="text-sm mb-3" style={{ color: RUST }}>{error}</p>}
-        <button type="button" onClick={submit} disabled={busy} className="w-full py-2.5 rounded-sm text-white text-sm mt-2 disabled:opacity-60" style={{ background: INK }}>{busy ? "Đang kiểm tra…" : "Đăng nhập"}</button>
+        <button type="button" onClick={submit} disabled={busy} className="w-full py-2.5 rounded-md text-white text-sm mt-2 disabled:opacity-60" style={{ background: INK }}>{busy ? "Đang kiểm tra…" : "Đăng nhập"}</button>
       </div>
     </div>
   );
@@ -13922,10 +13933,10 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
         <p className="text-sm opacity-60">
           Chỉ tài khoản chủ <Crown size={12} className="inline -mt-0.5" style={{ color: BRASS }} /> mới thấy và chỉnh sửa mục này. QTV đổi mật khẩu của mình tại "Tài khoản cá nhân".
         </p>
-        <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-sm text-sm text-white shrink-0" style={{ background: INK }}><Plus size={15} /> Thêm tài khoản</button>
+        <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white shrink-0" style={{ background: INK }}><Plus size={15} /> Thêm tài khoản</button>
       </div>
 
-      <div className="rounded-sm overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "65vh" }}>
+      <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "65vh" }}>
         <table className="w-full text-sm" style={{ minWidth: 620 }}>
           <thead>
             <tr style={{ borderBottom: `2px solid ${INK}` }}>
@@ -13940,7 +13951,7 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
               const locked = !canManage(a);
               return (
                 <tr key={a.id} style={{ borderBottom: `1px dashed ${LINE}` }} className="hover:bg-black/[0.02]">
-                  <td className="px-3 py-3 font-medium whitespace-nowrap" style={{ fontFamily: "'IBM Plex Mono', monospace", color: INK }}>
+                  <td className="px-3 py-3 font-medium whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: INK }}>
                     {a.isOwner && <Crown size={13} className="inline mr-1 -mt-0.5" style={{ color: BRASS }} />}
                     {a.username}{a.id === currentUser.id && <span className="ml-1.5 text-[10px] opacity-40">(bạn)</span>}
                   </td>
@@ -13968,14 +13979,14 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
                                 }
                               }}
                               title="Đăng xuất từ xa"
-                              className="p-1.5 rounded-sm hover:bg-black/5 opacity-60"
+                              className="p-1.5 rounded-md hover:bg-black/5 opacity-60"
                               style={{ color: BRASS }}
                             >
                               <LogOut size={14} />
                             </button>
                           )}
-                          <button onClick={() => openEdit(a)} className="p-1.5 rounded-sm hover:bg-black/5 opacity-60"><Pencil size={14} /></button>
-                          <button onClick={() => remove(a)} disabled={a.isOwner} className="p-1.5 rounded-sm hover:bg-black/5 opacity-60 disabled:opacity-20" style={{ color: RUST }}><Trash2 size={14} /></button>
+                          <button onClick={() => openEdit(a)} className="p-1.5 rounded-md hover:bg-black/5 opacity-60"><Pencil size={14} /></button>
+                          <button onClick={() => remove(a)} disabled={a.isOwner} className="p-1.5 rounded-md hover:bg-black/5 opacity-60 disabled:opacity-20" style={{ color: RUST }}><Trash2 size={14} /></button>
                         </>
                       )}
                     </div>
@@ -13988,7 +13999,7 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
       </div>
 
       {onDownloadBackup && (
-        <div className="mt-8 p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+        <div className="mt-8 p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
           <p className="text-sm font-medium mb-1" style={{ color: INK }}>Sao lưu &amp; phục hồi</p>
           <p className="text-xs opacity-70 mb-3">
             Tải toàn bộ dữ liệu (sản phẩm, đơn hàng, khách hàng, kho, tài khoản, cấu hình web…) xuống máy dưới dạng 1 file <code>.json</code> —
@@ -13996,10 +14007,10 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
             (bảng <code>app_state_backups</code>) nếu đã bật Vercel Cron.
           </p>
           <div className="flex flex-wrap gap-2">
-            <button onClick={onDownloadBackup} className="text-xs px-3.5 py-2 rounded-sm text-white" style={{ background: INK }}>
+            <button onClick={onDownloadBackup} className="text-xs px-3.5 py-2 rounded-md text-white" style={{ background: INK }}>
               Tải bản sao lưu (.json)
             </button>
-            <button onClick={pickRestore} disabled={restoreBusy} className="text-xs px-3.5 py-2 rounded-sm border disabled:opacity-50" style={{ borderColor: RUST, color: RUST }}>
+            <button onClick={pickRestore} disabled={restoreBusy} className="text-xs px-3.5 py-2 rounded-md border disabled:opacity-50" style={{ borderColor: RUST, color: RUST }}>
               {restoreBusy ? "Đang phục hồi…" : "Phục hồi từ file .json…"}
             </button>
             <input ref={fileRef} type="file" accept="application/json,.json" onChange={onRestoreFile} className="hidden" />
@@ -14009,10 +14020,10 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
       )}
 
       {onResetTestData && (
-        <div className="mt-6 p-4 rounded-sm" style={{ border: `1px solid ${RUST}44`, background: `${RUST}08` }}>
+        <div className="mt-6 p-4 rounded-md" style={{ border: `1px solid ${RUST}44`, background: `${RUST}08` }}>
           <p className="text-sm font-medium mb-1" style={{ color: RUST }}>Vùng nguy hiểm</p>
           <p className="text-xs opacity-70 mb-3">Xoá toàn bộ đơn bán, đơn nhập hàng và báo giá đang có (thường dùng để dọn sạch dữ liệu test trước khi đưa vào dùng thật). Sản phẩm, khách hàng, nhà cung cấp, kế hoạch và tài khoản sẽ được giữ nguyên.</p>
-          <button onClick={() => { setConfirmResetText(""); setConfirmReset(true); }} className="text-xs px-3.5 py-2 rounded-sm border" style={{ borderColor: RUST, color: RUST }}>
+          <button onClick={() => { setConfirmResetText(""); setConfirmReset(true); }} className="text-xs px-3.5 py-2 rounded-md border" style={{ borderColor: RUST, color: RUST }}>
             Đặt lại dữ liệu giao dịch (đơn bán / đơn nhập / báo giá)
           </button>
         </div>
@@ -14025,7 +14036,7 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
             <input className={inputCls} style={{ borderColor: LINE }} value={confirmResetText} onChange={(e) => setConfirmResetText(e.target.value)} placeholder="XOA" />
           </Field>
           <button onClick={() => { onResetTestData(); setConfirmReset(false); }} disabled={confirmResetText.trim().toUpperCase() !== "XOA"}
-            className="w-full py-2.5 rounded-sm text-white text-sm mt-2 disabled:opacity-40" style={{ background: RUST }}>
+            className="w-full py-2.5 rounded-md text-white text-sm mt-2 disabled:opacity-40" style={{ background: RUST }}>
             Xác nhận xoá toàn bộ dữ liệu giao dịch
           </button>
         </Modal>
@@ -14040,7 +14051,7 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
           </Field>
           {editing.isOwner ? (
             <Field label="Vai trò">
-              <div className="flex items-center gap-1.5 text-sm px-3 py-2 rounded-sm" style={{ background: `${BRASS}12`, color: BRASS }}>
+              <div className="flex items-center gap-1.5 text-sm px-3 py-2 rounded-md" style={{ background: `${BRASS}12`, color: BRASS }}>
                 <Crown size={14} /> Chủ sở hữu · toàn quyền (không thể đổi)
               </div>
             </Field>
@@ -14049,7 +14060,7 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
               <Field label="Vai trò">
                 <div className="flex gap-2">
                   {ACCOUNT_ROLES.map((r) => (
-                    <button key={r.id} type="button" onClick={() => setForm({ ...form, role: r.id })} className="px-3.5 py-1.5 rounded-sm text-sm border"
+                    <button key={r.id} type="button" onClick={() => setForm({ ...form, role: r.id })} className="px-3.5 py-1.5 rounded-md text-sm border"
                       style={{ borderColor: form.role === r.id ? INK : LINE, background: form.role === r.id ? INK : "transparent", color: form.role === r.id ? "#fff" : INK }}>
                       {r.label}
                     </button>
@@ -14068,7 +14079,7 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
               </Field>
             </>
           )}
-          <button onClick={submit} className="w-full py-2.5 rounded-sm text-white text-sm mt-2" style={{ background: INK }}>{editing.id ? "Lưu thay đổi" : "Thêm tài khoản"}</button>
+          <button onClick={submit} className="w-full py-2.5 rounded-md text-white text-sm mt-2" style={{ background: INK }}>{editing.id ? "Lưu thay đổi" : "Thêm tài khoản"}</button>
         </Modal>
       )}
     </div>
@@ -14115,10 +14126,10 @@ function MyProfile({ currentUser, setAccounts, addLog }) {
 
   return (
     <div className="max-w-xl flex flex-col gap-5">
-      <div className="p-5 rounded-sm" style={card}>
+      <div className="p-5 rounded-md" style={card}>
         <div className="flex items-center gap-2 mb-4">
           <UserCircle size={20} style={{ color: INK }} />
-          <h3 className="text-base" style={{ fontFamily: "'Fraunces', serif", color: INK }}>Thông tin cá nhân</h3>
+          <h3 className="text-base" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, color: INK }}>Thông tin cá nhân</h3>
         </div>
         <div className="grid grid-cols-2 gap-3 mb-3">
           <Field label="Tên đăng nhập">
@@ -14131,14 +14142,14 @@ function MyProfile({ currentUser, setAccounts, addLog }) {
         <Field label="Họ tên">
           <input className={inputCls} style={{ borderColor: LINE }} value={fullName} onChange={(e) => { setFullName(e.target.value); setNameMsg(null); }} />
         </Field>
-        <button onClick={saveName} className="mt-1 px-4 py-2 rounded-sm text-white text-sm" style={{ background: INK }}>Lưu họ tên</button>
+        <button onClick={saveName} className="mt-1 px-4 py-2 rounded-md text-white text-sm" style={{ background: INK }}>Lưu họ tên</button>
         {msgLine(nameMsg)}
       </div>
 
-      <div className="p-5 rounded-sm" style={card}>
+      <div className="p-5 rounded-md" style={card}>
         <div className="flex items-center gap-2 mb-4">
           <KeyRound size={18} style={{ color: INK }} />
-          <h3 className="text-base" style={{ fontFamily: "'Fraunces', serif", color: INK }}>Đổi mật khẩu</h3>
+          <h3 className="text-base" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, color: INK }}>Đổi mật khẩu</h3>
         </div>
         <Field label="Mật khẩu hiện tại">
           <input type={showPw ? "text" : "password"} className={inputCls} style={{ borderColor: LINE }} value={curPw} onChange={(e) => setCurPw(e.target.value)} />
@@ -14152,7 +14163,7 @@ function MyProfile({ currentUser, setAccounts, addLog }) {
         <label className="flex items-center gap-2 text-xs opacity-70 mb-3 cursor-pointer">
           <input type="checkbox" checked={showPw} onChange={(e) => setShowPw(e.target.checked)} /> Hiện mật khẩu
         </label>
-        <button onClick={changePw} className="px-4 py-2 rounded-sm text-white text-sm" style={{ background: INK }}>Đổi mật khẩu</button>
+        <button onClick={changePw} className="px-4 py-2 rounded-md text-white text-sm" style={{ background: INK }}>Đổi mật khẩu</button>
         {msgLine(pwMsg)}
       </div>
     </div>
@@ -14179,13 +14190,13 @@ function NotificationBell({ notifications, markRead, markAllRead, onGoto }) {
 
   return (
     <div>
-      <button onClick={() => setOpen((o) => !o)} className="w-full flex items-center gap-3 px-4 py-3 rounded-sm text-sm relative" style={{ color: "rgba(255,255,255,0.75)", background: open ? "rgba(255,255,255,0.08)" : "transparent" }}>
+      <button onClick={() => setOpen((o) => !o)} className="w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm relative" style={{ color: "rgba(255,255,255,0.75)", background: open ? "rgba(255,255,255,0.08)" : "transparent" }}>
         <Bell size={18} />
         Thông báo
         {unread.length > 0 && <span className="ml-auto text-[10px] w-5 h-5 rounded-full flex items-center justify-center text-white font-semibold" style={{ background: RUST }}>{unread.length > 99 ? "99+" : unread.length}</span>}
       </button>
       {open && (
-        <div className="mt-1 rounded-sm p-2.5 max-h-[45vh] overflow-y-auto" style={{ background: "rgba(0,0,0,0.18)", border: "1px solid rgba(255,255,255,0.1)" }}>
+        <div className="mt-1 rounded-md p-2.5 max-h-[45vh] overflow-y-auto" style={{ background: "rgba(0,0,0,0.18)", border: "1px solid rgba(255,255,255,0.1)" }}>
           <div className="flex items-center justify-between mb-2 px-0.5">
             <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>{unread.length} chưa đọc · tự xoá sau 3 ngày</span>
             {unread.length > 0 && <button onClick={markAllRead} className="text-[11px] underline" style={{ color: "rgba(255,255,255,0.6)" }}>Đánh dấu tất cả</button>}
@@ -14196,8 +14207,8 @@ function NotificationBell({ notifications, markRead, markAllRead, onGoto }) {
                 const cat = NOTIF_CATEGORIES.find((c) => c.id === n.category);
                 const nav = isNavigable(n);
                 return (
-                  <div key={n.id} className="flex items-start gap-2 p-2 rounded-sm" style={{ background: n.read ? "transparent" : "rgba(255,255,255,0.06)", opacity: n.read ? 0.5 : 1 }}>
-                    <button onClick={() => markRead(n.id)} title={n.read ? "Đã đọc" : "Đánh dấu đã đọc"} className="mt-0.5 w-4 h-4 rounded-sm border flex items-center justify-center shrink-0"
+                  <div key={n.id} className="flex items-start gap-2 p-2 rounded-md" style={{ background: n.read ? "transparent" : "rgba(255,255,255,0.06)", opacity: n.read ? 0.5 : 1 }}>
+                    <button onClick={() => markRead(n.id)} title={n.read ? "Đã đọc" : "Đánh dấu đã đọc"} className="mt-0.5 w-4 h-4 rounded-md border flex items-center justify-center shrink-0"
                       style={{ borderColor: n.read ? FOREST : "rgba(255,255,255,0.3)", background: n.read ? FOREST : "transparent" }}>
                       {n.read && <Check size={11} color="#fff" />}
                     </button>
@@ -14248,7 +14259,7 @@ function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig
       <div className="flex gap-1 mb-5 flex-wrap">
         {subs.map((s) => (
           <button key={s.id} onClick={() => setSub(s.id)}
-            className="px-4 py-2 rounded-sm text-sm font-medium border"
+            className="px-4 py-2 rounded-md text-sm font-medium border"
             style={{ borderColor: sub === s.id ? INK : LINE, background: sub === s.id ? INK : "transparent", color: sub === s.id ? "#fff" : INK }}>
             {s.label}
           </button>
@@ -14403,9 +14414,9 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
         <div className="relative flex-1 min-w-[220px] max-w-md">
           <Search size={15} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm tên / SKU…"
-            className="w-full pl-7 pr-2 py-1.5 text-sm rounded-sm border-2 outline-none" style={{ borderColor: INK, background: "#fff" }} />
+            className="w-full pl-7 pr-2 py-1.5 text-sm rounded-md border-2 outline-none" style={{ borderColor: INK, background: "#fff" }} />
         </div>
-        <button onClick={() => setShowFilters((s) => !s)} className="flex items-center gap-1.5 text-sm px-3.5 py-1.5 rounded-sm border shrink-0" style={{ borderColor: activeFilterCount ? INK : LINE, color: INK, background: showFilters ? PAPER : "#fff" }}>
+        <button onClick={() => setShowFilters((s) => !s)} className="flex items-center gap-1.5 text-sm px-3.5 py-1.5 rounded-md border shrink-0" style={{ borderColor: activeFilterCount ? INK : LINE, color: INK, background: showFilters ? PAPER : "#fff" }}>
           <Filter size={14} /> Bộ lọc {activeFilterCount > 0 && <span className="text-[10px] px-1.5 rounded-full text-white" style={{ background: INK }}>{activeFilterCount}</span>}
         </button>
         {activeFilterCount > 0 && (
@@ -14414,7 +14425,7 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
           </button>
         )}
         {(filterPublishedFrom || filterPublishedTo) && (
-          <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-sm shrink-0" style={{ background: `${BLUE}14`, color: BLUE }}>
+          <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md shrink-0" style={{ background: `${BLUE}14`, color: BLUE }}>
             Ngày đăng web: {filterPublishedFrom || "…"} → {filterPublishedTo || "…"}
             <button onClick={() => { setFilterPublishedFrom(""); setFilterPublishedTo(""); }} title="Xoá lọc ngày"><X size={12} /></button>
           </span>
@@ -14422,7 +14433,7 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
         <div className="flex-1" />
         <div className="flex gap-1 shrink-0">
           {[["all", "Tất cả"], ["on", "Đã đăng"], ["off", "Chưa đăng"]].map(([id, l]) => (
-            <button key={id} onClick={() => setFilter(id)} className="px-3 py-1.5 rounded-sm border text-xs"
+            <button key={id} onClick={() => setFilter(id)} className="px-3 py-1.5 rounded-md border text-xs"
               style={{ borderColor: filter === id ? INK : LINE, background: filter === id ? INK : "transparent", color: filter === id ? "#fff" : INK }}>{l}</button>
           ))}
         </div>
@@ -14430,17 +14441,17 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
       </div>
 
       {showFilters && (
-        <div className="flex flex-wrap items-end gap-3 mb-5 p-4 rounded-sm" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+        <div className="flex flex-wrap items-end gap-3 mb-5 p-4 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           <label className="text-xs shrink-0" style={{ width: 190 }}>
             <span className="block opacity-60 mb-1">Nhóm hàng</span>
-            <select value={filterCategory} onChange={(e) => { setFilterCategory(e.target.value); setFilterBrand(""); }} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
+            <select value={filterCategory} onChange={(e) => { setFilterCategory(e.target.value); setFilterBrand(""); }} className="w-full border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
               <option value="">Tất cả</option>
               {categoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </label>
           <label className="text-xs shrink-0" style={{ width: 190 }}>
             <span className="block opacity-60 mb-1">Nhãn hiệu</span>
-            <select value={filterBrand} onChange={(e) => setFilterBrand(e.target.value)} className="w-full border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
+            <select value={filterBrand} onChange={(e) => setFilterBrand(e.target.value)} className="w-full border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }}>
               <option value="">Tất cả</option>
               {brandOptions.map((b) => <option key={b} value={b}>{b}</option>)}
             </select>
@@ -14448,7 +14459,7 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
         </div>
       )}
 
-      <div className="border rounded-sm overflow-x-auto" style={{ borderColor: LINE }}>
+      <div className="border rounded-md overflow-x-auto" style={{ borderColor: LINE }}>
         <table className="w-full text-sm" style={{ minWidth: 760 }}>
           <thead>
             <tr style={{ background: PAPER }}>
@@ -14481,9 +14492,9 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
                             giữ để ảnh/tên mọi dòng thẳng hàng nhau, không lệch qua lại. */}
                         {!indent && <span className="shrink-0" style={{ width: 15 }} />}
                         {displayImage(p) ? (
-                          <img src={displayImage(p)} alt="" className="w-9 h-9 object-cover rounded-sm shrink-0" style={{ border: `1px solid ${LINE}` }} />
+                          <img src={displayImage(p)} alt="" className="w-9 h-9 object-cover rounded-md shrink-0" style={{ border: `1px solid ${LINE}` }} />
                         ) : (
-                          <div className="w-9 h-9 rounded-sm flex items-center justify-center shrink-0" style={{ background: PAPER, border: `1px dashed ${LINE}` }}>
+                          <div className="w-9 h-9 rounded-md flex items-center justify-center shrink-0" style={{ background: PAPER, border: `1px dashed ${LINE}` }}>
                             <ImageOff size={13} className="opacity-30" />
                           </div>
                         )}
@@ -14492,25 +14503,25 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
                             className="font-medium leading-tight hover:underline" style={{ color: INK }}>
                             {indent ? (vLabel || p.name) : p.name}{!indent && vLabel && <span className="opacity-50"> — {vLabel}</span>}
                           </a>
-                          <div className="text-[11px] opacity-50" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.sku}</div>
+                          <div className="text-[11px] opacity-50" style={{ fontFamily: "'Inter', sans-serif" }}>{p.sku}</div>
                         </div>
                       </div>
                     </td>
                     <td className="px-3 py-2.5 opacity-70">{p.category || "—"}</td>
-                    <td className="px-3 py-2.5 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace" }} title="= Giá bán lẻ. Sửa ở tab Sản phẩm & tồn kho.">
+                    <td className="px-3 py-2.5 text-right" style={{ fontFamily: "'Inter', sans-serif" }} title="= Giá bán lẻ. Sửa ở tab Sản phẩm & tồn kho.">
                       {vnd(p.retailPrice)}
                     </td>
                     <td className="px-3 py-2.5 text-right">
-                      <MoneyInput className="text-right border rounded-sm py-1 px-1.5 w-28 text-sm" style={{ borderColor: LINE }}
+                      <MoneyInput className="text-right border rounded-md py-1 px-1.5 w-28 text-sm" style={{ borderColor: LINE }}
                         value={p.web?.compareAtPrice || ""} onChange={(v) => setWeb(p, { compareAtPrice: v })} placeholder="—" />
                     </td>
-                    <td className="px-3 py-2.5 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
+                    <td className="px-3 py-2.5 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>
                       {p.web?.virtualStock
                         ? <span style={{ color: BLUE }} title="Tồn kho ảo bán online">{p.web.virtualStockQty || 8} <span className="text-[10px] opacity-60">ảo</span></span>
                         : <span style={{ color: st.closingQty <= 0 ? RUST : INK }}>{st.closingQty}</span>}
                     </td>
                     <td className="px-3 py-2.5 text-right">
-                      <button onClick={() => setEditId(p.id)} className="text-xs px-2.5 py-1 rounded-sm border" style={{ borderColor: LINE, color: INK }}>
+                      <button onClick={() => setEditId(p.id)} className="text-xs px-2.5 py-1 rounded-md border" style={{ borderColor: LINE, color: INK }}>
                         Sửa
                       </button>
                     </td>
@@ -14539,9 +14550,9 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
                             <ChevronDown size={15} style={{ transform: expanded ? "none" : "rotate(-90deg)", transition: "transform .15s" }} />
                           </button>
                           {displayImage(rep) ? (
-                            <img src={displayImage(rep)} alt="" className="w-9 h-9 object-cover rounded-sm shrink-0" style={{ border: `1px solid ${LINE}` }} />
+                            <img src={displayImage(rep)} alt="" className="w-9 h-9 object-cover rounded-md shrink-0" style={{ border: `1px solid ${LINE}` }} />
                           ) : (
-                            <div className="w-9 h-9 rounded-sm flex items-center justify-center shrink-0" style={{ background: PAPER, border: `1px dashed ${LINE}` }}>
+                            <div className="w-9 h-9 rounded-md flex items-center justify-center shrink-0" style={{ background: PAPER, border: `1px dashed ${LINE}` }}>
                               <ImageOff size={13} className="opacity-30" />
                             </div>
                           )}
@@ -14550,21 +14561,21 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
                               className="font-medium leading-tight hover:underline" style={{ color: INK }}>
                               {baseVariantName(rep)}
                             </a>
-                            <div className="text-[11px] mt-0.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm uppercase tracking-wider" style={{ background: `${PURPLE}1A`, color: PURPLE }}><Layers size={9} /> {members.length} phiên bản</div>
+                            <div className="text-[11px] mt-0.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md uppercase tracking-wider" style={{ background: `${PURPLE}1A`, color: PURPLE }}><Layers size={9} /> {members.length} phiên bản</div>
                           </div>
                         </div>
                       </td>
                       <td className="px-3 py-2.5 opacity-70">{rep.category || "—"}</td>
-                      <td className="px-3 py-2.5 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace" }} title="= Giá bán lẻ. Sửa ở tab Sản phẩm & tồn kho.">
+                      <td className="px-3 py-2.5 text-right" style={{ fontFamily: "'Inter', sans-serif" }} title="= Giá bán lẻ. Sửa ở tab Sản phẩm & tồn kho.">
                         {members.every((m) => m.retailPrice === rep.retailPrice) ? vnd(rep.retailPrice) : "Nhiều giá"}
                       </td>
                       <td className="px-3 py-2.5 text-right">
-                        <MoneyInput className="text-right border rounded-sm py-1 px-1.5 w-28 text-sm" style={{ borderColor: LINE }}
+                        <MoneyInput className="text-right border rounded-md py-1 px-1.5 w-28 text-sm" style={{ borderColor: LINE }}
                           value={rep.web?.compareAtPrice || ""} onChange={(v) => setWeb(rep, { compareAtPrice: v })} placeholder="—" />
                       </td>
-                      <td className="px-3 py-2.5 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace", color: stockSum <= 0 ? RUST : INK }}>{stockSum}</td>
+                      <td className="px-3 py-2.5 text-right" style={{ fontFamily: "'Inter', sans-serif", color: stockSum <= 0 ? RUST : INK }}>{stockSum}</td>
                       <td className="px-3 py-2.5 text-right">
-                        <button onClick={() => setEditId(rep.id)} className="text-xs px-2.5 py-1 rounded-sm border" style={{ borderColor: LINE, color: INK }}>
+                        <button onClick={() => setEditId(rep.id)} className="text-xs px-2.5 py-1 rounded-md border" style={{ borderColor: LINE, color: INK }}>
                           Sửa
                         </button>
                       </td>
@@ -14584,10 +14595,10 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
           </span>
           <div className="flex items-center gap-1">
             <button onClick={() => setWebPage((p) => Math.max(1, p - 1))} disabled={webSafePage <= 1}
-              className="px-2 py-1 rounded-sm disabled:opacity-30" style={{ border: `1px solid ${LINE}` }}><ChevronLeft size={14} /></button>
+              className="px-2 py-1 rounded-md disabled:opacity-30" style={{ border: `1px solid ${LINE}` }}><ChevronLeft size={14} /></button>
             <span className="px-2">Trang {webSafePage} / {webTotalPages}</span>
             <button onClick={() => setWebPage((p) => Math.min(webTotalPages, p + 1))} disabled={webSafePage >= webTotalPages}
-              className="px-2 py-1 rounded-sm disabled:opacity-30" style={{ border: `1px solid ${LINE}` }}><ChevronRight size={14} /></button>
+              className="px-2 py-1 rounded-md disabled:opacity-30" style={{ border: `1px solid ${LINE}` }}><ChevronRight size={14} /></button>
           </div>
         </div>
       )}
@@ -14647,7 +14658,7 @@ function CopyWebInfoButton({ product, products, setWeb }) {
   return (
     <>
       <button type="button" onClick={() => setOpen(true)}
-        className="text-xs px-2.5 py-1.5 rounded-sm border inline-flex items-center gap-1.5" style={{ borderColor: LINE, color: INK }}>
+        className="text-xs px-2.5 py-1.5 rounded-md border inline-flex items-center gap-1.5" style={{ borderColor: LINE, color: INK }}>
         <Copy size={13} /> Sao chép từ sản phẩm khác
       </button>
       {open && (
@@ -14655,21 +14666,21 @@ function CopyWebInfoButton({ product, products, setWeb }) {
           {!picked ? (
             <div>
               <input value={q} onChange={(e) => setQ(e.target.value)} autoFocus placeholder="Tìm tên / SKU sản phẩm nguồn…"
-                className="w-full border rounded-sm py-2 px-3 text-sm mb-2" style={{ borderColor: LINE }} />
+                className="w-full border rounded-md py-2 px-3 text-sm mb-2" style={{ borderColor: LINE }} />
               <div className="max-h-64 overflow-y-auto space-y-1">
                 {q.trim() && matches.length === 0 && <p className="text-xs opacity-50 py-4 text-center">Không tìm thấy sản phẩm nào.</p>}
                 {matches.map((x) => (
                   <button key={x.id} onClick={() => setPicked(x)}
-                    className="w-full text-left px-3 py-2 rounded-sm text-sm hover:bg-black/5 flex items-center justify-between gap-3" style={{ border: `1px solid ${LINE}` }}>
+                    className="w-full text-left px-3 py-2 rounded-md text-sm hover:bg-black/5 flex items-center justify-between gap-3" style={{ border: `1px solid ${LINE}` }}>
                     <span className="truncate">{x.name}</span>
-                    <span className="opacity-50 text-xs shrink-0" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{x.sku}</span>
+                    <span className="opacity-50 text-xs shrink-0" style={{ fontFamily: "'Inter', sans-serif" }}>{x.sku}</span>
                   </button>
                 ))}
               </div>
             </div>
           ) : (
             <div>
-              <div className="flex items-center justify-between p-2.5 rounded-sm text-sm mb-3" style={{ background: PAPER }}>
+              <div className="flex items-center justify-between p-2.5 rounded-md text-sm mb-3" style={{ background: PAPER }}>
                 <span><b>{picked.name}</b> <span className="opacity-50">({picked.sku})</span></span>
                 <button onClick={() => setPicked(null)} className="text-xs underline opacity-60 shrink-0">Đổi</button>
               </div>
@@ -14682,7 +14693,7 @@ function CopyWebInfoButton({ product, products, setWeb }) {
                   </label>
                 ))}
               </div>
-              <button onClick={apply} className="w-full py-2.5 rounded-sm text-white text-sm mt-4" style={{ background: INK }}>Sao chép</button>
+              <button onClick={apply} className="w-full py-2.5 rounded-md text-white text-sm mt-4" style={{ background: INK }}>Sao chép</button>
             </div>
           )}
         </Modal>
@@ -14795,7 +14806,7 @@ function AIWriteFromUrl({ onApply, product, products, setProducts, addLog }) {
   };
 
   return (
-    <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+    <div className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
       <p className="text-base font-bold mb-1 flex items-center gap-1.5" style={{ color: RUST }}>
         <Sparkles size={15} /> Viết bằng AI từ link hãng
       </p>
@@ -14809,21 +14820,21 @@ function AIWriteFromUrl({ onApply, product, products, setProducts, addLog }) {
           <div key={i} className="flex gap-2 flex-wrap">
             <input value={u} onChange={(e) => setUrlAt(i, e.target.value)} disabled={busy}
               placeholder={i === 0 ? "https://vsp.vn/man-hinh-..." : "Link tham khảo thêm (không bắt buộc)"}
-              className="flex-1 min-w-[220px] border rounded-sm px-2 py-1.5 text-sm" style={{ borderColor: LINE }}
+              className="flex-1 min-w-[220px] border rounded-md px-2 py-1.5 text-sm" style={{ borderColor: LINE }}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), fetchInfo())} />
             {urls.length > 1 && (
-              <button type="button" onClick={() => removeUrl(i)} disabled={busy} title="Bỏ link này" className="px-2 rounded-sm border shrink-0" style={{ borderColor: LINE, color: INK }}>
+              <button type="button" onClick={() => removeUrl(i)} disabled={busy} title="Bỏ link này" className="px-2 rounded-md border shrink-0" style={{ borderColor: LINE, color: INK }}>
                 <X size={13} />
               </button>
             )}
             {i === urls.length - 1 && urls.length < AI_WRITE_MAX_URLS && (
-              <button type="button" onClick={addUrl} disabled={busy} className="text-xs px-2.5 py-1.5 rounded-sm border shrink-0 inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK }}>
+              <button type="button" onClick={addUrl} disabled={busy} className="text-xs px-2.5 py-1.5 rounded-md border shrink-0 inline-flex items-center gap-1" style={{ borderColor: LINE, color: INK }}>
                 <Plus size={13} /> Thêm link
               </button>
             )}
             {i === urls.length - 1 && (
               <button type="button" onClick={fetchInfo} disabled={busy}
-                className="px-3 py-1.5 rounded-sm text-white text-sm inline-flex items-center gap-1.5 disabled:opacity-50 shrink-0" style={{ background: INK }}>
+                className="px-3 py-1.5 rounded-md text-white text-sm inline-flex items-center gap-1.5 disabled:opacity-50 shrink-0" style={{ background: INK }}>
                 {busy ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} Viết bằng AI
               </button>
             )}
@@ -14833,7 +14844,7 @@ function AIWriteFromUrl({ onApply, product, products, setProducts, addLog }) {
       {msg && <p className="text-[12px] mt-1.5" style={{ color: /Lỗi|không/i.test(msg) ? RUST : BLUE }}>{msg}</p>}
 
       {preview && (
-        <div className="mt-3 p-3 rounded-sm space-y-2" style={{ background: PAPER, border: `1px dashed ${LINE}` }}>
+        <div className="mt-3 p-3 rounded-md space-y-2" style={{ background: PAPER, border: `1px dashed ${LINE}` }}>
           <p className="text-xs font-medium truncate" style={{ color: INK }}>Đã viết từ: <span className="opacity-60 font-normal">{preview.title || preview.sourceUrl}</span></p>
           <label className="flex items-start gap-2 text-xs cursor-pointer">
             <input type="checkbox" checked={pick.description} disabled={!preview.description} onChange={(e) => setPick((v) => ({ ...v, description: e.target.checked }))} />
@@ -14860,8 +14871,8 @@ function AIWriteFromUrl({ onApply, product, products, setProducts, addLog }) {
             <span>Ảnh sản phẩm {(preview.images || []).length ? `(${preview.images.length} ảnh — sẽ tải về kho Hilitek)` : "— không tìm thấy, thử dán ảnh thủ công"}</span>
           </label>
           <div className="flex gap-2 pt-1">
-            <button type="button" onClick={apply} disabled={busy} className="px-3 py-1.5 rounded-sm text-white text-xs disabled:opacity-50" style={{ background: INK }}>Điền vào bản nháp</button>
-            <button type="button" onClick={() => { setPreview(null); setMsg(""); }} className="px-3 py-1.5 rounded-sm border text-xs" style={{ borderColor: LINE, color: INK }}>Bỏ qua</button>
+            <button type="button" onClick={apply} disabled={busy} className="px-3 py-1.5 rounded-md text-white text-xs disabled:opacity-50" style={{ background: INK }}>Điền vào bản nháp</button>
+            <button type="button" onClick={() => { setPreview(null); setMsg(""); }} className="px-3 py-1.5 rounded-md border text-xs" style={{ borderColor: LINE, color: INK }}>Bỏ qua</button>
           </div>
         </div>
       )}
@@ -15012,11 +15023,65 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
 
   return (
     <div>
-      <div className="sticky top-0 z-10 pt-1 pb-2 -mt-1" style={{ background: PAPER }}>
-      <div className="flex items-center gap-3 mb-4 flex-wrap">
-        <button onClick={handleBack} className="text-sm inline-flex items-center gap-1" style={{ color: BLUE }}>
-          <ChevronLeft size={16} /> Danh sách sản phẩm web
+      <div className="sticky top-0 z-10 pt-1 pb-3 mb-3 -mt-1" style={{ background: PAPER, borderBottom: `1px solid ${LINE}` }}>
+      <div className="flex items-center gap-3 flex-wrap">
+        <button onClick={handleBack} title="Danh sách sản phẩm web" className="w-8 h-8 rounded-md border inline-flex items-center justify-center shrink-0" style={{ borderColor: LINE, color: INK, background: "#fff" }}>
+          <ChevronLeft size={16} />
         </button>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-base font-semibold truncate" style={{ color: INK }} title={p.name}>{p.name}</h3>
+          <div className="text-xs opacity-55 truncate">{p.sku} · {p.category || "—"}</div>
+        </div>
+        {dirty && <span className="text-xs font-medium" style={{ color: BRASS }}>● Chưa lưu</span>}
+        <button onClick={doDiscard} disabled={!dirty} className="text-xs px-3 py-1.5 rounded-md border disabled:opacity-40" style={{ borderColor: LINE, color: INK, background: "#fff" }}>
+          Huỷ
+        </button>
+        <button onClick={doSave} disabled={!dirty} className="text-xs px-3.5 py-1.5 rounded-md text-white disabled:opacity-40 inline-flex items-center gap-1.5" style={{ background: INK }}>
+          <Save size={13} /> Lưu
+        </button>
+      </div>
+
+      {otherEditor && (
+        <div className="mt-2 p-2.5 rounded-md flex items-start gap-2" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44` }}>
+          <AlertTriangle size={15} style={{ color: RUST }} className="mt-0.5 shrink-0" />
+          <p className="text-xs" style={{ color: INK }}>
+            <span className="font-medium" style={{ color: RUST }}>{otherEditor.by}</span> cũng đang sửa sản phẩm này (từ {formatDateTime(otherEditor.at)}). Ai bấm Lưu sau sẽ đè thay đổi của người trước.
+          </p>
+        </div>
+      )}
+
+      <div className="flex items-center gap-2 flex-wrap mt-2.5">
+        {p.variantGroupId && (() => {
+          const siblings = products.filter((x) => x.variantGroupId === p.variantGroupId);
+          if (siblings.length < 2) return null;
+          const switchTo = (id) => {
+            if (id === p.id) return;
+            if (dirty && !window.confirm("Có thay đổi chưa lưu. Chuyển phiên bản sẽ mất các thay đổi này — tiếp tục?")) return;
+            onSwitch && onSwitch(id);
+          };
+          // draft.isDefaultVariant phản ánh cả dữ liệu đã lưu lẫn lúc vừa bấm đặt đại diện (chưa Lưu).
+          const isDefault = !!draft.isDefaultVariant;
+          return (
+            <>
+              {siblings.map((s) => {
+                const label = s.variantAttrs ? Object.values(s.variantAttrs).join(" - ") : s.name;
+                const active = s.id === p.id;
+                return (
+                  <button key={s.id} onClick={() => switchTo(s.id)} className="text-xs px-3 py-1.5 rounded-md border"
+                    style={active ? { background: INK, borderColor: INK, color: "#fff" } : { borderColor: LINE, color: INK, background: "#fff" }}>
+                    {label || s.name}
+                  </button>
+                );
+              })}
+              <button onClick={() => !isDefault && setWeb({ isDefaultVariant: true })} disabled={isDefault}
+                title={isDefault ? "Phiên bản này đang là đại diện ở danh sách sản phẩm" : "Đặt phiên bản này làm đại diện ở danh sách sản phẩm. Bỏ trống thì web tự chọn phiên bản còn hàng đầu tiên"}
+                className="text-xs inline-flex items-center gap-1 px-2 py-1.5" style={{ color: isDefault ? BRASS : INK, opacity: isDefault ? 1 : 0.7 }}>
+                <Star size={13} fill={isDefault ? BRASS : "none"} /> {isDefault ? "Đại diện" : "Đặt đại diện"}
+              </button>
+            </>
+          );
+        })()}
+        <div className="flex-1" />
         {goToInventoryProductEdit && (
           <button
             onClick={() => {
@@ -15024,93 +15089,23 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
               goToInventoryProductEdit(p.id);
             }}
             title="Sửa mã VT, giá nhập/bán, tồn kho... của sản phẩm này"
-            className="text-xs inline-flex items-center gap-1 px-2.5 py-1 rounded-sm border" style={{ borderColor: LINE, color: INK }}
+            className="text-xs inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK, background: "#fff" }}
           >
-            <Package size={13} /> Sửa trong Sản phẩm & Tồn kho
+            <Package size={13} /> Tồn kho
           </button>
         )}
-        <div className="flex-1" />
-        {dirty && <span className="text-xs font-medium" style={{ color: BRASS }}>● Có thay đổi chưa lưu</span>}
-        <button onClick={doDiscard} disabled={!dirty} className="text-xs px-3 py-1.5 rounded-sm border disabled:opacity-40" style={{ borderColor: LINE, color: INK }}>
-          Huỷ thay đổi
-        </button>
-        <button onClick={doSave} disabled={!dirty} className="text-xs px-3.5 py-1.5 rounded-sm text-white disabled:opacity-40 inline-flex items-center gap-1.5" style={{ background: FOREST }}>
-          <Save size={13} /> Lưu
-        </button>
-      </div>
-
-      {lockDebug && <p className="text-[10px] opacity-40 mb-1" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>debug: {lockDebug}</p>}
-      {otherEditor && (
-        <div className="mb-4 p-3 rounded-sm flex items-start gap-2.5" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44` }}>
-          <AlertTriangle size={16} style={{ color: RUST }} className="mt-0.5 shrink-0" />
-          <p className="text-sm" style={{ color: INK }}>
-            <span className="font-medium" style={{ color: RUST }}>{otherEditor.by}</span> cũng đang mở sửa sản phẩm này (từ {formatDateTime(otherEditor.at)}) — nếu cả 2 cùng bấm Lưu, người lưu SAU sẽ đè mất thay đổi của người lưu TRƯỚC. Nên trao đổi trước khi lưu.
-          </p>
-        </div>
-      )}
-
-      <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
-        <div>
-          <h3 className="text-lg font-semibold mb-1" style={{ color: INK }}>{p.name}</h3>
-          <div className="text-[11px] opacity-50" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.sku} · {p.category || "—"}</div>
-        </div>
         <CopyWebInfoButton product={p} products={products} setWeb={setWeb} />
       </div>
-
-      {p.variantGroupId && (() => {
-        const siblings = products.filter((x) => x.variantGroupId === p.variantGroupId);
-        if (siblings.length < 2) return null;
-        const switchTo = (id) => {
-          if (id === p.id) return;
-          if (dirty && !window.confirm("Có thay đổi chưa lưu. Chuyển phiên bản sẽ mất các thay đổi này — tiếp tục?")) return;
-          onSwitch && onSwitch(id);
-        };
-        // draft.isDefaultVariant phản ánh đúng cả 2 trường hợp: chưa đụng gì (draft = y hệt dữ
-        // liệu đã lưu) lẫn vừa bấm "Đặt làm đại diện" (phản hồi ngay, không cần chờ bấm Lưu).
-        const isDefault = !!draft.isDefaultVariant;
-        return (
-          <div className="mb-4">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs opacity-60">Phiên bản:</span>
-              {siblings.map((s) => {
-                const label = s.variantAttrs ? Object.values(s.variantAttrs).join(" - ") : s.name;
-                const active = s.id === p.id;
-                return (
-                  <button
-                    key={s.id}
-                    onClick={() => switchTo(s.id)}
-                    className="text-xs px-3 py-1.5 rounded-sm border"
-                    style={active ? { background: BLUE, borderColor: BLUE, color: "#fff" } : { borderColor: LINE, color: INK }}
-                  >
-                    {label || s.name}
-                  </button>
-                );
-              })}
-            </div>
-            <div className="mt-2">
-              {isDefault ? (
-                <span className="text-xs inline-flex items-center gap-1.5" style={{ color: BRASS }}>
-                  <Star size={12} fill={BRASS} /> Đang là ảnh đại diện ở danh sách/lưới sản phẩm
-                </span>
-              ) : (
-                <button onClick={() => setWeb({ isDefaultVariant: true })} title="Bỏ trống = web tự chọn phiên bản còn hàng đầu tiên làm đại diện" className="text-xs inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm border" style={{ borderColor: LINE, color: INK }}>
-                  <Star size={12} /> Đặt phiên bản này làm đại diện ở danh sách/lưới sản phẩm
-                </button>
-              )}
-            </div>
-          </div>
-        );
-      })()}
       </div>
 
       <div className="grid lg:grid-cols-[1fr_320px] gap-5 items-start">
         {/* Cột trái */}
         <div className="space-y-4">
-          {p.variantGroupId && <p className="text-xs p-2 rounded-sm" style={{ background: `${BLUE}0D`, color: BLUE }}>Mô tả · thông số · danh mục · trạng thái đăng web · giá so sánh áp dụng cho TẤT CẢ phiên bản cùng nhóm. Ảnh · giá bán · SEO · slug riêng từng phiên bản.</p>}
+          {p.variantGroupId && <p className="text-xs p-2 rounded-md" style={{ background: `${BLUE}0D`, color: BLUE }}>Ảnh, giá bán, SEO, slug riêng từng phiên bản. Các mục còn lại dùng chung cho cả nhóm.</p>}
 
           <AIWriteFromUrl onApply={setWeb} product={p} products={products} setProducts={setProducts} addLog={addLog} />
 
-          <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+          <div className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
             <p className="text-base font-bold mb-2" style={{ color: RUST }}>Mô tả sản phẩm</p>
             <Field label="Nội dung mô tả" hint="Dán / kéo–thả ảnh · dán cả bài từ web khác · dán link YouTube (dòng riêng) = nhúng video">
               <WebDescEditor rows={12} bg="#fff" value={w.description} onChange={(v) => setWeb({ description: v })} />
@@ -15130,16 +15125,16 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
             </div>
           </div>
 
-          <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+          <div className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
             <p className="text-base font-bold mb-2" style={{ color: RUST }}>Ảnh sản phẩm trên web <span className="text-xs font-normal opacity-50">(tối đa 10, chất lượng cao — bỏ trống = dùng ảnh ở form sản phẩm chính)</span></p>
             <WebImageGrid images={w.images} onChange={(imgs) => setWeb({ images: imgs })} max={10} />
           </div>
 
-          <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+          <div className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
             <div className="flex items-center justify-between gap-2 mb-1">
               <span className="text-base font-bold" style={{ color: RUST }}>Thông số kỹ thuật (web)</span>
               <button type="button" onClick={() => setWeb({ specsText: autoFormatSpecsText(w.specsText) })}
-                className="text-xs px-2 py-1 rounded-sm border inline-flex items-center gap-1 shrink-0" style={{ borderColor: LINE, color: INK }}>
+                className="text-xs px-2 py-1 rounded-md border inline-flex items-center gap-1 shrink-0" style={{ borderColor: LINE, color: INK }}>
                 <Wand2 size={12} /> Chuẩn hoá "Nhãn | Giá trị"
               </button>
             </div>
@@ -15147,7 +15142,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
               Mỗi dòng: Nhãn | Giá trị. Dòng không có | sẽ nối tiếp (xuống dòng) vào giá trị phía trên.
               Dán thông số từ trang khác (dùng dấu ":" hoặc tab) rồi bấm "Chuẩn hoá" để tự thêm dấu |.
             </p>
-            <textarea rows={8} className={inputCls} style={{ borderColor: LINE, background: "#fff", fontFamily: "'IBM Plex Mono', monospace" }}
+            <textarea rows={8} className={inputCls} style={{ borderColor: LINE, background: "#fff", fontFamily: "'Inter', sans-serif" }}
               value={w.specsText} onChange={(e) => setWeb({ specsText: e.target.value })}
               placeholder={"Chất liệu | Kính cường lực\nĐộ cứng | 9H\nĐặc điểm | Cảm ứng nhạy\n- Viền phủ keo\n- Chống dầu vân tay"} />
           </div>
@@ -15155,7 +15150,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
 
         {/* Cột phải */}
         <div className="space-y-4">
-          <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+          <div className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
             <p className="text-base font-bold mb-2" style={{ color: RUST }}>Trạng thái</p>
             <label className="flex items-center gap-2 text-sm cursor-pointer">
               <input type="checkbox" checked={!!w.published} onChange={(e) => setWeb({ published: e.target.checked })} />
@@ -15173,10 +15168,10 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
               {w.virtualStock && (
                 <div className="mt-2 flex items-center gap-2">
                   <span className="text-xs opacity-60">Số lượng ảo</span>
-                  <input type="number" min={1} className="w-20 border rounded-sm py-1 px-2 text-sm" style={{ borderColor: LINE }}
+                  <input type="number" min={1} className="w-20 border rounded-md py-1 px-2 text-sm" style={{ borderColor: LINE }}
                     value={w.virtualStockQty || ""} onChange={(e) => setWeb({ virtualStockQty: Math.max(0, Math.floor(Number(e.target.value) || 0)) })} />
                   <button type="button" onClick={() => setWeb({ virtualStockQty: randomVirtualStock() })}
-                    className="text-xs px-2 py-1 rounded-sm border" style={{ borderColor: LINE, color: INK }}>🎲 Số khác</button>
+                    className="text-xs px-2 py-1 rounded-md border" style={{ borderColor: LINE, color: INK }}>🎲 Số khác</button>
                 </div>
               )}
             </div>
@@ -15197,18 +15192,18 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
 
             <div className="mt-3 pt-3" style={{ borderTop: `1px dashed ${LINE}` }}>
               <label className="text-sm block mb-1">Độ ưu tiên hiển thị</label>
-              <input type="number" className="w-24 border rounded-sm py-1 px-2 text-sm" style={{ borderColor: LINE }}
+              <input type="number" className="w-24 border rounded-md py-1 px-2 text-sm" style={{ borderColor: LINE }}
                 value={w.priority || 0} onChange={(e) => setWeb({ priority: Math.floor(Number(e.target.value) || 0) })} />
               <p className="text-[11px] opacity-50 mt-1">Số càng lớn càng hiện lên ĐẦU trang danh mục/trang chủ khi khách chưa tự chọn sắp xếp (mặc định "Phổ biến"). Để 0 = theo thứ tự bình thường. Không ảnh hưởng khi khách tự chọn sắp xếp theo giá/tên.</p>
             </div>
           </div>
 
-          <div className="p-4 rounded-sm" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+          <div className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
             <p className="text-base font-bold mb-2" style={{ color: RUST }}>Danh mục phụ trên web <span className="text-xs font-normal opacity-50">(mọi cấp — chọn được nhiều)</span></p>
             <WebCategoryMultiSelect webCats={webCats} value={w.categories} onChange={(next) => setWeb({ categories: next })} />
           </div>
 
-          <div className="p-4 rounded-sm space-y-3" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+          <div className="p-4 rounded-md space-y-3" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
             <p className="text-base font-bold" style={{ color: RUST }}>Giá & vận chuyển</p>
             <Field label="Giá bán web (đ)" hint="= Giá bán lẻ. Sửa ở tab Sản phẩm & tồn kho.">
               <input readOnly disabled className={inputCls} style={{ borderColor: LINE, background: PAPER }} value={p.retailPrice ? vnd(Number(p.retailPrice)) : "—"} />
@@ -15221,10 +15216,10 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
             </Field>
           </div>
 
-          <div className="p-4 rounded-sm space-y-3" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+          <div className="p-4 rounded-md space-y-3" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
             <p className="text-base font-bold" style={{ color: RUST }}>SEO Google</p>
             <Field label="Đường dẫn (slug)" hint="Bỏ trống = tự tạo từ tên sản phẩm">
-              <input className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} value={w.slug}
+              <input className={inputCls} style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} value={w.slug}
                 onChange={(e) => setWeb({ slug: webSlugifyLive(e.target.value) })}
                 onBlur={(e) => setWeb({ slug: webSlugify(e.target.value) })}
                 placeholder={effSlug} />
@@ -15235,7 +15230,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
             <Field label="Mô tả SEO" hint={`Bỏ trống = dùng mô tả ngắn. ~155 ký tự (${seoDesc.length})`}>
               <textarea rows={3} className={inputCls} style={{ borderColor: LINE }} value={w.seoDesc} onChange={(e) => setWeb({ seoDesc: e.target.value })} placeholder={seoDesc} />
             </Field>
-            <div className="rounded-sm p-2.5" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
+            <div className="rounded-md p-2.5" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
               <p className="text-[10px] uppercase tracking-wider opacity-45 mb-1">Xem trước trên Google</p>
               <div className="text-[13px] leading-snug" style={{ color: "#1a0dab" }}>{seoTitle}</div>
               <div className="text-[11px]" style={{ color: "#006621" }}>hilitek.vn › san-pham › {effSlug}</div>
@@ -15273,9 +15268,9 @@ function WebOrders({ orders, onOpenOrder }) {
         <p className="text-sm opacity-70">Đơn khách đặt trên website — <b>{list.length}</b> đơn. Xử lý (xác nhận, phí ship, giao hàng) ở tab <b>Bán hàng</b>.</p>
         <div className="flex-1" />
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm mã đơn, tên hoặc SĐT khách…"
-          className="border rounded-sm py-1.5 px-2.5 text-sm w-64" style={{ borderColor: LINE }} />
+          className="border rounded-md py-1.5 px-2.5 text-sm w-64" style={{ borderColor: LINE }} />
       </div>
-      <div className="border rounded-sm overflow-hidden" style={{ borderColor: LINE }}>
+      <div className="border rounded-md overflow-hidden" style={{ borderColor: LINE }}>
         <table className="w-full text-sm">
           <thead><tr style={{ background: PAPER }}>
             <th className="text-left px-3 py-2.5 font-medium">Mã đơn</th>
@@ -15292,17 +15287,17 @@ function WebOrders({ orders, onOpenOrder }) {
               const a = o.shippingAddress || {};
               return (
                 <tr key={o.id} style={{ borderTop: `1px solid ${LINE}` }}>
-                  <td className="px-3 py-2.5 font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
+                  <td className="px-3 py-2.5 font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>
                     {o.code}
                     {(o.tags || []).includes("Đặt trước") && (
-                      <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-sm" style={{ background: "#E8730C1A", color: "#E8730C", fontFamily: "inherit" }}>ĐẶT TRƯỚC</span>
+                      <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-md" style={{ background: "#E8730C1A", color: "#E8730C", fontFamily: "inherit" }}>ĐẶT TRƯỚC</span>
                     )}
                   </td>
                   <td className="px-3 py-2.5 opacity-70">{(o.createdAt || "").slice(0, 10)}</td>
                   <td className="px-3 py-2.5">{a.recipientName || "—"}<div className="text-[11px] opacity-50">{a.recipientPhone}</div></td>
                   <td className="px-3 py-2.5 opacity-70 max-w-[280px]">{[a.addressDetail, a.ward, a.province].filter(Boolean).join(", ") || "—"}</td>
-                  <td className="px-3 py-2.5 text-right" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{vnd(webOrderTotal(o))}</td>
-                  <td className="px-3 py-2.5"><span className="text-xs px-2 py-0.5 rounded-sm" style={{ background: PAPER }}>{statusLabel(o.status)}{o.approvalStatus === "pending" ? " · chờ duyệt" : ""}</span></td>
+                  <td className="px-3 py-2.5 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(webOrderTotal(o))}</td>
+                  <td className="px-3 py-2.5"><span className="text-xs px-2 py-0.5 rounded-md" style={{ background: PAPER }}>{statusLabel(o.status)}{o.approvalStatus === "pending" ? " · chờ duyệt" : ""}</span></td>
                   <td className="px-3 py-2.5 text-right"><button onClick={() => onOpenOrder(o.id)} className="text-xs underline" style={{ color: BLUE }}>Mở</button></td>
                 </tr>
               );
@@ -15456,12 +15451,12 @@ function MenuNodeRow({ node, siblingsCount, index, depth, onUpdate, onDelete, on
           value={node.name}
           onChange={(e) => onUpdate(node._key, { name: e.target.value })}
           placeholder="Tên danh mục"
-          className="flex-1 border rounded-sm px-2 py-1 text-sm min-w-0" style={{ borderColor: LINE }}
+          className="flex-1 border rounded-md px-2 py-1 text-sm min-w-0" style={{ borderColor: LINE }}
         />
-        <button onClick={() => onMove(node._key, -1)} disabled={index === 0} className="text-xs px-1 py-1 rounded-sm border disabled:opacity-30 shrink-0" style={{ borderColor: LINE, color: INK }} title="Lên">↑</button>
-        <button onClick={() => onMove(node._key, 1)} disabled={index === siblingsCount - 1} className="text-xs px-1 py-1 rounded-sm border disabled:opacity-30 shrink-0" style={{ borderColor: LINE, color: INK }} title="Xuống">↓</button>
+        <button onClick={() => onMove(node._key, -1)} disabled={index === 0} className="text-xs px-1 py-1 rounded-md border disabled:opacity-30 shrink-0" style={{ borderColor: LINE, color: INK }} title="Lên">↑</button>
+        <button onClick={() => onMove(node._key, 1)} disabled={index === siblingsCount - 1} className="text-xs px-1 py-1 rounded-md border disabled:opacity-30 shrink-0" style={{ borderColor: LINE, color: INK }} title="Xuống">↓</button>
         {depth < WEB_MAX_CATEGORY_DEPTH && (
-          <button onClick={() => onAddChild(node._key)} className="text-xs px-2 py-1 rounded-sm border shrink-0 whitespace-nowrap" style={{ borderColor: LINE, color: INK }}>+ Con</button>
+          <button onClick={() => onAddChild(node._key)} className="text-xs px-2 py-1 rounded-md border shrink-0 whitespace-nowrap" style={{ borderColor: LINE, color: INK }}>+ Con</button>
         )}
         <button onClick={() => onDelete(node._key, node.name, childCount)} className="text-xs px-1.5 shrink-0" style={{ color: RUST }}>Xoá</button>
       </div>
@@ -15482,7 +15477,7 @@ function WebPageEditor({ pageKey, label, webConfig, setWebConfig }) {
     PAGES: { ...(x.PAGES || {}), [pageKey]: { ...((x.PAGES || {})[pageKey] || cur), ...obj } },
   }));
   return (
-    <div className="border rounded-sm" style={{ borderColor: LINE }}>
+    <div className="border rounded-md" style={{ borderColor: LINE }}>
       <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium" style={{ color: INK }}>
         {label}
         {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
@@ -15496,7 +15491,7 @@ function WebPageEditor({ pageKey, label, webConfig, setWebConfig }) {
             <textarea rows={2} className={inputCls} style={{ borderColor: LINE }} value={cur.intro || ""} onChange={(e) => patch({ intro: e.target.value })} />
           </Field>
           <Field label="Nội dung" hint="Dòng bắt đầu '## ' = tiêu đề mục · dòng '- ' = gạch đầu dòng · dòng thường = đoạn văn · để trống 1 dòng giữa các mục">
-            <textarea rows={14} className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace", fontSize: 13 }}
+            <textarea rows={14} className={inputCls} style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif", fontSize: 13 }}
               value={webPageToText({ sections: cur.sections })}
               onChange={(e) => patch({ sections: webTextToPageSections(e.target.value) })} />
           </Field>
@@ -15572,13 +15567,13 @@ function WebMenuEditor({ webConfig, setWebConfig, setProducts, products }) {
       )}
 
       {draft.map((g, gi) => (
-        <div key={g._key} className="border rounded-sm p-3" style={{ borderColor: LINE }}>
+        <div key={g._key} className="border rounded-md p-3" style={{ borderColor: LINE }}>
           <div className="flex gap-3 items-end mb-3">
             <Field label="Tên nhóm chính"><input className={inputCls} style={{ borderColor: LINE }} value={g.group} onChange={(e) => setG(gi, "group", e.target.value)} /></Field>
             <div style={{ width: 170 }}>
               <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">Icon</p>
               <div className="flex items-center gap-2">
-                <span className="shrink-0 grid place-items-center rounded-sm" style={{ width: 30, height: 30, border: `1px solid ${LINE}`, background: "#fff" }}>
+                <span className="shrink-0 grid place-items-center rounded-md" style={{ width: 30, height: 30, border: `1px solid ${LINE}`, background: "#fff" }}>
                   {React.createElement(webGroupIcon(g.icon), { size: 17, color: INK })}
                 </span>
                 <select className={inputCls} style={{ borderColor: LINE }} value={g.icon} onChange={(e) => setG(gi, "icon", e.target.value)}>
@@ -15587,8 +15582,8 @@ function WebMenuEditor({ webConfig, setWebConfig, setProducts, products }) {
               </div>
             </div>
             <div className="flex items-center gap-1 pb-1.5">
-              <button onClick={() => moveG(gi, -1)} disabled={gi === 0} className="text-xs px-1.5 py-1 rounded-sm border disabled:opacity-30" style={{ borderColor: LINE }} title="Lên">↑</button>
-              <button onClick={() => moveG(gi, 1)} disabled={gi === draft.length - 1} className="text-xs px-1.5 py-1 rounded-sm border disabled:opacity-30" style={{ borderColor: LINE }} title="Xuống">↓</button>
+              <button onClick={() => moveG(gi, -1)} disabled={gi === 0} className="text-xs px-1.5 py-1 rounded-md border disabled:opacity-30" style={{ borderColor: LINE }} title="Lên">↑</button>
+              <button onClick={() => moveG(gi, 1)} disabled={gi === draft.length - 1} className="text-xs px-1.5 py-1 rounded-md border disabled:opacity-30" style={{ borderColor: LINE }} title="Xuống">↓</button>
               <button onClick={() => delG(gi, g.group, countDraftDescendants({ subs: g.subs }))} className="text-xs px-1.5" style={{ color: RUST }}>Xoá nhóm</button>
             </div>
           </div>
@@ -15607,7 +15602,7 @@ function WebMenuEditor({ webConfig, setWebConfig, setProducts, products }) {
               />
             ))}
             <button onClick={() => setG(gi, "subs", [...(g.subs || []), { _key: uid(), name: "Danh mục mới", subs: [] }])}
-              className="text-xs px-2.5 py-1.5 rounded-sm border mt-1" style={{ borderColor: LINE, color: INK }}>
+              className="text-xs px-2.5 py-1.5 rounded-md border mt-1" style={{ borderColor: LINE, color: INK }}>
               + Thêm danh mục phụ
             </button>
           </div>
@@ -15615,8 +15610,8 @@ function WebMenuEditor({ webConfig, setWebConfig, setProducts, products }) {
       ))}
 
       <div className="flex items-center gap-3">
-        <button onClick={addG} className="text-sm px-3 py-1.5 rounded-sm border" style={{ borderColor: LINE, color: INK }}>+ Thêm nhóm chính</button>
-        <button onClick={save} disabled={!dirty} className="text-sm px-4 py-1.5 rounded-sm text-white" style={{ background: dirty ? INK : LINE }}>Lưu danh mục</button>
+        <button onClick={addG} className="text-sm px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>+ Thêm nhóm chính</button>
+        <button onClick={save} disabled={!dirty} className="text-sm px-4 py-1.5 rounded-md text-white" style={{ background: dirty ? INK : LINE }}>Lưu danh mục</button>
         <button onClick={reset} className="text-xs underline" style={{ color: RUST }}>Khôi phục mặc định</button>
         {dirty && <span className="text-xs" style={{ color: RUST }}>Có thay đổi chưa lưu</span>}
       </div>
@@ -15658,12 +15653,12 @@ function HomeSectionsEditor({ webConfig, setWebConfig, products }) {
       {sections.length === 0 && <p className="text-xs" style={{ color: RUST }}>Chưa có khối nào — trang chủ sẽ không hiện hàng sản phẩm. Bấm “+ Thêm khối”.</p>}
 
       {sections.map((s, i) => (
-        <div key={i} className="rounded-sm p-3 space-y-2.5" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
+        <div key={i} className="rounded-md p-3 space-y-2.5" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
           <div className="flex items-center gap-2">
             <input value={s.title || ""} onChange={(e) => setAt(i, { title: e.target.value })} placeholder="Tên khối (VD: Laptop khuyến mãi Hot)"
               className={inputCls} style={{ borderColor: LINE, fontWeight: 600 }} />
-            <button onClick={() => moveBlock(i, -1)} disabled={i === 0} className="text-xs px-1.5 py-1 rounded-sm border disabled:opacity-30" style={{ borderColor: LINE }} title="Lên">↑</button>
-            <button onClick={() => moveBlock(i, 1)} disabled={i === sections.length - 1} className="text-xs px-1.5 py-1 rounded-sm border disabled:opacity-30" style={{ borderColor: LINE }} title="Xuống">↓</button>
+            <button onClick={() => moveBlock(i, -1)} disabled={i === 0} className="text-xs px-1.5 py-1 rounded-md border disabled:opacity-30" style={{ borderColor: LINE }} title="Lên">↑</button>
+            <button onClick={() => moveBlock(i, 1)} disabled={i === sections.length - 1} className="text-xs px-1.5 py-1 rounded-md border disabled:opacity-30" style={{ borderColor: LINE }} title="Xuống">↓</button>
             <button onClick={() => delBlock(i)} className="text-xs px-1.5 py-1" style={{ color: RUST }}>Xoá</button>
           </div>
 
@@ -15740,7 +15735,7 @@ function HomeSectionsEditor({ webConfig, setWebConfig, products }) {
               </label>
               <label className="block sm:col-span-2">Chọn SKU tay (cách nhau bởi dấu phẩy — có giá trị thì bỏ qua mọi bộ lọc trên)
                 <input value={(s.skus || []).join(", ")} onChange={(e) => setAt(i, { skus: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) })}
-                  className={inputCls} style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} placeholder="HI-LAP-001, HI-LAP-004" />
+                  className={inputCls} style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} placeholder="HI-LAP-001, HI-LAP-004" />
               </label>
               <label className="block">Chữ nút “Xem tất cả”
                 <input value={s.seeAllText || ""} onChange={(e) => setAt(i, { seeAllText: e.target.value })} className={inputCls} style={{ borderColor: LINE }} placeholder="Xem tất cả" />
@@ -15754,7 +15749,7 @@ function HomeSectionsEditor({ webConfig, setWebConfig, products }) {
       ))}
 
       <div className="flex items-center gap-3">
-        <button onClick={addBlock} className="text-xs px-2.5 py-1.5 rounded-sm border" style={{ borderColor: LINE, color: INK }}>+ Thêm khối</button>
+        <button onClick={addBlock} className="text-xs px-2.5 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>+ Thêm khối</button>
         <button onClick={reset} className="text-xs underline" style={{ color: RUST }}>Đặt lại về mặc định</button>
       </div>
     </div>
@@ -15791,15 +15786,15 @@ function LandingsEditor({ webConfig, setWebConfig }) {
       {list.length === 0 && <p className="text-xs" style={{ color: RUST }}>Chưa có trang nội dung nào. Bấm "+ Thêm trang".</p>}
 
       {list.map((l, i) => (
-        <div key={i} className="rounded-sm p-3 space-y-2.5" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
+        <div key={i} className="rounded-md p-3 space-y-2.5" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
           <div className="flex items-center gap-2">
             <input value={l.title || ""} onChange={(e) => setTitle(i, e.target.value)} placeholder="Tiêu đề trang"
               className={inputCls} style={{ borderColor: LINE, fontWeight: 600 }} />
             <label className="flex items-center gap-1 text-xs shrink-0">
               <input type="checkbox" checked={l.published !== false} onChange={(e) => setAt(i, { published: e.target.checked })} /> Hiện
             </label>
-            <button onClick={() => move(i, -1)} disabled={i === 0} className="text-xs px-1.5 py-1 rounded-sm border disabled:opacity-30" style={{ borderColor: LINE }} title="Lên">↑</button>
-            <button onClick={() => move(i, 1)} disabled={i === list.length - 1} className="text-xs px-1.5 py-1 rounded-sm border disabled:opacity-30" style={{ borderColor: LINE }} title="Xuống">↓</button>
+            <button onClick={() => move(i, -1)} disabled={i === 0} className="text-xs px-1.5 py-1 rounded-md border disabled:opacity-30" style={{ borderColor: LINE }} title="Lên">↑</button>
+            <button onClick={() => move(i, 1)} disabled={i === list.length - 1} className="text-xs px-1.5 py-1 rounded-md border disabled:opacity-30" style={{ borderColor: LINE }} title="Xuống">↓</button>
             <button onClick={() => delOne(i)} className="text-xs px-1.5 py-1" style={{ color: RUST }}>Xoá</button>
           </div>
 
@@ -15810,10 +15805,10 @@ function LandingsEditor({ webConfig, setWebConfig }) {
               onChange={(e) => setAt(i, { slug: webSlugifyLive(e.target.value) })}
               onBlur={(e) => setAt(i, { slug: webSlugify(e.target.value) })}
               placeholder={webSlugify(l.title || "") || "duong-dan"}
-              className="flex-1 border rounded-sm py-1 px-2" style={{ borderColor: LINE, fontFamily: "'IBM Plex Mono', monospace" }} />
+              className="flex-1 border rounded-md py-1 px-2" style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} />
             <button type="button"
               onClick={() => { try { navigator.clipboard.writeText(`/trang/${l.slug || webSlugify(l.title || "")}`); } catch (e) {} }}
-              className="text-xs px-2 py-1 rounded-sm border shrink-0" style={{ borderColor: LINE, color: INK }}>Sao chép link</button>
+              className="text-xs px-2 py-1 rounded-md border shrink-0" style={{ borderColor: LINE, color: INK }}>Sao chép link</button>
           </div>
 
           <Field label="Nội dung">
@@ -15823,7 +15818,7 @@ function LandingsEditor({ webConfig, setWebConfig }) {
       ))}
 
       <div className="flex items-center gap-3">
-        <button onClick={addOne} className="text-xs px-2.5 py-1.5 rounded-sm border" style={{ borderColor: LINE, color: INK }}>+ Thêm trang</button>
+        <button onClick={addOne} className="text-xs px-2.5 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>+ Thêm trang</button>
         <button onClick={reset} className="text-xs underline" style={{ color: RUST }}>Đặt lại về mặc định</button>
       </div>
     </div>
@@ -15843,7 +15838,7 @@ function CouponsEditor({ webConfig, setWebConfig }) {
   const setAt = (i, patch) => mut((arr) => { arr[i] = { ...arr[i], ...patch }; return arr; });
   const addOne = () => mut((arr) => [...arr, { code: "", kind: "percent", value: 10, enabled: true, minSubtotal: 0, until: "", note: "" }]);
   const delOne = (i) => mut((arr) => arr.filter((_, j) => j !== i));
-  const mono = { fontFamily: "'IBM Plex Mono', monospace" };
+  const mono = { fontFamily: "'Inter', sans-serif" };
 
   return (
     <div className="space-y-3">
@@ -15855,7 +15850,7 @@ function CouponsEditor({ webConfig, setWebConfig }) {
       {list.length === 0 && <p className="text-xs" style={{ color: RUST }}>Chưa có mã nào. Bấm "+ Thêm mã".</p>}
 
       {list.map((c, i) => (
-        <div key={i} className="rounded-sm p-3 space-y-2" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
+        <div key={i} className="rounded-md p-3 space-y-2" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
           <div className="flex flex-wrap items-end gap-3">
             <div className="flex-1 min-w-[180px]">
               <div className="text-xs opacity-60 mb-1">Mã (khách gõ)</div>
@@ -15864,7 +15859,7 @@ function CouponsEditor({ webConfig, setWebConfig }) {
             </div>
             <div>
               <div className="text-xs opacity-60 mb-1">Kiểu</div>
-              <div className="flex rounded-sm overflow-hidden border" style={{ borderColor: LINE }}>
+              <div className="flex rounded-md overflow-hidden border" style={{ borderColor: LINE }}>
                 <button type="button" onClick={() => setAt(i, { kind: "percent" })} className="px-3 py-1.5 text-xs"
                   style={{ background: c.kind !== "amount" ? INK : "transparent", color: c.kind !== "amount" ? "#fff" : INK }}>%</button>
                 <button type="button" onClick={() => setAt(i, { kind: "amount" })} className="px-3 py-1.5 text-xs"
@@ -15874,7 +15869,7 @@ function CouponsEditor({ webConfig, setWebConfig }) {
             <div>
               <div className="text-xs opacity-60 mb-1">{c.kind === "amount" ? "Giảm (₫)" : "Giảm (%)"}</div>
               <MoneyInput value={c.value} onChange={(v) => setAt(i, { value: v })}
-                className="w-28 border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE, ...mono }} />
+                className="w-28 border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE, ...mono }} />
             </div>
             <label className="flex items-center gap-1 text-xs pb-2">
               <input type="checkbox" checked={c.enabled !== false} onChange={(e) => setAt(i, { enabled: e.target.checked })} /> Bật
@@ -15885,12 +15880,12 @@ function CouponsEditor({ webConfig, setWebConfig }) {
             <div>
               <div className="text-xs opacity-60 mb-1">Đơn tối thiểu (₫)</div>
               <MoneyInput value={c.minSubtotal || 0} onChange={(v) => setAt(i, { minSubtotal: v })}
-                className="w-32 border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE, ...mono }} />
+                className="w-32 border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE, ...mono }} />
             </div>
             <div>
               <div className="text-xs opacity-60 mb-1">Hết hạn (tuỳ chọn)</div>
               <input type="date" value={c.until || ""} onChange={(e) => setAt(i, { until: e.target.value })}
-                className="border rounded-sm py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
+                className="border rounded-md py-1.5 px-2 text-sm" style={{ borderColor: LINE }} />
             </div>
             <div className="flex-1 min-w-[160px]">
               <div className="text-xs opacity-60 mb-1">Ghi chú (nội bộ)</div>
@@ -15901,7 +15896,7 @@ function CouponsEditor({ webConfig, setWebConfig }) {
         </div>
       ))}
 
-      <button onClick={addOne} className="text-xs px-2.5 py-1.5 rounded-sm border" style={{ borderColor: LINE, color: INK }}>+ Thêm mã</button>
+      <button onClick={addOne} className="text-xs px-2.5 py-1.5 rounded-md border" style={{ borderColor: LINE, color: INK }}>+ Thêm mã</button>
     </div>
   );
 }
@@ -15969,11 +15964,11 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
 
   return (
     <div className="max-w-3xl space-y-7">
-      <div className="p-3 rounded-sm text-xs" style={{ background: `${BLUE}0D`, border: `1px solid ${BLUE}` }}>
+      <div className="p-3 rounded-md text-xs" style={{ background: `${BLUE}0D`, border: `1px solid ${BLUE}` }}>
         Bỏ trống 1 ô = web dùng giá trị mặc định. Web khách đọc cấu hình này mỗi lần tải trang.
       </div>
 
-      <section className="p-4 rounded-sm" style={{ border: `2px solid ${LINE}` }}>
+      <section className="p-4 rounded-md" style={{ border: `2px solid ${LINE}` }}>
         <h3 className="font-bold mb-3" style={{ color: RUST }}>Liên hệ</h3>
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="Hotline (hiển thị)">{ip(SITE.phone, (v) => setSite("phone", v), "0869 196 079")}</Field>
@@ -15990,7 +15985,7 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
         <Field label="Địa chỉ" >{ip(SITE.address, (v) => setSite("address", v), "6/27A Đường Số 3, …")}</Field>
       </section>
 
-      <section className="p-4 rounded-sm" style={{ border: `2px solid ${LINE}` }}>
+      <section className="p-4 rounded-md" style={{ border: `2px solid ${LINE}` }}>
         <h3 className="font-bold mb-3" style={{ color: RUST }}>Tài khoản ngân hàng</h3>
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="Ngân hàng">{ip(bank.name, (v) => setBank("name", v), "ACB (Á Châu)")}</Field>
@@ -16003,7 +15998,7 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
         </div>
       </section>
 
-      <section className="p-4 rounded-sm" style={{ border: `2px solid ${LINE}` }}>
+      <section className="p-4 rounded-md" style={{ border: `2px solid ${LINE}` }}>
         <h3 className="font-bold mb-3" style={{ color: RUST }}>Điểm tích luỹ khách hàng</h3>
         <label className="flex items-center gap-2 text-sm mb-3">
           <input type="checkbox" checked={!!LOY.enabled} onChange={(e) => setLoyalty("enabled", e.target.checked)} />
@@ -16027,22 +16022,22 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
         </p>
       </section>
 
-      <section className="p-4 rounded-sm" style={{ border: `2px solid ${LINE}` }}>
+      <section className="p-4 rounded-md" style={{ border: `2px solid ${LINE}` }}>
         <h3 className="font-bold mb-3" style={{ color: RUST }}>Mã giảm giá <span className="text-xs opacity-50">(khách nhập ở trang giỏ hàng → chiết khấu đơn)</span></h3>
         <CouponsEditor webConfig={webConfig} setWebConfig={setWebConfig} />
       </section>
 
-      <section className="p-4 rounded-sm" style={{ border: `2px solid ${LINE}` }}>
+      <section className="p-4 rounded-md" style={{ border: `2px solid ${LINE}` }}>
         <h3 className="font-bold mb-3" style={{ color: RUST }}>Danh mục sản phẩm web (menu)</h3>
         <WebMenuEditor webConfig={webConfig} setWebConfig={setWebConfig} setProducts={setProducts} products={products} />
       </section>
 
-      <section className="p-4 rounded-sm" style={{ border: `2px solid ${LINE}` }}>
+      <section className="p-4 rounded-md" style={{ border: `2px solid ${LINE}` }}>
         <h3 className="font-bold mb-3" style={{ color: RUST }}>Flash Sale <span className="text-xs opacity-50">(khối nổi bật dưới dải đếm ngược — viền đỏ, nhãn ⚡)</span></h3>
         <label className="flex items-center gap-2 text-sm mb-3">
           <input type="checkbox" checked={FS.enabled !== false} onChange={(e) => setFlash("enabled", e.target.checked)} /> Bật khối Flash Sale trên trang chủ
         </label>
-        <div className="p-3 rounded-sm text-xs mb-3" style={{ background: `${BLUE}0D`, border: `1px solid ${BLUE}` }}>
+        <div className="p-3 rounded-md text-xs mb-3" style={{ background: `${BLUE}0D`, border: `1px solid ${BLUE}` }}>
           Sản phẩm trong khối này <b>chọn tay từng cái</b>: mở <b>Website → Sản phẩm web</b>, sửa 1 sản phẩm rồi tick
           <b> “⚡ Đưa vào khối Flash Sale”</b>. Không lọc theo nhóm / thương hiệu / % giảm nữa.
         </div>
@@ -16068,17 +16063,17 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
         </div>
       </section>
 
-      <section className="p-4 rounded-sm" style={{ border: `2px solid ${LINE}` }}>
+      <section className="p-4 rounded-md" style={{ border: `2px solid ${LINE}` }}>
         <h3 className="font-bold mb-3" style={{ color: RUST }}>Khối sản phẩm trang chủ</h3>
         <HomeSectionsEditor webConfig={webConfig} setWebConfig={setWebConfig} products={products} />
       </section>
 
-      <section className="p-4 rounded-sm" style={{ border: `2px solid ${LINE}` }}>
+      <section className="p-4 rounded-md" style={{ border: `2px solid ${LINE}` }}>
         <h3 className="font-bold mb-3" style={{ color: RUST }}>Trang nội dung (landing)</h3>
         <LandingsEditor webConfig={webConfig} setWebConfig={setWebConfig} />
       </section>
 
-      <section className="p-4 rounded-sm" style={{ border: `2px solid ${LINE}` }}>
+      <section className="p-4 rounded-md" style={{ border: `2px solid ${LINE}` }}>
         <h3 className="font-bold mb-3" style={{ color: RUST }}>Poster / banner trang chủ (URL ảnh + link)</h3>
         <p className="text-xs opacity-50 mb-3">
           Ảnh: tải lên host bất kỳ hoặc để trong <code>public/posters/</code> rồi điền đường dẫn (vd <code>/posters/hero.jpg</code>).<br />
@@ -16094,10 +16089,10 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
           ))}
         </datalist>
         <div className="space-y-3">
-          <div className="rounded-sm p-2.5" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
+          <div className="rounded-md p-2.5" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-sm font-medium" style={{ color: INK }}>Poster chính (slider) — nhiều ảnh</span>
-              <button onClick={addHeroSlide} className="text-xs px-2 py-1 rounded-sm border" style={{ borderColor: LINE, color: INK }}>+ Thêm ảnh</button>
+              <button onClick={addHeroSlide} className="text-xs px-2 py-1 rounded-md border" style={{ borderColor: LINE, color: INK }}>+ Thêm ảnh</button>
             </div>
             <p className="text-[11px] opacity-55 mb-2">Từ 2 ảnh trở lên sẽ tự chạy slide (đổi mỗi 5 giây, có nút ‹ › + chấm). 1 ảnh = ảnh tĩnh. Chưa có ảnh nào = khung gợi ý kích thước.</p>
             {heroSlides.length === 0 && <p className="text-xs opacity-45">Chưa có ảnh — bấm “+ Thêm ảnh”.</p>}
@@ -16106,8 +16101,8 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
                 {ip(s.image, (v) => setHeroSlide(i, "image", v), `/posters/hero-${i + 1}.jpg`)}
                 {hrefIp(s.href, (v) => setHeroSlide(i, "href", v), "/danh-muc?sort=discount")}
                 <div className="flex items-center gap-1">
-                  <button onClick={() => moveHeroSlide(i, -1)} disabled={i === 0} className="text-xs px-1.5 py-1 rounded-sm border disabled:opacity-30" style={{ borderColor: LINE }} title="Lên">↑</button>
-                  <button onClick={() => moveHeroSlide(i, 1)} disabled={i === heroSlides.length - 1} className="text-xs px-1.5 py-1 rounded-sm border disabled:opacity-30" style={{ borderColor: LINE }} title="Xuống">↓</button>
+                  <button onClick={() => moveHeroSlide(i, -1)} disabled={i === 0} className="text-xs px-1.5 py-1 rounded-md border disabled:opacity-30" style={{ borderColor: LINE }} title="Lên">↑</button>
+                  <button onClick={() => moveHeroSlide(i, 1)} disabled={i === heroSlides.length - 1} className="text-xs px-1.5 py-1 rounded-md border disabled:opacity-30" style={{ borderColor: LINE }} title="Xuống">↓</button>
                   <button onClick={() => delHeroSlide(i)} className="text-xs px-1.5 py-1" style={{ color: RUST }}>Xoá</button>
                 </div>
               </div>
@@ -16136,7 +16131,7 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
         </div>
       </section>
 
-      <section className="p-4 rounded-sm" style={{ border: `2px solid ${LINE}` }}>
+      <section className="p-4 rounded-md" style={{ border: `2px solid ${LINE}` }}>
         <h3 className="font-bold mb-3" style={{ color: RUST }}>Trang chính sách</h3>
         <div className="space-y-2">
           {WEB_PAGE_KEYS.map(([k, l]) => (
@@ -16145,13 +16140,13 @@ function WebConfigForm({ webConfig, setWebConfig, setProducts, addLog, products,
         </div>
       </section>
 
-      <section className="p-4 rounded-sm" style={{ border: `2px solid ${LINE}` }}>
+      <section className="p-4 rounded-md" style={{ border: `2px solid ${LINE}` }}>
         <h3 className="font-bold mb-3" style={{ color: RUST }}>Kho ảnh (Supabase Storage)</h3>
         <MediaCleanupPanel />
       </section>
 
       <div className="flex items-center gap-3">
-        <button onClick={() => { addLog("Cập nhật cấu hình web", ""); }} className="px-4 py-2 rounded-sm text-sm text-white" style={{ background: INK }}>Đã lưu (tự động)</button>
+        <button onClick={() => { addLog("Cập nhật cấu hình web", ""); }} className="px-4 py-2 rounded-md text-sm text-white" style={{ background: INK }}>Đã lưu (tự động)</button>
         <button onClick={() => { if (confirm("Xoá toàn bộ cấu hình web (web quay về mặc định)?")) setWebConfig({}); }} className="text-xs underline" style={{ color: RUST }}>Đặt lại về mặc định</button>
       </div>
     </div>
@@ -16212,11 +16207,11 @@ function MediaCleanupPanel() {
         Khi bạn thay ảnh khác hoặc xoá sản phẩm, ảnh cũ không tự mất — quét để tìm và dọn bớt ảnh không còn dùng.
       </p>
       <div className="flex items-center gap-3 flex-wrap">
-        <button onClick={scan} disabled={busy} className="px-3 py-1.5 rounded-sm text-sm border inline-flex items-center gap-1.5" style={{ borderColor: LINE, color: INK, opacity: busy ? 0.5 : 1 }}>
+        <button onClick={scan} disabled={busy} className="px-3 py-1.5 rounded-md text-sm border inline-flex items-center gap-1.5" style={{ borderColor: LINE, color: INK, opacity: busy ? 0.5 : 1 }}>
           {busy && <Loader2 size={14} className="animate-spin" />} Quét ảnh rác
         </button>
         {report && report.orphanCount > 0 && (
-          <button onClick={clean} disabled={busy} className="px-3 py-1.5 rounded-sm text-sm text-white inline-flex items-center gap-1.5" style={{ background: RUST, opacity: busy ? 0.5 : 1 }}>
+          <button onClick={clean} disabled={busy} className="px-3 py-1.5 rounded-md text-sm text-white inline-flex items-center gap-1.5" style={{ background: RUST, opacity: busy ? 0.5 : 1 }}>
             <Trash2 size={14} /> Xoá {report.orphanCount} ảnh rác (~{formatBytes(report.orphanBytes)})
           </button>
         )}
@@ -16841,7 +16836,7 @@ export default function SalesManager() {
         select { appearance: none; }
       `}</style>
       {saveFailed && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[90] px-4 py-2 rounded-sm text-sm text-white shadow-lg" style={{ background: RUST }}>
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[90] px-4 py-2 rounded-md text-sm text-white shadow-lg" style={{ background: RUST }}>
           Chưa lưu được dữ liệu lên server — đang tự thử lại. Đừng đóng trang.
         </div>
       )}
@@ -16851,11 +16846,11 @@ export default function SalesManager() {
         // tắt phía sau. Dữ liệu tới thời điểm này đã tự lưu 1 lần cuối (xem effect kiểm tra phiên bản)
         // — chỉ còn đúng 1 việc phải làm là tải lại trang, nên chặn hẳn phần còn lại của trang.
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ background: "rgba(20,20,20,0.6)" }}>
-          <div className="max-w-sm w-full rounded-sm shadow-2xl text-center p-6" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+          <div className="max-w-sm w-full rounded-md shadow-2xl text-center p-6" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
             <p className="text-3xl mb-2">🔄</p>
             <p className="text-base font-medium mb-2" style={{ color: INK }}>Đã có bản cập nhật mới</p>
             <p className="text-sm opacity-70 mb-5">Các thao tác gần nhất của bạn đã được tự lưu lại. Trang tạm khoá thao tác — bấm tải lại để tiếp tục làm việc trên bản mới nhất.</p>
-            <button onClick={() => location.reload()} className="w-full px-4 py-2.5 rounded-sm text-sm font-medium text-white" style={{ background: BRASS }}>Tải lại trang</button>
+            <button onClick={() => location.reload()} className="w-full px-4 py-2.5 rounded-md text-sm font-medium text-white" style={{ background: BRASS }}>Tải lại trang</button>
           </div>
         </div>
       )}
@@ -16864,13 +16859,13 @@ export default function SalesManager() {
           <div className="mb-8 flex items-center gap-2.5">
             <HiliLogo size={34} />
             <div>
-              <h1 style={{ fontFamily: "'Fraunces', serif", color: "#fff" }} className="text-base leading-tight">Quản lý bán hàng<br />Hilitek</h1>
+              <h1 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, color: "#fff" }} className="text-base leading-tight">Quản lý bán hàng<br />Hilitek</h1>
             </div>
           </div>
           <nav className="flex flex-col gap-2 w-full">
             {visibleTabs.map((t) => (
-              <button key={t.id} onClick={() => setTab(t.id)} className="flex items-center gap-3 px-4 py-3.5 rounded-sm text-base font-medium transition-colors w-full text-left"
-                style={{ background: tab === t.id ? "rgba(255,255,255,0.1)" : "transparent", color: tab === t.id ? "#fff" : "rgba(255,255,255,0.6)", borderLeft: tab === t.id ? `3px solid ${BRASS}` : "3px solid transparent" }}>
+              <button key={t.id} onClick={() => setTab(t.id)} className="flex items-center gap-3 px-4 py-3.5 rounded-md text-base font-medium transition-colors w-full text-left"
+                style={{ background: tab === t.id ? GOLD : "transparent", color: tab === t.id ? INK : "rgba(255,255,255,0.82)", fontWeight: tab === t.id ? 700 : 500 }}>
                 <t.icon size={20} className="shrink-0" /> {t.label}
               </button>
             ))}
@@ -16900,8 +16895,8 @@ export default function SalesManager() {
         </div>
         <div className="flex-1 p-5 md:p-8 min-w-0 md:ml-72">
           <div className="flex items-center justify-between mb-6">
-            <h2 style={{ fontFamily: "'Fraunces', serif", color: INK }} className="text-2xl">{visibleTabs.find((t) => t.id === tab)?.label || "Bán hàng"}</h2>
-            <span className="text-xs opacity-40" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{todayISO()}</span>
+            <h2 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, color: INK }} className="text-2xl">{visibleTabs.find((t) => t.id === tab)?.label || "Bán hàng"}</h2>
+            <span className="text-xs opacity-40" style={{ fontFamily: "'Inter', sans-serif" }}>{todayISO()}</span>
           </div>
           <AppErrorBoundary key={tab}>
             {tab === "dashboard" && <Dashboard products={products} orders={orders} goToOrdersFilter={goToOrdersFilter} />}
