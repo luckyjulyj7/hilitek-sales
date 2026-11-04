@@ -43,6 +43,57 @@ const STORAGE_KEY = "solbh-data-v2";
 
 const INK = "#1E2A8A"; // xanh thương hiệu: nút chính, thanh bên, mục đang chọn
 const TEXT = "#111827"; // chữ nội dung
+// Hộp xác nhận/nhập nhanh theo thương hiệu, thay confirm/prompt của trình duyệt. Trả về Promise.
+function openDialog({ message, withInput }) {
+  return new Promise((resolve) => {
+    const danger = /^\s*(xoá|xóa|phục hồi|ép |bỏ )/i.test(message) || /không thể hoàn tác|ghi đè|bỏ thay đổi|mất các thay đổi/i.test(message);
+    const wrap = document.createElement("div");
+    wrap.style.cssText = "position:fixed;inset:0;z-index:10000;background:rgba(15,23,70,.45);display:flex;align-items:center;justify-content:center;padding:16px";
+    const box = document.createElement("div");
+    box.setAttribute("role", "alertdialog");
+    box.setAttribute("aria-modal", "true");
+    box.style.cssText = "background:#fff;color:#111827;border-radius:8px;width:100%;max-width:440px;padding:20px;font:14px/1.5 Inter,sans-serif;box-shadow:0 20px 40px rgba(15,23,70,.25)";
+    const text = document.createElement("div");
+    text.textContent = message;
+    text.style.cssText = "white-space:pre-line;margin-bottom:16px";
+    box.appendChild(text);
+    let input = null;
+    if (withInput) {
+      input = document.createElement("input");
+      input.style.cssText = "width:100%;height:36px;border:1px solid #D1D5DB;border-radius:6px;padding:0 12px;margin-bottom:16px;font:inherit;outline-color:#1E2A8A";
+      box.appendChild(input);
+    }
+    const row = document.createElement("div");
+    row.style.cssText = "display:flex;justify-content:flex-end;gap:8px";
+    const mk = (label, primary) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = label;
+      b.style.cssText = `height:36px;padding:0 14px;border-radius:6px;font:500 14px Inter,sans-serif;cursor:pointer;${primary ? `color:#fff;border:0;background:${danger ? "#C62828" : "#1E2A8A"}` : "color:#111827;background:#fff;border:1px solid #D1D5DB"}`;
+      return b;
+    };
+    const cancel = mk("Huỷ", false);
+    const ok = mk(danger ? "Xác nhận" : "Đồng ý", true);
+    row.append(cancel, ok);
+    box.appendChild(row);
+    wrap.appendChild(box);
+    document.body.appendChild(wrap);
+    const done = (v) => { window.removeEventListener("keydown", onKey, true); wrap.remove(); resolve(v); };
+    const yes = () => done(withInput ? input.value : true);
+    const no = () => done(withInput ? null : false);
+    const onKey = (e) => {
+      if (e.key === "Escape") { e.preventDefault(); e.stopImmediatePropagation(); no(); }
+      else if (e.key === "Enter") { e.preventDefault(); e.stopImmediatePropagation(); if (document.activeElement === cancel) no(); else yes(); }
+    };
+    window.addEventListener("keydown", onKey, true);
+    cancel.onclick = no;
+    ok.onclick = yes;
+    (input || (danger ? cancel : ok)).focus();
+  });
+}
+const askConfirm = (message) => openDialog({ message: String(message) });
+const askPrompt = (message) => openDialog({ message: String(message), withInput: true });
+
 // Thông báo góc màn hình, thay cho alert của trình duyệt. Tự ẩn, bấm vào để đóng sớm.
 function notify(message) {
   let box = document.getElementById("hili-toasts");
@@ -2249,9 +2300,9 @@ function Modal({ title, onClose, children, wide, size, headerAction }) {
   useEffect(() => {
     const token = {};
     __modalStack.push(token);
-    const onKey = (e) => {
+    const onKey = async (e) => {
       if (e.key !== "Escape" || __modalStack[__modalStack.length - 1] !== token) return;
-      if (touchedRef.current && !window.confirm("Bạn đang nhập dở. Đóng cửa sổ này và bỏ thay đổi?")) return;
+      if (touchedRef.current && !await askConfirm("Bạn đang nhập dở. Đóng cửa sổ này và bỏ thay đổi?")) return;
       onClose && onClose();
     };
     window.addEventListener("keydown", onKey);
@@ -3622,8 +3673,8 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
               )}
               {(currentUser.isOwner || currentUser.perms?.deleteProducts) && (
                 <button
-                  onClick={() => {
-                    if (confirm(`Xoá sản phẩm "${viewingProduct.name}"? Không thể hoàn tác.`)) {
+                  onClick={async () => {
+                    if (await askConfirm(`Xoá sản phẩm "${viewingProduct.name}"? Không thể hoàn tác.`)) {
                       removeProduct(viewingProduct.id);
                       setViewingId(null);
                     }
@@ -3859,10 +3910,10 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <Field label="Nhóm hàng" hint={isAdmin ? "Chọn “+ Tạo nhóm hàng mới…” để thêm nhanh ngay tại đây" : "Chỉ chọn được nhóm hàng do quản trị viên tạo sẵn"}>
               <select className={inputCls} style={{ borderColor: LINE }} value={form.category || ""}
-                onChange={(e) => {
+                onChange={async (e) => {
                   const v = e.target.value;
                   if (v === "__new__") {
-                    const name = (prompt("Tên nhóm hàng mới:") || "").trim();
+                    const name = (await askPrompt("Tên nhóm hàng mới:") || "").trim();
                     if (!name) return;
                     if (!(categories || []).some((x) => x.toLowerCase() === name.toLowerCase())) { setCategories([...(categories || []), name]); addLog("Thêm nhóm hàng", name); }
                     setForm({ ...form, category: name, brand: "" });
@@ -3877,10 +3928,10 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
             </Field>
             <Field label="Nhãn hiệu" hint={!form.category ? "Chọn nhóm hàng trước" : isAdmin ? "Chọn “+ Tạo nhãn hiệu mới…” để thêm nhanh ngay tại đây" : "Chỉ chọn được nhãn hiệu do quản trị viên tạo sẵn"}>
               <select className={inputCls} style={{ borderColor: LINE }} value={form.brand || ""} disabled={!form.category}
-                onChange={(e) => {
+                onChange={async (e) => {
                   const v = e.target.value;
                   if (v === "__new__") {
-                    const name = (prompt(`Tên nhãn hiệu mới (nhóm "${form.category}"):`) || "").trim();
+                    const name = (await askPrompt(`Tên nhãn hiệu mới (nhóm "${form.category}"):`) || "").trim();
                     if (!name) return;
                     if (!(brands || []).some((b) => b.category === form.category && b.name.toLowerCase() === name.toLowerCase())) { setBrands([...(brands || []), { id: uid(), name, category: form.category }]); addLog("Thêm nhãn hiệu", `${name} (${form.category})`); }
                     setForm({ ...form, brand: name });
@@ -4252,11 +4303,11 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                         </button>
                       )}
                       <button
-                        onClick={() => {
+                        onClick={async () => {
                           const parts = [];
                           if (usedCount > 0) parts.push(`${usedCount} sản phẩm`);
                           if (brandCount > 0) parts.push(`${brandCount} nhãn hiệu`);
-                          if (parts.length && !confirm(
+                          if (parts.length && !await askConfirm(
                             `Nhóm hàng "${c}" đang có ${parts.join(" và ")}.\n\n` +
                             `Xoá nhóm này sẽ KHÔNG xoá sản phẩm/nhãn hiệu — chúng chỉ chuyển về trạng thái "chưa phân nhóm", bạn gán lại nhóm khác sau (nhãn hiệu gán lại ở mục Quản lý nhãn hiệu).\n\nTiếp tục xoá?`
                           )) return;
@@ -4305,8 +4356,8 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                         return (
                           <span key={b.id} className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-full text-xs" style={{ background: `${PURPLE}17`, color: PURPLE }} title={usedCount > 0 ? `${usedCount} sản phẩm đang dùng` : "Chưa có sản phẩm nào dùng"}>
                             {b.name}
-                            <button type="button" onClick={() => {
-                              if (usedCount > 0 && !confirm(
+                            <button type="button" onClick={async () => {
+                              if (usedCount > 0 && !await askConfirm(
                                 `Nhãn hiệu "${b.name}" đang có ${usedCount} sản phẩm.\n\n` +
                                 `Xoá nhãn hiệu này sẽ KHÔNG xoá sản phẩm — các sản phẩm đó chỉ bị bỏ trống ô nhãn hiệu, bạn chọn lại nhãn khác sau.\n\nTiếp tục xoá?`
                               )) return;
@@ -4343,9 +4394,9 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                             <option value="">— Gán vào nhóm hàng —</option>
                             {categoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
                           </select>
-                          <button onClick={() => {
+                          <button onClick={async () => {
                             const usedCount = products.filter((p) => p.brand === b.name).length;
-                            if (usedCount > 0 && !confirm(
+                            if (usedCount > 0 && !await askConfirm(
                               `Nhãn hiệu "${b.name}" đang có ${usedCount} sản phẩm.\n\nXoá sẽ bỏ trống ô nhãn hiệu ở các sản phẩm đó (KHÔNG xoá sản phẩm). Tiếp tục?`
                             )) return;
                             if (usedCount > 0) setProducts((prev) => prev.map((p) => (p.brand === b.name ? { ...p, brand: "" } : p)));
@@ -4435,9 +4486,9 @@ function BulkEditModal({ count, suppliers, categoryOptions, brandOptions, brandO
   const anyOn = Object.values(form).some((f) => f.on);
   const brandChoices = form.category.on && form.category.value ? brandOptionsOf(form.category.value) : brandOptions;
 
-  const submit = () => {
+  const submit = async () => {
     if (!anyOn) { notify("Bật ít nhất 1 mục cần đổi."); return; }
-    if (!confirm(`Áp dụng thay đổi cho ${count} sản phẩm đã chọn?`)) return;
+    if (!await askConfirm(`Áp dụng thay đổi cho ${count} sản phẩm đã chọn?`)) return;
     onApply(form);
   };
 
@@ -4507,13 +4558,13 @@ function MergeVariantsModal({ products, onClose, onApply }) {
   };
   const [groupName, setGroupName] = useState(guessGroupName);
 
-  const submit = () => {
+  const submit = async () => {
     const name = attrName.trim();
     if (!name) { notify('Nhập tên thuộc tính (VD: "Màu sắc").'); return; }
     if (!products.every((p) => (values[p.id] || "").trim())) { notify("Điền đủ giá trị cho từng sản phẩm."); return; }
     const norm = Object.values(values).map((v) => v.trim().toLowerCase());
     if (new Set(norm).size !== products.length) { notify("Giá trị bị trùng giữa 2 sản phẩm — mỗi sản phẩm cần 1 giá trị khác nhau."); return; }
-    if (alreadyGrouped.length > 0 && !confirm(`${alreadyGrouped.length} sản phẩm đã thuộc 1 nhóm phiên bản khác — gộp tiếp sẽ tách chúng khỏi nhóm cũ. Tiếp tục?`)) return;
+    if (alreadyGrouped.length > 0 && !await askConfirm(`${alreadyGrouped.length} sản phẩm đã thuộc 1 nhóm phiên bản khác — gộp tiếp sẽ tách chúng khỏi nhóm cũ. Tiếp tục?`)) return;
     const valuesById = {};
     products.forEach((p) => { valuesById[p.id] = values[p.id].trim(); });
     onApply(name, valuesById, groupName.trim());
@@ -5215,7 +5266,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
           <thead className="sticky top-0" style={{ zIndex: 2 }}>
             <tr style={{ borderBottom: `1px solid ${LINE}` }}>
               {["", "Mã đơn nhập", "Ngày nhập", "Trạng thái nhập", "Chi nhánh nhập", "Nhà cung cấp", "Số hoá đơn", "Nhân viên tạo", "Thanh toán", "Giá trị đơn", ""].map((h, hi) => (
-                <th key={hi} className="text-left px-3 py-2.5 text-xs whitespace-nowrap font-medium" style={{ color: TEXT, background: "#fff" }}>{h}</th>
+                <th key={hi} className={`${RIGHT_COLUMNS.has(h) ? "text-right" : "text-left"} px-3 py-2.5 text-xs whitespace-nowrap font-medium`} style={{ color: TEXT, background: "#fff" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -5641,14 +5692,14 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
     }
     setEditing(null);
   };
-  const remove = (id) => {
+  const remove = async (id) => {
     const s = suppliers.find((x) => x.id === id);
     if (!s) return;
     const poCount = purchaseOrders.filter((po) => poMatchesSupplier(po, s)).length;
     const warn = poCount > 0
       ? `Nhà cung cấp "${s.name}" đã có ${poCount} đơn nhập hàng. Xoá NCC KHÔNG xoá các đơn nhập đó, nhưng sẽ mất thông tin liên kết NCC trên các đơn cũ. Không thể hoàn tác.\n\nTiếp tục xoá?`
       : `Xoá nhà cung cấp "${s.name}"? Không thể hoàn tác.`;
-    if (!window.confirm(warn)) return;
+    if (!await askConfirm(warn)) return;
     setSuppliers((prev) => prev.filter((x) => x.id !== id));
     addLog("Xoá nhà cung cấp", s.name);
   };
@@ -5794,7 +5845,7 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
           <thead>
             <tr style={{ borderBottom: `1px solid ${LINE}` }}>
               {["Mã NCC", "Tên NCC", "Mã số thuế", "Người liên hệ", "SĐT", "Địa chỉ", "Công nợ cấp", ""].map((h, hi) => (
-                <th key={hi} className="text-left px-3 py-2.5 text-xs whitespace-nowrap font-medium" style={{ color: TEXT, opacity: 0.6 }}>{h}</th>
+                <th key={hi} className={`${RIGHT_COLUMNS.has(h) ? "text-right" : "text-left"} px-3 py-2.5 text-xs whitespace-nowrap font-medium`} style={{ color: TEXT, opacity: 0.6 }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -6704,7 +6755,7 @@ function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, a
   const openNew = () => { setForm(blank()); setEditingId(null); setView("form"); };
   const openEdit = (p) => { setForm({ ...p }); setEditingId(p.id); setView("form"); };
   const dup = (p) => { setForm({ ...p, company: p.company, recipientName: p.recipientName }); setEditingId(null); setView("form"); };
-  const del = (p) => { if (window.confirm(`Xoá phiếu gửi hàng của "${p.company || p.recipientName}"?`)) setParcelLabels((prev) => prev.filter((x) => x.id !== p.id)); };
+  const del = async (p) => { if (await askConfirm(`Xoá phiếu gửi hàng của "${p.company || p.recipientName}"?`)) setParcelLabels((prev) => prev.filter((x) => x.id !== p.id)); };
 
   const save = () => {
     if (!form.company.trim() && !form.recipientName.trim()) { notify("Nhập tên công ty hoặc tên người nhận."); return; }
@@ -7905,8 +7956,8 @@ function ProductsSection({ products, setProducts, purchaseOrders, setPurchaseOrd
     });
     return out;
   }, [products, orders, purchaseOrders, isAdmin]);
-  const restoreMissingMoves = () => {
-    if (!window.confirm(`Khôi phục ${missingMoves.length} phiếu nhập/xuất kho bị thiếu theo đúng chứng từ gốc?`)) return;
+  const restoreMissingMoves = async () => {
+    if (!await askConfirm(`Khôi phục ${missingMoves.length} phiếu nhập/xuất kho bị thiếu theo đúng chứng từ gốc?`)) return;
     // Phiếu nhập trước, phiếu xuất sau — để series vừa nhập lại có sẵn trước khi bị xuất.
     const sorted = [...missingMoves].sort((a, b) => (a.mv.type === b.mv.type ? 0 : a.mv.type === "in" ? -1 : 1));
     setProducts((prev) => prev.map((p) => {
@@ -8040,7 +8091,7 @@ function WardSelect({ province, value, onChange }) {
   );
 }
 
-function Customers({ customers, setCustomers, orders, products, currentUser, addLog, goToDoc, employeeNames, webConfig, pointAdjustments, setPointAdjustments }) {
+function Customers({ customers, setCustomers, orders, products, currentUser, addLog, goToDoc, employeeNames, webConfig, pointAdjustments, setPointAdjustments, navTarget, onFocusHandled }) {
   const isAdmin = currentUser.role === "admin";
   const [view, setView] = useState("list"); // list | debt
   const [editing, setEditing] = useState(null);
@@ -8050,6 +8101,9 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
   const [addrForm, setAddrForm] = useState(null); // null = đóng; {} = thêm mới; {...addr} = sửa
   const [query, setQuery] = useState("");
   const [debtSort, setDebtSort] = useState("amount"); // amount | due
+  useEffect(() => {
+    if (navTarget?.type === "customer") { setView("list"); setViewingId(navTarget.id); onFocusHandled && onFocusHandled(); }
+  }, [navTarget]);
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [adjustAmount, setAdjustAmount] = useState("");
   const [adjustReason, setAdjustReason] = useState("");
@@ -8068,8 +8122,8 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
     addLog("Điều chỉnh điểm tích luỹ", `${customer.name} · ${amount > 0 ? "+" : ""}${amount} điểm · ${adjustReason.trim()}`);
     setAdjustOpen(false); setAdjustAmount(""); setAdjustReason("");
   };
-  const removeAdjust = (a) => {
-    if (!confirm("Xoá dòng điều chỉnh điểm này?")) return;
+  const removeAdjust = async (a) => {
+    if (!await askConfirm("Xoá dòng điều chỉnh điểm này?")) return;
     setPointAdjustments((prev) => prev.filter((x) => x.id !== a.id));
     addLog("Xoá điều chỉnh điểm tích luỹ", `${a.phone} · ${a.amount > 0 ? "+" : ""}${a.amount} điểm`);
   };
@@ -8095,14 +8149,14 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
     }
     setEditing(null);
   };
-  const remove = (id) => {
+  const remove = async (id) => {
     const c = customers.find((x) => x.id === id);
     if (!c) return;
     const orderCount = orders.filter((o) => o.customerId === id).length;
     const warn = orderCount > 0
       ? `Khách hàng "${c.name}" đã có ${orderCount} đơn hàng. Xoá khách KHÔNG xoá các đơn hàng đó, nhưng sẽ mất thông tin liên kết khách hàng trên các đơn cũ. Không thể hoàn tác.\n\nTiếp tục xoá?`
       : `Xoá khách hàng "${c.name}"? Không thể hoàn tác.`;
-    if (!window.confirm(warn)) return;
+    if (!await askConfirm(warn)) return;
     setCustomers((prev) => prev.filter((x) => x.id !== id));
     addLog("Xoá khách hàng", c.name);
   };
@@ -8401,7 +8455,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
           <thead>
             <tr style={{ borderBottom: `1px solid ${LINE}` }}>
               {(isAdmin ? ["Mã KH", "Tên khách hàng", "SĐT", "Nhóm khách hàng", "Phụ trách", "Công nợ", "Tổng chi tiêu", "Tổng SL đơn", ""] : ["Mã KH", "Tên khách hàng", "SĐT", "Nhóm khách hàng", "Công nợ", "Tổng chi tiêu", "Tổng SL đơn", ""]).map((h, hi) => (
-                <th key={hi} className="text-left px-3 py-2.5 text-xs whitespace-nowrap font-medium" style={{ color: TEXT, opacity: 0.6 }}>{h}</th>
+                <th key={hi} className={`${RIGHT_COLUMNS.has(h) ? "text-right" : "text-left"} px-3 py-2.5 text-xs whitespace-nowrap font-medium`} style={{ color: TEXT, opacity: 0.6 }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -11179,7 +11233,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
             <tr style={{ borderBottom: `1px solid ${LINE}` }}>
               <th className="px-3 py-2.5" style={{ background: "#fff" }}><input type="checkbox" title="Chọn tất cả đơn trong trang này" checked={pageAllSelected} onChange={toggleSelectAll} /></th>
               {["Mã đơn", "Ngày tạo", "Khách hàng", "Bán tại", "Trạng thái giao", "Xuất hoá đơn", "Tổng tiền", "Còn phải trả", ""].map((h, hi) => (
-                <th key={hi} className="text-left px-3 py-2.5 text-xs whitespace-nowrap font-medium" style={{ color: TEXT, opacity: 0.6, background: "#fff" }}>{h}</th>
+                <th key={hi} className={`${RIGHT_COLUMNS.has(h) ? "text-right" : "text-left"} px-3 py-2.5 text-xs whitespace-nowrap font-medium`} style={{ color: TEXT, opacity: 0.6, background: "#fff" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -11194,7 +11248,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                     <button onClick={() => { setViewingId(o.id); setPayInput(""); }} className="hover:underline" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{o.code}</button>
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap opacity-80" style={{ fontFamily: "'Inter', sans-serif" }}>{formatDateTime(o.createdAt)}</td>
-                  <td className="px-3 py-3 whitespace-nowrap">{cust?.name || "Khách lẻ"}</td>
+                  <td className="px-3 py-3 truncate" style={{ maxWidth: 320 }} title={cust?.name || "Khách lẻ"}>{cust?.name || "Khách lẻ"}</td>
                   <td className="px-3 py-3 whitespace-nowrap opacity-70">{o.branch}</td>
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-1.5">
@@ -12090,7 +12144,7 @@ function ActivityLog({ log, accounts }) {
           <thead className="sticky top-0" style={{ zIndex: 2 }}>
             <tr style={{ borderBottom: `1px solid ${LINE}` }}>
               {["Thời gian", "Nhân sự", "Vai trò", "Hoạt động", "Chi tiết"].map((h, hi) => (
-                <th key={hi} className="text-left px-3 py-2.5 text-xs whitespace-nowrap font-medium" style={{ color: TEXT, opacity: 0.6, background: "#fff" }}>{h}</th>
+                <th key={hi} className={`${RIGHT_COLUMNS.has(h) ? "text-right" : "text-left"} px-3 py-2.5 text-xs whitespace-nowrap font-medium`} style={{ color: TEXT, opacity: 0.6, background: "#fff" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -13970,7 +14024,7 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
     const f = e.target.files && e.target.files[0];
     e.target.value = "";
     if (!f) return;
-    if (!window.confirm("Phục hồi sẽ GHI ĐÈ toàn bộ dữ liệu hiện tại bằng nội dung file này, không thể hoàn tác. Nên tải một bản sao lưu hiện tại trước. Tiếp tục?")) return;
+    if (!await askConfirm("Phục hồi sẽ GHI ĐÈ toàn bộ dữ liệu hiện tại bằng nội dung file này, không thể hoàn tác. Nên tải một bản sao lưu hiện tại trước. Tiếp tục?")) return;
     setRestoreBusy(true); setRestoreErr("");
     try {
       const parsed = JSON.parse(await f.text());
@@ -14042,7 +14096,7 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
           <thead>
             <tr style={{ borderBottom: `1px solid ${LINE}` }}>
               {["Tên đăng nhập", "Họ tên", "Vai trò", "Trạng thái", ""].map((h, hi) => (
-                <th key={hi} className="text-left px-3 py-2.5 text-xs whitespace-nowrap font-medium" style={{ color: TEXT, opacity: 0.6 }}>{h}</th>
+                <th key={hi} className={`${RIGHT_COLUMNS.has(h) ? "text-right" : "text-left"} px-3 py-2.5 text-xs whitespace-nowrap font-medium`} style={{ color: TEXT, opacity: 0.6 }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -14073,8 +14127,8 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
                         <>
                           {!a.isOwner && onKickAccount && (
                             <button
-                              onClick={() => {
-                                if (confirm(`Ép "${a.username}" đăng xuất ngay trên mọi thiết bị đang mở?\n\nLưu ý: chỉ có tác dụng với các tab đang chạy bản phần mềm mới nhất — tab đang mở bản cũ hơn sẽ không nhận được lệnh này.`)) {
+                              onClick={async () => {
+                                if (await askConfirm(`Ép "${a.username}" đăng xuất ngay trên mọi thiết bị đang mở?\n\nLưu ý: chỉ có tác dụng với các tab đang chạy bản phần mềm mới nhất — tab đang mở bản cũ hơn sẽ không nhận được lệnh này.`)) {
                                   onKickAccount(a.id);
                                   addLog && addLog("Đăng xuất từ xa", a.username);
                                 }
@@ -14385,6 +14439,70 @@ function WebHealthBadge({ p }) {
   const miss = webMissing(p);
   if (miss.length === 0) return <span className="text-xs font-medium" style={{ color: FOREST }}>Đầy đủ</span>;
   return <span className="text-xs font-medium" style={{ color: miss.some((m) => m.label === "Ảnh sản phẩm" || m.label === "Mô tả") ? RUST : BRASS }} title={`Thiếu: ${miss.map((m) => m.label).join(", ")}`}>Thiếu {miss[0].label.toLowerCase()}{miss.length > 1 ? ` +${miss.length - 1}` : ""}</span>;
+}
+
+// Tìm nhanh toàn hệ thống (Ctrl K): đơn bán, đơn nhập, khách hàng, sản phẩm, nhà cung cấp.
+const foldText = (v) => String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/gi, "d").toLowerCase();
+function CommandPalette({ orders, purchaseOrders, customers, products, suppliers, onPick }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const [active, setActive] = useState(0);
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setOpen(true); }
+    };
+    const onOpen = () => setOpen(true);
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("hili:search", onOpen);
+    return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("hili:search", onOpen); };
+  }, []);
+  const results = useMemo(() => {
+    const k = foldText(q.trim());
+    if (k.length < 2) return [];
+    const has = (...vals) => vals.some((v) => foldText(v).includes(k));
+    const take = (list) => list.slice(0, 5);
+    const custName = (id) => customers.find((c) => c.id === id)?.name || "Khách lẻ";
+    return [
+      ...take(orders.filter((o) => has(o.code, custName(o.customerId), o.invoiceNo)).map((o) => ({ type: "order", id: o.id, code: o.code, group: "Đơn bán", title: o.code, sub: custName(o.customerId) }))),
+      ...take(customers.filter((c) => has(c.name, c.code, c.phone, c.taxCode)).map((c) => ({ type: "customer", id: c.id, group: "Khách hàng", title: c.name, sub: [c.code, c.phone, c.taxCode].filter(Boolean).join(" · ") }))),
+      ...take(products.filter((p) => has(p.name, p.sku, p.code)).map((p) => ({ type: "product", id: p.id, group: "Sản phẩm", title: p.name, sub: [p.code, p.sku].filter(Boolean).join(" · ") }))),
+      ...take((purchaseOrders || []).filter((po) => has(po.code, po.invoiceNo, po.supplier)).map((po) => ({ type: "po", id: po.id, code: po.code, group: "Đơn nhập", title: po.code, sub: po.supplier }))),
+      ...take((suppliers || []).filter((x) => has(x.name, x.code, x.taxCode, x.phone)).map((x) => ({ type: "supplier", id: x.id, group: "Nhà cung cấp", title: x.name, sub: [x.code, x.taxCode].filter(Boolean).join(" · ") }))),
+    ];
+  }, [q, orders, purchaseOrders, customers, products, suppliers]);
+  useEffect(() => { setActive(0); }, [q]);
+  if (!open) return null;
+  const close = () => { setOpen(false); setQ(""); };
+  const pick = (r) => { close(); onPick(r); };
+  const onKeyDown = (e) => {
+    if (e.key === "Escape") { e.stopPropagation(); close(); }
+    else if (e.key === "ArrowDown") { e.preventDefault(); setActive((i) => Math.min(i + 1, results.length - 1)); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setActive((i) => Math.max(i - 1, 0)); }
+    else if (e.key === "Enter" && results[active]) pick(results[active]);
+  };
+  return (
+    <div className="fixed inset-0 z-[80] flex items-start justify-center p-4" style={{ background: "rgba(15,23,70,0.45)", paddingTop: "12vh" }} onClick={close}>
+      <div className="w-full max-w-xl rounded-lg overflow-hidden" style={{ background: "#fff", boxShadow: "0 20px 40px rgba(15,23,70,.25)" }} onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2 px-4" style={{ borderBottom: `1px solid ${LINE}` }}>
+          <Search size={16} style={{ color: "#6B7280" }} />
+          <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onKeyDown} placeholder="Tìm đơn, khách hàng, sản phẩm, MST, số điện thoại" className="flex-1 py-3 text-sm outline-none" style={{ color: TEXT }} />
+        </div>
+        <div className="overflow-y-auto" style={{ maxHeight: "55vh" }}>
+          {q.trim().length < 2 && <p className="px-4 py-6 text-sm text-center" style={{ color: "#6B7280" }}>Gõ từ 2 ký tự để tìm</p>}
+          {q.trim().length >= 2 && results.length === 0 && <p className="px-4 py-6 text-sm text-center" style={{ color: "#6B7280" }}>Không tìm thấy kết quả</p>}
+          {results.map((r, i) => (
+            <React.Fragment key={`${r.type}-${r.id}`}>
+              {(i === 0 || results[i - 1].group !== r.group) && <p className="px-4 pt-3 pb-1 text-xs font-semibold" style={{ color: "#6B7280" }}>{r.group}</p>}
+              <button type="button" onClick={() => pick(r)} onMouseEnter={() => setActive(i)} className="w-full text-left px-4 py-2" style={{ background: i === active ? PAPER : "#fff" }}>
+                <span className="block text-sm font-medium truncate" style={{ color: TEXT }}>{r.title}</span>
+                {r.sub && <span className="block text-xs truncate" style={{ color: "#6B7280" }}>{r.sub}</span>}
+              </button>
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig, categories, brands, currentUser, addLog, onOpenOrder, navTarget, onFocusHandled, goToInventoryProductEdit }) {
@@ -15141,21 +15259,21 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
     setWeightDraft(product.weight ?? 0);
     setDirty(false);
   };
-  const handleBack = () => {
-    if (dirty && !window.confirm("Có thay đổi chưa lưu. Rời khỏi trang sẽ mất các thay đổi này — tiếp tục?")) return;
+  const handleBack = async () => {
+    if (dirty && !await askConfirm("Có thay đổi chưa lưu. Rời khỏi trang sẽ mất các thay đổi này — tiếp tục?")) return;
     onBack();
   };
 
   // Backspace quay lại danh sách sản phẩm web — chỉ khi KHÔNG đang gõ trong 1 ô nhập (input/
   // textarea/select), tránh nuốt mất backspace bình thường khi đang sửa chữ trong form.
   useEffect(() => {
-    const onKey = (e) => {
+    const onKey = async (e) => {
       if (e.key !== "Backspace") return;
       const el = document.activeElement;
       const tag = el && el.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (el && el.isContentEditable)) return;
       e.preventDefault();
-      if (dirty && !window.confirm("Có thay đổi chưa lưu. Rời khỏi trang sẽ mất các thay đổi này — tiếp tục?")) return;
+      if (dirty && !await askConfirm("Có thay đổi chưa lưu. Rời khỏi trang sẽ mất các thay đổi này — tiếp tục?")) return;
       onBack();
     };
     window.addEventListener("keydown", onKey);
@@ -15222,9 +15340,9 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
         {p.variantGroupId && (() => {
           const siblings = products.filter((x) => x.variantGroupId === p.variantGroupId);
           if (siblings.length < 2) return null;
-          const switchTo = (id) => {
+          const switchTo = async (id) => {
             if (id === p.id) return;
-            if (dirty && !window.confirm("Có thay đổi chưa lưu. Chuyển phiên bản sẽ mất các thay đổi này — tiếp tục?")) return;
+            if (dirty && !await askConfirm("Có thay đổi chưa lưu. Chuyển phiên bản sẽ mất các thay đổi này — tiếp tục?")) return;
             onSwitch && onSwitch(id);
           };
           // draft.isDefaultVariant phản ánh cả dữ liệu đã lưu lẫn lúc vừa bấm đặt đại diện (chưa Lưu).
@@ -15252,8 +15370,8 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
         <div className="flex-1" />
         {goToInventoryProductEdit && (
           <button
-            onClick={() => {
-              if (dirty && !window.confirm("Có thay đổi chưa lưu. Rời khỏi trang sẽ mất các thay đổi này — tiếp tục?")) return;
+            onClick={async () => {
+              if (dirty && !await askConfirm("Có thay đổi chưa lưu. Rời khỏi trang sẽ mất các thay đổi này — tiếp tục?")) return;
               goToInventoryProductEdit(p.id);
             }}
             title="Sửa mã VT, giá nhập/bán, tồn kho... của sản phẩm này"
@@ -15710,8 +15828,8 @@ function WebMenuEditor({ webConfig, setWebConfig, setProducts, products }) {
 
   const setG = (gi, k, v) => upd((d) => d.map((g, i) => (i === gi ? { ...g, [k]: v } : g)));
   const addG = () => upd((d) => [...d, { _key: uid(), group: "Nhóm mới", icon: "Package", subs: [] }]);
-  const delG = (gi, group, childCount) => {
-    if (childCount > 0 && !window.confirm(`Xoá nhóm "${group}" sẽ xoá luôn ${childCount} danh mục bên trong. Sản phẩm đã gán không bị xoá, chỉ không còn hiện trong menu. Tiếp tục?`)) return;
+  const delG = async (gi, group, childCount) => {
+    if (childCount > 0 && !await askConfirm(`Xoá nhóm "${group}" sẽ xoá luôn ${childCount} danh mục bên trong. Sản phẩm đã gán không bị xoá, chỉ không còn hiện trong menu. Tiếp tục?`)) return;
     upd((d) => d.filter((_, i) => i !== gi));
   };
   const moveG = (gi, dir) => upd((d) => {
@@ -15787,8 +15905,8 @@ function WebMenuEditor({ webConfig, setWebConfig, setProducts, products }) {
             {(g.subs || []).map((node, i) => (
               <MenuNodeRow key={node._key} node={node} siblingsCount={g.subs.length} index={i} depth={1}
                 onUpdate={(key, patch) => setG(gi, "subs", updateNodeByKey(g.subs, key, patch))}
-                onDelete={(key, name, childCount) => {
-                  if (childCount > 0 && !window.confirm(`Xoá "${name}" sẽ xoá luôn ${childCount} danh mục con bên trong. Sản phẩm đã gán không bị xoá, chỉ không còn hiện trong menu. Tiếp tục?`)) return;
+                onDelete={async (key, name, childCount) => {
+                  if (childCount > 0 && !await askConfirm(`Xoá "${name}" sẽ xoá luôn ${childCount} danh mục con bên trong. Sản phẩm đã gán không bị xoá, chỉ không còn hiện trong menu. Tiếp tục?`)) return;
                   setG(gi, "subs", removeNodeByKey(g.subs, key));
                 }}
                 onAddChild={(key) => setG(gi, "subs", addChildByKey(g.subs, key, { _key: uid(), name: "Danh mục mới", subs: [] }))}
@@ -16362,7 +16480,7 @@ function WebConfigForm({ section, webConfig, setWebConfig, setProducts, addLog, 
       {section === "settings" && (
       <div className="flex items-center gap-3">
         <button onClick={() => { addLog("Cập nhật cấu hình web", ""); }} className="px-4 py-2 rounded-md text-sm text-white" style={{ background: INK }}>Đã lưu (tự động)</button>
-        <button onClick={() => { if (confirm("Xoá toàn bộ cấu hình web (web quay về mặc định)?")) setWebConfig({}); }} className="text-xs underline" style={{ color: RUST }}>Đặt lại về mặc định</button>
+        <button onClick={async () => { if (await askConfirm("Xoá toàn bộ cấu hình web (web quay về mặc định)?")) setWebConfig({}); }} className="text-xs underline" style={{ color: RUST }}>Đặt lại về mặc định</button>
       </div>
       )}
       <p className="text-xs" style={{ color: "#6B7280" }}>Thay đổi tự lưu. Ô bỏ trống sẽ dùng giá trị mặc định của web.</p>
@@ -16408,7 +16526,7 @@ function MediaCleanupPanel() {
 
   const clean = async () => {
     if (!report || !report.orphanCount) return;
-    if (!confirm(`Xoá ${report.orphanCount} ảnh rác (giải phóng ~${formatBytes(report.orphanBytes)})? Không thể hoàn tác.`)) return;
+    if (!await askConfirm(`Xoá ${report.orphanCount} ảnh rác (giải phóng ~${formatBytes(report.orphanBytes)})? Không thể hoàn tác.`)) return;
     setBusy(true); setMsg("");
     try {
       const j = await call("POST");
@@ -16467,6 +16585,15 @@ function ScrollTopButton() {
     </button>
   );
 }
+
+const RIGHT_COLUMNS = new Set(["Tổng tiền", "Còn phải trả", "Giá trị đơn", "Công nợ", "Tổng chi tiêu", "Tổng SL đơn", "Giá trị", "Thành tiền", "Đơn giá"]);
+const NAV_GROUPS = [
+  { label: "", ids: ["dashboard"] },
+  { label: "Bán hàng", ids: ["quotes", "orders", "shipping", "customers"] },
+  { label: "Kho", ids: ["products", "purchase", "suppliers"] },
+  { label: "Website", ids: ["website"] },
+  { label: "Quản trị", ids: ["plans", "reports", "activity", "accounts", "profile"] },
+];
 
 const TABS = [
   { id: "dashboard", label: "Tổng quan", icon: LayoutDashboard },
@@ -17052,6 +17179,8 @@ export default function SalesManager() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
         select { appearance: none; }
+        #app-shell table th { font-size: 12px; font-weight: 600; color: #4B5563 !important; opacity: 1 !important; }
+        #app-shell table tbody tr:hover > td { background: #F9FAFB; }
       `}</style>
       {saveFailed && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[90] px-4 py-2 rounded-md text-sm text-white shadow-lg" style={{ background: RUST }}>
@@ -17073,20 +17202,29 @@ export default function SalesManager() {
         </div>
       )}
       <div id="app-shell" className="flex flex-col md:flex-row">
-        <div className="md:w-72 shrink-0 p-5 flex flex-col md:fixed md:top-0 md:left-0 md:h-screen md:overflow-y-auto md:z-10" style={{ background: INK }}>
-          <div className="mb-8 flex items-center gap-2.5">
-            <HiliLogo size={34} />
+        <div className="md:w-56 shrink-0 p-3 flex flex-col md:fixed md:top-0 md:left-0 md:h-screen md:overflow-y-auto md:z-10" style={{ background: INK }}>
+          <div className="mb-3 px-1 flex items-center gap-2.5">
+            <HiliLogo size={32} />
             <div>
               <h1 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, color: "#fff" }} className="text-base leading-tight">Quản lý bán hàng<br />Hilitek</h1>
             </div>
           </div>
-          <nav className="flex flex-col gap-2 w-full">
-            {visibleTabs.map((t) => (
-              <button key={t.id} onClick={() => setTab(t.id)} className="flex items-center gap-3 px-4 py-3.5 rounded-md text-base font-medium transition-colors w-full text-left"
-                style={{ background: tab === t.id ? GOLD : "transparent", color: tab === t.id ? INK : "rgba(255,255,255,0.82)", fontWeight: tab === t.id ? 700 : 500 }}>
-                <t.icon size={20} className="shrink-0" /> {t.label}
-              </button>
-            ))}
+          <nav className="flex flex-col gap-0.5 w-full">
+            {NAV_GROUPS.map((g) => {
+              const items = g.ids.map((id) => visibleTabs.find((t) => t.id === id)).filter(Boolean);
+              if (items.length === 0) return null;
+              return (
+                <React.Fragment key={g.label || "top"}>
+                  {g.label && <p className="px-3 pt-3 pb-1 text-xs font-semibold" style={{ color: "#AEB7E6" }}>{g.label}</p>}
+                  {items.map((t) => (
+                    <button key={t.id} onClick={() => setTab(t.id)} className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors w-full text-left"
+                      style={{ background: tab === t.id ? GOLD : "transparent", color: tab === t.id ? INK : "#E4E7F7", fontWeight: tab === t.id ? 700 : 500 }}>
+                      <t.icon size={17} className="shrink-0" /> {t.label}
+                    </button>
+                  ))}
+                </React.Fragment>
+              );
+            })}
           </nav>
           {currentUser.role === "admin" && (
             <div className="mt-3 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.12)" }}>
@@ -17111,11 +17249,21 @@ export default function SalesManager() {
             <button onClick={() => setCurrentUserId(null)} title="Đăng xuất" className="pt-4 opacity-60 hover:opacity-100 shrink-0" style={{ color: "#fff" }}><LogOut size={16} /></button>
           </div>
         </div>
-        <div className="flex-1 p-5 md:p-8 min-w-0 md:ml-72">
+        <div className="flex-1 p-5 md:p-6 min-w-0 md:ml-56">
           <div className="flex items-center justify-between mb-6">
             <h2 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, color: TEXT }} className="text-2xl">{visibleTabs.find((t) => t.id === tab)?.label || "Bán hàng"}</h2>
-            <span className="text-xs opacity-60" style={{ fontFamily: "'Inter', sans-serif" }}>{todayISO()}</span>
+            <button type="button" onClick={() => window.dispatchEvent(new Event("hili:search"))} className="hidden sm:flex items-center gap-2 text-sm px-3 rounded-md border" style={{ height: 36, width: 300, borderColor: "#D1D5DB", background: "#fff", color: "#6B7280" }}>
+              <Search size={15} /> <span className="flex-1 text-left">Tìm đơn, khách, sản phẩm</span> <span className="text-xs px-1.5 rounded" style={{ border: `1px solid ${LINE}` }}>Ctrl K</span>
+            </button>
           </div>
+          <CommandPalette orders={orders} customers={currentUser.role === "admin" ? customers : customers.filter((c) => c.assignedTo === currentUser.fullName)} products={products}
+            purchaseOrders={currentUser.role === "admin" ? purchaseOrders : []} suppliers={currentUser.role === "admin" ? suppliers : []}
+            onPick={(r) => {
+              if (r.type === "order" || r.type === "po") goToDoc(r.code);
+              else if (r.type === "supplier") goToSupplier(r.id);
+              else if (r.type === "product") { setTab("products"); setNavTarget({ type: "product", id: r.id }); }
+              else if (r.type === "customer") { setTab("customers"); setNavTarget({ type: "customer", id: r.id }); }
+            }} />
           <AppErrorBoundary key={tab}>
             {tab === "dashboard" && <Dashboard products={products} orders={orders} goToOrdersFilter={goToOrdersFilter} />}
             {tab === "products" && roleTabIds.includes("products") && <ProductsSection products={products} setProducts={setProducts} purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} suppliers={suppliers} setSuppliers={setSuppliers} categories={categories} setCategories={setCategories} brands={brands} setBrands={setBrands} stocktakes={stocktakes} setStocktakes={setStocktakes} warrantyTickets={warrantyTickets} setWarrantyTickets={setWarrantyTickets} repairTickets={repairTickets} setRepairTickets={setRepairTickets} helpdeskTickets={helpdeskTickets} setHelpdeskTickets={setHelpdeskTickets} orders={orders} setOrders={setOrders} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} navTarget={tab === "products" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} goToDoc={goToDoc} goToSupplier={goToSupplier} goToWebProduct={goToWebProduct} webConfig={webConfig} />}
@@ -17123,7 +17271,7 @@ export default function SalesManager() {
             {tab === "quotes" && <Quotations quotations={quotations} setQuotations={setQuotations} orders={orders} setOrders={setOrders} products={products} setProducts={setProducts} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} brands={brands} />}
             {tab === "orders" && <Orders orders={orders} setOrders={setOrders} products={products} setProducts={setProducts} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} focusOrderId={tab === "orders" ? navTarget?.type === "order" ? navTarget.id : null : null} initialFilterStatus={tab === "orders" && navTarget?.type === "orders-filter" ? navTarget.status : null} initialDeliveredFrom={tab === "orders" && navTarget?.type === "orders-daterange" ? navTarget.from : null} initialDeliveredTo={tab === "orders" && navTarget?.type === "orders-daterange" ? navTarget.to : null} onFocusHandled={() => setNavTarget(null)} printSettings={printSettings} setPrintSettings={setPrintSettings} />}
             {tab === "shipping" && roleTabIds.includes("shipping") && <Shipping shippingTickets={shippingTickets} setShippingTickets={setShippingTickets} parcelLabels={parcelLabels} setParcelLabels={setParcelLabels} orders={orders} customers={customers} currentUser={currentUser} addLog={addLog} />}
-            {tab === "customers" && <Customers customers={customers} setCustomers={setCustomers} orders={orders} products={products} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} employeeNames={employeeNames} webConfig={webConfig} pointAdjustments={pointAdjustments} setPointAdjustments={setPointAdjustments} />}
+            {tab === "customers" && <Customers navTarget={navTarget} onFocusHandled={() => setNavTarget(null)} customers={customers} setCustomers={setCustomers} orders={orders} products={products} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} employeeNames={employeeNames} webConfig={webConfig} pointAdjustments={pointAdjustments} setPointAdjustments={setPointAdjustments} />}
             {tab === "suppliers" && <Suppliers suppliers={suppliers} setSuppliers={setSuppliers} purchaseOrders={purchaseOrders} addLog={addLog} goToDoc={goToDoc} navTarget={tab === "suppliers" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} currentUser={currentUser} />}
             {tab === "plans" && roleTabIds.includes("plans") && <Plans plans={plans} setPlans={setPlans} orders={orders} purchaseOrders={purchaseOrders} products={products} employeeNames={employeeNames} />}
             {tab === "reports" && roleTabIds.includes("reports") && <Reports orders={orders} products={products} customers={customers} accounts={accounts} purchaseOrders={purchaseOrders} warrantyTickets={warrantyTickets} employeeNames={employeeNames} goToOrdersDateRange={goToOrdersDateRange} goToProductsDateRange={goToProductsDateRange} />}
