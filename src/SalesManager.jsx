@@ -2701,6 +2701,44 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
   // bản — gán chung variantGroupId + variantAttrs theo đúng tên attribute + giá trị admin xác nhận,
   // để từ đây web/danh sách tự gộp lại như sản phẩm tạo qua "Nhiều phiên bản". KHÔNG đổi tên/giá/
   // kho — chỉ gắn thông tin liên kết.
+  // Thêm 1 phiên bản vào nhóm có sẵn: sao chép thông tin từ phiên bản đại diện, tồn kho/lịch sử bắt đầu từ 0.
+  const [addVariantFor, setAddVariantFor] = useState(null); // { rep, baseCode, baseSku, values }
+  const openAddVariant = (rep, baseCode, baseSku) => {
+    const attrs = rep.variantAttrs && Object.keys(rep.variantAttrs).length ? Object.keys(rep.variantAttrs) : ["Phiên bản"];
+    setAddVariantFor({
+      rep, attrs,
+      baseCode: baseCode || (rep.code || "").replace(/_[^_]*$/, ""),
+      baseSku: baseSku || (rep.sku || "").replace(/_[^_]*$/, ""),
+      values: Object.fromEntries(attrs.map((k) => [k, ""])),
+    });
+  };
+  const submitAddVariant = () => {
+    const { rep, attrs, baseCode, baseSku, values } = addVariantFor;
+    const vals = attrs.map((k) => (values[k] || "").trim());
+    if (vals.some((v) => !v)) { alert("Vui lòng nhập đủ giá trị phiên bản."); return; }
+    const siblings = products.filter((x) => x.variantGroupId === rep.variantGroupId);
+    const same = siblings.find((x) => attrs.every((k, i) => String(x.variantAttrs?.[k] || "").trim().toLowerCase() === vals[i].toLowerCase()));
+    if (same) { alert(`Phiên bản này đã có trong nhóm (${same.code}).`); return; }
+    const taken = (suffix) => products.some((x) => x.code.toLowerCase() === `${baseCode}_${suffix}`.toLowerCase() || (x.sku || "").toLowerCase() === `${baseSku}_${suffix}`.toLowerCase());
+    let suffix = vals.map((v) => variantValueCode(v)).join("_");
+    if (taken(suffix)) suffix = vals.map((v) => variantValueCode(v, 6)).join("_");
+    const root = suffix;
+    for (let i = 2; taken(suffix); i++) suffix = `${root}${i}`;
+    const now = new Date().toISOString();
+    const newWeb = normalizeWeb({ ...rep.web, slug: "", isDefaultVariant: false });
+    if (newWeb.published) { newWeb.publishedAt = now; newWeb.publishedBy = currentUser.fullName; }
+    const created = {
+      ...rep, id: uid(), code: `${baseCode}_${suffix}`, sku: `${baseSku}_${suffix}`,
+      name: `${baseVariantName(rep)} - ${vals.join(", ")}`,
+      variantAttrs: Object.fromEntries(attrs.map((k, i) => [k, vals[i]])),
+      openingQty: 0, barcode: "", movements: [], priceHistory: [], createdAt: now, createdBy: currentUser.fullName, web: newWeb,
+    };
+    setProducts((prev) => [...prev, created]);
+    addLog("Thêm phiên bản", `${created.code} · ${created.name}`);
+    setExpandedGroups((prev) => new Set(prev).add(rep.variantGroupId));
+    setAddVariantFor(null);
+    openEdit(created); // mở luôn để chỉnh ảnh/giá riêng của phiên bản mới
+  };
   const applyMerge = (attrName, valuesById, groupName) => {
     const gid = uid();
     setProducts((prev) => prev.map((p) => (
@@ -3391,6 +3429,9 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                           {isAdmin && (
                             <button onClick={() => openEdit(rep)} title="Sửa" className="rounded-sm hover:bg-black/5" style={{ opacity: 0.6, padding: 4 }}><Pencil size={13} /></button>
                           )}
+                          {isAdmin && (
+                            <button onClick={() => openAddVariant(rep, baseCode, baseSku)} title="Thêm phiên bản vào nhóm này" className="rounded-sm hover:bg-black/5" style={{ color: PURPLE, padding: 4 }}><Plus size={13} /></button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -3417,6 +3458,23 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
               className="px-2 py-1 rounded-sm disabled:opacity-30" style={{ border: `1px solid ${LINE}` }}><ChevronRight size={14} /></button>
           </div>
         </div>
+      )}
+
+      {addVariantFor && (
+        <Modal title="Thêm phiên bản" onClose={() => setAddVariantFor(null)}>
+          <p className="text-sm mb-3" style={{ color: INK }}>{baseVariantName(addVariantFor.rep)}</p>
+          <div className="space-y-3">
+            {addVariantFor.attrs.map((k, i) => (
+              <Field key={k} label={k}>
+                <input autoFocus={i === 0} className={inputCls} style={{ borderColor: LINE }} value={addVariantFor.values[k]}
+                  onChange={(e) => { const v = e.target.value; setAddVariantFor((f) => ({ ...f, values: { ...f.values, [k]: v } })); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") submitAddVariant(); }} placeholder="VD: OCEAN" />
+              </Field>
+            ))}
+          </div>
+          <p className="text-xs opacity-60 mt-3">Sao chép nhóm hàng, nhãn hiệu, giá, ảnh, mô tả web từ phiên bản {addVariantFor.rep.code}. Tồn kho bắt đầu từ 0. Tạo xong sẽ mở trang sửa để chỉnh ảnh/giá riêng.</p>
+          <button onClick={submitAddVariant} className="w-full py-2.5 rounded-sm text-white text-sm mt-3" style={{ background: INK }}>Thêm phiên bản</button>
+        </Modal>
       )}
 
       {/* Modal chi tiết sản phẩm — thông tin đầy đủ + danh sách series + lịch sử nhập/xuất */}
