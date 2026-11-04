@@ -4937,7 +4937,7 @@ function ItemsTable({ items, products, onUpdate, onRemove, lockQtyPrice, onOpenP
                 <tr style={{ borderBottom: p?.hasSeries ? "none" : `1px dashed ${LINE}` }}>
                   <td className="px-2 py-3 text-xs opacity-60 align-top">{idx + 1}</td>
                   <td className="px-2 py-3 align-top">
-                    <div className="font-medium text-sm leading-snug" style={{ color: TEXT }}>{p?.name}</div>
+                    {p && onOpenProduct ? <button type="button" onClick={() => onOpenProduct(p.id)} className="block text-left font-medium text-sm leading-snug hover:underline" style={{ color: BLUE }}>{p.name}</button> : <div className="font-medium text-sm leading-snug" style={{ color: TEXT }}>{p?.name}</div>}
                     <div className="text-xs mt-0.5" style={{ color: TEXT, opacity: 0.55 }}>{p?.sku || p?.code}</div>
                   </td>
                   <td className="px-1 py-3 align-top">
@@ -9066,7 +9066,7 @@ function SalesItemsTable({ items, products, onUpdate, onRemove, role }) {
                   </td>
                   <td className="px-2 py-3 align-top">
                     <div className="min-h-[36px] flex flex-col justify-center">
-                      {p && onOpenProduct ? <button type="button" onClick={() => onOpenProduct(p.id)} className="block text-left font-medium text-[13px] leading-snug hover:underline" style={{ color: BLUE }}>{p.name}</button> : <div className="font-medium text-[13px] leading-snug" style={{ color: TEXT }}>{p?.name}</div>}
+                      <div className="font-medium text-[13px] leading-snug" style={{ color: TEXT }}>{p?.name}</div>
                       <div className="text-xs opacity-60">{p?.sku || p?.code}</div>
                     </div>
                   </td>
@@ -17558,6 +17558,7 @@ export default function SalesManager() {
           .hili-tabs::-webkit-scrollbar { display: none; }
           .hili-tabs > button { flex: none !important; }
           .hili-submit { position: fixed; left: 12px; right: 12px; bottom: 10px; width: auto !important; z-index: 20; margin: 0 !important; box-shadow: 0 6px 16px rgba(15,23,70,.25); }
+          .hili-full:has(input:focus) .hili-submit, .hili-full:has(input:focus) .hili-submit-row { display: none; }
           .hili-submit:disabled { opacity: 1; background: #9CA3AF !important; }
           .hili-submit-row { position: fixed; left: 12px; right: 12px; bottom: 10px; z-index: 20; flex-direction: row !important; margin: 0 !important; }
           .hili-submit-row > button { background-color: #fff; }
