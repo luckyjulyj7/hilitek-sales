@@ -2304,13 +2304,15 @@ function Modal({ title, onClose, children, wide, size, headerAction, drawer }) {
     if (touchedRef.current && !await askConfirm("Bạn đang nhập dở. Đóng cửa sổ này và bỏ thay đổi?")) return;
     onClose && onClose();
   };
+  const closeRef = useRef(requestClose);
+  closeRef.current = requestClose;
   // Bấm ESC để đóng — chỉ popup trên cùng phản hồi (tránh đóng luôn popup nền).
   useEffect(() => {
-    const token = {};
+    const token = { close: () => closeRef.current() };
     __modalStack.push(token);
     const onKey = async (e) => {
       if (e.key !== "Escape" || __modalStack[__modalStack.length - 1] !== token) return;
-      requestClose();
+      closeRef.current();
     };
     window.addEventListener("keydown", onKey);
     return () => {
@@ -2318,12 +2320,12 @@ function Modal({ title, onClose, children, wide, size, headerAction, drawer }) {
       const i = __modalStack.indexOf(token);
       if (i >= 0) __modalStack.splice(i, 1);
     };
-  }, [onClose]);
+  }, []);
   return (
-    <div className={`fixed inset-0 z-50 flex ${drawer ? "justify-end" : "items-center justify-center p-2 sm:p-4"}`} style={{ background: drawer ? "rgba(15,23,70,0.25)" : "rgba(15,23,70,0.45)" }}
+    <div className={`fixed inset-0 z-50 flex ${drawer ? "justify-end" : `items-center justify-center ${kind === "small" ? "p-3" : "md:p-4"}`}`} style={{ background: drawer ? "rgba(15,23,70,0.25)" : "rgba(15,23,70,0.45)" }}
       onClick={drawer ? requestClose : undefined}>
       <div onClick={(e) => e.stopPropagation()} onInput={() => { touchedRef.current = true; }} onChange={() => { touchedRef.current = true; }}
-        className={drawer ? "hili-drawer w-full shadow-2xl relative flex flex-col" : `w-full ${sizeClass} rounded-md shadow-2xl relative flex flex-col`}
+        className={drawer ? "hili-drawer hili-full w-full shadow-2xl relative flex flex-col" : `${kind === "small" ? "" : "hili-full "}w-full ${sizeClass} rounded-md shadow-2xl relative flex flex-col`}
         style={drawer ? { background: "#fff", height: "100vh", maxWidth: 860 } : { background: "#fff", maxHeight: "90vh", height: kind === "small" ? undefined : "90vh" }}>
         <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3.5 shrink-0" style={{ borderBottom: `1px solid ${LINE}` }}>
           <h3 className="text-base sm:text-lg flex-1 min-w-0" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, color: TEXT }}>{title}</h3>
@@ -2416,7 +2418,7 @@ function Dashboard({ products, orders, goToOrdersFilter, purchaseOrders, isAdmin
     return Object.values(map).sort((a, b) => b.qty - a.qty).slice(0, 5);
   }, [products, topDays]);
 
-  const webMissingCount = isAdmin ? products.filter((p) => !p.isService && p.web?.published && webMissing(p).length > 0).length : 0;
+  const webMissingCount = isAdmin ? webUnits(products).filter((u) => u.some((p) => p.web?.published && webMissing(p).length > 0)).length : 0;
   const poDue = isAdmin ? (purchaseOrders || []).filter((po) => poDueInfo(po)?.nearDue).length : 0;
   const todoItems = [
     { label: "Đơn chờ duyệt", count: pendingApproval, color: RUST, go: () => goToOrdersFilter && goToOrdersFilter("approval_pending") },
@@ -3404,7 +3406,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
       )}
 
       <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 220px)" }}>
-        <table className="w-full text-sm" style={{ minWidth: 940 }}>
+        <table className="hili-rt w-full text-sm" style={{ minWidth: 940 }}>
           <thead className="sticky top-0" style={{ zIndex: 2 }}>
             <tr style={{ borderBottom: `1px solid ${LINE}` }}>
               <th className="px-3 py-2.5" style={{ background: "#fff" }}><input type="checkbox" title="Chọn tất cả sản phẩm trong trang này" checked={pageAllSelected()} onChange={toggleSelectAll} /></th>
@@ -3739,7 +3741,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                 </span>
               </button>
               {showProductInfo && (
-                <dl className="grid sm:grid-cols-2 gap-x-8 text-sm mt-2">
+                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 text-sm mt-2">
                   {[
                     ["Mã hàng", viewingProduct.code],
                     ["SKU", viewingProduct.sku || "—"],
@@ -4892,7 +4894,7 @@ function ItemsTable({ items, products, onUpdate, onRemove, lockQtyPrice }) {
   const colCount = onRemove ? 6 : 5;
   return (
     <div className="rounded-md overflow-x-auto mb-3" style={{ border: `1px solid ${LINE}` }}>
-      <table className="w-full text-sm table-fixed" style={{ minWidth: 620 }}>
+      <table className="hili-rt hili-items w-full text-sm table-fixed" style={{ minWidth: 620 }}>
         <colgroup>
           <col style={{ width: 28 }} />
           <col />
@@ -5296,7 +5298,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
       </div>
 
       <div key={poSafePage} className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 250px)" }}>
-        <table className="w-full text-sm" style={{ minWidth: 720 }}>
+        <table className="hili-rt w-full text-sm" style={{ minWidth: 720 }}>
           <thead className="sticky top-0" style={{ zIndex: 2 }}>
             <tr style={{ borderBottom: `1px solid ${LINE}` }}>
               {["", "Mã đơn nhập", "Ngày nhập", "Trạng thái nhập", "Chi nhánh nhập", "Nhà cung cấp", "Số hoá đơn", "Nhân viên tạo", "Thanh toán", "Giá trị đơn", ""].map((h, hi) => (
@@ -5793,17 +5795,7 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
   return (
     <div>
       <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
-        <div className="grid grid-cols-2 max-w-xs gap-2">
-          <button onClick={() => setView("list")} className="px-3.5 py-2.5 rounded-full text-sm border text-center"
-            style={{ borderColor: view === "list" ? INK : LINE, background: view === "list" ? INK : "transparent", color: view === "list" ? "#fff" : INK }}>
-            Danh sách NCC
-          </button>
-          <button onClick={() => setView("debt")} className="px-3.5 py-2.5 rounded-full text-sm border text-center relative"
-            style={{ borderColor: view === "debt" ? INK : LINE, background: view === "debt" ? INK : "transparent", color: view === "debt" ? "#fff" : INK }}>
-            Công nợ NCC
-            {debtList.length > 0 && <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded-full" style={{ background: view === "debt" ? "rgba(255,255,255,0.25)" : `${RUST}1A`, color: view === "debt" ? "#fff" : RUST }}>{debtList.length}</span>}
-          </button>
-        </div>
+        <TabBar compact value={view} onChange={setView} tabs={[{ id: "list", label: "Danh sách NCC", icon: Truck }, { id: "debt", label: debtList.length ? `Công nợ NCC (${debtList.length})` : "Công nợ NCC", icon: Wallet }]} />
         {view === "list" && (
           <div className="flex items-center gap-3 flex-wrap">
             <div className="relative flex-1 max-w-xs">
@@ -5875,7 +5867,7 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
         </div>
       ) : (
       <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 240px)" }}>
-        <table className="w-full text-sm" style={{ minWidth: 720 }}>
+        <table className="hili-rt w-full text-sm" style={{ minWidth: 720 }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${LINE}` }}>
               {["Mã NCC", "Tên NCC", "Mã số thuế", "Người liên hệ", "SĐT", "Địa chỉ", "Công nợ cấp", ""].map((h, hi) => (
@@ -6837,7 +6829,7 @@ function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, a
 
         <div className="p-4 rounded-md mb-4 space-y-4" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           <p className="text-sm font-medium" style={{ color: TEXT }}>Bên nhận (khách)</p>
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Tên công ty"><input className={inputCls} style={{ borderColor: LINE }} value={form.company} onChange={(e) => set("company", e.target.value)} placeholder="CÔNG TY TNHH …" /></Field>
             <Field label="Tên người nhận"><input className={inputCls} style={{ borderColor: LINE }} value={form.recipientName} onChange={(e) => set("recipientName", e.target.value)} placeholder="A Phương" /></Field>
             <Field label="Số điện thoại nhận"><input className={inputCls} style={{ borderColor: LINE }} value={form.recipientPhone} onChange={(e) => set("recipientPhone", e.target.value)} /></Field>
@@ -6851,7 +6843,7 @@ function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, a
 
         <details className="p-4 rounded-md mb-4" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           <summary className="text-sm font-medium cursor-pointer" style={{ color: TEXT }}>Bên gửi (mặc định theo công ty — bấm để sửa)</summary>
-          <div className="grid sm:grid-cols-2 gap-4 mt-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
             <Field label="Tên bên gửi"><input className={inputCls} style={{ borderColor: LINE }} value={form.senderName} onChange={(e) => set("senderName", e.target.value)} /></Field>
             <Field label="SĐT bên gửi"><input className={inputCls} style={{ borderColor: LINE }} value={form.senderPhone} onChange={(e) => set("senderPhone", e.target.value)} /></Field>
           </div>
@@ -8023,30 +8015,11 @@ function ProductsSection({ products, setProducts, purchaseOrders, setPurchaseOrd
           <button onClick={() => setSub("list")} className="text-xs px-3 py-1.5 rounded-md border shrink-0" style={{ borderColor: BRASS, color: BRASS }}>Xem danh sách</button>
         </div>
       )}
-      <div className="flex gap-1.5 mb-5 flex-wrap">
-        <button onClick={() => setSub("list")} className="px-3 py-1.5 rounded-full text-sm border whitespace-nowrap"
-          style={{ borderColor: sub === "list" ? INK : LINE, background: sub === "list" ? INK : "transparent", color: sub === "list" ? "#fff" : INK }}>
-          Danh sách sản phẩm
-        </button>
-        {isAdmin && (
-          <button onClick={() => setSub("stocktake")} className="px-3 py-1.5 rounded-full text-sm border whitespace-nowrap"
-            style={{ borderColor: sub === "stocktake" ? INK : LINE, background: sub === "stocktake" ? INK : "transparent", color: sub === "stocktake" ? "#fff" : INK }}>
-            Kiểm kho
-          </button>
-        )}
-        {!isCtv && (
-          <button onClick={() => setSub("warranty")} className="px-3 py-1.5 rounded-full text-sm border whitespace-nowrap"
-            style={{ borderColor: sub === "warranty" ? INK : LINE, background: sub === "warranty" ? INK : "transparent", color: sub === "warranty" ? "#fff" : INK }}>
-            Phiếu bảo hành
-          </button>
-        )}
-        {!isCtv && (
-          <button onClick={() => setSub("service")} className="px-3 py-1.5 rounded-full text-sm border whitespace-nowrap"
-            style={{ borderColor: sub === "service" ? INK : LINE, background: sub === "service" ? INK : "transparent", color: sub === "service" ? "#fff" : INK }}>
-            Phiếu dịch vụ
-          </button>
-        )}
-      </div>
+      <TabBar value={sub} onChange={setSub} tabs={[
+        { id: "list", label: "Danh sách sản phẩm", icon: Package },
+        ...(isAdmin ? [{ id: "stocktake", label: "Kiểm kho", icon: PackageCheck }] : []),
+        ...(!isCtv ? [{ id: "warranty", label: "Phiếu bảo hành", icon: ShieldCheck }, { id: "service", label: "Phiếu dịch vụ", icon: Settings }] : []),
+      ]} />
       {sub === "list" && <ProductsInventory products={products} setProducts={setProducts} addLog={addLog} currentUser={currentUser} focusProductId={navTarget?.type === "product" ? navTarget.id : null} focusEdit={navTarget?.type === "product" && !!navTarget.edit} initialCreatedFrom={navTarget?.type === "products-daterange" ? navTarget.from : null} initialCreatedTo={navTarget?.type === "products-daterange" ? navTarget.to : null} onFocusHandled={onFocusHandled} goToDoc={goToDoc} suppliers={suppliers} goToSupplier={goToSupplier} goToWebProduct={goToWebProduct} categories={categories} setCategories={setCategories} brands={brands} setBrands={setBrands} webConfig={webConfig} />}
       {isAdmin && sub === "stocktake" && <Stocktake products={products} setProducts={setProducts} stocktakes={stocktakes} setStocktakes={setStocktakes} currentUser={currentUser} addLog={addLog} />}
       {!isCtv && sub === "warranty" && <WarrantyTickets products={products} setProducts={setProducts} orders={orders} customers={customers} warrantyTickets={warrantyTickets} setWarrantyTickets={setWarrantyTickets} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} />}
@@ -8404,17 +8377,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
   return (
     <div>
       <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
-        <div className="flex gap-2">
-          <button onClick={() => setView("list")} className="px-3.5 py-2.5 rounded-full text-sm border text-center whitespace-nowrap"
-            style={{ borderColor: view === "list" ? INK : LINE, background: view === "list" ? INK : "transparent", color: view === "list" ? "#fff" : INK }}>
-            Danh sách khách hàng
-          </button>
-          <button onClick={() => setView("debt")} className="px-3.5 py-2.5 rounded-full text-sm border text-center relative whitespace-nowrap"
-            style={{ borderColor: view === "debt" ? INK : LINE, background: view === "debt" ? INK : "transparent", color: view === "debt" ? "#fff" : INK }}>
-            Công nợ khách hàng
-            {debtList.length > 0 && <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded-full" style={{ background: view === "debt" ? "rgba(255,255,255,0.25)" : `${RUST}1A`, color: view === "debt" ? "#fff" : RUST }}>{debtList.length}</span>}
-          </button>
-        </div>
+        <TabBar compact value={view} onChange={setView} tabs={[{ id: "list", label: "Danh sách khách hàng", icon: Users }, { id: "debt", label: debtList.length ? `Công nợ khách hàng (${debtList.length})` : "Công nợ khách hàng", icon: Wallet }]} />
         {view === "list" && (
           <div className="flex gap-2 flex-wrap">
             <div className="relative flex-1 max-w-xs">
@@ -8485,7 +8448,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
       <>
 
       <div key={customerSafePage} className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 270px)" }}>
-        <table className="w-full text-sm" style={{ minWidth: 760 }}>
+        <table className="hili-rt w-full text-sm" style={{ minWidth: 760 }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${LINE}` }}>
               {(isAdmin ? ["Mã KH", "Tên khách hàng", "SĐT", "Nhóm khách hàng", "Phụ trách", "Công nợ", "Tổng chi tiêu", "Tổng SL đơn", ""] : ["Mã KH", "Tên khách hàng", "SĐT", "Nhóm khách hàng", "Công nợ", "Tổng chi tiêu", "Tổng SL đơn", ""]).map((h, hi) => (
@@ -8565,7 +8528,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
               )}
             </div>
 
-            <dl className="grid sm:grid-cols-2 gap-x-8 text-sm mb-5" style={{ borderBottom: `1px solid ${LINE}` }}>
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 text-sm mb-5" style={{ borderBottom: `1px solid ${LINE}` }}>
               {[
                 ["Số điện thoại", viewingCustomer.phone],
                 ["Mã số thuế", viewingCustomer.taxCode],
@@ -8995,7 +8958,7 @@ function SeriesPicker({ available, selected, setSelected, need, growable }) {
 function SalesItemsTable({ items, products, onUpdate, onRemove, role }) {
   return (
     <div className="rounded-md overflow-x-auto" style={{ border: `1px solid ${LINE}` }}>
-      <table className="w-full text-sm table-fixed" style={{ minWidth: 560 }}>
+      <table className="hili-rt hili-items w-full text-sm table-fixed" style={{ minWidth: 560 }}>
         <colgroup>
           <col style={{ width: 54 }} />
           <col />
@@ -9006,7 +8969,7 @@ function SalesItemsTable({ items, products, onUpdate, onRemove, role }) {
         </colgroup>
         <thead>
           <tr style={{ borderBottom: `1px solid ${LINE}`, background: PAPER }}>
-            <th colSpan={2} className="text-left px-3 py-2.5 text-xs opacity-60 font-medium">Sản phẩm</th>
+            <th></th><th className="text-left px-1 py-2.5 text-xs opacity-60 font-medium">Sản phẩm</th>
             <th className="text-center px-2 py-2.5 text-xs opacity-60 font-medium">SL</th>
             <th className="text-right pl-2 pr-4 py-2.5 text-xs opacity-60 font-medium">Đơn giá</th>
             <th className="text-right px-3 py-2.5 text-xs opacity-60 font-medium">Thành tiền</th>
@@ -10139,7 +10102,7 @@ const QUOTE_STATUS_LABEL = { active: "Còn hiệu lực", converted: "Đã chuy�
 function QuoteItemsTable({ items, products, onUpdate, onRemove }) {
   return (
     <div className="rounded-md overflow-x-auto" style={{ border: `1px solid ${LINE}` }}>
-      <table className="w-full text-sm table-fixed" style={{ minWidth: 480 }}>
+      <table className="hili-rt hili-items w-full text-sm table-fixed" style={{ minWidth: 480 }}>
         <colgroup><col /><col style={{ width: 70 }} /><col style={{ width: 130 }} /><col style={{ width: 120 }} /><col style={{ width: 32 }} /></colgroup>
         <thead>
           <tr style={{ borderBottom: `1px solid ${LINE}`, background: PAPER }}>
@@ -11266,7 +11229,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
       )}
 
       <div key={orderSafePage} className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 300px)" }}>
-        <table className="w-full text-sm" style={{ minWidth: 900 }}>
+        <table className="hili-rt w-full text-sm" style={{ minWidth: 900 }}>
           <thead className="sticky top-0" style={{ zIndex: 2 }}>
             <tr style={{ borderBottom: `1px solid ${LINE}` }}>
               <th className="px-3 py-2.5" style={{ background: "#fff" }}><input type="checkbox" title="Chọn tất cả đơn trong trang này" checked={pageAllSelected} onChange={toggleSelectAll} /></th>
@@ -11386,8 +11349,8 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                     <div className={inputCls} style={{ borderColor: LINE, background: "#F3F4F6", color: TEXT, display: "flex", alignItems: "center" }}>{form.seller}</div>
                   </Field>
                   <Field label="Mã đơn"><input disabled className={inputCls} style={{ borderColor: LINE, opacity: 0.5 }} value={nextOrderCode(orders)} /></Field>
-                  <Field label="Nguồn">
-                  <div className="flex gap-2">
+                  <div className="col-span-2 md:col-span-1"><Field label="Nguồn">
+                  <div className="flex gap-2 flex-wrap">
                     {CHANNELS.map((c) => (
                       <button key={c.id} type="button" onClick={() => setForm({ ...form, channel: c.id })}
                         className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm border whitespace-nowrap"
@@ -11396,7 +11359,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                       </button>
                     ))}
                   </div>
-                  </Field>
+                  </Field></div>
                   <Field label="Hẹn giao">
                     <input type="date" className={inputCls} style={{ borderColor: LINE }} value={form.deliveryDate} onChange={(e) => setForm({ ...form, deliveryDate: e.target.value })} />
                   </Field>
@@ -11620,7 +11583,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
                 </button>
               )}
             </div>
-            <div className="grid md:grid-cols-[1fr_300px] gap-4 p-4 rounded-lg mb-4" style={{ background: PAPER }}>
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-4 p-4 rounded-lg mb-4" style={{ background: PAPER }}>
               <div className="min-w-0">
                 <p className="text-xs opacity-60 mb-0.5">Khách hàng</p>
                 <p className="text-sm font-semibold" style={{ color: TEXT }}>{cust?.name || "Khách lẻ"}</p>
@@ -12273,27 +12236,15 @@ function Plans({ plans, setPlans, orders, purchaseOrders, products, employeeName
 
   return (
     <div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5 max-w-2xl">
-        <button onClick={() => setSub("sales")} className="px-3.5 py-2.5 rounded-full text-sm border text-center"
-          style={{ borderColor: sub === "sales" ? INK : LINE, background: sub === "sales" ? INK : "transparent", color: sub === "sales" ? "#fff" : INK }}>
-          Kế hoạch bán hàng
-        </button>
-        <button onClick={() => setSub("purchase")} className="px-3.5 py-2.5 rounded-full text-sm border text-center"
-          style={{ borderColor: sub === "purchase" ? INK : LINE, background: sub === "purchase" ? INK : "transparent", color: sub === "purchase" ? "#fff" : INK }}>
-          Kế hoạch nhập hàng
-        </button>
-        <button onClick={() => setSub("stock")} className="px-3.5 py-2.5 rounded-full text-sm border text-center"
-          style={{ borderColor: sub === "stock" ? INK : LINE, background: sub === "stock" ? INK : "transparent", color: sub === "stock" ? "#fff" : INK }}>
-          Thêm mã vào kho
-        </button>
-        <button onClick={() => setSub("webpublish")} className="px-3.5 py-2.5 rounded-full text-sm border text-center"
-          style={{ borderColor: sub === "webpublish" ? INK : LINE, background: sub === "webpublish" ? INK : "transparent", color: sub === "webpublish" ? "#fff" : INK }}>
-          Đăng lên website
-        </button>
-      </div>
+      <TabBar value={sub} onChange={setSub} tabs={[
+        { id: "sales", label: "Kế hoạch bán hàng", icon: ShoppingCart },
+        { id: "purchase", label: "Kế hoạch nhập hàng", icon: PackageCheck },
+        { id: "stock", label: "Thêm mã vào kho", icon: Package },
+        { id: "webpublish", label: "Đăng lên website", icon: Globe },
+      ]} />
 
       <div className="p-5 rounded-md mb-6" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-        <h4 className="text-sm mb-4 font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>
+        <h4 className="text-sm mb-4 font-medium" style={{ color: TEXT }}>
           Xu hướng 6 tháng — mục tiêu so với thực tế {sub === "sales" ? "(toàn công ty, theo giá trị)" : sub === "purchase" ? "(theo giá trị)" : sub === "stock" ? "(số mã mới thêm vào kho)" : "(số mã đăng lên website)"}
         </h4>
         <ResponsiveContainer width="100%" height={220}>
@@ -12536,20 +12487,8 @@ function SalesRanking({ orders, products, accounts }) {
         <p className="text-sm opacity-60 text-center py-14">Chưa có dữ liệu bán hàng trong khoảng thời gian này.</p>
       ) : (
         <div className="p-5 sm:p-6 rounded-md mb-6" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-          <h4 className="text-sm mb-5 font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Biểu đồ xếp hạng doanh số</h4>
-          <ResponsiveContainer width="100%" height={Math.max(220, ranking.length * 42)}>
-            <BarChart data={ranking} layout="vertical" margin={{ left: 8, right: 24 }}>
-              <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={LINE} />
-              <XAxis type="number" tick={{ fontSize: 12, fill: INK }} axisLine={false} tickLine={false} tickFormatter={(v) => (v >= 1000000 ? `${(v / 1000000).toFixed(0)}tr` : `${v / 1000}k`)} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 12, fill: INK }} axisLine={false} tickLine={false} width={140} />
-              <Tooltip formatter={(v, n) => (n === "revenue" ? [vnd(v), "Doanh số"] : [v, n])} labelFormatter={(label) => label}
-                contentStyle={{ fontFamily: "'Inter', sans-serif", fontSize: 13, border: `1px solid ${LINE}`, borderRadius: 8, boxShadow: "0 8px 24px rgba(31,42,68,0.12)", padding: "8px 12px" }}
-                cursor={{ fill: PAPER }} />
-              <Bar dataKey="revenue" radius={[0, 8, 8, 0]} maxBarSize={26}>
-                {ranking.map((_, i) => <Cell key={i} fill={i === 0 ? BRASS : BLUE} />)}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <h4 className="text-base mb-4 font-semibold" style={{ color: TEXT }}>Biểu đồ xếp hạng doanh số</h4>
+          <RankBars rows={ranking.map((r) => ({ ...r, value: r.revenue, label: vnd(r.revenue) }))} onPick={setDetailSeller} />
         </div>
       )}
 
@@ -12623,7 +12562,7 @@ function SalesRanking({ orders, products, accounts }) {
 // Biểu đồ "Hoạt động kinh doanh" — doanh thu (cột) + lợi nhuận gộp (đường), ghi nhận theo ngày giao hàng thành công.
 // Lợi nhuận gộp = (giá bán - giá nhập) x số lượng, cộng dồn theo từng đơn đã giao trong khoảng thời gian chọn.
 // Công nợ phải thu tổng hợp — tổng công nợ toàn hệ thống, top khách nợ nhiều nhất, và công nợ theo ngày phát sinh đơn (30 ngày gần nhất).
-function DebtOverviewReport({ orders, customers }) {
+function DebtOverviewReport({ orders, customers, onOpen }) {
   const chartColors = [INK, BRASS, FOREST, BLUE, RUST, "#F7C600"];
   const tooltipStyle = { fontFamily: "'Inter', sans-serif", fontSize: 13, border: `1px solid ${LINE}`, borderRadius: 8, boxShadow: "0 8px 24px rgba(31,42,68,0.12)", padding: "8px 12px" };
   const axisTick = { fontSize: 12, fill: INK, fontFamily: "'Inter', sans-serif" };
@@ -12632,7 +12571,7 @@ function DebtOverviewReport({ orders, customers }) {
   const debtByCustomer = useMemo(() => {
     return customers.map((c) => {
       const debt = orders.filter((o) => o.customerId === c.id && o.status !== "cancelled").reduce((s, o) => s + Math.max(0, orderCalc(o).remaining), 0);
-      return { name: c.name, debt };
+      return { id: c.id, name: c.name, debt };
     }).filter((c) => c.debt > 0).sort((a, b) => b.debt - a.debt);
   }, [orders, customers]);
   const totalDebt = debtByCustomer.reduce((s, c) => s + c.debt, 0);
@@ -12660,7 +12599,7 @@ function DebtOverviewReport({ orders, customers }) {
 
   return (
     <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-      <h4 className="text-sm mb-5 font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Công nợ phải thu</h4>
+      <h4 className="text-base mb-4 font-semibold" style={{ color: TEXT }}>Công nợ phải thu</h4>
 
       <div className="grid grid-cols-2 gap-4 mb-6 max-w-md">
         <div>
@@ -12675,17 +12614,7 @@ function DebtOverviewReport({ orders, customers }) {
 
       <p className="text-xs mb-3 opacity-60 font-medium">Top 10 khách nợ nhiều nhất</p>
       {top10Debt.length === 0 ? <p className="text-sm opacity-60 text-center py-10">Không có khách hàng nào đang nợ.</p> : (
-        <ResponsiveContainer width="100%" height={Math.max(200, top10Debt.length * 34)}>
-          <BarChart data={top10Debt} layout="vertical" margin={{ left: 8, right: 24 }}>
-            <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={LINE} />
-            <XAxis type="number" tick={axisTick} axisLine={false} tickLine={false} tickFormatter={moneyTick} />
-            <YAxis type="category" dataKey="name" tick={axisTick} axisLine={false} tickLine={false} width={140} />
-            <Tooltip formatter={(v) => vnd(v)} contentStyle={tooltipStyle} cursor={{ fill: PAPER }} />
-            <Bar dataKey="debt" radius={[0, 8, 8, 0]} maxBarSize={22}>
-              {top10Debt.map((_, i) => <Cell key={i} fill={i === 0 ? RUST : BRASS} />)}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        <RankBars rows={top10Debt.map((c) => ({ ...c, key: c.id, value: c.debt, label: vnd(c.debt) }))} color={RUST} onPick={onOpen ? (r) => onOpen("customer", r.id) : undefined} />
       )}
 
       <div className="mt-7">
@@ -12799,7 +12728,7 @@ function CashFlowReport({ orders, purchaseOrders, customers }) {
 
   return (
     <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-      <h4 className="text-sm mb-1 font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Dòng tiền thu / chi</h4>
+      <h4 className="text-sm mb-1 font-medium" style={{ color: TEXT }}>Dòng tiền thu / chi</h4>
       <p className="text-xs opacity-60 mb-4">Thu = tiền khách thanh toán (trừ hoàn tiền) · Chi = đơn nhập hàng đã thanh toán cho NCC · Bấm vào 1 cột để xem từng khoản</p>
 
       <div className="flex flex-wrap gap-1.5 mb-4">
@@ -12920,7 +12849,7 @@ function DeadStockReport({ products }) {
   return (
     <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
       <div className="flex items-center justify-between mb-1 flex-wrap gap-3">
-        <h4 className="text-sm font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Hàng tồn kho lâu ngày ("hàng chết")</h4>
+        <h4 className="text-base font-semibold" style={{ color: TEXT }}>Hàng tồn kho lâu ngày ("hàng chết")</h4>
         <div className="flex gap-1.5">
           {[30, 60, 90, 180].map((d) => (
             <button key={d} onClick={() => setThreshold(d)} className="text-xs px-3 py-1.5 rounded-full border whitespace-nowrap"
@@ -13008,7 +12937,7 @@ function InventoryTurnoverReport({ orders, products }) {
   return (
     <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
       <div className="flex items-center justify-between mb-1 flex-wrap gap-3">
-        <h4 className="text-sm font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Vòng quay tồn kho</h4>
+        <h4 className="text-base font-semibold" style={{ color: TEXT }}>Vòng quay tồn kho</h4>
         <div className="flex gap-1.5">
           {PERIODS.map((p) => (
             <button key={p.d} onClick={() => setPeriodDays(p.d)} className="text-xs px-3 py-1.5 rounded-full border whitespace-nowrap"
@@ -13023,17 +12952,7 @@ function InventoryTurnoverReport({ orders, products }) {
       {byCategory.length > 0 && (
         <>
           <p className="text-xs mb-3 opacity-60 font-medium">Theo nhóm hàng</p>
-          <ResponsiveContainer width="100%" height={Math.max(160, byCategory.length * 34)}>
-            <BarChart data={byCategory} layout="vertical" margin={{ left: 8, right: 24 }}>
-              <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={LINE} />
-              <XAxis type="number" tick={axisTick} axisLine={false} tickLine={false} tickFormatter={(v) => `${Math.round(v)}d`} />
-              <YAxis type="category" dataKey="name" tick={axisTick} axisLine={false} tickLine={false} width={100} />
-              <Tooltip formatter={(v) => [`${Math.round(v)} ngày`, "Vòng quay"]} contentStyle={tooltipStyle} cursor={{ fill: PAPER }} />
-              <Bar dataKey="turnoverDays" radius={[0, 8, 8, 0]} maxBarSize={22}>
-                {byCategory.map((_, i) => <Cell key={i} fill={chartColors[i % chartColors.length]} />)}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <RankBars rows={byCategory.map((c) => ({ name: c.name, value: c.turnoverDays, label: `${Math.round(c.turnoverDays)} ngày` }))} />
         </>
       )}
 
@@ -13055,7 +12974,7 @@ function InventoryTurnoverReport({ orders, products }) {
 
 // Sản phẩm bị trả lại nhiều nhất — giúp phát hiện sản phẩm lỗi/chất lượng kém.
 // Sản phẩm có tỷ lệ bảo hành cao — dựa trên các phiếu bảo hành đã lập, đối chiếu với số lượng đã bán để tính tỷ lệ %.
-function WarrantyRateReport({ orders, products, warrantyTickets }) {
+function WarrantyRateReport({ orders, products, warrantyTickets, onOpen }) {
   const tooltipStyle = { fontFamily: "'Inter', sans-serif", fontSize: 13, border: `1px solid ${LINE}`, borderRadius: 8, boxShadow: "0 8px 24px rgba(31,42,68,0.12)", padding: "8px 12px" };
   const axisTick = { fontSize: 12, fill: INK, fontFamily: "'Inter', sans-serif" };
 
@@ -13094,7 +13013,7 @@ function WarrantyRateReport({ orders, products, warrantyTickets }) {
 
   return (
     <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-      <h4 className="text-sm mb-1 font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Sản phẩm có tỷ lệ bảo hành cao</h4>
+      <h4 className="text-sm mb-1 font-medium" style={{ color: TEXT }}>Sản phẩm có tỷ lệ bảo hành cao</h4>
       <p className="text-xs opacity-60 mb-5">Tỷ lệ = tổng số lượng yêu cầu bảo hành ÷ số lượng đã bán × 100% · giúp phát hiện sản phẩm lỗi/chất lượng kém qua tỷ lệ khách mang bảo hành</p>
 
       <div className="grid grid-cols-2 gap-4 mb-6 max-w-md">
@@ -13111,17 +13030,7 @@ function WarrantyRateReport({ orders, products, warrantyTickets }) {
       {chartData.length > 0 && (
         <>
           <p className="text-xs mb-3 opacity-60 font-medium">Top 10 theo tỷ lệ bảo hành</p>
-          <ResponsiveContainer width="100%" height={Math.max(200, chartData.length * 34)}>
-            <BarChart data={chartData} layout="vertical" margin={{ left: 8, right: 24 }}>
-              <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={LINE} />
-              <XAxis type="number" tick={axisTick} axisLine={false} tickLine={false} tickFormatter={(v) => `${v.toFixed(0)}%`} />
-              <YAxis type="category" dataKey="name" tick={axisTick} axisLine={false} tickLine={false} width={140} />
-              <Tooltip formatter={(v) => [`${v.toFixed(1)}%`, "Tỷ lệ BH"]} contentStyle={tooltipStyle} cursor={{ fill: PAPER }} />
-              <Bar dataKey="rate" radius={[0, 8, 8, 0]} maxBarSize={22}>
-                {chartData.map((_, i) => <Cell key={i} fill={i === 0 ? RUST : BRASS} />)}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <RankBars rows={chartData.map((d) => ({ ...d, value: d.rate, label: `${d.rate.toFixed(1)}%` }))} color={BRASS} onPick={onOpen ? (r) => { const x = products.find((p) => p.name === r.name); if (x) onOpen("product", x.id); } : undefined} />
         </>
       )}
 
@@ -13160,7 +13069,7 @@ function WarrantyRateReport({ orders, products, warrantyTickets }) {
   );
 }
 
-function TopReturnedProductsReport({ orders, products }) {
+function TopReturnedProductsReport({ orders, products, onOpen }) {
   const tooltipStyle = { fontFamily: "'Inter', sans-serif", fontSize: 13, border: `1px solid ${LINE}`, borderRadius: 8, boxShadow: "0 8px 24px rgba(31,42,68,0.12)", padding: "8px 12px" };
   const axisTick = { fontSize: 12, fill: INK, fontFamily: "'Inter', sans-serif" };
 
@@ -13184,21 +13093,11 @@ function TopReturnedProductsReport({ orders, products }) {
 
   return (
     <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-      <h4 className="text-sm mb-1 font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Sản phẩm bị trả lại nhiều nhất</h4>
+      <h4 className="text-sm mb-1 font-medium" style={{ color: TEXT }}>Sản phẩm bị trả lại nhiều nhất</h4>
       <p className="text-xs opacity-60 mb-5">Giúp phát hiện sản phẩm lỗi/chất lượng kém · Tỷ lệ trả = số lượng trả ÷ số lượng đã bán</p>
       {data.length === 0 ? <p className="text-sm opacity-60 text-center py-14">Chưa có dữ liệu đổi/trả hàng.</p> : (
-        <div className="grid lg:grid-cols-2 gap-6">
-          <ResponsiveContainer width="100%" height={Math.max(200, data.length * 34)}>
-            <BarChart data={data} layout="vertical" margin={{ left: 8, right: 24 }}>
-              <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={LINE} />
-              <XAxis type="number" tick={axisTick} axisLine={false} tickLine={false} allowDecimals={false} />
-              <YAxis type="category" dataKey="name" tick={axisTick} axisLine={false} tickLine={false} width={140} />
-              <Tooltip formatter={(v) => [`${v} SP`, "Đã trả"]} contentStyle={tooltipStyle} cursor={{ fill: PAPER }} />
-              <Bar dataKey="qty" radius={[0, 8, 8, 0]} maxBarSize={22}>
-                {data.map((_, i) => <Cell key={i} fill={i === 0 ? RUST : BRASS} />)}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <RankBars rows={data.map((d) => ({ ...d, value: d.qty, label: `${d.qty} SP` }))} color={RUST} onPick={onOpen ? (r) => { const x = products.find((p) => p.name === r.name); if (x) onOpen("product", x.id); } : undefined} />
           <div className="space-y-1.5 pt-1">
             {data.map((p, i) => (
               <div key={i} className="flex items-center justify-between text-sm p-2.5 rounded-md" style={{ border: `1px dashed ${LINE}` }}>
@@ -13253,7 +13152,7 @@ function ProfitMarginReport({ orders, products }) {
   return (
     <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
       <div className="flex items-center justify-between mb-1 flex-wrap gap-3">
-        <h4 className="text-sm font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Biên lợi nhuận gộp theo nhóm hàng / sản phẩm</h4>
+        <h4 className="text-base font-semibold" style={{ color: TEXT }}>Biên lợi nhuận gộp theo nhóm hàng / sản phẩm</h4>
         <div className="flex gap-1.5">
           {PERIODS.map((p) => (
             <button key={p.d} onClick={() => setPeriodDays(p.d)} className="text-xs px-3 py-1.5 rounded-full border whitespace-nowrap"
@@ -13268,17 +13167,7 @@ function ProfitMarginReport({ orders, products }) {
       {byCategory.length > 0 && (
         <>
           <p className="text-xs mb-3 opacity-60 font-medium">Biên lợi nhuận theo nhóm hàng</p>
-          <ResponsiveContainer width="100%" height={Math.max(160, byCategory.length * 34)}>
-            <BarChart data={byCategory} layout="vertical" margin={{ left: 8, right: 24 }}>
-              <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={LINE} />
-              <XAxis type="number" tick={axisTick} axisLine={false} tickLine={false} tickFormatter={(v) => `${v.toFixed(0)}%`} />
-              <YAxis type="category" dataKey="name" tick={axisTick} axisLine={false} tickLine={false} width={100} />
-              <Tooltip formatter={(v) => [`${v.toFixed(1)}%`, "Biên LN gộp"]} contentStyle={tooltipStyle} cursor={{ fill: PAPER }} />
-              <Bar dataKey="margin" radius={[0, 8, 8, 0]} maxBarSize={22}>
-                {byCategory.map((_, i) => <Cell key={i} fill={chartColors[i % chartColors.length]} />)}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <RankBars rows={byCategory.map((c) => ({ name: c.name, value: c.margin, label: `${c.margin.toFixed(1)}%` }))} />
         </>
       )}
 
@@ -13358,7 +13247,7 @@ function PeriodComparisonReport({ orders, products }) {
   return (
     <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
       <div className="flex items-center justify-between mb-1 flex-wrap gap-3">
-        <h4 className="text-sm font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>So sánh kỳ này với kỳ trước</h4>
+        <h4 className="text-base font-semibold" style={{ color: TEXT }}>So sánh kỳ này với kỳ trước</h4>
         <div className="flex gap-1.5">
           {MODES.map((m) => (
             <button key={m.id} onClick={() => setMode(m.id)} className="text-xs px-3 py-1.5 rounded-full border whitespace-nowrap"
@@ -13472,7 +13361,7 @@ function BusinessActivityChart({ orders, products, onBarClick }) {
 
   return (
     <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-      <h4 className="text-sm mb-1 font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Hoạt động kinh doanh</h4>
+      <h4 className="text-sm mb-1 font-medium" style={{ color: TEXT }}>Hoạt động kinh doanh</h4>
       <p className="text-xs opacity-60 mb-4">Ghi nhận theo ngày giao hàng thành công · Lợi nhuận gộp = (giá bán − giá nhập) × số lượng{onBarClick && " · Bấm vào 1 cột để xem đơn hàng đúng khoảng đó"}</p>
 
       <div className="flex flex-wrap gap-1.5 mb-4">
@@ -13644,7 +13533,7 @@ function ProductAdditionReport({ products, employeeNames, onBarClick }) {
 
   return (
     <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-      <h4 className="text-sm mb-1 font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Tốc độ thêm mã sản phẩm mới</h4>
+      <h4 className="text-sm mb-1 font-medium" style={{ color: TEXT }}>Tốc độ thêm mã sản phẩm mới</h4>
       <p className="text-xs opacity-60 mb-4">Số mã sản phẩm mới thêm vào kho và số mã đăng lên website — so với chỉ tiêu ở màn "Kế hoạch"{onBarClick && " · Bấm vào 1 cột để xem đúng sản phẩm khoảng đó"}</p>
 
       <div className="flex flex-wrap gap-1.5 mb-4">
@@ -13681,7 +13570,7 @@ function ProductAdditionReport({ products, employeeNames, onBarClick }) {
 
       {employeeBreakdown.length > 0 && (
         <div className="mt-6 pt-5" style={{ borderTop: `1px solid ${LINE}` }}>
-          <h5 className="text-xs mb-3 font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Theo nhân viên — tháng {monthLabel(monthKey)}</h5>
+          <h5 className="text-xs mb-3 font-medium" style={{ color: TEXT }}>Theo nhân viên — tháng {monthLabel(monthKey)}</h5>
           <div className="space-y-2">
             {employeeBreakdown.map((r) => (
               <div key={r.name} className="flex items-center justify-between text-sm py-1.5" style={{ borderBottom: `1px solid ${LINE}` }}>
@@ -13699,7 +13588,7 @@ function ProductAdditionReport({ products, employeeNames, onBarClick }) {
   );
 }
 
-function Reports({ orders, products, customers, accounts, purchaseOrders, warrantyTickets, employeeNames, goToOrdersDateRange, goToProductsDateRange }) {
+function Reports({ orders, products, customers, accounts, purchaseOrders, warrantyTickets, employeeNames, goToOrdersDateRange, goToProductsDateRange, onOpen }) {
   const [sub, setSub] = useState("overview"); // overview | ranking
   const byCategory = useMemo(() => {
     const map = {};
@@ -13709,7 +13598,7 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
 
   const topCustomers = useMemo(() => {
     return customers
-      .map((c) => ({ name: c.name, total: orders.filter((o) => o.customerId === c.id && o.status !== "cancelled").reduce((s, o) => s + orderCalc(o).payable, 0) }))
+      .map((c) => ({ id: c.id, name: c.name, total: orders.filter((o) => o.customerId === c.id && o.status !== "cancelled").reduce((s, o) => s + orderCalc(o).payable, 0) }))
       .filter((c) => c.total > 0)
       .sort((a, b) => b.total - a.total)
       .slice(0, 5);
@@ -13760,7 +13649,7 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
   const topCategoryProducts = useMemo(() => computeTopProducts(catPeriod, topCategory), [orders, products, catPeriod, topCategory]);
 
   const stockAging = products
-    .map((p) => ({ code: p.code, name: p.name, ton: productStats(p).closingQty, giaTri: Math.round(productStats(p).closingQty * productStats(p).avgCost) }))
+    .map((p) => ({ id: p.id, code: p.code, name: p.name, ton: productStats(p).closingQty, giaTri: Math.round(productStats(p).closingQty * productStats(p).avgCost) }))
     .sort((a, b) => Math.abs(b.giaTri) - Math.abs(a.giaTri));
   const maxStockValue = Math.max(1, ...stockAging.map((s) => Math.abs(s.giaTri)));
 
@@ -13770,30 +13659,75 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
 
   return (
     <div className="space-y-6">
-      <TabBar tabs={[{ id: "overview", label: "Tổng quan", icon: BarChart3 }, { id: "ranking", label: "Xếp hạng bán hàng", icon: Target }]} value={sub} onChange={setSub} />
+      <TabBar value={sub} onChange={setSub} tabs={[
+        { id: "overview", label: "Tổng quan", icon: BarChart3, hint: "Bức tranh chung tháng này. Bấm vào ô số để xem chi tiết." },
+        { id: "sales", label: "Doanh thu & Lợi nhuận", icon: TrendingUp, hint: "Sản phẩm, nhóm hàng và khách hàng mang lại doanh thu." },
+        { id: "debt", label: "Công nợ & Dòng tiền", icon: Wallet, hint: "Ai đang nợ, tiền vào và tiền ra. Bấm tên khách để xem chi tiết." },
+        { id: "stock", label: "Tồn kho", icon: Package, hint: "Hàng tồn lâu, vòng quay kho và giá trị tồn. Bấm sản phẩm để xem chi tiết." },
+        { id: "quality", label: "Đổi trả & Bảo hành", icon: ShieldCheck, hint: "Sản phẩm bị trả nhiều và tỷ lệ bảo hành." },
+        { id: "ranking", label: "Xếp hạng nhân viên", icon: Target, hint: "Doanh số theo người bán. Bấm tên để xem chi tiết." },
+      ]} />
 
       {sub === "ranking" ? <SalesRanking orders={orders} products={products} accounts={accounts} /> : (<>
+      {sub === "overview" && (<>
+      {(() => {
+        const now = new Date();
+        const monthKey = (d) => localDay(d).slice(0, 7);
+        const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const active = orders.filter((o) => o.status !== "cancelled");
+        const sum = (key) => active.filter((o) => monthKey(o.createdAt) === key).reduce((t, o) => t + orderCalc(o).payable, 0);
+        const cur = sum(monthKey(now)); const last = sum(monthKey(prev));
+        const count = active.filter((o) => monthKey(o.createdAt) === monthKey(now)).length;
+        const debt = active.reduce((t, o) => t + Math.max(0, orderCalc(o).remaining), 0);
+        const stock = products.reduce((t, p) => t + productStats(p).closingQty * productStats(p).avgCost, 0);
+        const change = last > 0 ? Math.round(((cur - last) / last) * 100) : null;
+        return (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              ["Doanh thu tháng này", vnd(cur), change === null ? "Chưa có số tháng trước" : `${change >= 0 ? "+" : ""}${change}% so với tháng trước`, change !== null && change < 0 ? RUST : FOREST, "sales"],
+              ["Đơn hàng tháng này", count, "Không tính đơn huỷ", "#6B7280", "sales"],
+              ["Công nợ phải thu", vnd(debt), "Bấm để xem ai đang nợ", RUST, "debt"],
+              ["Giá trị tồn kho", vnd(stock), "Theo giá vốn bình quân", "#6B7280", "stock"],
+            ].map(([label, val, note, tone, target]) => (
+              <button key={label} type="button" onClick={() => setSub(target)} className="text-left p-4 rounded-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+                <span className="block text-sm" style={{ color: "#6B7280" }}>{label}</span>
+                <span className="block text-xl font-bold my-1" style={{ color: TEXT }}>{val}</span>
+                <span className="block text-xs" style={{ color: tone }}>{note}</span>
+              </button>
+            ))}
+          </div>
+        );
+      })()}
       <BusinessActivityChart orders={orders} products={products} onBarClick={goToOrdersDateRange} />
-
       <PeriodComparisonReport orders={orders} products={products} />
-      <ProfitMarginReport orders={orders} products={products} />
+      </>)}
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        <DebtOverviewReport orders={orders} customers={customers} />
+      {sub === "sales" && <ProfitMarginReport orders={orders} products={products} />}
+
+      {sub === "debt" && (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <DebtOverviewReport orders={orders} customers={customers} onOpen={onOpen} />
         <CashFlowReport orders={orders} purchaseOrders={purchaseOrders} customers={customers} />
       </div>
+      )}
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      {sub === "stock" && (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         <DeadStockReport products={products} />
         <InventoryTurnoverReport orders={orders} products={products} />
       </div>
+      )}
 
-      <TopReturnedProductsReport orders={orders} products={products} />
-      <WarrantyRateReport orders={orders} products={products} warrantyTickets={warrantyTickets} />
+      {sub === "quality" && (<>
+      <TopReturnedProductsReport orders={orders} products={products} onOpen={onOpen} />
+      <WarrantyRateReport orders={orders} products={products} warrantyTickets={warrantyTickets} onOpen={onOpen} />
+      </>)}
+
+      {sub === "sales" && (<>
 
       <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
         <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
-          <h4 className="text-sm font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Top 10 sản phẩm bán chạy nhất</h4>
+          <h4 className="text-base font-semibold" style={{ color: TEXT }}>Top 10 sản phẩm bán chạy nhất</h4>
           <div className="flex gap-1.5">
             {PRODUCT_PERIODS.map((p) => (
               <button key={p.months} onClick={() => setTop10Period(p.months)} className="text-xs px-3 py-1.5 rounded-full border whitespace-nowrap"
@@ -13832,7 +13766,7 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
 
       <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
         <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
-          <h4 className="text-sm font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Top sản phẩm bán chạy theo nhóm hàng</h4>
+          <h4 className="text-base font-semibold" style={{ color: TEXT }}>Top sản phẩm bán chạy theo nhóm hàng</h4>
           <div className="flex gap-1.5">
             {PRODUCT_PERIODS.map((p) => (
               <button key={p.months} onClick={() => setCatPeriod(p.months)} className="text-xs px-3 py-1.5 rounded-full border whitespace-nowrap"
@@ -13880,46 +13814,24 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
         )}
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-          <h4 className="text-sm mb-5 font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Doanh số xuất theo nhóm hàng</h4>
+          <h4 className="text-base mb-4 font-semibold" style={{ color: TEXT }}>Doanh số xuất theo nhóm hàng</h4>
           {byCategory.length === 0 ? <p className="text-sm opacity-60 text-center py-14">Chưa có dữ liệu.</p> : (
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={byCategory} layout="vertical" margin={{ left: 8 }}>
-                <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={LINE} />
-                <XAxis type="number" tick={axisTick} axisLine={false} tickLine={false} tickFormatter={(v) => (v >= 1000000 ? `${(v / 1000000).toFixed(0)}tr` : `${v / 1000}k`)} />
-                <YAxis type="category" dataKey="name" tick={axisTick} axisLine={false} tickLine={false} width={90} />
-                <Tooltip formatter={(v) => vnd(v)} contentStyle={tooltipStyle} cursor={{ fill: PAPER }} />
-                <Bar dataKey="total" radius={[0, 8, 8, 0]} maxBarSize={28}>
-                  {byCategory.map((_, i) => <Cell key={i} fill={chartColors[i % chartColors.length]} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            <RankBars rows={byCategory.map((c) => ({ name: c.name, value: c.total, label: vnd(c.total) }))} />
           )}
         </div>
 
         <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-          <h4 className="text-sm mb-5 font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Khách hàng chi tiêu nhiều nhất</h4>
+          <h4 className="text-base mb-4 font-semibold" style={{ color: TEXT }}>Khách hàng chi tiêu nhiều nhất</h4>
           {topCustomers.length === 0 ? <p className="text-sm opacity-60 text-center py-14">Chưa có dữ liệu bán hàng.</p> : (
-            <div className="space-y-3.5 pt-1">
-              {topCustomers.map((c, i) => (
-                <div key={i}>
-                  <div className="flex justify-between items-baseline mb-1">
-                    <span className="text-sm" style={{ color: TEXT }}>{i + 1}. {c.name}</span>
-                    <span className="text-sm font-medium" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{vnd(c.total)}</span>
-                  </div>
-                  <div className="h-1.5 rounded-full" style={{ background: PAPER }}>
-                    <div className="h-1.5 rounded-full" style={{ width: `${(c.total / topCustomers[0].total) * 100}%`, background: chartColors[i % chartColors.length] }} />
-                  </div>
-                </div>
-              ))}
-            </div>
+            <RankBars rows={topCustomers.map((c) => ({ ...c, key: c.id, value: c.total, label: vnd(c.total) }))} onPick={onOpen ? (r) => onOpen("customer", r.id) : undefined} />
           )}
         </div>
       </div>
 
       <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-        <h4 className="text-sm mb-5 font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Doanh thu mảng dịch vụ</h4>
+        <h4 className="text-base mb-4 font-semibold" style={{ color: TEXT }}>Doanh thu mảng dịch vụ</h4>
         {serviceRevenue.items.length === 0 ? (
           <p className="text-sm opacity-60 text-center py-14">Chưa có doanh thu dịch vụ nào — chuyển phiếu sửa chữa/IT Helpdesk đã hoàn thành thành đơn bán để tính vào đây.</p>
         ) : (
@@ -13945,33 +13857,18 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
         )}
       </div>
 
+      </>)}
+
+      {sub === "stock" && (<>
       <div className="p-5 sm:p-6 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-        <h4 className="text-sm mb-5 font-medium" style={{ color: TEXT, opacity: 0.55, letterSpacing: "0.06em" }}>Giá trị tồn kho theo mã VT</h4>
+        <h4 className="text-base mb-4 font-semibold" style={{ color: TEXT }}>Giá trị tồn kho theo mã VT</h4>
         {stockAging.length === 0 ? <p className="text-sm opacity-60 text-center py-8">Chưa có sản phẩm.</p> : (
-          <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
-            {stockAging.map((s) => {
-              const negative = s.giaTri < 0;
-              return (
-                <div key={s.code}>
-                  <div className="flex justify-between items-baseline mb-1 gap-3">
-                    <span className="text-sm truncate" style={{ color: TEXT }}>
-                      <span style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{s.code}</span>
-                      <span className="opacity-60"> · {s.name}</span>
-                      <span className="opacity-60"> ({s.ton} đvt)</span>
-                    </span>
-                    <span className="text-sm font-medium shrink-0" style={{ fontFamily: "'Inter', sans-serif", color: negative ? RUST : INK }}>{vnd(s.giaTri)}</span>
-                  </div>
-                  <div className="h-1.5 rounded-full" style={{ background: PAPER }}>
-                    <div className="h-1.5 rounded-full" style={{ width: `${Math.min(100, (Math.abs(s.giaTri) / maxStockValue) * 100)}%`, background: negative ? RUST : FOREST }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <div className="max-h-96 overflow-y-auto pr-1"><RankBars rows={stockAging.slice(0, 30).map((x) => ({ key: x.id, id: x.id, name: `${x.code} · ${x.name}`, value: x.giaTri, label: vnd(x.giaTri), color: x.giaTri < 0 ? RUST : BLUE }))} onPick={onOpen ? (r) => onOpen("product", r.id) : undefined} /></div>
         )}
       </div>
 
       <ProductAdditionReport products={products} employeeNames={employeeNames} onBarClick={goToProductsDateRange} />
+      </>)}
       </>)}
     </div>
   );
@@ -14430,15 +14327,15 @@ function webOrderTotal(o) {
 
 /* ---------------- Thành phần dùng chung ---------------- */
 // Tab cấp 1 của một trang: thanh lớn có biểu tượng, mục đang chọn tô đậm, kèm dòng giải thích.
-function TabBar({ tabs, value, onChange }) {
+function TabBar({ tabs, value, onChange, compact }) {
   const current = tabs.find((t) => t.id === value);
   return (
-    <div className="mb-5">
-      <div className="flex flex-wrap gap-1 p-1 rounded-lg" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+    <div className={compact ? "" : "mb-5"}>
+      <div className={`hili-tabs ${compact ? "inline-flex" : "flex"} flex-wrap gap-1 p-1 rounded-lg max-w-full`} style={{ background: "#fff", border: `1px solid ${LINE}` }}>
         {tabs.map((t) => {
           const on = value === t.id;
           return (
-            <button key={t.id} type="button" onClick={() => onChange(t.id)} className="flex-1 flex items-center justify-center gap-2 px-4 rounded-md text-sm whitespace-nowrap transition-colors"
+            <button key={t.id} type="button" onClick={() => onChange(t.id)} className={`${compact ? "" : "flex-1 "}flex items-center justify-center gap-2 px-4 rounded-md text-sm whitespace-nowrap`}
               style={{ height: 40, background: on ? INK : "transparent", color: on ? "#fff" : "#374151", fontWeight: on ? 600 : 500 }}>
               {t.icon && <t.icon size={16} className="shrink-0" />} {t.label}
             </button>
@@ -14446,6 +14343,32 @@ function TabBar({ tabs, value, onChange }) {
         })}
       </div>
       {current?.hint && <p className="text-sm mt-2" style={{ color: "#6B7280" }}>{current.hint}</p>}
+    </div>
+  );
+}
+// Danh sách xếp hạng: tên đọc trọn một dòng, thanh tỷ lệ bên dưới, bấm được để xem chi tiết.
+function RankBars({ rows, onPick, color = INK }) {
+  const max = Math.max(1, ...rows.map((r) => Math.abs(r.value)));
+  return (
+    <div>
+      {rows.map((r, i) => {
+        const inner = (
+          <>
+            <div className="flex items-baseline gap-2 text-sm">
+              <span className="shrink-0 text-xs w-5" style={{ color: "#6B7280" }}>{i + 1}</span>
+              <span className="flex-1 min-w-0 truncate" style={{ color: TEXT }} title={r.name}>{r.name}</span>
+              <span className="shrink-0 font-semibold" style={{ color: TEXT }}>{r.label}</span>
+              {onPick && <ChevronRight size={14} className="shrink-0 self-center" style={{ color: "#9CA3AF" }} />}
+            </div>
+            <div className="h-1.5 rounded-full mt-1.5 ml-7" style={{ background: PAPER }}>
+              <div className="h-1.5 rounded-full" style={{ width: `${(Math.abs(r.value) / max) * 100}%`, background: r.color || color }} />
+            </div>
+          </>
+        );
+        return onPick
+          ? <button key={r.key || r.name} type="button" onClick={() => onPick(r)} className="block w-full text-left px-2 py-2 rounded-md hover:bg-gray-50">{inner}</button>
+          : <div key={r.key || r.name} className="px-2 py-2">{inner}</div>;
+      })}
     </div>
   );
 }
@@ -14457,7 +14380,7 @@ function SectionTabs({ tabs, value, onChange }) {
         const on = value === t.id;
         const tone = t.state === "missing" ? RUST : t.state === "warn" ? BRASS : t.state === "ok" ? FOREST : "#6B7280";
         return (
-          <button key={t.id} type="button" onClick={() => onChange(t.id)} className="text-left px-3 py-2.5 rounded-lg transition-colors"
+          <button key={t.id} type="button" onClick={() => onChange(t.id)} className="text-left px-3 py-2.5 rounded-lg"
             style={{ background: on ? "#EEF1FB" : "#fff", border: `1px solid ${on ? INK : LINE}`, boxShadow: on ? `inset 0 0 0 1px ${INK}` : "none" }}>
             <span className="flex items-center gap-2 text-sm font-semibold" style={{ color: on ? INK : TEXT }}>
               {t.icon && <t.icon size={16} className="shrink-0" />} {t.label}
@@ -14493,6 +14416,15 @@ function webHealth(p, web) {
   ];
 }
 const webMissing = (p) => webHealth(p).filter((h) => h.required && !h.ok);
+// Một nhóm phiên bản tính là một sản phẩm, khớp với cách hiển thị trong bảng.
+const webUnits = (products) => {
+  const units = new Map();
+  products.filter((p) => !p.isService).forEach((p) => {
+    const k = p.variantGroupId || p.id;
+    units.set(k, [...(units.get(k) || []), p]);
+  });
+  return [...units.values()];
+};
 const webOutOfStockShown = (p) => !!p.web?.published && !p.web?.virtualStock && productStats(p).closingQty <= 0;
 function WebHealthBadge({ p }) {
   const miss = webMissing(p);
@@ -14512,8 +14444,10 @@ function CommandPalette({ orders, purchaseOrders, customers, products, suppliers
     };
     const onOpen = () => setOpen(true);
     window.addEventListener("keydown", onKey);
+    const onBack = () => { setOpen(false); setQ(""); };
     window.addEventListener("hili:search", onOpen);
-    return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("hili:search", onOpen); };
+    window.addEventListener("popstate", onBack);
+    return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("hili:search", onOpen); window.removeEventListener("popstate", onBack); };
   }, []);
   const results = useMemo(() => {
     const k = foldText(q.trim());
@@ -14540,7 +14474,7 @@ function CommandPalette({ orders, purchaseOrders, customers, products, suppliers
     else if (e.key === "Enter" && results[active]) pick(results[active]);
   };
   return (
-    <div className="fixed inset-0 z-[80] flex items-start justify-center p-4" style={{ background: "rgba(15,23,70,0.45)", paddingTop: "12vh" }} onClick={close}>
+    <div data-hili-overlay className="fixed inset-0 z-[80] flex items-start justify-center p-4" style={{ background: "rgba(15,23,70,0.45)", paddingTop: "12vh" }} onClick={close}>
       <div className="w-full max-w-xl rounded-lg overflow-hidden" style={{ background: "#fff", boxShadow: "0 20px 40px rgba(15,23,70,.25)" }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 px-4" style={{ borderBottom: `1px solid ${LINE}` }}>
           <Search size={16} style={{ color: "#6B7280" }} />
@@ -14715,12 +14649,7 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
 
   // Đếm theo đúng đơn vị hiển thị trong bảng: một nhóm phiên bản tính là một dòng.
   const webCounts = useMemo(() => {
-    const units = new Map();
-    products.filter((p) => !p.isService).forEach((p) => {
-      const k = p.variantGroupId || p.id;
-      units.set(k, [...(units.get(k) || []), p]);
-    });
-    const list = [...units.values()];
+    const list = webUnits(products);
     return {
       all: list.length,
       on: list.filter((u) => u.some((p) => p.web?.published)).length,
@@ -14803,7 +14732,7 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
       )}
 
       <div className="border rounded-md overflow-x-auto" style={{ borderColor: LINE }}>
-        <table className="w-full text-sm" style={{ minWidth: 760 }}>
+        <table className="hili-rt w-full text-sm" style={{ minWidth: 760 }}>
           <thead>
             <tr style={{ background: PAPER }}>
               <th className="text-left px-3 py-2.5 font-medium">Đăng web</th>
@@ -15367,7 +15296,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
 
   return (
     <div>
-      <div className="sticky top-0 z-10 pt-1 pb-3 mb-3 -mt-1" style={{ background: PAPER, borderBottom: `1px solid ${LINE}` }}>
+      <div data-web-editor className="sticky top-0 z-10 pt-1 pb-3 mb-3 -mt-1" style={{ background: PAPER, borderBottom: `1px solid ${LINE}` }}>
       <div className="flex items-center gap-3 flex-wrap">
         <button onClick={handleBack} title="Danh sách sản phẩm web" className="w-8 h-8 rounded-md border inline-flex items-center justify-center shrink-0" style={{ borderColor: LINE, color: TEXT, background: "#fff" }}>
           <ChevronLeft size={16} />
@@ -15443,7 +15372,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
       </div>
       </div>
 
-      <div className="grid lg:grid-cols-[1fr_320px] gap-5 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5 items-start">
         {/* Cột trái */}
         <div className="space-y-4 min-w-0">
           {(() => {
@@ -16049,7 +15978,7 @@ function HomeSectionsEditor({ webConfig, setWebConfig, products }) {
             <button onClick={() => delBlock(i)} className="text-xs px-1.5 py-1" style={{ color: RUST }}>Xoá</button>
           </div>
 
-          <div className="grid sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <label className="text-xs block">Nhóm chính
               <select value={s.group || ""} onChange={(e) => setAt(i, { group: e.target.value, cat: "" })} className={inputCls} style={{ borderColor: LINE }}>
                 <option value="">— Mọi nhóm —</option>
@@ -16070,7 +15999,7 @@ function HomeSectionsEditor({ webConfig, setWebConfig, products }) {
             </label>
           </div>
 
-          <div className="grid sm:grid-cols-4 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
             <label className="text-xs block">Sắp xếp
               <select value={s.sort || "discount"} onChange={(e) => setAt(i, { sort: e.target.value })} className={inputCls} style={{ borderColor: LINE }}>
                 {HOME_SECTION_SORTS.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
@@ -16365,7 +16294,7 @@ function WebConfigForm({ section, webConfig, setWebConfig, setProducts, addLog, 
   );
 
   return (
-    <div className="grid md:grid-cols-[190px_1fr] gap-5 items-start">
+    <div className="grid grid-cols-1 md:grid-cols-[190px_1fr] gap-5 items-start">
       <div className="flex md:flex-col gap-1 overflow-x-auto">
         {panes.map(([id, label]) => (
           <button key={id} type="button" onClick={() => setPaneBySection((x) => ({ ...x, [section]: id }))} className="text-left text-sm px-3 py-2 rounded-md whitespace-nowrap"
@@ -16378,7 +16307,7 @@ function WebConfigForm({ section, webConfig, setWebConfig, setProducts, addLog, 
 
       <section hidden={pane !== "contact"} className="p-5 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
         <h3 className="text-base font-semibold mb-4" style={{ color: TEXT }}>Liên hệ</h3>
-        <div className="grid sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Hotline (hiển thị)">{ip(SITE.phone, (v) => setSite("phone", v), "0869 196 079")}</Field>
           <Field label="Hotline (chỉ số, cho nút gọi)">{ip(SITE.phoneRaw, (v) => setSite("phoneRaw", v), "0869196079")}</Field>
           <Field label="SĐT hỗ trợ kỹ thuật (hiển thị)">{ip(SITE.techPhone, (v) => setSite("techPhone", v), "0939 206 868")}</Field>
@@ -16395,7 +16324,7 @@ function WebConfigForm({ section, webConfig, setWebConfig, setProducts, addLog, 
 
       <section hidden={pane !== "bank"} className="p-5 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
         <h3 className="text-base font-semibold mb-4" style={{ color: TEXT }}>Tài khoản ngân hàng</h3>
-        <div className="grid sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Ngân hàng">{ip(bank.name, (v) => setBank("name", v), "ACB (Á Châu)")}</Field>
           <Field label="Số tài khoản">{ip(bank.accountNumber, (v) => setBank("accountNumber", v), "19551097")}</Field>
           <Field label="Chủ tài khoản">{ip(bank.holder, (v) => setBank("holder", v), "CÔNG TY TNHH …")}</Field>
@@ -16413,7 +16342,7 @@ function WebConfigForm({ section, webConfig, setWebConfig, setProducts, addLog, 
           Bật tích điểm — cộng theo số điện thoại đặt hàng, tính tự động từ đơn "Hoàn thành" (không tính đơn đang xử lý/đã huỷ)
         </label>
         {LOY.enabled && (
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Tỷ lệ tích điểm" hint="Cứ chi số tiền này (sau chiết khấu, chưa gồm phí ship) thì được 1 điểm">
               <div className="flex items-center gap-2">
                 <MoneyInput className={inputCls} style={{ borderColor: LINE }} value={LOY.rateVnd} onChange={(v) => setLoyalty("rateVnd", v)} />
@@ -16449,7 +16378,7 @@ function WebConfigForm({ section, webConfig, setWebConfig, setProducts, addLog, 
           Sản phẩm trong khối này <b>chọn tay từng cái</b>: mở <b>Website → Sản phẩm web</b>, sửa 1 sản phẩm rồi tick
           <b> “⚡ Đưa vào khối Flash Sale”</b>. Không lọc theo nhóm / thương hiệu / % giảm nữa.
         </div>
-        <div className="grid sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="Tiêu đề">{ip(FS.title, (v) => setFlash("title", v), "Flash Sale")}</Field>
           <Field label="Kết thúc lúc" hint="Bỏ trống = tự đặt +2 ngày">
             <input type="datetime-local" value={FS.endsAt || ""} onChange={(e) => setFlash("endsAt", e.target.value)} className={inputCls} style={{ borderColor: LINE }} />
@@ -16514,20 +16443,20 @@ function WebConfigForm({ section, webConfig, setWebConfig, setProducts, addLog, 
             ))}
           </div>
           {[0, 1].map((i) => (
-            <div key={i} className="grid sm:grid-cols-[96px_1fr_1fr] gap-3 items-center">
+            <div key={i} className="grid grid-cols-1 sm:grid-cols-[96px_1fr_1fr] gap-3 items-center">
               {thumb((HP.side || [])[i]?.image)}
               <Field label={`Poster phụ ${i + 1} — ảnh`}>{ip((HP.side || [])[i]?.image, (v) => setSidePoster(i, "image", v), `/posters/phu-${i + 1}.jpg`)}</Field>
               <Field label={`Poster phụ ${i + 1} — link`}>{hrefIp((HP.side || [])[i]?.href, (v) => setSidePoster(i, "href", v), "/danh-muc")}</Field>
             </div>
           ))}
           {[0, 1, 2].map((i) => (
-            <div key={i} className="grid sm:grid-cols-[96px_1fr_1fr] gap-3 items-center">
+            <div key={i} className="grid grid-cols-1 sm:grid-cols-[96px_1fr_1fr] gap-3 items-center">
               {thumb((HP.strip || [])[i]?.image)}
               <Field label={`Banner ${i + 1} — ảnh`}>{ip((HP.strip || [])[i]?.image, (v) => setStripPoster(i, "image", v), `/posters/banner-${i + 1}.jpg`)}</Field>
               <Field label={`Banner ${i + 1} — link`}>{hrefIp((HP.strip || [])[i]?.href, (v) => setStripPoster(i, "href", v), "/danh-muc")}</Field>
             </div>
           ))}
-          <div className="grid sm:grid-cols-2 gap-3 pt-3" style={{ borderTop: `1px solid ${LINE}` }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3" style={{ borderTop: `1px solid ${LINE}` }}>
             <Field label="Banner dọc trang sản phẩm — ảnh" hint="Cột phải trang chi tiết sản phẩm · khoảng 300 × 520 px">
               {ip(PS.banner?.image, (v) => setSideBanner("image", v), "/posters/banner-doc.jpg")}
             </Field>
@@ -16686,6 +16615,57 @@ const TABS = [
 export default function SalesManager() {
   const [tab, setTab] = useState("dashboard");
   const [navOpen, setNavOpen] = useState(false); // thanh bên trên điện thoại
+  // Nút Back của điện thoại/trình duyệt đi trong trang quản lý: đóng popup, đóng menu, rồi về mục trước.
+  // Giữ sẵn một mốc lịch sử để Back luôn bị bắt lại. Ở trang đầu, bấm Back 2 lần liên tiếp mới thoát.
+  const tabTrailRef = useRef([]);
+  const tabNowRef = useRef("dashboard");
+  const skipTrailRef = useRef(false);
+  const navOpenRef = useRef(false);
+  const lastBackRef = useRef(0);
+  useEffect(() => {
+    if (tab !== tabNowRef.current) {
+      if (skipTrailRef.current) skipTrailRef.current = false;
+      else tabTrailRef.current.push(tabNowRef.current);
+      tabNowRef.current = tab;
+    }
+  }, [tab]);
+  useEffect(() => { navOpenRef.current = navOpen; }, [navOpen]);
+  useEffect(() => {
+    const hold = () => window.history.pushState({ hiliGuard: true }, "");
+    if (!(window.history.state && window.history.state.hiliGuard)) hold();
+    const onPop = () => {
+      if (document.querySelector("[data-web-editor]")) return; // trang sửa sản phẩm web tự xử lý
+      if (document.querySelector('[role="alertdialog"]') || document.querySelector("[data-hili-overlay]")) { hold(); return; }
+      if (__modalStack.length > 0) { hold(); __modalStack[__modalStack.length - 1].close(); return; }
+      if (navOpenRef.current) { hold(); setNavOpen(false); return; }
+      const prev = tabTrailRef.current.pop();
+      if (prev) { hold(); skipTrailRef.current = true; setTab(prev); window.scrollTo(0, 0); return; }
+      const now = Date.now();
+      if (now - lastBackRef.current < 2000) { window.history.back(); return; }
+      lastBackRef.current = now;
+      hold();
+      notify("Bấm Back lần nữa để thoát");
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+  // Trên điện thoại, bảng danh sách hiện dạng thẻ: gắn tên cột vào từng ô để CSS hiển thị.
+  useEffect(() => {
+    let timer = null;
+    const label = () => {
+      if (window.innerWidth >= 768) return;
+      document.querySelectorAll("table.hili-rt").forEach((t) => {
+        const heads = [...t.querySelectorAll(":scope > thead th")].flatMap((h) => Array(h.colSpan || 1).fill(h.innerText.trim()));
+        t.querySelectorAll(":scope > tbody > tr").forEach((r) => [...r.children].forEach((c, i) => {
+          if (!c.hasAttribute("colspan") && heads[i] && c.getAttribute("data-label") !== heads[i]) c.setAttribute("data-label", heads[i]);
+        }));
+      });
+    };
+    const mo = new MutationObserver(() => { clearTimeout(timer); timer = setTimeout(label, 120); });
+    mo.observe(document.body, { childList: true, subtree: true });
+    label();
+    return () => { mo.disconnect(); clearTimeout(timer); };
+  }, []);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -17260,6 +17240,37 @@ export default function SalesManager() {
         #app-shell .overflow-auto > table > thead th { position: sticky; top: 0; z-index: 2; background: #fff; box-shadow: inset 0 -1px 0 #E5E7EB; }
         @keyframes hiliDrawerIn { from { transform: translateX(32px); } to { transform: none; } }
         .hili-drawer { animation: hiliDrawerIn .16s ease-out; }
+        @media (max-width: 767px) {
+          #app-shell .overflow-auto:has(> table.hili-rt) { max-height: none !important; overflow: visible; border: 0 !important; background: transparent !important; }
+          table.hili-rt { min-width: 0 !important; display: block; }
+          table.hili-rt > thead { display: none; }
+          table.hili-rt > tbody { display: block; }
+          table.hili-rt > tbody > tr { display: block; border: 1px solid #E5E7EB !important; border-radius: 8px; margin: 0 0 10px; padding: 8px 12px; background: #fff; }
+          table.hili-rt > tbody > tr > td { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 4px 0 !important; text-align: right; max-width: none !important; white-space: normal; }
+          table.hili-rt > tbody > tr > td[data-label]::before { content: attr(data-label); color: #6B7280; font-size: 12px; text-align: left; flex: none; }
+          table.hili-rt > tbody > tr > td:empty { display: none; }
+          table.hili-rt > tbody > tr > td { flex-wrap: wrap; }
+          table.hili-rt > tbody > tr > td > * { min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+          table.hili-rt > tbody > tr > td[data-label="Tồn ĐK"], table.hili-rt > tbody > tr > td[data-label="Nhập"], table.hili-rt > tbody > tr > td[data-label="Xuất"], table.hili-rt > tbody > tr > td[data-label="ĐVT"] { display: none; }
+          table.hili-rt > tbody > tr > td[data-label]::before { margin-right: auto; }
+          table.hili-items > tbody > tr { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 8px; position: relative; padding-right: 12px; }
+          table.hili-items > tbody > tr > td { grid-column: 1 / -1; }
+          table.hili-items > tbody > tr > td[colspan] { display: block; text-align: left; }
+          table.hili-items > tbody > tr > td:first-child:not([data-label]):not([colspan]) { grid-column: 1; }
+          table.hili-items > tbody > tr > td[data-label="#"] { display: none; }
+          table.hili-items > tbody > tr > td[data-label="Sản phẩm"] { grid-column: 2; display: block; text-align: left; padding-right: 22px !important; }
+          table.hili-items > tbody > tr > td[data-label="Sản phẩm"]:first-child { grid-column: 1 / -1; }
+          table.hili-items > tbody > tr > td[data-label="Sản phẩm"]::before { display: none; }
+          table.hili-items > tbody > tr > td:last-child:not([data-label]):not([colspan]) { position: absolute; top: 4px; right: 8px; }
+          table.hili-items input, table.hili-items select { max-width: 150px; }
+          table.hili-items > tbody > tr > td[data-label] > div:last-child:not(:first-child) { width: 100%; }
+          .hili-full { max-width: none !important; height: 100dvh !important; max-height: 100dvh !important; border-radius: 0 !important; }
+          .hili-full > div:last-child { overflow-x: hidden; }
+          .hili-tabs { flex-wrap: nowrap !important; overflow-x: auto; scrollbar-width: none; }
+          .hili-tabs::-webkit-scrollbar { display: none; }
+          .hili-tabs > button { flex: none !important; }
+          input, select, textarea { font-size: 16px !important; }
+        }
       `}</style>
       {saveFailed && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[90] px-4 py-2 rounded-md text-sm text-white shadow-lg" style={{ background: RUST }}>
@@ -17297,7 +17308,7 @@ export default function SalesManager() {
                 <React.Fragment key={g.label || "top"}>
                   {g.label && <p className="px-3 pt-3 pb-1 text-xs font-semibold" style={{ color: "#AEB7E6" }}>{g.label}</p>}
                   {items.map((t) => (
-                    <button key={t.id} onClick={() => { setTab(t.id); setNavOpen(false); }} className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors w-full text-left"
+                    <button key={t.id} onClick={() => { setTab(t.id); setNavOpen(false); }} className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm w-full text-left"
                       style={{ background: tab === t.id ? GOLD : "transparent", color: tab === t.id ? INK : "#E4E7F7", fontWeight: tab === t.id ? 700 : 500 }}>
                       <t.icon size={17} className="shrink-0" /> {t.label}
                     </button>
@@ -17355,7 +17366,7 @@ export default function SalesManager() {
             {tab === "customers" && <Customers navTarget={navTarget} onFocusHandled={() => setNavTarget(null)} customers={customers} setCustomers={setCustomers} orders={orders} products={products} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} employeeNames={employeeNames} webConfig={webConfig} pointAdjustments={pointAdjustments} setPointAdjustments={setPointAdjustments} />}
             {tab === "suppliers" && <Suppliers suppliers={suppliers} setSuppliers={setSuppliers} purchaseOrders={purchaseOrders} addLog={addLog} goToDoc={goToDoc} navTarget={tab === "suppliers" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} currentUser={currentUser} />}
             {tab === "plans" && roleTabIds.includes("plans") && <Plans plans={plans} setPlans={setPlans} orders={orders} purchaseOrders={purchaseOrders} products={products} employeeNames={employeeNames} />}
-            {tab === "reports" && roleTabIds.includes("reports") && <Reports orders={orders} products={products} customers={customers} accounts={accounts} purchaseOrders={purchaseOrders} warrantyTickets={warrantyTickets} employeeNames={employeeNames} goToOrdersDateRange={goToOrdersDateRange} goToProductsDateRange={goToProductsDateRange} />}
+            {tab === "reports" && roleTabIds.includes("reports") && <Reports onOpen={(type, id) => { setTab(type === "customer" ? "customers" : "products"); setNavTarget({ type, id }); }} orders={orders} products={products} customers={customers} accounts={accounts} purchaseOrders={purchaseOrders} warrantyTickets={warrantyTickets} employeeNames={employeeNames} goToOrdersDateRange={goToOrdersDateRange} goToProductsDateRange={goToProductsDateRange} />}
             {tab === "website" && currentUser.role === "admin" && <WebsiteSection products={products} setProducts={setProducts} orders={orders} webConfig={webConfig} setWebConfig={setWebConfig} categories={categories} brands={brands} currentUser={currentUser} addLog={addLog} onOpenOrder={(id) => { setTab("orders"); setNavTarget({ type: "order", id }); }} navTarget={tab === "website" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} goToInventoryProductEdit={goToInventoryProductEdit} />}
             {tab === "activity" && (currentUser.isOwner || currentUser.perms?.viewActivityLog) && <ActivityLog log={activityLog} accounts={accounts} />}
             {tab === "accounts" && currentUser.isOwner && <Accounts accounts={accounts} setAccounts={setAccounts} currentUser={currentUser} addLog={addLog} onResetTestData={resetTestData} onDownloadBackup={downloadBackup} onRestoreBackup={restoreBackup} onKickAccount={kickAccount} />}
