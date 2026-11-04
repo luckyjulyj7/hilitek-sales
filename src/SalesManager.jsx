@@ -1885,7 +1885,7 @@ function orderDueInfo(o) {
 // Nhãn công nợ của đơn: số âm = còn hạn (xanh), 0 = đến hạn (vàng), số dương = quá hạn (đỏ).
 function CreditDueBadge({ order, plain }) {
   const due = orderDueInfo(order);
-  if (!due) return plain ? <span style={{ color: "#9CA3AF" }}>—</span> : null;
+  if (!due) return plain ? <span className="hili-nodata" style={{ color: "#9CA3AF" }}>—</span> : null;
   const n = -due.daysLeft;
   const color = n < 0 ? "#15803D" : n === 0 ? "#B45309" : "#C62828";
   const title = n < 0 ? `Còn ${-n} ngày` : n === 0 ? "Đến hạn hôm nay" : `Quá hạn ${n} ngày`;
@@ -2227,8 +2227,11 @@ function MoneyInput({ value, onChange, className, style, placeholder }) {
 }
 
 function TagsNotesCompact({ tags, setTags, notes, setNotes }) {
+  const [open, setOpen] = useState(!!notes || (tags || []).length > 0);
   return (
-    <div className="grid grid-cols-2 gap-3 mt-4 pt-3" style={{ borderTop: `1px solid ${LINE}` }}>
+    <>
+    {!open && <button type="button" onClick={() => setOpen(true)} className="md:hidden text-sm mt-3 underline" style={{ color: BLUE }}>Thêm tag, ghi chú</button>}
+    <div className={`${open ? "grid" : "hidden md:grid"} grid-cols-2 gap-3 mt-4 pt-3`} style={{ borderTop: `1px solid ${LINE}` }}>
       <div>
         <span className="block text-xs mb-1 opacity-60 font-medium">Tags</span>
         <SeriesTagInput series={tags} setSeries={setTags} placeholder="Gõ rồi cách khoảng trắng…" />
@@ -2238,6 +2241,7 @@ function TagsNotesCompact({ tags, setTags, notes, setNotes }) {
         <textarea rows={1} className="w-full border rounded-md p-2 text-xs" style={{ borderColor: LINE }} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ghi chú thêm…" />
       </div>
     </div>
+    </>
   );
 }
 
@@ -2305,7 +2309,7 @@ function ImageLightbox({ images, startIndex, onClose }) {
 }
 
 const __modalStack = [];
-function Modal({ title, onClose, children, wide, size, headerAction, drawer }) {
+function Modal({ title, onClose, children, wide, size, headerAction, drawer, drawerWidth = 860 }) {
   // Chỉ 3 khổ khung: nhỏ (xác nhận, kết quả), dọc (form một cột), ngang (phiếu và form nhiều cột).
   const kind = size === "2xl" || size === "3xl" ? "wide" : size === "lg" || size === "xl" || wide ? "form" : "small";
   const sizeClass = { small: "max-w-md", form: "max-w-3xl", wide: "max-w-6xl" }[kind];
@@ -2336,7 +2340,7 @@ function Modal({ title, onClose, children, wide, size, headerAction, drawer }) {
       onClick={drawer ? requestClose : undefined}>
       <div onClick={(e) => e.stopPropagation()} onInput={() => { touchedRef.current = true; }} onChange={() => { touchedRef.current = true; }}
         className={drawer ? "hili-drawer hili-full w-full shadow-2xl relative flex flex-col" : `${kind === "small" ? "" : "hili-full "}w-full ${sizeClass} rounded-md shadow-2xl relative flex flex-col`}
-        style={drawer ? { background: "#fff", height: "100vh", maxWidth: 860 } : { background: "#fff", maxHeight: "90vh", height: kind === "small" ? undefined : "90vh" }}>
+        style={drawer ? { background: "#fff", height: "100vh", maxWidth: drawerWidth } : { background: "#fff", maxHeight: "90vh", height: kind === "small" ? undefined : "90vh" }}>
         <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3.5 shrink-0" style={{ borderBottom: `1px solid ${LINE}` }}>
           <h3 className="text-base sm:text-lg flex-1 min-w-0" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, color: TEXT }}>{title}</h3>
           <div className="flex items-center gap-2 shrink-0">
@@ -3320,11 +3324,11 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           </button>
         )}
         <button onClick={exportProducts} title="Xuất Excel" className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs border whitespace-nowrap" style={{ borderColor: FOREST, color: FOREST }}>
-          <FileSpreadsheet size={13} /> Xuất{selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}
+          <FileSpreadsheet size={13} /> <span className="hidden sm:inline">Xuất</span>{selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}
         </button>
         {isAdmin && (
           <button onClick={triggerImportFile} title="Nhập từ Excel — dùng file đã tải từ nút Xuất, thêm dòng mới để tạo sản phẩm, hoặc điền cột (web) của sản phẩm đã có để cập nhật thông tin web hàng loạt" className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs border whitespace-nowrap" style={{ borderColor: BLUE, color: BLUE }}>
-            <ArrowUpFromLine size={13} /> Nhập
+            <ArrowUpFromLine size={13} /> <span className="hidden sm:inline">Nhập</span>
           </button>
         )}
         <input ref={importFileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleImportFile} />
@@ -3344,12 +3348,12 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
           </button>
         )}
         {isAdmin && (
-          <button onClick={() => setManagingCategories(true)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs border whitespace-nowrap" style={{ borderColor: LINE, color: TEXT }}>
+          <button onClick={() => setManagingCategories(true)} className="hidden md:flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs border whitespace-nowrap" style={{ borderColor: LINE, color: TEXT }}>
             <Filter size={13} /> Quản lý nhóm hàng
           </button>
         )}
         {isAdmin && (
-          <button onClick={() => setManagingBrands(true)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs border whitespace-nowrap" style={{ borderColor: LINE, color: TEXT }}>
+          <button onClick={() => setManagingBrands(true)} className="hidden md:flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs border whitespace-nowrap" style={{ borderColor: LINE, color: TEXT }}>
             <Filter size={13} /> Quản lý nhãn hiệu
           </button>
         )}
@@ -3912,7 +3916,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         );
       })()}
       {editing !== null && (
-        <Modal title={editing.id ? "Sửa thông tin sản phẩm" : "Thêm sản phẩm"} onClose={() => setEditing(null)} size="xl"
+        <Modal drawer title={editing.id ? "Sửa thông tin sản phẩm" : "Thêm sản phẩm"} onClose={() => setEditing(null)}
           headerAction={editing.id ? (
             <button onClick={submitInfo} className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md text-white" style={{ background: INK }}>
               <Save size={12} /> Lưu thay đổi
@@ -5458,7 +5462,7 @@ function PurchaseOrders({ goToProduct, goToSupplier, purchaseOrders, setPurchase
 
           <TagsNotesCompact tags={form.tags} setTags={(arr) => setForm({ ...form, tags: arr })} notes={form.notes} setNotes={(v) => setForm({ ...form, notes: v })} />
 
-          <div className="flex flex-col sm:flex-row gap-3 mt-4">
+          <div className="hili-submit-row flex flex-col sm:flex-row gap-3 mt-4">
             <button onClick={() => submit("pending")} disabled={!form.supplierId || itemsInvalid(form.items)} className="flex-1 py-2.5 rounded-md text-sm border disabled:opacity-40" style={{ borderColor: BRASS, color: BRASS }}>Chờ giao</button>
             <button onClick={() => submit("received")} disabled={!form.supplierId || itemsInvalid(form.items)} className="flex-1 py-2.5 rounded-md text-white text-sm disabled:opacity-40" style={{ background: INK }}>Nhập hàng</button>
           </div>
@@ -5807,10 +5811,10 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
   return (
     <div>
       <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
-        <TabBar compact value={view} onChange={setView} tabs={[{ id: "list", label: "Danh sách NCC", icon: Truck }, { id: "debt", label: debtList.length ? `Công nợ NCC (${debtList.length})` : "Công nợ NCC", icon: Wallet }]} />
+        <TabBar compact value={view} onChange={setView} tabs={[{ id: "list", label: "Danh sách", icon: Truck }, { id: "debt", label: debtList.length ? `Công nợ (${debtList.length})` : "Công nợ", icon: Wallet }]} />
         {view === "list" && (
           <div className="flex items-center gap-3 flex-wrap">
-            <div className="relative flex-1 max-w-xs">
+            <div className="relative flex-1 min-w-full sm:min-w-[260px] sm:max-w-xs">
               <Search size={15} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-60" />
               <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm theo mã, tên hoặc người liên hệ…"
                 className="w-full pl-7 pr-2 py-2 text-sm rounded-md border outline-none" style={{ borderColor: LINE, background: "#fff" }} />
@@ -5962,7 +5966,7 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
                   <tbody>
                     {pos.map((po) => (
                       <tr key={po.id} style={{ borderBottom: `1px solid ${LINE}` }}>
-                        <td className="px-3 py-2"><a href={`${window.location.pathname}?po=${encodeURIComponent(po.id)}`} target="_blank" rel="noopener" className="hover:underline" style={{ color: BLUE }}>{po.code}</a></td>
+                        <td className="px-3 py-2"><button type="button" onClick={() => goToDoc && goToDoc(po.code)} className="hover:underline" style={{ color: BLUE }}>{po.code}</button></td>
                         <td className="px-3 py-2 opacity-70 whitespace-nowrap">{formatDateTime(po.createdAt)}</td>
                         <td className="px-3 py-2" style={{ color: po.paid ? FOREST : BRASS }}>{po.paid ? "Đã thanh toán" : "Còn nợ"}</td>
                         <td className="px-3 py-2 text-right font-medium whitespace-nowrap" style={{ color: TEXT }}>{vnd(poNetTotal(po))}</td>
@@ -5977,7 +5981,7 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
       })()}
 
       {editing !== null && (
-        <Modal title={editing.id ? "Sửa nhà cung cấp" : "Thêm nhà cung cấp"} onClose={() => setEditing(null)} size="xl">
+        <Modal drawer title={editing.id ? "Sửa nhà cung cấp" : "Thêm nhà cung cấp"} onClose={() => setEditing(null)}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Mã NCC" hint="Tự động sinh — có thể sửa lại">
               <input className={inputCls} style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
@@ -6029,7 +6033,7 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
       )}
 
       {debtDetail && (
-        <Modal title={`Công nợ — ${debtDetail.supplier.name}`} onClose={() => setDebtDetail(null)} size="2xl">
+        <Modal drawer title={`Công nợ — ${debtDetail.supplier.name}`} onClose={() => setDebtDetail(null)}>
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <p className="text-sm opacity-60">{debtDetail.poCount} đơn chưa thanh toán · Tổng nợ <b style={{ color: RUST }}>{vnd(debtDetail.total)}</b></p>
             <button onClick={() => exportSupplierDebt(debtDetail)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: FOREST, color: FOREST }}>
@@ -6052,7 +6056,7 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
                     <tr key={po.id} style={{ borderTop: `1px solid ${LINE}` }}>
                       <td className="px-3 py-2">
                         {goToDoc ? (
-                          <a href={`${window.location.pathname}?po=${encodeURIComponent(po.id)}`} target="_blank" rel="noopener" className="hover:underline" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{po.code}</a>
+                          <button type="button" onClick={() => goToDoc && goToDoc(po.code)} className="hover:underline" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{po.code}</button>
                         ) : <span style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{po.code}</span>}
                       </td>
                       <td className="px-3 py-2" style={{ fontFamily: "'Inter', sans-serif" }}>{po.invoiceNo || "—"}</td>
@@ -7955,7 +7959,9 @@ function ServiceTickets({ repairTickets, setRepairTickets, helpdeskTickets, setH
   );
 }
 
+let __incompleteHidden = false; // ẩn cảnh báo đến khi tải lại trang
 function ProductsSection({ products, setProducts, purchaseOrders, setPurchaseOrders, suppliers, setSuppliers, categories, setCategories, brands, setBrands, stocktakes, setStocktakes, warrantyTickets, setWarrantyTickets, repairTickets, setRepairTickets, helpdeskTickets, setHelpdeskTickets, orders, setOrders, customers, setCustomers, employeeNames, currentUser, addLog, navTarget, onFocusHandled, goToDoc, goToSupplier, goToWebProduct, webConfig }) {
+  const [hideIncomplete, setHideIncomplete] = useState(__incompleteHidden);
   const [sub, setSub] = useState("list");
   const isAdmin = currentUser.role === "admin";
   const isCtv = currentUser.role === "ctv";
@@ -8017,14 +8023,14 @@ function ProductsSection({ products, setProducts, purchaseOrders, setPurchaseOrd
           <button onClick={restoreMissingMoves} className="text-xs px-3 py-1.5 rounded-md text-white shrink-0" style={{ background: RUST }}>Khôi phục tồn kho</button>
         </div>
       )}
-      {incompleteProducts.length > 0 && (
-        <div className="mb-4 p-3 rounded-md flex items-start gap-2.5 flex-wrap" style={{ background: `${BRASS}10`, border: `1px solid ${BRASS}44` }}>
-          <AlertTriangle size={16} style={{ color: BRASS }} className="mt-0.5 shrink-0" />
-          <p className="text-sm flex-1" style={{ color: TEXT }}>
-            <span className="font-medium" style={{ color: BRASS }}>{incompleteProducts.length} sản phẩm thiếu thông tin: </span>
-            {incompleteProducts.slice(0, 5).map((p) => p.name).join(", ")}{incompleteProducts.length > 5 ? ` +${incompleteProducts.length - 5} sản phẩm khác` : ""} — cần bổ sung nhóm hàng/nhãn hiệu/giá nhập/giá lẻ.
+      {incompleteProducts.length > 0 && !hideIncomplete && (
+        <div className="mb-4 px-3 py-2 rounded-md flex items-center gap-2 text-sm" style={{ background: `${BRASS}10`, border: `1px solid ${BRASS}44` }}>
+          <AlertTriangle size={15} style={{ color: BRASS }} className="shrink-0" />
+          <p className="flex-1 min-w-0 truncate" style={{ color: TEXT }} title={incompleteProducts.map((p) => p.name).join(", ")}>
+            <span className="font-medium" style={{ color: BRASS }}>{incompleteProducts.length} sản phẩm thiếu thông tin</span>
+            <span className="hidden md:inline"> (nhóm hàng, nhãn hiệu, giá nhập hoặc giá lẻ)</span>
           </p>
-          <button onClick={() => setSub("list")} className="text-xs px-3 py-1.5 rounded-md border shrink-0" style={{ borderColor: BRASS, color: BRASS }}>Xem danh sách</button>
+          <button type="button" onClick={() => { __incompleteHidden = true; setHideIncomplete(true); }} title="Ẩn cảnh báo" aria-label="Ẩn cảnh báo" className="shrink-0 p-1" style={{ color: TEXT }}><X size={16} /></button>
         </div>
       )}
       <TabBar value={sub} onChange={setSub} tabs={[
@@ -8409,22 +8415,22 @@ function Customers({ setOrders, customers, setCustomers, orders, products, curre
   return (
     <div>
       <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
-        <TabBar compact value={view} onChange={setView} tabs={[{ id: "list", label: "Danh sách khách hàng", icon: Users }, { id: "debt", label: debtList.length ? `Công nợ khách hàng (${debtList.length})` : "Công nợ khách hàng", icon: Wallet }]} />
+        <TabBar compact value={view} onChange={setView} tabs={[{ id: "list", label: "Danh sách", icon: Users }, { id: "debt", label: debtList.length ? `Công nợ (${debtList.length})` : "Công nợ", icon: Wallet }]} />
         {view === "list" && (
-          <div className="flex gap-2 flex-wrap">
-            <div className="relative flex-1 max-w-xs">
+          <div className="flex gap-2 flex-wrap w-full md:w-auto md:justify-end">
+            <div className="relative flex-1 min-w-full sm:min-w-[260px] sm:max-w-xs">
               <Search size={15} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-60" />
               <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm mã, tên, SĐT, MST, phụ trách…"
                 className="w-full pl-7 pr-2 py-2 text-sm rounded-md border outline-none" style={{ borderColor: LINE, background: "#fff" }} />
             </div>
             <button onClick={exportCustomerList} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: FOREST, color: FOREST }}>
-              <FileSpreadsheet size={15} /> Xuất Excel
+              <FileSpreadsheet size={15} /> <span className="hidden sm:inline">Xuất Excel</span>
             </button>
             <button onClick={triggerImportFile} title="Dùng file đã tải từ nút Xuất Excel — thêm dòng khách hàng mới rồi tải lên lại" className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border whitespace-nowrap" style={{ borderColor: BLUE, color: BLUE }}>
-              <ArrowUpFromLine size={15} /> Nhập từ Excel
+              <ArrowUpFromLine size={15} /> <span className="hidden sm:inline">Nhập từ Excel</span>
             </button>
             <input ref={importFileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleImportFile} />
-            <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white" style={{ background: INK }}><Plus size={15} /> Thêm khách hàng</button>
+            <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white" style={{ background: INK }}><Plus size={15} /> Thêm<span className="hidden sm:inline"> khách hàng</span></button>
           </div>
         )}
       </div>
@@ -8786,7 +8792,7 @@ function Customers({ setOrders, customers, setCustomers, orders, products, curre
       )}
 
       {editing !== null && (
-        <Modal title={editing.id ? "Sửa khách hàng" : "Thêm khách hàng"} onClose={() => setEditing(null)} size="xl">
+        <Modal drawer title={editing.id ? "Sửa khách hàng" : "Thêm khách hàng"} onClose={() => setEditing(null)}>
           <Field label="Tên khách hàng"><input className={inputCls} style={{ borderColor: LINE }} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
           <div className="grid grid-cols-2 gap-4">
             <Field label="Người liên hệ" hint="Không bắt buộc — dùng khi khách hàng là công ty">
@@ -10510,7 +10516,7 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
           </div>
 
               </div>
-          <button onClick={submit} className="w-full py-2.5 rounded-md text-white text-sm font-medium" style={{ background: INK }}>
+          <button onClick={submit} className="hili-submit w-full py-2.5 rounded-md text-white text-sm font-medium" style={{ background: INK }}>
             {editingQuoteId ? "Lưu thay đổi (kích hoạt lại)" : `Tạo báo giá (hiệu lực ${form.validDays || 7} ngày)`}
           </button>
             </div>
@@ -11218,7 +11224,7 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
             </button>
           )}
           <button onClick={exportOrders} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: FOREST, color: FOREST }}>
-            <FileSpreadsheet size={15} /> Xuất Excel{selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}
+            <FileSpreadsheet size={15} /> <span className="hidden sm:inline">Xuất Excel</span>{selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}
           </button>
           <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white" style={{ background: INK }}><Plus size={15} /> Tạo đơn và giao hàng</button>
         </div>
@@ -11414,10 +11420,10 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
                       {BRANCHES.map((b) => <option key={b} value={b}>{b}</option>)}
                     </select>
                   </Field>
-                  <Field label="Bán bởi">
+                  <div className="hidden md:block"><Field label="Bán bởi">
                     <div className={inputCls} style={{ borderColor: LINE, background: "#F3F4F6", color: TEXT, display: "flex", alignItems: "center" }}>{form.seller}</div>
-                  </Field>
-                  <Field label="Mã đơn"><input disabled className={inputCls} style={{ borderColor: LINE, opacity: 0.5 }} value={nextOrderCode(orders)} /></Field>
+                  </Field></div>
+                  <div className="hidden md:block"><Field label="Mã đơn"><input disabled className={inputCls} style={{ borderColor: LINE, opacity: 0.5 }} value={nextOrderCode(orders)} /></Field></div>
                   <div className="col-span-2 md:col-span-1"><Field label="Nguồn">
                   <div className="flex gap-2 flex-wrap">
                     {CHANNELS.map((c) => (
@@ -11499,7 +11505,7 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
                 <div className="flex justify-between text-sm font-semibold pt-2" style={{ borderTop: `1px solid ${LINE}`, color: calc.remaining > 0 ? RUST : FOREST }}><span>Còn phải trả</span><span style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(calc.remaining)}</span></div>
               </div>
 
-              <button onClick={submit} disabled={itemsInvalid()} className="w-full py-3 rounded-md text-white text-sm font-medium disabled:opacity-40" style={{ background: INK }}>{editingOrderId ? "Lưu thay đổi" : "Tạo đơn hàng"}</button>
+              <button onClick={submit} disabled={itemsInvalid()} className="hili-submit w-full py-3 rounded-md text-white text-sm font-medium disabled:opacity-40" style={{ background: INK }}>{editingOrderId ? "Lưu thay đổi" : "Tạo đơn hàng"}</button>
             </div>
           </div>
 
@@ -11688,7 +11694,7 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
 
             <p className="text-xs mb-2 opacity-60 font-medium">Thông tin sản phẩm</p>
             <div className="rounded-md overflow-x-auto mb-4" style={{ border: `1px solid ${LINE}` }}>
-              <table className="w-full text-sm" style={{ minWidth: isAdmin && viewingOrder.approvalStatus === "pending" ? 720 : 520 }}>
+              <table className="hili-rt hili-items w-full text-sm" style={{ minWidth: isAdmin && viewingOrder.approvalStatus === "pending" ? 720 : 520 }}>
                 <thead><tr className="opacity-60" style={{ background: PAPER }}>
                   <th className="text-left py-2 px-2 text-xs whitespace-nowrap font-medium">Sản phẩm</th><th className="text-right py-2 px-2 text-xs whitespace-nowrap font-medium">SL</th><th className="text-right py-2 px-2 text-xs whitespace-nowrap font-medium">Đơn giá</th><th className="text-right py-2 px-2 text-xs whitespace-nowrap font-medium">Thành tiền</th>
                   {isAdmin && viewingOrder.approvalStatus === "pending" && (<>
@@ -14506,6 +14512,175 @@ function WebHealthBadge({ p }) {
   return <span className="text-xs font-medium" style={{ color: miss.some((m) => m.label === "Ảnh sản phẩm" || m.label === "Mô tả") ? RUST : BRASS }} title={`Thiếu: ${miss.map((m) => m.label).join(", ")}`}>Thiếu {miss[0].label.toLowerCase()}{miss.length > 1 ? ` +${miss.length - 1}` : ""}</span>;
 }
 
+// Lớp xem nhanh: mở chi tiết đơn, khách, sản phẩm, NCC đè lên màn hình đang làm, không đổi tab.
+// Đóng lớp là về đúng chỗ cũ. Có thể mở chồng (khách -> đơn -> sản phẩm), Back đóng từng lớp.
+function PeekRow({ label, children }) {
+  return (
+    <div className="flex gap-4 py-2 text-sm" style={{ borderTop: `1px solid ${LINE}` }}>
+      <span className="shrink-0 w-28" style={{ color: "#6B7280" }}>{label}</span>
+      <span className="min-w-0 font-medium" style={{ color: TEXT }}>{children || "—"}</span>
+    </div>
+  );
+}
+function PeekLink({ onClick, children }) {
+  return <button type="button" onClick={onClick} className="text-left font-medium hover:underline" style={{ color: BLUE }}>{children}</button>;
+}
+function PeekTile({ label, value, color }) {
+  return (
+    <div className="px-3 py-2.5 rounded-lg" style={{ background: PAPER }}>
+      <p className="text-xs mb-0.5" style={{ color: "#6B7280" }}>{label}</p>
+      <p className="text-base font-bold" style={{ color: color || TEXT }}>{value}</p>
+    </div>
+  );
+}
+function PeekLayer({ peeks, setPeeks, onFull, orders, purchaseOrders, customers, products, suppliers, isAdmin }) {
+  const open = (type, id) => setPeeks((prev) => [...prev, { type, id }]);
+  const closeTop = () => setPeeks((prev) => prev.slice(0, -1));
+  const custName = (id) => customers.find((c) => c.id === id)?.name || "Khách lẻ";
+  const prodName = (id) => products.find((p) => p.id === id)?.name || "?";
+  const body = ({ type, id }) => {
+    if (type === "order") {
+      const o = orders.find((x) => x.id === id);
+      if (!o) return null;
+      const c = orderCalc(o);
+      return { title: `Đơn hàng ${o.code}`, content: (
+        <>
+          <div className="flex items-center gap-3 mb-4 flex-wrap text-sm"><Stamp status={o.status} /><span style={{ color: "#6B7280" }}>{formatDateTime(o.createdAt)} · {o.seller}</span><CreditDueBadge order={o} /></div>
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            <PeekTile label="Khách phải trả" value={vnd(c.payable)} />
+            <PeekTile label="Đã trả" value={vnd(c.payable - c.remaining)} />
+            <PeekTile label="Còn phải trả" value={vnd(c.remaining)} color={c.remaining > 0 ? RUST : FOREST} />
+          </div>
+          <PeekRow label="Khách hàng">{o.customerId ? <PeekLink onClick={() => open("customer", o.customerId)}>{custName(o.customerId)}</PeekLink> : "Khách lẻ"}</PeekRow>
+          <PeekRow label="Hoá đơn">{o.invoiceStatus === "issued" ? `Đã xuất ${o.invoiceNo || ""}` : "Chờ xuất"}</PeekRow>
+          {o.notes && <PeekRow label="Ghi chú">{o.notes}</PeekRow>}
+          <p className="text-sm font-semibold mt-4 mb-1" style={{ color: TEXT }}>Sản phẩm</p>
+          {o.items.map((it, i) => (
+            <div key={i} className="flex items-baseline justify-between gap-3 py-2 text-sm" style={{ borderTop: `1px solid ${LINE}` }}>
+              <PeekLink onClick={() => open("product", it.productId)}>{prodName(it.productId)}</PeekLink>
+              <span className="shrink-0" style={{ color: TEXT }}>{it.qty} × {vnd(it.price)}</span>
+            </div>
+          ))}
+        </>
+      ) };
+    }
+    if (type === "po") {
+      const po = purchaseOrders.find((x) => x.id === id);
+      if (!po) return null;
+      const due = poDueInfo(po);
+      return { title: `Đơn nhập ${po.code}`, content: (
+        <>
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            <PeekTile label="Giá trị đơn" value={vnd(poNetTotal(po))} />
+            <PeekTile label="Thanh toán" value={po.paid ? "Đã thanh toán" : due ? (due.overdue ? `Quá hạn ${-due.daysLeft} ngày` : `Còn ${due.daysLeft} ngày`) : "Chưa thanh toán"} color={po.paid ? FOREST : RUST} />
+          </div>
+          <PeekRow label="Nhà cung cấp">{po.supplierId ? <PeekLink onClick={() => open("supplier", po.supplierId)}>{po.supplier}</PeekLink> : po.supplier}</PeekRow>
+          <PeekRow label="Số hoá đơn">{po.invoiceNo}</PeekRow>
+          <PeekRow label="Ngày nhập">{formatDateTime(po.createdAt)}</PeekRow>
+          <p className="text-sm font-semibold mt-4 mb-1" style={{ color: TEXT }}>Sản phẩm</p>
+          {po.items.map((it, i) => (
+            <div key={i} className="flex items-baseline justify-between gap-3 py-2 text-sm" style={{ borderTop: `1px solid ${LINE}` }}>
+              <PeekLink onClick={() => open("product", it.productId)}>{prodName(it.productId)}</PeekLink>
+              <span className="shrink-0" style={{ color: TEXT }}>{it.qty} × {vnd(it.price)}</span>
+            </div>
+          ))}
+        </>
+      ) };
+    }
+    if (type === "customer") {
+      const c = customers.find((x) => x.id === id);
+      if (!c) return null;
+      const list = orders.filter((o) => o.customerId === c.id && o.status !== "cancelled").sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      const spent = list.reduce((t, o) => t + orderCalc(o).payable, 0);
+      const debt = list.reduce((t, o) => t + Math.max(0, orderCalc(o).remaining), 0);
+      return { title: c.name, content: (
+        <>
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            <PeekTile label="Tổng chi tiêu" value={vnd(spent)} />
+            <PeekTile label="Số đơn" value={list.length} />
+            <PeekTile label="Công nợ" value={vnd(debt)} color={debt > 0 ? RUST : FOREST} />
+          </div>
+          <PeekRow label="Mã khách">{c.code}</PeekRow>
+          <PeekRow label="Số điện thoại">{c.phone}</PeekRow>
+          <PeekRow label="Mã số thuế">{c.taxCode}</PeekRow>
+          <PeekRow label="Công nợ cho phép">{c.creditDays ? `${c.creditDays} ngày` : "Trả ngay"}</PeekRow>
+          <PeekRow label="Địa chỉ">{[c.addressDetail, c.ward, c.province].filter(Boolean).join(", ")}</PeekRow>
+          {list.length > 0 && <p className="text-sm font-semibold mt-4 mb-1" style={{ color: TEXT }}>Đơn gần đây</p>}
+          {list.slice(0, 10).map((o) => (
+            <div key={o.id} className="flex items-baseline justify-between gap-3 py-2 text-sm" style={{ borderTop: `1px solid ${LINE}` }}>
+              <PeekLink onClick={() => open("order", o.id)}>{o.code}</PeekLink>
+              <span style={{ color: "#6B7280" }}>{formatDateTime(o.createdAt)}</span>
+              <span className="font-medium" style={{ color: TEXT }}>{vnd(orderCalc(o).payable)}</span>
+            </div>
+          ))}
+        </>
+      ) };
+    }
+    if (type === "product") {
+      const x = products.find((p) => p.id === id);
+      if (!x) return null;
+      const st = productStats(x);
+      return { title: "Sản phẩm", content: (
+        <>
+          <div className="flex gap-4 mb-4">
+            {displayImage(x) && <img src={displayImage(x)} alt="" className="w-24 h-24 object-cover rounded-md shrink-0" style={{ border: `1px solid ${LINE}` }} />}
+            <div className="min-w-0">
+              <p className="text-base font-semibold leading-snug" style={{ color: TEXT }}>{x.name}</p>
+              <p className="text-sm mt-1" style={{ color: "#6B7280" }}>{[x.category, x.brand].filter(Boolean).join(" · ")}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            <PeekTile label="Giá bán" value={vnd(x.retailPrice)} />
+            <PeekTile label="Tồn kho" value={st.closingQty} color={st.closingQty <= 0 ? RUST : FOREST} />
+          </div>
+          <PeekRow label="Mã hàng">{x.code}</PeekRow>
+          <PeekRow label="SKU">{x.sku}</PeekRow>
+          <PeekRow label="Giá bán sỉ">{vnd(x.wholesalePrice)}</PeekRow>
+          {isAdmin && <PeekRow label="Giá nhập">{vnd(x.costPrice)}</PeekRow>}
+          <PeekRow label="Bảo hành">{x.warrantyMonths ? warrantyLabel(x.warrantyMonths) : "Không"}</PeekRow>
+        </>
+      ) };
+    }
+    if (type === "supplier") {
+      const x = suppliers.find((v) => v.id === id);
+      if (!x) return null;
+      const pos = purchaseOrders.filter((po) => poMatchesSupplier(po, x)).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      const owed = pos.filter((po) => !po.paid).reduce((t, po) => t + poNetTotal(po), 0);
+      return { title: x.name, content: (
+        <>
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            <PeekTile label="Số đơn nhập" value={pos.length} />
+            <PeekTile label="Còn nợ" value={vnd(owed)} color={owed > 0 ? RUST : FOREST} />
+          </div>
+          <PeekRow label="Mã NCC">{x.code}</PeekRow>
+          <PeekRow label="Mã số thuế">{x.taxCode}</PeekRow>
+          <PeekRow label="Liên hệ">{[x.contactPerson, x.phone].filter(Boolean).join(" · ")}</PeekRow>
+          <PeekRow label="Địa chỉ">{x.address}</PeekRow>
+          {pos.length > 0 && <p className="text-sm font-semibold mt-4 mb-1" style={{ color: TEXT }}>Đơn nhập gần đây</p>}
+          {pos.slice(0, 10).map((po) => (
+            <div key={po.id} className="flex items-baseline justify-between gap-3 py-2 text-sm" style={{ borderTop: `1px solid ${LINE}` }}>
+              <PeekLink onClick={() => open("po", po.id)}>{po.code}</PeekLink>
+              <span style={{ color: po.paid ? FOREST : BRASS }}>{po.paid ? "Đã thanh toán" : "Còn nợ"}</span>
+              <span className="font-medium" style={{ color: TEXT }}>{vnd(poNetTotal(po))}</span>
+            </div>
+          ))}
+        </>
+      ) };
+    }
+    return null;
+  };
+  return peeks.map((pk, i) => {
+    const v = body(pk);
+    if (!v) return null;
+    return (
+      <Modal key={`${i}-${pk.type}-${pk.id}`} drawer drawerWidth={640} title={v.title} onClose={closeTop}
+        headerAction={<button type="button" onClick={() => onFull(pk)} className="text-xs px-2.5 py-1.5 rounded-md border whitespace-nowrap" style={{ borderColor: LINE, color: TEXT }}>Mở đầy đủ</button>}>
+        {v.content}
+      </Modal>
+    );
+  });
+}
+
 // Tìm nhanh toàn hệ thống (Ctrl K): đơn bán, đơn nhập, khách hàng, sản phẩm, nhà cung cấp.
 const foldText = (v) => String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/gi, "d").toLowerCase();
 function CommandPalette({ orders, purchaseOrders, customers, products, suppliers, onPick }) {
@@ -16689,6 +16864,8 @@ const TABS = [
 export default function SalesManager() {
   const [tab, setTab] = useState("dashboard");
   const [navOpen, setNavOpen] = useState(false); // thanh bên trên điện thoại
+  const [peeks, setPeeks] = useState([]); // lớp xem nhanh đang mở
+  const peek = (type, id) => { if (id) setPeeks((prev) => [...prev, { type, id }]); };
   // Nút Back của điện thoại/trình duyệt đi trong trang quản lý: đóng popup, đóng menu, rồi về mục trước.
   // Giữ sẵn một mốc lịch sử để Back luôn bị bắt lại. Ở trang đầu, bấm Back 2 lần liên tiếp mới thoát.
   const tabTrailRef = useRef([]);
@@ -16773,18 +16950,18 @@ export default function SalesManager() {
     if (!docNo) return;
     if (docNo.startsWith("POH")) {
       const po = purchaseOrders.find((p) => p.code === docNo);
-      if (po) { setTab("purchase"); setNavTarget({ type: "po", id: po.id }); }
+      if (po && currentUser.role === "admin") peek("po", po.id);
     } else if (docNo.startsWith("DH")) {
       const orderCode = docNo.split("-")[0];
       const o = orders.find((x) => x.code === orderCode);
-      if (o) { setTab("orders"); setNavTarget({ type: "order", id: o.id }); }
+      if (o) peek("order", o.id);
     }
   };
-  const goToCustomer = (id) => { setTab("customers"); setNavTarget({ type: "customer", id }); };
-  const goToProduct = (id) => { setTab("products"); setNavTarget({ type: "product", id }); };
+  const goToCustomer = (id) => peek("customer", id);
+  const goToProduct = (id) => peek("product", id);
   const goToSupplier = (supplierId) => {
     if (!supplierId || currentUser.role !== "admin") return;
-    setTab("suppliers"); setNavTarget({ type: "supplier", id: supplierId });
+    peek("supplier", supplierId);
   };
   // Điều hướng qua lại giữa "Sản phẩm & Tồn kho" và "Website → Sản phẩm web" cho ĐÚNG 1 sản phẩm.
   const goToWebProduct = (productId) => {
@@ -17321,30 +17498,47 @@ export default function SalesManager() {
           table.hili-rt { min-width: 0 !important; display: block; }
           table.hili-rt > thead { display: none; }
           table.hili-rt > tbody { display: block; }
-          table.hili-rt > tbody > tr { display: block; border: 1px solid #E5E7EB !important; border-radius: 8px; margin: 0 0 10px; padding: 8px 12px; background: #fff; }
-          table.hili-rt > tbody > tr > td { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 4px 0 !important; text-align: right; max-width: none !important; white-space: normal; }
-          table.hili-rt > tbody > tr > td[data-label]::before { content: attr(data-label); color: #6B7280; font-size: 12px; text-align: left; flex: none; }
-          table.hili-rt > tbody > tr > td:empty { display: none; }
-          table.hili-rt > tbody > tr > td { flex-wrap: wrap; }
-          table.hili-rt > tbody > tr > td > * { min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
-          table.hili-rt > tbody > tr > td[data-label="Tồn ĐK"], table.hili-rt > tbody > tr > td[data-label="Nhập"], table.hili-rt > tbody > tr > td[data-label="Xuất"], table.hili-rt > tbody > tr > td[data-label="ĐVT"] { display: none; }
-          table.hili-rt > tbody > tr > td[data-label]::before { margin-right: auto; }
-          table.hili-items > tbody > tr { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 8px; position: relative; padding-right: 12px; }
-          table.hili-items > tbody > tr > td { grid-column: 1 / -1; }
-          table.hili-items > tbody > tr > td[colspan] { display: block; text-align: left; }
-          table.hili-items > tbody > tr > td:first-child:not([data-label]):not([colspan]) { grid-column: 1; }
+          /* Danh sách: mỗi dòng là thẻ gọn 2 dòng */
+          table.hili-rt:not(.hili-items) > tbody > tr { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 10px; border: 1px solid #E5E7EB !important; border-radius: 8px; margin: 0 0 8px; padding: 10px 12px; background: #fff; }
+          table.hili-rt:not(.hili-items) > tbody > tr > td { display: inline-flex; align-items: center; gap: 4px; width: auto; max-width: 100% !important; padding: 0 !important; font-size: 13px; color: #4B5563; text-align: left; white-space: normal; opacity: 1 !important; min-width: 0; }
+          table.hili-rt:not(.hili-items) > tbody > tr > td:empty { display: none; }
+          table.hili-rt:not(.hili-items) > tbody > tr > td[colspan] { flex-basis: 100%; display: block; }
+          table.hili-rt:not(.hili-items) > tbody > tr > td:not([data-label]):not(:last-child), table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Đăng web"] { order: -2; flex: none; }
+          table.hili-rt:not(.hili-items) > tbody > tr > td:last-child:not([data-label]) { order: 9; margin-left: auto; }
+          table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Tên khách hàng"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Tên NCC"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Tên vật tư"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Khách hàng"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Nhà cung cấp"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Sản phẩm"] { order: -1; flex: 1 1 55%; font-size: 14px; font-weight: 600; color: #111827; }
+          table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Tổng tiền"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Giá trị đơn"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Giá bán (web)"] { margin-left: auto; font-weight: 600; color: #111827; }
+          table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Phụ trách"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Tổng SL đơn"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Tổng chi tiêu"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Bán tại"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Xuất hoá đơn"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Mã số thuế"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Người liên hệ"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Địa chỉ"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="SKU"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="ĐVT"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Tồn ĐK"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Nhập"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Xuất"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Trạng thái nhập"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Chi nhánh nhập"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Số hoá đơn"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Nhân viên tạo"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Nhóm"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Giá so sánh"] { display: none; }
+          table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Tồn CK"]::before { content: "Tồn"; }
+          table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Tồn"]::before { content: "Tồn"; }
+          table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Công nợ"]::before { content: "Nợ"; }
+          table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Còn phải trả"]::before { content: "Còn"; }
+          table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="CNợ"]::before { content: "CNợ"; }
+          table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Giá nhập"]::before { content: "Nhập"; }
+          table.hili-rt:not(.hili-items) > tbody > tr > td:has(.hili-nodata) { display: none; }
+          table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Tên vật tư"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Sản phẩm"] { display: block; }
+          /* Dòng hàng trong phiếu */
+          table.hili-items > tbody > tr { display: grid; grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr); gap: 6px 8px; align-items: end; position: relative; border: 1px solid #E5E7EB !important; border-radius: 8px; margin: 0 0 8px; padding: 10px; background: #fff; }
+          table.hili-items > tbody > tr > td { display: block; padding: 0 !important; text-align: left; grid-column: 1 / -1; max-width: none !important; white-space: normal; }
+          table.hili-items > tbody > tr > td:empty { display: none; }
+          table.hili-items > tbody > tr > td:first-child:not([data-label]):not([colspan]) { grid-column: 1; align-self: start; }
           table.hili-items > tbody > tr > td[data-label="#"] { display: none; }
-          table.hili-items > tbody > tr > td[data-label="Sản phẩm"] { grid-column: 2; display: block; text-align: left; padding-right: 22px !important; }
+          table.hili-items > tbody > tr > td[data-label="Sản phẩm"] { grid-column: 2 / -1; align-self: start; padding-right: 22px !important; }
           table.hili-items > tbody > tr > td[data-label="Sản phẩm"]:first-child { grid-column: 1 / -1; }
-          table.hili-items > tbody > tr > td[data-label="Sản phẩm"]::before { display: none; }
-          table.hili-items > tbody > tr > td:last-child:not([data-label]):not([colspan]) { position: absolute; top: 4px; right: 8px; }
-          table.hili-items input, table.hili-items select { max-width: 150px; }
-          table.hili-items > tbody > tr > td[data-label] > div:last-child:not(:first-child) { width: 100%; }
+          table.hili-items > tbody > tr > td[data-label="SL"], table.hili-items > tbody > tr > td[data-label="VAT"] { grid-column: 1 / 3; }
+          table.hili-items > tbody > tr > td[data-label="Đơn giá"], table.hili-items > tbody > tr > td[data-label="Thành tiền"] { grid-column: 3; text-align: right; }
+          table.hili-items > tbody > tr > td[data-label="SL"]::before, table.hili-items > tbody > tr > td[data-label="Đơn giá"]::before, table.hili-items > tbody > tr > td[data-label="VAT"]::before { content: attr(data-label); display: block; font-size: 12px; color: #6B7280; text-align: left; margin-bottom: 2px; }
+          table.hili-items > tbody > tr > td:last-child:not([data-label]):not([colspan]) { position: absolute; top: 6px; right: 8px; grid-column: auto; }
+          table.hili-items input, table.hili-items select { width: 100%; max-width: none; }
+          /* Khung, tab, nút */
           .hili-full { max-width: none !important; height: 100dvh !important; max-height: 100dvh !important; border-radius: 0 !important; }
-          .hili-full > div:last-child { overflow-x: hidden; }
+          .hili-full > div:last-child { overflow-x: hidden; padding-bottom: 80px; }
           .hili-tabs { flex-wrap: nowrap !important; overflow-x: auto; scrollbar-width: none; }
           .hili-tabs::-webkit-scrollbar { display: none; }
           .hili-tabs > button { flex: none !important; }
+          .hili-submit { position: fixed; left: 12px; right: 12px; bottom: 10px; width: auto !important; z-index: 20; margin: 0 !important; box-shadow: 0 6px 16px rgba(15,23,70,.25); }
+          .hili-submit:disabled { opacity: 1; background: #9CA3AF !important; }
+          .hili-submit-row { position: fixed; left: 12px; right: 12px; bottom: 10px; z-index: 20; flex-direction: row !important; margin: 0 !important; }
+          .hili-submit-row > button { background-color: #fff; }
           input, select, textarea { font-size: 16px !important; }
         }
       `}</style>
@@ -17426,12 +17620,7 @@ export default function SalesManager() {
           </div>
           <CommandPalette orders={orders} customers={currentUser.role === "admin" ? customers : customers.filter((c) => c.assignedTo === currentUser.fullName)} products={products}
             purchaseOrders={currentUser.role === "admin" ? purchaseOrders : []} suppliers={currentUser.role === "admin" ? suppliers : []}
-            onPick={(r) => {
-              if (r.type === "order" || r.type === "po") goToDoc(r.code);
-              else if (r.type === "supplier") goToSupplier(r.id);
-              else if (r.type === "product") { setTab("products"); setNavTarget({ type: "product", id: r.id }); }
-              else if (r.type === "customer") { setTab("customers"); setNavTarget({ type: "customer", id: r.id }); }
-            }} />
+            onPick={(r) => peek(r.type, r.id)} />
           <AppErrorBoundary key={tab}>
             {tab === "dashboard" && <Dashboard products={products} orders={orders} goToOrdersFilter={goToOrdersFilter} purchaseOrders={purchaseOrders} isAdmin={currentUser.role === "admin"} onGo={setTab} />}
             {tab === "products" && roleTabIds.includes("products") && <ProductsSection products={products} setProducts={setProducts} purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} suppliers={suppliers} setSuppliers={setSuppliers} categories={categories} setCategories={setCategories} brands={brands} setBrands={setBrands} stocktakes={stocktakes} setStocktakes={setStocktakes} warrantyTickets={warrantyTickets} setWarrantyTickets={setWarrantyTickets} repairTickets={repairTickets} setRepairTickets={setRepairTickets} helpdeskTickets={helpdeskTickets} setHelpdeskTickets={setHelpdeskTickets} orders={orders} setOrders={setOrders} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} navTarget={tab === "products" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} goToDoc={goToDoc} goToSupplier={goToSupplier} goToWebProduct={goToWebProduct} webConfig={webConfig} />}
@@ -17442,11 +17631,20 @@ export default function SalesManager() {
             {tab === "customers" && <Customers setOrders={setOrders} navTarget={navTarget} onFocusHandled={() => setNavTarget(null)} customers={customers} setCustomers={setCustomers} orders={orders} products={products} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} employeeNames={employeeNames} webConfig={webConfig} pointAdjustments={pointAdjustments} setPointAdjustments={setPointAdjustments} />}
             {tab === "suppliers" && <Suppliers suppliers={suppliers} setSuppliers={setSuppliers} purchaseOrders={purchaseOrders} addLog={addLog} goToDoc={goToDoc} navTarget={tab === "suppliers" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} currentUser={currentUser} />}
             {tab === "plans" && roleTabIds.includes("plans") && <Plans plans={plans} setPlans={setPlans} orders={orders} purchaseOrders={purchaseOrders} products={products} employeeNames={employeeNames} />}
-            {tab === "reports" && roleTabIds.includes("reports") && <Reports onOpen={(type, id) => { setTab(type === "customer" ? "customers" : "products"); setNavTarget({ type, id }); }} orders={orders} products={products} customers={customers} accounts={accounts} purchaseOrders={purchaseOrders} warrantyTickets={warrantyTickets} employeeNames={employeeNames} goToOrdersDateRange={goToOrdersDateRange} goToProductsDateRange={goToProductsDateRange} />}
+            {tab === "reports" && roleTabIds.includes("reports") && <Reports onOpen={peek} orders={orders} products={products} customers={customers} accounts={accounts} purchaseOrders={purchaseOrders} warrantyTickets={warrantyTickets} employeeNames={employeeNames} goToOrdersDateRange={goToOrdersDateRange} goToProductsDateRange={goToProductsDateRange} />}
             {tab === "website" && currentUser.role === "admin" && <WebsiteSection products={products} setProducts={setProducts} orders={orders} webConfig={webConfig} setWebConfig={setWebConfig} categories={categories} brands={brands} currentUser={currentUser} addLog={addLog} onOpenOrder={(id) => { setTab("orders"); setNavTarget({ type: "order", id }); }} navTarget={tab === "website" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} goToInventoryProductEdit={goToInventoryProductEdit} />}
             {tab === "activity" && (currentUser.isOwner || currentUser.perms?.viewActivityLog) && <ActivityLog log={activityLog} accounts={accounts} />}
             {tab === "accounts" && currentUser.isOwner && <Accounts accounts={accounts} setAccounts={setAccounts} currentUser={currentUser} addLog={addLog} onResetTestData={resetTestData} onDownloadBackup={downloadBackup} onRestoreBackup={restoreBackup} onKickAccount={kickAccount} />}
             {tab === "profile" && <MyProfile currentUser={currentUser} setAccounts={setAccounts} addLog={addLog} />}
+          </AppErrorBoundary>
+          <AppErrorBoundary>
+          <PeekLayer peeks={peeks} setPeeks={setPeeks} orders={orders} purchaseOrders={purchaseOrders} products={products} suppliers={suppliers} isAdmin={currentUser.role === "admin"}
+            customers={currentUser.role === "admin" ? customers : customers.filter((c) => c.assignedTo === currentUser.fullName)}
+            onFull={({ type, id }) => {
+              setPeeks([]);
+              const target = { order: "orders", po: "purchase", customer: "customers", product: "products", supplier: "suppliers" }[type];
+              setTab(target); setNavTarget({ type, id });
+            }} />
           </AppErrorBoundary>
         </div>
       </div>
