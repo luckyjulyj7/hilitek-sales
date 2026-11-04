@@ -826,7 +826,13 @@ function mergeById(base, local, remote, key) {
   const out = [];
   for (const id of ids) {
     const l = lMap.get(id);
-    if (l !== undefined) { out.push(mergeRecord(key, bMap.get(id), l, rMap.get(id))); continue; }
+    if (l !== undefined) {
+      // Có ở mốc gốc, server không còn, mình không sửa gì = máy khác đã xoá -> phải bỏ theo. Nếu giữ
+      // lại thì lần lưu sau máy này ghi ngược lên, bản ghi đã xoá "sống lại". Mình có sửa thì vẫn giữ.
+      if (!rMap.has(id) && bMap.has(id) && sameRecord(l, bMap.get(id))) continue;
+      out.push(mergeRecord(key, bMap.get(id), l, rMap.get(id)));
+      continue;
+    }
     if (bMap.has(id)) continue; // mình đã chủ động xoá
     const r = rMap.get(id);
     if (r !== undefined) out.push(r);
