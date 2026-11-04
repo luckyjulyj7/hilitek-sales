@@ -2293,19 +2293,22 @@ function ImageLightbox({ images, startIndex, onClose }) {
 }
 
 const __modalStack = [];
-function Modal({ title, onClose, children, wide, size, headerAction }) {
+function Modal({ title, onClose, children, wide, size, headerAction, drawer }) {
   // Chỉ 3 khổ khung: nhỏ (xác nhận, kết quả), dọc (form một cột), ngang (phiếu và form nhiều cột).
   const kind = size === "2xl" || size === "3xl" ? "wide" : size === "lg" || size === "xl" || wide ? "form" : "small";
   const sizeClass = { small: "max-w-md", form: "max-w-3xl", wide: "max-w-6xl" }[kind];
   const touchedRef = useRef(false); // đã gõ/chọn trong popup thì Esc phải hỏi lại
+  const requestClose = async () => {
+    if (touchedRef.current && !await askConfirm("Bạn đang nhập dở. Đóng cửa sổ này và bỏ thay đổi?")) return;
+    onClose && onClose();
+  };
   // Bấm ESC để đóng — chỉ popup trên cùng phản hồi (tránh đóng luôn popup nền).
   useEffect(() => {
     const token = {};
     __modalStack.push(token);
     const onKey = async (e) => {
       if (e.key !== "Escape" || __modalStack[__modalStack.length - 1] !== token) return;
-      if (touchedRef.current && !await askConfirm("Bạn đang nhập dở. Đóng cửa sổ này và bỏ thay đổi?")) return;
-      onClose && onClose();
+      requestClose();
     };
     window.addEventListener("keydown", onKey);
     return () => {
@@ -2315,15 +2318,16 @@ function Modal({ title, onClose, children, wide, size, headerAction }) {
     };
   }, [onClose]);
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4" style={{ background: "rgba(15,23,70,0.45)" }}>
+    <div className={`fixed inset-0 z-50 flex ${drawer ? "justify-end" : "items-center justify-center p-2 sm:p-4"}`} style={{ background: drawer ? "rgba(15,23,70,0.25)" : "rgba(15,23,70,0.45)" }}
+      onClick={drawer ? requestClose : undefined}>
       <div onClick={(e) => e.stopPropagation()} onInput={() => { touchedRef.current = true; }} onChange={() => { touchedRef.current = true; }}
-        className={`w-full ${sizeClass} rounded-md shadow-2xl relative flex flex-col`}
-        style={{ background: "#fff", maxHeight: "90vh", height: kind === "small" ? undefined : "90vh" }}>
+        className={drawer ? "hili-drawer w-full shadow-2xl relative flex flex-col" : `w-full ${sizeClass} rounded-md shadow-2xl relative flex flex-col`}
+        style={drawer ? { background: "#fff", height: "100vh", maxWidth: 860 } : { background: "#fff", maxHeight: "90vh", height: kind === "small" ? undefined : "90vh" }}>
         <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3.5 shrink-0" style={{ borderBottom: `1px solid ${LINE}` }}>
           <h3 className="text-base sm:text-lg flex-1 min-w-0" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, color: TEXT }}>{title}</h3>
           <div className="flex items-center gap-2 shrink-0">
             {headerAction}
-            <button onClick={onClose} className="opacity-60 hover:opacity-100" style={{ color: TEXT }}><X size={18} /></button>
+            <button onClick={onClose} title="Đóng" className="opacity-60 hover:opacity-100" style={{ color: TEXT }}><X size={18} /></button>
           </div>
         </div>
         <div className="px-4 sm:px-6 py-4 sm:py-5 overflow-y-auto min-w-0" style={{ flex: "1 1 auto" }}>
@@ -3617,7 +3621,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         const stockLabel = stats.closingQty <= 0 ? "Hết hàng" : lowStock ? "Sắp hết" : "Còn hàng";
         const stockTone = stats.closingQty <= 0 || lowStock ? RUST : FOREST;
         return (
-          <Modal title="Chi tiết sản phẩm" onClose={() => setViewingId(null)} size="2xl">
+          <Modal drawer title="Chi tiết sản phẩm" onClose={() => setViewingId(null)}>
             <div className="flex items-start gap-5 mb-3">
               {viewingProduct.image ? (
                 <img src={viewingProduct.image} alt={viewingProduct.name} onClick={() => setZoomImage({ images: galleryImgs, index: 0 })}
@@ -5423,7 +5427,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
 
       {/* Modal xem / sửa đơn đã tạo */}
       {viewingPO && editForm && (
-        <Modal title={`Đơn nhập hàng ${viewingPO.code}`} onClose={closeView} size="2xl">
+        <Modal drawer title={`Đơn nhập hàng ${viewingPO.code}`} onClose={closeView}>
           <div className="flex items-start justify-between gap-3 flex-wrap mb-1">
             <POProgressStepper po={viewingPO} />
             <div className="flex gap-2 flex-wrap">
@@ -5557,7 +5561,7 @@ function PurchaseOrders({ purchaseOrders, setPurchaseOrders, products, setProduc
               {(viewingPO.status === "pending" || showPONotes || editForm.notes || (editForm.tags || []).length > 0) ? (
                 <TagsNotesCompact tags={editForm.tags} setTags={(arr) => setEditForm({ ...editForm, tags: arr })} notes={editForm.notes} setNotes={(v) => setEditForm({ ...editForm, notes: v })} />
               ) : null}
-              <div className="flex items-center justify-between gap-3 mt-3 flex-wrap">
+              <div className="flex items-center justify-between gap-3 mt-3 flex-wrap sticky py-3" style={{ bottom: -20, background: "#fff", borderTop: `1px solid ${LINE}` }}>
                 <span className="text-xs" style={{ color: TEXT, opacity: 0.6 }}>
                   Đã nhập kho nên chỉ sửa được series và VAT.
                   {!showPONotes && !editForm.notes && !(editForm.tags || []).length && <button onClick={() => setShowPONotes(true)} className="ml-2 underline">Thêm ghi chú</button>}
@@ -5842,7 +5846,7 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
           )}
         </div>
       ) : (
-      <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "65vh" }}>
+      <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 240px)" }}>
         <table className="w-full text-sm" style={{ minWidth: 720 }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${LINE}` }}>
@@ -5887,7 +5891,7 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
         const pos = purchaseOrders.filter((po) => po.supplierId === sup.id).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         const unpaid = pos.filter((po) => !po.paid);
         return (
-          <Modal title={sup.name} onClose={() => setViewingSupplierId(null)} size="xl"
+          <Modal drawer title={sup.name} onClose={() => setViewingSupplierId(null)}
             headerAction={<button onClick={() => { setViewingSupplierId(null); openEdit(sup); }} className="text-sm px-3 py-1.5 rounded-md text-white inline-flex items-center gap-1.5" style={{ background: INK }}><Pencil size={14} /> Sửa</button>}>
             <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3 text-sm mb-5">
               {[
@@ -8452,7 +8456,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
       ) : (
       <>
 
-      <div className="rounded-md overflow-x-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+      <div key={customerSafePage} className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 270px)" }}>
         <table className="w-full text-sm" style={{ minWidth: 760 }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${LINE}` }}>
@@ -8522,7 +8526,7 @@ function Customers({ customers, setCustomers, orders, products, currentUser, add
         const g = CUSTOMER_GROUPS.find((x) => x.id === viewingCustomer.group) || CUSTOMER_GROUPS[0];
         const addresses = customerAddressBook(viewingCustomer);
         return (
-          <Modal title={viewingCustomer.name} onClose={() => { setViewingId(null); setDetailTab("orders"); }} size="xl">
+          <Modal drawer title={viewingCustomer.name} onClose={() => { setViewingId(null); setDetailTab("orders"); }}>
             <div className="flex items-center gap-2 mb-4 flex-wrap">
               <span className="text-xs px-2 py-1 rounded-md" style={{ background: PAPER, color: TEXT }}>{g.label}</span>
               <span className="text-sm" style={{ color: TEXT, opacity: 0.6 }}>{viewingCustomer.code}</span>
@@ -10266,6 +10270,9 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
       return q.code.toLowerCase().includes(s) || (q.customerName || "").toLowerCase().includes(s);
     })
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const [quotePage, setQuotePage] = useState(1);
+  const quoteSafePage = Math.min(quotePage, Math.max(1, Math.ceil(filtered.length / DOC_PAGE_SIZE)));
+  const pagedQuotes = filtered.slice((quoteSafePage - 1) * DOC_PAGE_SIZE, quoteSafePage * DOC_PAGE_SIZE);
   const viewingQuote = quotations.find((q) => q.id === viewingId) || null;
 
   // Chuyển báo giá thành đơn hàng thật: tự tạo khách hàng mới nếu báo giá chưa gắn khách có sẵn.
@@ -10332,7 +10339,7 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
         </button>
       </div>
 
-      <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "65vh" }}>
+      <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 240px)" }}>
         <table className="w-full text-sm" style={{ minWidth: 920 }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${LINE}` }}>
@@ -10342,7 +10349,7 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
             </tr>
           </thead>
           <tbody>
-            {filtered.map((q) => {
+            {pagedQuotes.map((q) => {
               const c = quoteCalc(q);
               const exp = quoteExpiryInfo(q);
               const effectiveStatus = q.status === "active" && exp.expired ? "expired" : q.status;
@@ -10379,6 +10386,7 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
           </tbody>
         </table>
       </div>
+      <DocPager page={quoteSafePage} total={filtered.length} unit="báo giá" onPage={setQuotePage} />
 
       {/* Modal tạo / sửa báo giá */}
       {creating && (
@@ -10458,7 +10466,7 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
         const exp = quoteExpiryInfo(viewingQuote);
         const isExpired = viewingQuote.status === "expired" || (viewingQuote.status === "active" && exp.expired);
         return (
-          <Modal title={`Báo giá ${viewingQuote.code}`} onClose={() => setViewingId(null)} size="xl">
+          <Modal drawer title={`Báo giá ${viewingQuote.code}`} onClose={() => setViewingId(null)}>
             <div className="flex items-center gap-2 mb-4 flex-wrap">
               <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: isExpired ? `${RUST}1A` : `${BLUE}1A`, color: isExpired ? RUST : BLUE }}>
                 Hiệu lực đến {new Date(viewingQuote.expiryDate).toLocaleDateString("vi-VN")}{isExpired ? " — đã hết hiệu lực" : ` (còn ${exp.daysLeft} ngày)`}
@@ -11474,7 +11482,7 @@ function Orders({ orders, setOrders, products, setProducts, customers, setCustom
         const c = orderCalc(viewingOrder);
         const ch = CHANNELS.find((x) => x.id === viewingOrder.channel);
         return (
-          <Modal title={`Đơn hàng ${viewingOrder.code}`} onClose={() => setViewingId(null)} size="2xl">
+          <Modal drawer title={`Đơn hàng ${viewingOrder.code}`} onClose={() => setViewingId(null)}>
             <OrderProgressStepper order={viewingOrder} />
 
             <p className="text-xs mb-3 flex items-center gap-1.5 flex-wrap" style={{ color: TEXT, opacity: 0.65 }}>
@@ -12141,7 +12149,7 @@ function ActivityLog({ log, accounts }) {
           <input value={filterText} onChange={(e) => setFilterText(e.target.value)} placeholder="VD: xoá, đăng web, HI034…" className="w-full text-sm border rounded-md py-1.5 px-2" style={{ borderColor: LINE }} />
         </label>
       </div>
-      <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "70vh" }}>
+      <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 240px)" }}>
         <table className="w-full text-sm" style={{ minWidth: 640 }}>
           <thead className="sticky top-0" style={{ zIndex: 2 }}>
             <tr style={{ borderBottom: `1px solid ${LINE}` }}>
@@ -14093,7 +14101,7 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
         <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white shrink-0" style={{ background: INK }}><Plus size={15} /> Thêm tài khoản</button>
       </div>
 
-      <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "65vh" }}>
+      <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 240px)" }}>
         <table className="w-full text-sm" style={{ minWidth: 620 }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${LINE}` }}>
@@ -17183,6 +17191,9 @@ export default function SalesManager() {
         select { appearance: none; }
         #app-shell table th { font-size: 12px; font-weight: 600; color: #4B5563 !important; opacity: 1 !important; }
         #app-shell table tbody tr:hover > td { background: #F9FAFB; }
+        #app-shell .overflow-auto > table > thead th { position: sticky; top: 0; z-index: 2; background: #fff; box-shadow: inset 0 -1px 0 #E5E7EB; }
+        @keyframes hiliDrawerIn { from { transform: translateX(32px); } to { transform: none; } }
+        .hili-drawer { animation: hiliDrawerIn .16s ease-out; }
       `}</style>
       {saveFailed && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[90] px-4 py-2 rounded-md text-sm text-white shadow-lg" style={{ background: RUST }}>
