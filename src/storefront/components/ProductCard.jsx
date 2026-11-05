@@ -39,14 +39,14 @@ export default function ProductCard({ product, onOpen }) {
       >
         <img src={img} alt={p.name} loading="lazy" decoding="async" width="400" height="400" className="w-full h-full object-contain transition duration-700 group-hover:scale-[1.03]" />
         {off > 0 && (
-          <span className="absolute top-2 left-2 bg-yellow text-ink text-[13px] font-bold px-1.5 py-0.5">
+          <span className="absolute top-2 left-2 bg-yellow/75 backdrop-blur-[2px] text-ink text-[13px] font-bold px-1.5 py-0.5">
             −{off}%
           </span>
         )}
         {out ? (
-          <span className="absolute top-2 right-2 bg-ink text-white text-[12px] px-2 py-1">Hết hàng</span>
+          <span className="absolute top-2 right-2 bg-ink/60 backdrop-blur-[2px] text-white text-[12px] px-2 py-1">Hết hàng</span>
         ) : low ? (
-          <span className="absolute top-2 right-2 bg-[#B4540A] text-white text-[12px] px-2 py-1">Còn ít</span>
+          <span className="absolute top-2 right-2 bg-[#B4540A]/75 backdrop-blur-[2px] text-white text-[12px] px-2 py-1">Còn ít</span>
         ) : null}
       </a>
 
