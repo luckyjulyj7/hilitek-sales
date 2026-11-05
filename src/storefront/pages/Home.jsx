@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowRight, Cpu, Gamepad2 } from "lucide-react";
+import { Building2, Cpu, Gamepad2 } from "lucide-react";
 import { HOME_POSTERS, HOME_SECTIONS, FLASH_SALE, FLASH_SALE_CATEGORY, SITE, homeSectionProducts } from "../config.js";
 import { formatVND } from "../lib/format.js";
 import NeedForm from "../components/NeedForm.jsx";
@@ -12,6 +12,7 @@ import FlashSaleBar from "../components/FlashSaleBar.jsx";
 import HomeSectionRow from "../components/HomeSectionRow.jsx";
 import HiliKeys from "../components/HiliKeys.jsx";
 import BrandRail from "../components/BrandRail.jsx";
+import HeroFilm from "../components/HeroFilm.jsx";
 
 const WRAP = "mx-auto max-w-[1500px] px-3 sm:px-4";
 
@@ -44,8 +45,6 @@ function Tile({ to, title, sub, price, tone = "dark", className = "", children, 
   );
 }
 
-const photo = "absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]";
-
 export default function Home({ catalog, navigate }) {
   const { products } = catalog;
   const flashSection = {
@@ -54,11 +53,11 @@ export default function Home({ catalog, navigate }) {
     onSale: false, minDiscount: 0, pmin: null, pmax: null, skus: [],
   };
   const flashItems = FLASH_SALE.enabled ? homeSectionProducts(products, flashSection) : [];
-  const nimbus = products.find((p) => /nimbus 65/i.test(p.name));
   const keyboard = pick(products, /bàn phím/i);
   const screen = pick(products, /màn hình/i);
   const mouse = pick(products.filter((p) => /^chuột/i.test(p.name)), /./);
-  const parts = pick(products, /psu|case|cooling|ssd/i);
+  const parts = pick(products, /^(case|cooling)/i);
+  const decor = pick(products, /lót chuột/i);
   const go = (q) => href("/danh-muc", q);
   const tile = { navigate };
 
@@ -66,40 +65,13 @@ export default function Home({ catalog, navigate }) {
     <div className="font-sans">
       <h1 className="sr-only">Hilitek: máy chơi game cầm tay, phím chuột và linh kiện PC chính hãng tại TP.HCM</h1>
 
-      {/* Mở đầu: thấy ngay hàng nổi bật và ưu đãi */}
-      <section className={WRAP + " pt-3"}>
-        <div className="grid gap-2 lg:h-[440px] lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-          <div className="relative min-h-[300px] overflow-hidden rounded-2xl bg-ink text-white sm:min-h-[400px]">
-            <img src="/home/m01.webp" alt="" width="1800" height="1013" fetchpriority="high" className="absolute inset-0 h-full w-full object-cover object-[70%_60%]" />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(90deg,rgba(6,10,42,.88),rgba(6,10,42,.35) 58%,transparent)" }} />
-            <div className="relative flex h-full min-h-[300px] flex-col justify-end p-5 sm:min-h-[400px] sm:p-8">
-              <p className="font-display text-[44px] sm:text-[64px] font-bold leading-[1.02]">Bật máy.<br /><span className="text-yellow">Vào trận.</span></p>
-              <p className="mt-2 max-w-[30em] text-[15px] text-white/85">Phím chuột, màn hình và linh kiện PC chính hãng. Đủ hoá đơn VAT, bảo hành theo serial.</p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <a href={go({ group: "Bàn phím" })} onClick={(e) => { e.preventDefault(); navigate(go({ group: "Bàn phím" }).slice(1)); }} className="inline-flex min-h-[46px] items-center gap-2 rounded-lg bg-yellow px-4 font-semibold text-ink hover:brightness-95">Xem phím chuột <ArrowRight size={16} /></a>
-                <a href="/danh-muc" onClick={(e) => { e.preventDefault(); navigate("danh-muc"); }} className="inline-flex min-h-[46px] items-center rounded-lg bg-white/15 px-4 font-semibold hover:bg-white/25">Tất cả sản phẩm</a>
-              </div>
-            </div>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-2 lg:min-h-0 lg:grid-cols-1 lg:grid-rows-2">
-            {nimbus && (
-              <Tile {...tile} to={`/san-pham/${nimbus.slug}`} title="VOICSKY Nimbus 65" className="min-h-[210px] lg:min-h-0" tone="dark">
-                <div className="absolute inset-0" style={{ background: "radial-gradient(80% 90% at 80% 90%,#2C3FD0,transparent)" }} />
-                <img src="/home/cut-nimbus.webp" alt="" className="absolute -bottom-5 -right-12 w-[74%] rotate-[-8deg] transition duration-700 group-hover:scale-105" />
-                <span className="absolute bottom-4 left-5 z-10 font-display text-[22px] font-bold text-yellow">{formatVND(nimbus.price)}</span>
-              </Tile>
-            )}
-            <div className="min-h-0 overflow-hidden rounded-2xl [&_a]:block [&_a]:h-full [&_div]:h-full [&_img]:h-full [&_img]:w-full [&_img]:object-cover"><PosterSlot slot={HOME_POSTERS.side[0]} navigate={navigate} /></div>
-          </div>
-        </div>
-      </section>
+      <HeroFilm products={products} navigate={navigate} />
 
       {/* Danh mục */}
       <section className={WRAP + " pt-8"}>
         <h2 className="mb-3 font-display text-[30px] sm:text-[38px] font-bold text-ink">Mua theo danh mục</h2>
-        <div className="grid grid-cols-2 gap-2 lg:auto-rows-[178px] lg:grid-cols-12">
-          <Tile {...tile} to={go({ group: "Màn hình" })} title="Màn hình" sub="Gaming và văn phòng" price={screen.from} className="col-span-2 min-h-[260px] lg:[grid-area:1/1/3/6]">
-            <div className="absolute inset-0" style={{ background: "radial-gradient(70% 90% at 72% 62%,#2C3FD0,transparent)" }} />
+        <div className="grid grid-cols-2 gap-3 lg:auto-rows-[176px] lg:grid-cols-12">
+          <Tile {...tile} to={go({ group: "Màn hình" })} title="Màn hình" sub="Gaming và văn phòng" price={screen.from} tone="light" className="col-span-2 min-h-[260px] lg:[grid-area:1/1/3/6]">
             <img src="/home/cut-monitor.webp" alt="" loading="lazy" className="absolute bottom-0 right-[3%] w-[64%] transition duration-700 group-hover:scale-[1.03]" />
           </Tile>
           <Tile {...tile} to={go({ group: "Bàn phím" })} title="Bàn phím" sub="Cơ, không dây, văn phòng" price={keyboard.from} tone="light" className="col-span-2 lg:[grid-area:1/6/2/13]">
@@ -108,23 +80,20 @@ export default function Home({ catalog, navigate }) {
           <Tile {...tile} to={go({ group: "Chuột" })} title="Chuột" sub="Gaming, không dây" price={mouse.from} tone="light" className="lg:[grid-area:2/6/4/9]">
             {mouse.image && <img src={mouse.image} alt="" loading="lazy" className="absolute bottom-0 left-1/2 h-[62%] -translate-x-1/2 mix-blend-multiply transition duration-700 group-hover:scale-105" />}
           </Tile>
-          <Tile {...tile} to={go({ group: "Linh kiện PC" })} title="Linh kiện PC" sub="SSD, nguồn, vỏ, tản nhiệt" price={parts.from} className="lg:[grid-area:2/9/3/13]">
-            <img src="/home/m03.webp" alt="" loading="lazy" className={photo + " opacity-70"} />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(90deg,rgba(6,10,42,.85),transparent 75%)" }} />
+          <Tile {...tile} to={go({ group: "Linh kiện PC" })} title="Linh kiện PC" sub="SSD, nguồn, vỏ, tản nhiệt" price={parts.from} tone="light" className="lg:[grid-area:2/9/3/13]">
+            {parts.image && <img src={parts.image} alt="" loading="lazy" className="absolute -bottom-2 right-2 h-[88%] mix-blend-multiply transition duration-700 group-hover:scale-105" />}
           </Tile>
           <Tile {...tile} to={HANDHELD_PATH} title="Máy chơi game cầm tay" sub="Retro, Android, PC cầm tay. Chọn theo ngân sách." tone="yellow" className="col-span-2 lg:col-span-1 lg:[grid-area:3/9/5/13]">
             <Gamepad2 size={250} strokeWidth={1} className="absolute -bottom-12 -right-8 text-ink/15 transition duration-700 group-hover:scale-105" />
           </Tile>
-          <Tile {...tile} to={go({ group: "Phụ kiện" })} title="Phụ kiện Decor góc máy" sub="Arm màn hình, mặt bàn, loa để bàn" className="col-span-2 lg:[grid-area:3/1/4/6]">
-            <img src="/home/m02.webp" alt="" loading="lazy" className={photo} />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(90deg,rgba(6,10,42,.88),rgba(6,10,42,.2) 70%)" }} />
+          <Tile {...tile} to={go({ group: "Phụ kiện" })} title="Phụ kiện Decor góc máy" sub="Arm màn hình, mặt bàn, loa để bàn" tone="light" className="col-span-2 lg:[grid-area:3/1/4/6]">
+            {decor.image && <img src={decor.image} alt="" loading="lazy" className="absolute -bottom-2 right-3 h-[92%] mix-blend-multiply transition duration-700 group-hover:scale-105" />}
           </Tile>
           <Tile {...tile} to="/xay-dung-cau-hinh" title="Build PC" sub="Web tự cộng tổng tiền" tone="navy" className="lg:[grid-area:4/1/5/4]">
             <Cpu size={130} strokeWidth={1.1} className="absolute -bottom-6 -right-4 text-white/15" />
           </Tile>
           <Tile {...tile} to={SITE.zaloHref} title="Cho công ty" sub="Báo giá nhanh, hoá đơn VAT, công nợ" className="lg:[grid-area:4/4/5/9]">
-            <img src="/home/m04.webp" alt="" loading="lazy" className={photo + " object-[50%_30%]"} />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(90deg,rgba(6,10,42,.86),rgba(6,10,42,.15) 72%)" }} />
+            <Building2 size={130} strokeWidth={1.1} className="absolute -bottom-6 -right-3 text-white/15" />
           </Tile>
         </div>
       </section>
