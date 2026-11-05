@@ -1,5 +1,4 @@
 import React from "react";
-import { Building2, Cpu } from "lucide-react";
 import { HOME_POSTERS, FLASH_SALE, FLASH_SALE_CATEGORY, SITE, homeSectionProducts } from "../config.js";
 import { formatVND } from "../lib/format.js";
 import NeedForm from "../components/NeedForm.jsx";
@@ -34,7 +33,7 @@ function Tile({ to, title, sub, price, tone = "dark", className = "", children, 
     <a
       href={to}
       {...(external ? { target: "_blank", rel: "noreferrer" } : { onClick: (e) => { e.preventDefault(); navigate(to.slice(1)); } })}
-      className={"group relative block min-h-[190px] lg:min-h-0 overflow-hidden rounded-2xl transition duration-300 hover:-translate-y-0.5 hover:shadow-card " +
+      className={"group relative block min-h-[190px] lg:min-h-0 overflow-hidden rounded-2xl ring-1 transition duration-300 hover:-translate-y-0.5 hover:shadow-card " + (dark ? "ring-white/10 " : "ring-[#D9DFEE] ") +
         (tone === "navy" ? "bg-navy text-white " : dark ? "bg-ink text-white " : tone === "yellow" ? "bg-yellow text-ink " : "bg-white text-ink ") + className}
     >
       {children}
@@ -93,11 +92,15 @@ export default function Home({ catalog, navigate }) {
             <img src="/home/m02.webp" alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]" />
             <div className="absolute inset-0" style={{ background: "linear-gradient(90deg,rgba(6,10,42,.88),rgba(6,10,42,.2) 70%)" }} />
           </Tile>
-          <Tile {...tile} to="/xay-dung-cau-hinh" title="Build PC" sub="Web tự cộng tổng tiền" tone="navy" className="lg:[grid-area:4/1/5/4]">
-            <Cpu size={130} strokeWidth={1.1} className="absolute -bottom-6 -right-4 text-white/15" />
+          <Tile {...tile} to={SITE.zaloHref} title="Dịch vụ IT Help Desk" sub="Hỗ trợ kỹ thuật cho công ty" tone="light" className="col-span-2 [&_h3]:max-w-[56%] [&_p]:max-w-[52%] lg:[grid-area:4/1/5/5]">
+            <img src="/home/it-helpdesk.webp" alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover object-right transition duration-700 group-hover:scale-[1.03]" />
           </Tile>
-          <Tile {...tile} to={SITE.zaloHref} title="Cho công ty" sub="Báo giá nhanh, hoá đơn VAT, công nợ" className="lg:[grid-area:4/4/5/9]">
-            <Building2 size={130} strokeWidth={1.1} className="absolute -bottom-6 -right-3 text-white/15" />
+          <Tile {...tile} to={go({ group: "Phần mềm" })} title="Phần mềm bản quyền cho doanh nghiệp" sub="Office, Windows, Server, SQL" tone="light" className="col-span-2 [&_h3]:max-w-[52%] [&_p]:max-w-[50%] lg:[grid-area:4/5/5/9]">
+            <div className="absolute inset-y-0 right-[2%] flex w-[50%] items-center justify-end">
+              {[["sw-office", "-rotate-6 z-10", "-mr-[7%]"], ["sw-windows", "-rotate-2 z-20", "-mr-[7%]"], ["sw-server", "rotate-2 z-30", "-mr-[7%]"], ["sw-sql", "rotate-6 z-40", ""]].map(([f, r, m]) => (
+                <img key={f} src={`/home/${f}.webp`} alt="" loading="lazy" className={"relative max-h-[78%] w-[31%] object-contain drop-shadow-[0_8px_8px_rgba(6,10,42,.22)] transition duration-500 group-hover:-translate-y-1 " + r + " " + m} />
+              ))}
+            </div>
           </Tile>
         </div>
       </section>
