@@ -81,7 +81,7 @@ export default function HomeSectionRow({ section, products, navigate, flash = fa
 
   const Header = flash ? null : (
     <div className="flex items-end justify-between mb-3 gap-3">
-      <h2 className="font-display text-xl sm:text-2xl font-bold text-ink border-l-4 border-yellow pl-3">
+      <h2 className="font-display text-[30px] sm:text-[38px] font-bold text-ink">
         {section.title}
       </h2>
       <a

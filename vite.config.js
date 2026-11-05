@@ -40,6 +40,11 @@ export default defineConfig({
   server: {
     port: 5173,
     open: false,
+    // HILI_LIVE=1: xem thử bằng dữ liệu thật (chỉ đọc), web chạy ở máy không gửi đơn thật.
+    proxy: process.env.HILI_LIVE ? {
+      "/api/web": { target: "https://hilipc.vn", changeOrigin: true },
+      "/media": { target: "https://hilipc.vn", changeOrigin: true },
+    } : undefined,
   },
   build: {
     rollupOptions: {
