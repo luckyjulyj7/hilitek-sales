@@ -3,8 +3,8 @@
 .hk-plate:after{content:"";position:absolute;inset:.75em;border-radius:1.1em;background:#03051a;box-shadow:inset 0 3px 12px #000}
 .hk-key{position:relative;z-index:2;aspect-ratio:1/1.02;opacity:0}
 .hk.in .hk-key{animation:hk-drop .85s cubic-bezier(.3,1.5,.5,1) both;animation-delay:calc(var(--i)*70ms)}
-.hk-key:before{content:"";position:absolute;inset:6% 4% -4%;background:#F7C600;filter:blur(1.8em);opacity:.5;transition:opacity .25s}
-.hk-key.dn:before{opacity:1}
+.hk-key:before{content:"";position:absolute;inset:6% 4% -4%;background:#F7C600;filter:blur(1.8em);opacity:.5;transition:opacity .25s,inset .25s,filter .25s}
+.hk-key.dn:before{opacity:1;inset:-6% -6% -12%;filter:blur(2.6em)}
 .hk-cap{position:absolute;inset:0;border-radius:13%;background:linear-gradient(180deg,#F2C200,#B98F00);box-shadow:0 .9em 0 #7A5E00,0 1.3em 1.4em rgba(0,0,0,.6);transition:transform .09s ease-out,box-shadow .09s ease-out;cursor:pointer;user-select:none;touch-action:manipulation}
 .hk-cap:before{content:"";position:absolute;inset:6% 9% 15%;border-radius:11%;background:radial-gradient(90% 80% at 50% 30%,#FFE768,#F7C600 72%);box-shadow:inset 0 2px 1px rgba(255,255,255,.75),inset 0 -3px 6px rgba(150,110,0,.4)}
 .hk-cap b{position:absolute;inset:6% 9% 15%;display:flex;align-items:center;justify-content:center;font:800 5.6em/1 Archivo,sans-serif;font-stretch:76%;color:#060A2A}

@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { href } from "../router.js";
+import "./brand-rail.css";
 
 // Thứ tự hiển thị: linh kiện và màn hình, phím chuột, rồi máy chơi game cầm tay.
 const BRANDS = [
@@ -8,7 +9,10 @@ const BRANDS = [
   "Anbernic", "Miyoo", "Trimui", "Retroid", "AYN", "Mangmi", "GPD", "Ayaneo",
 ];
 
-/** Dãy tên thương hiệu chạy ngang. Hãng đang có hàng trên web bấm được, rê chuột vào thì dừng. */
+/**
+ * Hàng phím thương hiệu chạy ngang, cùng ngôn ngữ với phím HILITEK cuối trang.
+ * Hãng đang có hàng là phím vàng bấm được, rê chuột vào thì dừng và phím nhấn xuống.
+ */
 export default function BrandRail({ products, navigate }) {
   const sold = useMemo(() => {
     const map = new Map();
@@ -24,25 +28,24 @@ export default function BrandRail({ products, navigate }) {
 
   const item = (name, key, hidden) => {
     const real = sold.get(name.toLowerCase());
-    const cls = "mx-5 sm:mx-8 shrink-0 font-display text-[24px] sm:text-[30px] font-bold whitespace-nowrap";
-    if (!real) return <span key={key} aria-hidden={hidden} className={cls + " text-ink/45"}>{name}</span>;
+    if (!real) return <span key={key} aria-hidden={hidden} className="bk"><b>{name}</b></span>;
     const to = href("/danh-muc", { brand: real });
     return (
-      <a key={key} href={to} tabIndex={hidden ? -1 : undefined} aria-hidden={hidden}
-        onClick={(e) => { e.preventDefault(); navigate(to.slice(1)); }}
-        className={cls + " text-ink/70 transition hover:text-navy"}>{name}</a>
+      <a key={key} href={to} tabIndex={hidden ? -1 : undefined} aria-hidden={hidden} className="bk on"
+        onClick={(e) => { e.preventDefault(); navigate(to.slice(1)); }}><b>{name}</b></a>
     );
   };
 
   return (
     <section aria-label="Thương hiệu nổi bật" className="mx-auto max-w-[1500px] px-3 pt-8 sm:px-4">
-      <h2 className="mb-3 font-display text-[30px] sm:text-[38px] font-bold text-ink">Thương hiệu nổi bật</h2>
-      <div className="group overflow-hidden rounded-2xl bg-white py-5"
-        style={{ maskImage: "linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)", WebkitMaskImage: "linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)" }}>
-      <div className="flex w-max animate-[marquee_48s_linear_infinite] group-hover:[animation-play-state:paused] motion-reduce:animate-none">
-        {names.map((n) => item(n, n, false))}
-        {names.map((n) => item(n, `${n}-2`, true))}
-      </div>
+      <div className="br">
+        <h2 className="br-t font-display">Thương hiệu<br />nổi bật</h2>
+        <div className="br-m">
+          <div className="br-r">
+            {names.map((n) => item(n, n, false))}
+            {names.map((n) => item(n, `${n}-2`, true))}
+          </div>
+        </div>
       </div>
     </section>
   );

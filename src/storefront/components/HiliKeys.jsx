@@ -4,7 +4,7 @@ import "./hili-keys.css";
 const WORD = [..."HILITEK"];
 
 /**
- * Bàn phím chữ HILITEK: phím rơi xuống khi cuộn tới, nhấn một lượt, bấm được từng phím
+ * Bàn phím chữ HILITEK: phím rơi xuống khi cuộn tới, nhấn và sáng mỗi 10 giây, bấm được từng phím
  * và nhấn theo khi khách gõ H I L I T E K trên bàn phím thật.
  */
 export default function HiliKeys() {
@@ -24,11 +24,16 @@ export default function HiliKeys() {
   const wave = () => WORD.forEach((_, i) => later(() => press(i, 200), i * 85));
 
   useEffect(() => {
+    // Phím nhấn một lượt và sáng lên mỗi 10 giây, chỉ khi khách đang nhìn thấy khối này.
+    const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let loop = null;
+    const stop = () => { clearInterval(loop); loop = null; };
     const io = new IntersectionObserver(([e]) => {
-      if (!e.isIntersecting) return;
+      if (!e.isIntersecting) { stop(); return; }
       setSeen(true);
-      io.disconnect();
-      if (!matchMedia("(prefers-reduced-motion: reduce)").matches) later(wave, 1300);
+      if (still || loop) return;
+      later(wave, 1300);
+      loop = setInterval(() => { if (!document.hidden) wave(); }, 10000);
     }, { threshold: 0.35 });
     io.observe(box.current);
 
@@ -46,6 +51,7 @@ export default function HiliKeys() {
     const all = timers.current;
     return () => {
       io.disconnect();
+      stop();
       window.removeEventListener("keydown", onKey);
       all.forEach(clearTimeout);
     };

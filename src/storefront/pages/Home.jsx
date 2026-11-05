@@ -1,6 +1,6 @@
 import React from "react";
 import { Building2, Cpu, Gamepad2 } from "lucide-react";
-import { HOME_POSTERS, HOME_SECTIONS, FLASH_SALE, FLASH_SALE_CATEGORY, SITE, homeSectionProducts } from "../config.js";
+import { HOME_POSTERS, FLASH_SALE, FLASH_SALE_CATEGORY, SITE, homeSectionProducts } from "../config.js";
 import { formatVND } from "../lib/format.js";
 import NeedForm from "../components/NeedForm.jsx";
 import { HANDHELD_PATH } from "./Handheld.jsx";
@@ -11,6 +11,7 @@ import PosterSlider from "../components/PosterSlider.jsx";
 import FlashSaleBar from "../components/FlashSaleBar.jsx";
 import HomeSectionRow from "../components/HomeSectionRow.jsx";
 import HiliKeys from "../components/HiliKeys.jsx";
+import ProductTabs from "../components/ProductTabs.jsx";
 import BrandRail from "../components/BrandRail.jsx";
 import HeroFilm from "../components/HeroFilm.jsx";
 
@@ -125,9 +126,7 @@ export default function Home({ catalog, navigate }) {
         </section>
       )}
 
-      {HOME_SECTIONS.filter((s) => s && s.enabled !== false).map((s, i) => (
-        <HomeSectionRow key={i} section={s} products={products} navigate={navigate} />
-      ))}
+      <ProductTabs products={products} navigate={navigate} />
 
       <section className={WRAP + " pt-8"}><NeedForm /></section>
 
