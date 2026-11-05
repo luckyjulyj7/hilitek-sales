@@ -1,4 +1,4 @@
-import { SITE, FLASH_SALE, HOME_POSTERS, HOME_SECTIONS, PRODUCT_SIDEBAR, CHECKOUT, PAGES, MENU, LANDINGS, COUPONS, LOYALTY, rebuildCatToGroup } from "../config.js";
+import { HOME_HERO, SITE, FLASH_SALE, HOME_POSTERS, HOME_SECTIONS, PRODUCT_SIDEBAR, CHECKOUT, PAGES, MENU, LANDINGS, COUPONS, LOYALTY, rebuildCatToGroup } from "../config.js";
 
 /**
  * Ghi đè cấu hình mặc định (config.js) bằng giá trị chủ shop chỉnh từ app quản lý
@@ -50,6 +50,12 @@ export function applyWebConfig(cfg) {
   if (Array.isArray(cfg.LANDINGS)) {
     LANDINGS.length = 0;
     cfg.LANDINGS.forEach((l) => LANDINGS.push(l));
+  }
+
+  // HOME_HERO (màn trình chiếu trang chủ) — thay nguyên mảng.
+  if (Array.isArray(cfg.HOME_HERO)) {
+    HOME_HERO.length = 0;
+    cfg.HOME_HERO.forEach((h) => HOME_HERO.push(h));
   }
 
   // COUPONS (mã giảm giá chủ shop tạo) — thay nguyên mảng.

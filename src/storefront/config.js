@@ -518,6 +518,12 @@ export const CHECKOUT = {
  *   • kind "amount":  value = số tiền giảm (vd 20000) → chiết khấu 20.000₫
  * Danh sách này được ghi đè bằng webConfig.COUPONS (applyWebConfig).
  */
+/**
+ * Màn trình chiếu đầu trang chủ. Rỗng = dùng 4 mẫu VOICSKY mặc định trong HeroFilm.jsx.
+ * Mỗi mục: { productId, image, title, sub }. Chỉnh ở app quản lý: Website > Trang chủ > Màn trình chiếu.
+ */
+export const HOME_HERO = [];
+
 export const COUPONS = [];
 
 const normCode = (s) => String(s || "").trim().toUpperCase().replace(/\s+/g, "");

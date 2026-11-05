@@ -16483,7 +16483,7 @@ function CouponsEditor({ webConfig, setWebConfig }) {
 }
 
 const WEB_CONFIG_PANES = {
-  home: [["posters", "Banner trang chủ"], ["homeblocks", "Khối sản phẩm"], ["menu", "Menu danh mục"]],
+  home: [["hero", "Màn trình chiếu"], ["posters", "Banner trang chủ"], ["homeblocks", "Khối sản phẩm"], ["menu", "Menu danh mục"]],
   promo: [["flash", "Flash Sale"], ["coupons", "Mã giảm giá"], ["loyalty", "Điểm tích luỹ"]],
   content: [["landing", "Trang nội dung"], ["policy", "Trang chính sách"], ["media", "Kho ảnh"]],
   settings: [["contact", "Liên hệ"], ["bank", "Tài khoản ngân hàng"]],
@@ -16527,6 +16527,36 @@ function WebConfigForm({ section, webConfig, setWebConfig, setProducts, addLog, 
     hp.strip = arr;
     return { ...x, HOME_POSTERS: hp };
   });
+  // Màn trình chiếu đầu trang chủ. Rỗng thì web dùng 4 mẫu VOICSKY mặc định.
+  const homeHero = Array.isArray(c.HOME_HERO) ? c.HOME_HERO : [];
+  const webProducts = (products || []).filter((p) => p.web?.published);
+  const mutHomeHero = (fn) => setWebConfig((x) => ({ ...x, HOME_HERO: fn(Array.isArray(x.HOME_HERO) ? [...x.HOME_HERO] : []) }));
+  const setHomeHero = (i, k, v) => mutHomeHero((arr) => { arr[i] = { ...(arr[i] || {}), [k]: v }; return arr; });
+  const addHomeHero = () => mutHomeHero((arr) => {
+    if (arr.length) return [...arr, { productId: "", image: "", title: "", sub: "" }];
+    // Lần đầu: nạp sẵn các mẫu đang chạy để không mất slide nào.
+    const seed = [[/nimbus 65/i, "/home/cut-nimbus.webp"], [/voicsky echo 75/i, "/home/cut-echo.webp"], [/voicsky apex 75/i, "/home/cut-apex.webp"], [/voicsky pulse 75/i, "/home/cut-pulse.webp"], [/voicsky pulse 96/i, "/home/cut-pulse96.webp"], [/voicsky atmos 87/i, "/home/cut-atmos87.webp"]]
+      .map(([re, image]) => ({ p: webProducts.find((p) => re.test(p.name)), image })).filter((x) => x.p)
+      .map(({ p, image }) => ({ productId: p.id, image, title: "", sub: "" }));
+    return [...seed, { productId: "", image: "", title: "", sub: "" }];
+  });
+  const delHomeHero = (i) => mutHomeHero((arr) => arr.filter((_, j) => j !== i));
+  const moveHomeHero = (i, d) => mutHomeHero((arr) => {
+    const j = i + d;
+    if (j < 0 || j >= arr.length) return arr;
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+    return arr;
+  });
+  const [heroUploading, setHeroUploading] = useState(-1);
+  const uploadHomeHero = async (i, file) => {
+    if (!file) return;
+    setHeroUploading(i);
+    try {
+      setHomeHero(i, "image", await uploadProductImage(file));
+    } catch (e) {
+      notify(`Chưa tải được ảnh: ${e.message || e}`);
+    } finally { setHeroUploading(-1); }
+  };
   const heroSlides = Array.isArray(HP.hero?.slides) ? HP.hero.slides : [];
   const mutHeroSlides = (fn) => setWebConfig((x) => {
     const hp = { ...(x.HOME_POSTERS || {}) };
@@ -16673,6 +16703,37 @@ function WebConfigForm({ section, webConfig, setWebConfig, setProducts, addLog, 
       <section hidden={pane !== "landing"} className="p-5 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
         <h3 className="text-base font-semibold mb-4" style={{ color: TEXT }}>Trang nội dung (landing)</h3>
         <LandingsEditor webConfig={webConfig} setWebConfig={setWebConfig} />
+      </section>
+
+      <section hidden={pane !== "hero"} className="p-5 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+        <div className="flex items-center justify-between gap-3 mb-1">
+          <h3 className="text-base font-semibold" style={{ color: TEXT }}>Màn trình chiếu đầu trang chủ</h3>
+          <button onClick={addHomeHero} className="text-sm px-3 py-1.5 rounded-md text-white whitespace-nowrap" style={{ background: INK }}>+ Thêm sản phẩm</button>
+        </div>
+        <p className="text-xs mb-3" style={{ color: "#6B7280" }}>Chọn sản phẩm đang đăng web, giá và link tự lấy theo sản phẩm. Ảnh nên là PNG hoặc WebP đã xoá nền, để trống thì dùng ảnh sản phẩm trên khung trắng.</p>
+        {homeHero.length === 0 && <p className="text-sm py-2" style={{ color: "#6B7280" }}>Đang dùng các mẫu VOICSKY mặc định. Bấm “+ Thêm sản phẩm” để nạp các mẫu này và thêm mẫu mới.</p>}
+        <div className="space-y-2">
+          {homeHero.map((h, i) => (
+            <div key={i} className="grid gap-2 items-center rounded-md p-2.5 grid-cols-1 md:grid-cols-[96px_minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_auto]" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
+              {thumb(h.image || displayImage(webProducts.find((p) => p.id === h.productId)))}
+              <select value={h.productId || ""} onChange={(e) => setHomeHero(i, "productId", e.target.value)} className={inputCls} style={{ borderColor: LINE }}>
+                <option value="">Chọn sản phẩm</option>
+                {webProducts.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+              {ip(h.title, (v) => setHomeHero(i, "title", v), "Tên hiện, VD: Echo 96")}
+              {ip(h.sub, (v) => setHomeHero(i, "sub", v), "Dòng phụ, VD: Bàn phím cơ")}
+              <div className="flex items-center gap-1">
+                <label className="text-xs px-2 py-1 rounded-md border cursor-pointer whitespace-nowrap" style={{ borderColor: LINE, color: INK }}>
+                  {heroUploading === i ? "Đang tải" : "Tải ảnh"}
+                  <input type="file" accept="image/png,image/webp" className="hidden" onChange={(e) => { uploadHomeHero(i, e.target.files?.[0]); e.target.value = ""; }} />
+                </label>
+                <button onClick={() => moveHomeHero(i, -1)} disabled={i === 0} className="text-xs px-1.5 py-1 rounded-md border disabled:opacity-30" style={{ borderColor: LINE }} title="Lên">↑</button>
+                <button onClick={() => moveHomeHero(i, 1)} disabled={i === homeHero.length - 1} className="text-xs px-1.5 py-1 rounded-md border disabled:opacity-30" style={{ borderColor: LINE }} title="Xuống">↓</button>
+                <button onClick={() => delHomeHero(i)} className="text-xs px-1.5 py-1" style={{ color: RUST }}>Xoá</button>
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section hidden={pane !== "posters"} className="p-5 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>

@@ -56,8 +56,7 @@ export default function Home({ catalog, navigate }) {
   const keyboard = pick(products, /bàn phím/i);
   const screen = pick(products, /màn hình/i);
   const mouse = pick(products.filter((p) => /^chuột/i.test(p.name)), /./);
-  const parts = pick(products, /^(case|cooling)/i);
-  const decor = pick(products, /lót chuột/i);
+  const parts = pick(products, /psu|case|cooling|ssd/i);
   const go = (q) => href("/danh-muc", q);
   const tile = { navigate };
 
@@ -80,14 +79,16 @@ export default function Home({ catalog, navigate }) {
           <Tile {...tile} to={go({ group: "Chuột" })} title="Chuột" sub="Gaming, không dây" price={mouse.from} tone="light" className="lg:[grid-area:2/6/4/9]">
             {mouse.image && <img src={mouse.image} alt="" loading="lazy" className="absolute bottom-0 left-1/2 h-[62%] -translate-x-1/2 mix-blend-multiply transition duration-700 group-hover:scale-105" />}
           </Tile>
-          <Tile {...tile} to={go({ group: "Linh kiện PC" })} title="Linh kiện PC" sub="SSD, nguồn, vỏ, tản nhiệt" price={parts.from} tone="light" className="lg:[grid-area:2/9/3/13]">
-            {parts.image && <img src={parts.image} alt="" loading="lazy" className="absolute -bottom-2 right-2 h-[88%] mix-blend-multiply transition duration-700 group-hover:scale-105" />}
+          <Tile {...tile} to={go({ group: "Linh kiện PC" })} title="Linh kiện PC" sub="SSD, nguồn, vỏ, tản nhiệt" price={parts.from} className="lg:[grid-area:2/9/3/13]">
+            <img src="/home/m03.webp" alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.04] object-[70%_60%]" />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(90deg,rgba(6,10,42,.9),rgba(6,10,42,.55) 48%,transparent 82%)" }} />
           </Tile>
           <Tile {...tile} to={HANDHELD_PATH} title="Máy chơi game cầm tay" sub="Retro, Android, PC cầm tay. Chọn theo ngân sách." tone="yellow" className="col-span-2 lg:col-span-1 lg:[grid-area:3/9/5/13]">
             <Gamepad2 size={250} strokeWidth={1} className="absolute -bottom-12 -right-8 text-ink/15 transition duration-700 group-hover:scale-105" />
           </Tile>
-          <Tile {...tile} to={go({ group: "Phụ kiện" })} title="Phụ kiện Decor góc máy" sub="Arm màn hình, mặt bàn, loa để bàn" tone="light" className="col-span-2 lg:[grid-area:3/1/4/6]">
-            {decor.image && <img src={decor.image} alt="" loading="lazy" className="absolute -bottom-2 right-3 h-[92%] mix-blend-multiply transition duration-700 group-hover:scale-105" />}
+          <Tile {...tile} to={go({ group: "Phụ kiện" })} title="Phụ kiện Decor góc máy" sub="Arm màn hình, mặt bàn, loa để bàn" className="col-span-2 lg:[grid-area:3/1/4/6]">
+            <img src="/home/m02.webp" alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]" />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(90deg,rgba(6,10,42,.88),rgba(6,10,42,.2) 70%)" }} />
           </Tile>
           <Tile {...tile} to="/xay-dung-cau-hinh" title="Build PC" sub="Web tự cộng tổng tiền" tone="navy" className="lg:[grid-area:4/1/5/4]">
             <Cpu size={130} strokeWidth={1.1} className="absolute -bottom-6 -right-4 text-white/15" />
