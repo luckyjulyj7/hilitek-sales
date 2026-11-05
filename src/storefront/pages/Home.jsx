@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Cpu, Gamepad2 } from "lucide-react";
 import { HOME_POSTERS, HOME_SECTIONS, FLASH_SALE, FLASH_SALE_CATEGORY, SITE, homeSectionProducts } from "../config.js";
 import { formatVND } from "../lib/format.js";
 import { submitNeed } from "../lib/api.js";
@@ -9,14 +9,15 @@ import PosterSlot from "../components/PosterSlot.jsx";
 import PosterSlider from "../components/PosterSlider.jsx";
 import FlashSaleBar from "../components/FlashSaleBar.jsx";
 import HomeSectionRow from "../components/HomeSectionRow.jsx";
+import HiliKeys from "../components/HiliKeys.jsx";
 
 const HANDHELD = "Máy chơi game cầm tay";
 const WRAP = "mx-auto max-w-[1500px] px-3 sm:px-4";
 
 const TIERS = [
-  { name: "Retro", note: "Dưới 3 triệu", play: "Game cổ 8-bit tới PS1", line: "Anbernic, Miyoo, Trimui", w: "46%", h: "48%" },
-  { name: "Android", note: "3 tới 12 triệu", play: "Game Android, giả lập tới PS2", line: "Retroid, Mangmi, AYN", w: "68%", h: "62%" },
-  { name: "PC cầm tay", note: "Từ 12 triệu", play: "Game PC bản quyền", line: "Steam Deck, ROG Ally, Legion Go, MSI Claw", w: "92%", h: "78%" },
+  { name: "Retro", note: "Dưới 3 triệu", for: "Nhỏ gọn, chơi lại game tuổi thơ.", play: "Game cổ 8-bit tới PS1", size: "3,5 tới 5 inch", line: "Anbernic, Miyoo, Trimui" },
+  { name: "Android", note: "3 tới 12 triệu", for: "Chơi game mobile và giả lập mượt hơn.", play: "Game Android, giả lập tới PS2", size: "5 tới 7 inch", line: "Retroid, Mangmi, AYN" },
+  { name: "PC cầm tay", note: "Từ 12 triệu", for: "Máy tính chơi game thu nhỏ, mang đi được.", play: "Game PC trên Steam, Xbox", size: "7 tới 9 inch", line: "Steam Deck, ROG Ally, Legion Go" },
 ];
 
 /** Giá thấp nhất và ảnh đại diện của một nhóm, tính từ sản phẩm đang bán. */
@@ -51,38 +52,32 @@ function Tile({ to, title, sub, price, tone = "dark", className = "", children, 
 const photo = "absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]";
 
 function Handheld({ ready, navigate }) {
-  const [i, setI] = useState(0);
-  const t = TIERS[i];
   const to = `/danh-muc?group=${encodeURIComponent(HANDHELD)}`;
   return (
     <section id="may-cam-tay" className={WRAP + " pt-8"}>
-      <div className="grid gap-5 overflow-hidden rounded-2xl bg-ink p-5 text-white sm:p-7 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <div>
-          <h2 className="font-display text-[30px] sm:text-[38px] font-bold leading-tight">Máy chơi game cầm tay</h2>
-          <p className="mt-1 text-[15px] text-white/80">Chọn mức ngân sách, Hili gợi ý dòng máy phù hợp.</p>
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            {TIERS.map((x, k) => (
-              <button key={x.name} type="button" aria-pressed={k === i} onClick={() => setI(k)}
-                className={"min-h-[56px] rounded-lg px-2 py-1 text-left text-[15px] font-semibold leading-tight transition " + (k === i ? "bg-yellow text-ink" : "bg-white/10 hover:bg-white/20")}>
-                {x.name}<span className={"block text-[13px] font-normal " + (k === i ? "text-ink/75" : "text-white/70")}>{x.note}</span>
-              </button>
-            ))}
-          </div>
-          <dl className="mt-4 grid gap-2 text-[15px] sm:grid-cols-2">
-            <div><dt className="text-white/65 text-[13px]">Chơi được</dt><dd className="font-semibold">{t.play}</dd></div>
-            <div><dt className="text-white/65 text-[13px]">Dòng nên xem</dt><dd className="font-semibold">{t.line}</dd></div>
-          </dl>
-          <a href={ready ? to : SITE.zaloHref} target={ready ? undefined : "_blank"} rel="noreferrer"
-            onClick={ready ? (e) => { e.preventDefault(); navigate(to.slice(1)); } : undefined}
-            className="mt-4 inline-flex min-h-[46px] items-center gap-2 rounded-lg bg-yellow px-4 font-semibold text-ink hover:brightness-95">
-            {ready ? "Xem máy cầm tay" : "Hỏi Hili về dòng này"} <ArrowRight size={16} />
-          </a>
-        </div>
-        <div className="relative flex min-h-[220px] items-center justify-center rounded-xl" style={{ background: "radial-gradient(70% 80% at 50% 50%,#2C3FD0,#0C1344)" }}>
-          <div className="flex flex-col items-center justify-center rounded-md border-4 border-[#03051a] text-center transition-all duration-700"
-            style={{ width: t.w, height: t.h, background: "radial-gradient(90% 90% at 40% 30%,#3A4FE6,#141E72)", boxShadow: "0 0 60px rgba(58,79,230,.6)" }}>
-            <b className="font-display text-[28px] sm:text-[36px] leading-none">{t.name}</b>
-          </div>
+      <div className="rounded-2xl bg-ink p-4 text-white sm:p-6">
+        <h2 className="font-display text-[30px] sm:text-[38px] font-bold leading-tight">Máy chơi game cầm tay</h2>
+        <p className="mt-1 text-[15px] text-white/80">Ba dòng máy theo ngân sách. So sánh nhanh rồi chọn dòng hợp với bạn.</p>
+        <div className="mt-4 grid gap-2 md:grid-cols-3">
+          {TIERS.map((t) => (
+            <article key={t.name} className="flex flex-col rounded-xl bg-white p-4 text-ink">
+              <div className="flex items-baseline justify-between gap-2">
+                <h3 className="font-display text-[26px] font-bold leading-tight">{t.name}</h3>
+                <span className="shrink-0 rounded-md bg-yellow px-2 py-1 text-[14px] font-semibold">{t.note}</span>
+              </div>
+              <p className="mt-1 text-[15px] text-ink/75">{t.for}</p>
+              <dl className="mt-3 flex-1 divide-y divide-line text-[15px]">
+                <div className="flex justify-between gap-3 py-2"><dt className="shrink-0 text-mute">Chơi được</dt><dd className="text-right font-medium">{t.play}</dd></div>
+                <div className="flex justify-between gap-3 py-2"><dt className="shrink-0 text-mute">Màn hình</dt><dd className="text-right font-medium">{t.size}</dd></div>
+                <div className="flex justify-between gap-3 py-2"><dt className="shrink-0 text-mute">Hãng</dt><dd className="text-right font-medium">{t.line}</dd></div>
+              </dl>
+              <a href={ready ? to : SITE.zaloHref} target={ready ? undefined : "_blank"} rel="noreferrer"
+                onClick={ready ? (e) => { e.preventDefault(); navigate(to.slice(1)); } : undefined}
+                className="mt-3 inline-flex min-h-[46px] items-center justify-center gap-2 rounded-lg bg-ink px-4 font-semibold text-white hover:bg-navy">
+                {ready ? `Xem máy ${t.name}` : `Hỏi Hili về máy ${t.name}`} <ArrowRight size={16} />
+              </a>
+            </article>
+          ))}
         </div>
       </div>
     </section>
@@ -139,7 +134,7 @@ export default function Home({ catalog, navigate }) {
   const hasHandheld = products.some((p) => (p.categories || []).includes(HANDHELD));
   const keyboard = pick(products, /bàn phím/i);
   const screen = pick(products, /màn hình/i);
-  const mouse = pick(products, /^(chuột|lót chuột)/i);
+  const mouse = pick(products.filter((p) => /^chuột/i.test(p.name)), /./);
   const parts = pick(products, /psu|case|cooling|ssd/i);
   const go = (q) => href("/danh-muc", q);
   const tile = { navigate };
@@ -167,7 +162,7 @@ export default function Home({ catalog, navigate }) {
             {nimbus && (
               <Tile {...tile} to={`/san-pham/${nimbus.slug}`} title="VOICSKY Nimbus 65" className="min-h-[210px] lg:min-h-0" tone="dark">
                 <div className="absolute inset-0" style={{ background: "radial-gradient(80% 90% at 80% 90%,#2C3FD0,transparent)" }} />
-                <img src="/home/cut-nimbus.webp" alt="" loading="lazy" className="absolute -bottom-5 -right-12 w-[74%] rotate-[-8deg] transition duration-700 group-hover:scale-105" />
+                <img src="/home/cut-nimbus.webp" alt="" className="absolute -bottom-5 -right-12 w-[74%] rotate-[-8deg] transition duration-700 group-hover:scale-105" />
                 <span className="absolute bottom-4 left-5 z-10 font-display text-[22px] font-bold text-yellow">{formatVND(nimbus.price)}</span>
               </Tile>
             )}
@@ -179,34 +174,37 @@ export default function Home({ catalog, navigate }) {
       {/* Danh mục */}
       <section className={WRAP + " pt-8"}>
         <h2 className="mb-3 font-display text-[30px] sm:text-[38px] font-bold text-ink">Mua theo danh mục</h2>
-        <div className="grid grid-cols-2 gap-2 lg:auto-rows-[200px] lg:grid-cols-12">
-          <Tile {...tile} to={go({ group: "Bàn phím" })} title="Bàn phím" sub="Cơ, không dây, văn phòng" price={keyboard.from} className="col-span-2 min-h-[240px] lg:col-span-5 lg:row-span-2">
+        <div className="grid grid-cols-2 gap-2 lg:auto-rows-[178px] lg:grid-cols-12">
+          <Tile {...tile} to={go({ group: "Bàn phím" })} title="Bàn phím" sub="Cơ, không dây, văn phòng" price={keyboard.from} className="col-span-2 min-h-[240px] lg:[grid-area:1/1/3/6]">
             <div className="absolute inset-0" style={{ background: "radial-gradient(90% 90% at 75% 85%,#2C3FD0,transparent)" }} />
-            <img src="/home/cut-echo96.webp" alt="" loading="lazy" className="absolute -bottom-8 -right-16 w-[96%] rotate-[-9deg] transition duration-700 group-hover:scale-105" />
+            <img src="/home/cut-echo96.webp" alt="" loading="lazy" className="absolute -bottom-6 left-[8%] w-[88%] rotate-[-7deg] transition duration-700 group-hover:scale-105" />
           </Tile>
-          <Tile {...tile} to={go({ group: "Màn hình" })} title="Màn hình" sub="Gaming và văn phòng" price={screen.from} tone="light" className="col-span-2 lg:col-span-4">
-            <img src="/home/cut-monitor.webp" alt="" loading="lazy" className="absolute -bottom-3 -right-6 h-[62%] sm:h-[92%] transition duration-700 group-hover:scale-105" />
+          <Tile {...tile} to={go({ group: "Màn hình" })} title="Màn hình" sub="Gaming và văn phòng" price={screen.from} tone="light" className="col-span-2 lg:[grid-area:1/6/2/13]">
+            <img src="/home/cut-monitor.webp" alt="" loading="lazy" className="absolute -bottom-10 right-[4%] h-[66%] sm:h-[135%] transition duration-700 group-hover:scale-105" />
           </Tile>
-          <Tile {...tile} to={go({ group: "Chuột" })} title="Chuột" price={mouse.from} tone="light" className="lg:col-span-3">
-            {mouse.image && <img src={mouse.image} alt="" loading="lazy" className="absolute -right-2 bottom-0 h-[72%] mix-blend-multiply transition duration-700 group-hover:scale-105" />}
+          <Tile {...tile} to={go({ group: "Chuột" })} title="Chuột" sub="Gaming, không dây" price={mouse.from} tone="light" className="lg:[grid-area:2/6/4/9]">
+            {mouse.image && <img src={mouse.image} alt="" loading="lazy" className="absolute bottom-0 left-1/2 h-[66%] -translate-x-1/2 mix-blend-multiply transition duration-700 group-hover:scale-105" />}
           </Tile>
-          <Tile {...tile} to={go({ group: "Linh kiện PC" })} title="Linh kiện PC" sub="SSD, nguồn, vỏ, tản nhiệt" price={parts.from} className="lg:col-span-4">
+          <Tile {...tile} to={go({ group: "Linh kiện PC" })} title="Linh kiện PC" sub="SSD, nguồn, vỏ, tản nhiệt" price={parts.from} className="lg:[grid-area:2/9/3/13]">
             <img src="/home/m03.webp" alt="" loading="lazy" className={photo + " opacity-70"} />
             <div className="absolute inset-0" style={{ background: "linear-gradient(90deg,rgba(6,10,42,.85),transparent 75%)" }} />
           </Tile>
-          <Tile {...tile} to="/xay-dung-cau-hinh" title="Build PC" sub="Chọn từng món, tự tính tổng tiền" tone="yellow" className="lg:col-span-3" />
-          <Tile {...tile} to={go({ group: "Phụ kiện" })} title="Phụ kiện Decor góc máy" sub="Arm màn hình, mặt bàn, loa để bàn" className="col-span-2 lg:col-span-5">
+          <Tile {...tile} to="/xay-dung-cau-hinh" title="Build PC theo ý bạn" sub="Chọn từng món, web tự cộng tổng tiền." tone="yellow" className="lg:[grid-area:3/9/5/13]">
+            <Cpu size={230} strokeWidth={1.1} className="absolute -bottom-10 -right-8 text-ink/15 transition duration-700 group-hover:scale-105" />
+          </Tile>
+          <Tile {...tile} to={go({ group: "Phụ kiện" })} title="Phụ kiện Decor góc máy" sub="Arm màn hình, mặt bàn, loa để bàn" className="col-span-2 lg:[grid-area:3/1/4/6]">
             <img src="/home/m02.webp" alt="" loading="lazy" className={photo} />
             <div className="absolute inset-0" style={{ background: "linear-gradient(90deg,rgba(6,10,42,.88),rgba(6,10,42,.2) 70%)" }} />
           </Tile>
-          <Tile {...tile} to={SITE.zaloHref} title="Cho công ty" sub="Báo giá nhanh, hoá đơn VAT, công nợ" className="col-span-2 lg:col-span-4">
+          <Tile {...tile} to={SITE.zaloHref} title="Cho công ty" sub="Báo giá nhanh, hoá đơn VAT, công nợ" className="col-span-2 lg:[grid-area:4/4/5/9]">
             <img src="/home/m04.webp" alt="" loading="lazy" className={photo + " object-[50%_30%]"} />
             <div className="absolute inset-0" style={{ background: "linear-gradient(0deg,rgba(6,10,42,.2),rgba(6,10,42,.82) 75%)" }} />
           </Tile>
           <a href="#may-cam-tay" onClick={(e) => { e.preventDefault(); document.getElementById("may-cam-tay")?.scrollIntoView({ behavior: "smooth" }); }}
-            className="col-span-2 flex min-h-[110px] flex-col justify-center rounded-2xl bg-navy p-4 text-white transition hover:bg-navy-600 sm:p-5 lg:col-span-3">
-            <span className="font-display text-[22px] sm:text-[26px] font-bold leading-tight">Máy chơi game cầm tay</span>
-            <span className="mt-1 text-[14px] text-white/80">Retro, Android, PC cầm tay</span>
+            className="relative col-span-2 flex min-h-[110px] flex-col justify-end overflow-hidden rounded-2xl bg-navy p-4 text-white transition hover:bg-navy-600 sm:p-5 lg:[grid-area:4/1/5/4]">
+            <Gamepad2 size={120} strokeWidth={1.1} className="absolute -right-4 -top-5 text-white/15" />
+            <span className="relative font-display text-[22px] sm:text-[26px] font-bold leading-tight">Máy chơi game cầm tay</span>
+            <span className="relative mt-1 text-[14px] text-white/80">Retro, Android, PC cầm tay</span>
           </a>
         </div>
       </section>
@@ -240,8 +238,12 @@ export default function Home({ catalog, navigate }) {
       <Handheld ready={hasHandheld} navigate={navigate} />
       <NeedForm />
 
-      <section className={WRAP + " pt-6 pb-8"}>
+      <section className={WRAP + " pt-6"}>
         <TrustBar />
+      </section>
+
+      <section className={WRAP + " pt-6 pb-8"}>
+        <HiliKeys />
       </section>
     </div>
   );
