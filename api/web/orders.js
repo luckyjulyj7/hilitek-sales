@@ -23,11 +23,15 @@ export default handler(async (req, res) => {
     const wanted = body.stockAlert ? (state.products || []).find((p) => p && p.id === body.stockAlert && p.web && p.web.published) : null;
     if (body.stockAlert && !wanted) return json(res, 400, { error: "Không tìm thấy sản phẩm." });
     const day = new Date().toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
-    const leadNote = wanted ? `Báo khi có hàng: ${wanted.name} (${day})` : "Đăng ký nhận ưu đãi trên website";
+    const need = typeof body.need === "string" ? body.need.trim().slice(0, 300) : "";
+    const budget = typeof body.budget === "string" ? body.budget.trim().slice(0, 60) : "";
+    const leadNote = wanted ? `Báo khi có hàng: ${wanted.name} (${day})`
+      : need ? `Nhu cầu từ web: ${need}${budget ? `, ngân sách ${budget}` : ""} (${day})`
+      : "Đăng ký nhận ưu đãi trên website";
     const customerId = upsertWebCustomer(state, { name: String(lc.name).slice(0, 80), phone: leadPhone, email: lc.email, note: leadNote });
-    if (wanted) {
+    if (wanted || need) {
       const c = state.customers.find((x) => x.id === customerId);
-      if (c && !String(c.note || "").includes(`Báo khi có hàng: ${wanted.name}`)) c.note = [c.note, leadNote].filter(Boolean).join("\n");
+      if (c && !String(c.note || "").includes(leadNote)) c.note = [c.note, leadNote].filter(Boolean).join("\n");
     }
     await writeState(state);
     return json(res, 200, { ok: true, customerId });
