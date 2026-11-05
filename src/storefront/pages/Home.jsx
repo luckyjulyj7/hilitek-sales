@@ -121,7 +121,7 @@ export default function Home({ catalog, navigate }) {
           <div className="rounded-2xl bg-white p-2.5 sm:p-6">
             <FlashSaleBar navigate={navigate} />
             <div className="mt-3 sm:mt-5">
-              <HomeSectionRow section={{ ...flashSection, title: "", seeAllText: "", seeAllHref: "" }} products={products} navigate={navigate} />
+              <HomeSectionRow section={{ ...flashSection, title: "", seeAllText: "", seeAllHref: "" }} products={products} navigate={navigate} bare noHeader />
             </div>
           </div>
         </section>

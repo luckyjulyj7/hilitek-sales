@@ -10187,6 +10187,16 @@ function buildParcelLabelHTML(label, opts = {}) {
   </head><body>${rows.join("")}</body></html>`;
 }
 
+// Lý do chưa thể hoàn tác việc chuyển báo giá. Rỗng nghĩa là đơn chưa phát sinh gì, hoàn tác an toàn.
+function quoteUndoBlock(order) {
+  if (!order) return "";
+  if (order.status !== "pending") return "đơn đã được xử lý";
+  if (Number(order.paidAmount) > 0 || (order.payments || []).length) return "đơn đã có thanh toán";
+  if (order.invoiceStatus === "issued") return "đơn đã xuất hoá đơn";
+  if ((order.items || []).some((it) => (it.series || []).length)) return "đơn đã gán số series";
+  return "";
+}
+
 const QUOTE_STATUS_LABEL = { active: "Còn hiệu lực", converted: "Đã chuyển đơn", cancelled: "Đã huỷ", expired: "Hết hiệu lực" };
 
 function QuoteItemsTable({ items, products, onUpdate, onRemove }) {
@@ -10358,6 +10368,7 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
 
   // Chuyển báo giá thành đơn hàng thật: tự tạo khách hàng mới nếu báo giá chưa gắn khách có sẵn.
   const convertToOrder = (q) => {
+    if (!window.confirm(`Chuyển báo giá ${q.code} thành đơn hàng? Hàng trong đơn sẽ được trừ kho.`)) return;
     let customerId = q.customerId;
     if (!customerId && q.customerName) {
       const newCust = { id: uid(), code: nextCustomerCode(customers), name: q.customerName, phone: q.customerPhone || "", email: "", taxCode: "", province: "", ward: "", addressDetail: "", note: `Tạo tự động khi chuyển báo giá ${q.code}`, group: "retail" };
@@ -10387,6 +10398,26 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
     setQuotations((prev) => prev.map((x) => (x.id === q.id ? { ...x, status: "converted", convertedOrderId: newOrder.id } : x)));
     addLog("Chuyển báo giá thành đơn hàng", `${q.code} → ${code}`);
     setViewingId(null);
+  };
+
+  // Hoàn tác chuyển đơn: xoá đơn vừa tạo, trả lại phần đã trừ kho và mở lại báo giá.
+  const undoConvert = (q) => {
+    const order = orders.find((o) => o.id === q.convertedOrderId);
+    const block = quoteUndoBlock(order);
+    if (block) { window.alert(`Không hoàn tác được vì ${block}. Hãy xử lý tại đơn ${order.code}.`); return; }
+    if (!window.confirm(order
+      ? `Hoàn tác: xoá đơn ${order.code}, trả hàng về kho và mở lại báo giá ${q.code}?`
+      : `Đơn đã bị xoá trước đó. Mở lại báo giá ${q.code}?`)) return;
+    if (order) {
+      setProducts((prev) => prev.map((p) => (
+        p.movements?.some((m) => m.docNo === order.code)
+          ? { ...p, movements: p.movements.filter((m) => m.docNo !== order.code) }
+          : p
+      )));
+      setOrders((prev) => prev.filter((o) => o.id !== order.id));
+    }
+    setQuotations((prev) => prev.map((x) => (x.id === q.id ? { ...x, status: "active", convertedOrderId: null } : x)));
+    addLog("Hoàn tác chuyển báo giá", `${q.code}${order ? ` · đã xoá đơn ${order.code}` : ""}`);
   };
 
   const cancelQuote = (q) => {
@@ -10458,6 +10489,9 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
                   <td className="px-4 py-3.5 text-right">
                     {q.status === "active" && !exp.expired && (
                       <button onClick={() => convertToOrder(q)} className="text-xs px-2.5 py-1 rounded-md text-white whitespace-nowrap" style={{ background: INK }}>Chuyển đơn hàng</button>
+                    )}
+                    {q.status === "converted" && isAdmin && (
+                      <button onClick={() => undoConvert(q)} className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-md border whitespace-nowrap" style={{ borderColor: LINE, color: TEXT }}><RotateCcw size={12} /> Hoàn tác</button>
                     )}
                   </td>
                 </tr>
@@ -10596,6 +10630,11 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
               {viewingQuote.status === "active" && !exp.expired && (
                 <button onClick={() => convertToOrder(viewingQuote)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md text-white" style={{ background: INK }}>
                   <Check size={13} /> Chuyển thành đơn hàng
+                </button>
+              )}
+              {viewingQuote.status === "converted" && isAdmin && (
+                <button onClick={() => undoConvert(viewingQuote)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>
+                  <RotateCcw size={13} /> Hoàn tác chuyển đơn
                 </button>
               )}
               {viewingQuote.status === "active" && (

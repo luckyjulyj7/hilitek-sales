@@ -12,7 +12,7 @@ import FlashSaleCard from "./FlashSaleCard.jsx";
  * - layout "grid":     lưới tĩnh.
  * Cấu hình từng khối: app quản lý → Website → Cấu hình web.
  */
-export default function HomeSectionRow({ section, products, navigate, flash = false, bare = false }) {
+export default function HomeSectionRow({ section, products, navigate, flash = false, bare = false, noHeader = false }) {
   const items = homeSectionProducts(products, section);
   const scroller = useRef(null);
   const hoverRef = useRef(false);
@@ -79,7 +79,7 @@ export default function HomeSectionRow({ section, products, navigate, flash = fa
       ? <FlashSaleCard key={key} product={p} onOpen={openProduct} navigate={navigate} />
       : <ProductCard key={key} product={p} onOpen={openProduct} />;
 
-  const Header = flash ? null : (
+  const Header = flash || noHeader ? null : (
     <div className="flex items-end justify-between mb-3 gap-3">
       {section.title ? <h2 className="font-display text-[30px] sm:text-[38px] font-bold text-ink">{section.title}</h2> : <span />}
       <a
@@ -146,7 +146,7 @@ export default function HomeSectionRow({ section, products, navigate, flash = fa
       onMouseEnter={() => { hoverRef.current = true; }}
       onMouseLeave={() => { hoverRef.current = false; }}
     >
-      {layout === "carousel" && (
+      {layout === "carousel" && !(edge.left && edge.right) && (
         <>
           <button
             type="button" aria-label="Trước"

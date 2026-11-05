@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Zap } from "lucide-react";
+import { ArrowRight, Zap } from "lucide-react";
 import { FLASH_SALE, homeSectionSeeAll } from "../config.js";
 import { href } from "../router.js";
+import "./product-tabs.css";
 
 function useCountdown(target) {
   const [now, setNow] = useState(() => Date.now());
@@ -60,11 +61,11 @@ export default function FlashSaleBar({ navigate }) {
         {cell(secs, "Giây")}
       </div>
 
-      <button
-        onClick={goSeeAll}
-        className="ml-auto text-sale font-semibold text-[12px] sm:text-[14px] underline underline-offset-2 hover:text-red-700 shrink-0"
-      >
-        Xem tất cả
+      <button type="button" onClick={goSeeAll} aria-label="Xem tất cả Flash Sale" className="pt-all ml-auto shrink-0">
+        <span className="flex flex-col items-center leading-tight">
+          <span className="inline-flex items-center gap-1.5">Xem tất cả <ArrowRight size={16} /></span>
+          <span className="text-[12px] font-semibold">Flash Sale</span>
+        </span>
       </button>
     </div>
   );
