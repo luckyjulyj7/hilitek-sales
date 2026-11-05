@@ -12,6 +12,7 @@
     { "source": "/media/(.*)", "destination": "https://wddfjbcrkwkzshibghdi.supabase.co/storage/v1/object/public/product-media/$1" },
     { "source": "/san-pham/:slug", "destination": "/api/web/page?slug=:slug" },
     { "source": "/danh-muc", "destination": "/api/web/page" },
+    { "source": "/may-choi-game-cam-tay", "destination": "/api/web/page?landing=handheld" },
     { "source": "/((?!api/).*)", "destination": "/shop.html" }
   ],
   "headers": [

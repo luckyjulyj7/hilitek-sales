@@ -35,11 +35,14 @@ export default function BrandRail({ products, navigate }) {
   };
 
   return (
-    <section aria-label="Thương hiệu" className="mt-6 overflow-hidden border-y border-line bg-white py-4 group"
-      style={{ maskImage: "linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)", WebkitMaskImage: "linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)" }}>
+    <section aria-label="Thương hiệu nổi bật" className="mx-auto max-w-[1500px] px-3 pt-8 sm:px-4">
+      <h2 className="mb-3 font-display text-[30px] sm:text-[38px] font-bold text-ink">Thương hiệu nổi bật</h2>
+      <div className="group overflow-hidden rounded-2xl bg-white py-5"
+        style={{ maskImage: "linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)", WebkitMaskImage: "linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)" }}>
       <div className="flex w-max animate-[marquee_48s_linear_infinite] group-hover:[animation-play-state:paused] motion-reduce:animate-none">
         {names.map((n) => item(n, n, false))}
         {names.map((n) => item(n, `${n}-2`, true))}
+      </div>
       </div>
     </section>
   );

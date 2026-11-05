@@ -10,6 +10,7 @@ import FloatingContact from "./components/FloatingContact.jsx";
 import BottomNav from "./components/BottomNav.jsx";
 import OrderConfirmModal from "./components/OrderConfirmModal.jsx";
 import StockNotify from "./components/StockNotify.jsx";
+import Handheld, { HANDHELD_PATH } from "./pages/Handheld.jsx";
 import Home from "./pages/Home.jsx";
 import Catalog from "./pages/Catalog.jsx";
 import ProductDetail from "./pages/ProductDetail.jsx";
@@ -99,6 +100,8 @@ export default function App() {
     page = <ProductDetail slug={productMatch.slug} navigate={route.navigate} catalog={catalog} />;
   } else if (landingMatch) {
     page = <LandingPage slug={landingMatch.slug} navigate={route.navigate} />;
+  } else if (route.path === HANDHELD_PATH) {
+    page = <Handheld catalog={catalog} navigate={route.navigate} />;
   } else if (route.path === "/danh-muc") {
     page = <Catalog catalog={catalog} route={route} navigate={route.navigate} />;
   } else if (route.path === "/gio-hang") {

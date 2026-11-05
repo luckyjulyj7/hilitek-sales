@@ -44,6 +44,14 @@ export default async function handler(req, res) {
       }
       return send(res, 200, applyHead(html, productHead(publicProduct(found, { detail: true }))), cache);
     }
+    if (q.landing === "handheld") {
+      return send(res, 200, applyHead(html, {
+        title: "Máy chơi game cầm tay chính hãng | Hilitek",
+        desc: "Máy chơi game cầm tay Retro, Android và PC cầm tay tại Hilitek. So sánh theo ngân sách, tư vấn trước khi mua, đủ hoá đơn VAT, bảo hành theo serial.",
+        url: `${SITE_URL}/may-choi-game-cam-tay`,
+        noscript: "<h1>Máy chơi game cầm tay</h1>",
+      }), cache);
+    }
     return send(res, 200, applyHead(html, catalogHead(q)), cache);
   } catch (e) {
     // Lỗi đọc dữ liệu: vẫn trả trang để khách mua được, chỉ thiếu SEO riêng trong lượt này.

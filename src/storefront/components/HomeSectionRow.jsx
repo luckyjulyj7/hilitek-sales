@@ -81,9 +81,7 @@ export default function HomeSectionRow({ section, products, navigate, flash = fa
 
   const Header = flash ? null : (
     <div className="flex items-end justify-between mb-3 gap-3">
-      <h2 className="font-display text-[30px] sm:text-[38px] font-bold text-ink">
-        {section.title}
-      </h2>
+      {section.title ? <h2 className="font-display text-[30px] sm:text-[38px] font-bold text-ink">{section.title}</h2> : <span />}
       <a
         href={seeAllTo}
         onClick={goSeeAll}
