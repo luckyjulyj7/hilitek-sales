@@ -8251,8 +8251,9 @@ function Customers({ setOrders, customers, setCustomers, orders, products, curre
   const togglePickPage = () => setPicked((prev) => { const n = new Set(prev); pagedCustomers.forEach((c) => (pageAllPicked ? n.delete(c.id) : n.add(c.id))); return n; });
   const applyBulk = () => {
     const days = bulkForm.creditDays === "" ? null : Math.max(0, Number(bulkForm.creditDays) || 0);
-    if (!bulkForm.group && days === null) { notify("Chọn nhóm hoặc nhập số ngày công nợ."); return; }
-    setCustomers((prev) => prev.map((c) => (picked.has(c.id) ? { ...c, ...(bulkForm.group ? { group: bulkForm.group } : {}), ...(days !== null ? { creditDays: days } : {}) } : c)));
+    const assignee = isAdmin && bulkForm.assignedTo !== "keep" ? bulkForm.assignedTo : null; // null = giữ nguyên, "" = bỏ phụ trách
+    if (!bulkForm.group && days === null && assignee === null) { notify("Chọn ít nhất một mục cần sửa."); return; }
+    setCustomers((prev) => prev.map((c) => (picked.has(c.id) ? { ...c, ...(bulkForm.group ? { group: bulkForm.group } : {}), ...(days !== null ? { creditDays: days } : {}), ...(assignee !== null ? { assignedTo: assignee } : {}) } : c)));
     let updated = 0;
     if (days && bulkForm.applyOrders) {
       const hit = orders.filter((o) => picked.has(o.customerId) && !o.creditDays && o.status !== "cancelled" && orderCalc(o).remaining > 0);
@@ -8260,7 +8261,7 @@ function Customers({ setOrders, customers, setCustomers, orders, products, curre
       const ids = new Set(hit.map((o) => o.id));
       if (updated) setOrders((prev) => prev.map((o) => (ids.has(o.id) ? { ...o, creditDays: days } : o)));
     }
-    addLog("Sửa hàng loạt khách hàng", `${picked.size} khách${bulkForm.group ? ` · nhóm ${CUSTOMER_GROUPS.find((g) => g.id === bulkForm.group)?.label}` : ""}${days !== null ? ` · công nợ ${days} ngày` : ""}${updated ? ` · ${updated} đơn đang nợ` : ""}`);
+    addLog("Sửa hàng loạt khách hàng", `${picked.size} khách${bulkForm.group ? ` · nhóm ${CUSTOMER_GROUPS.find((g) => g.id === bulkForm.group)?.label}` : ""}${days !== null ? ` · công nợ ${days} ngày` : ""}${assignee !== null ? ` · phụ trách: ${assignee || "bỏ gán"}` : ""}${updated ? ` · ${updated} đơn đang nợ` : ""}`);
     notify(`Đã cập nhật ${picked.size} khách hàng${updated ? ` và ${updated} đơn đang nợ` : ""}.`);
     setBulkForm(null); setPicked(new Set());
   };
@@ -8543,7 +8544,7 @@ function Customers({ setOrders, customers, setCustomers, orders, products, curre
       {picked.size > 0 && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-white shadow-lg whitespace-nowrap" style={{ background: TEXT }}>
           Đã chọn {picked.size} khách
-          <button onClick={() => setBulkForm({ group: "", creditDays: "", applyOrders: true })} className="px-3 py-1.5 rounded-md font-medium" style={{ background: "#fff", color: TEXT }}>Sửa hàng loạt</button>
+          <button onClick={() => setBulkForm({ group: "", creditDays: "", applyOrders: true, assignedTo: "keep" })} className="px-3 py-1.5 rounded-md font-medium" style={{ background: "#fff", color: TEXT }}>Sửa hàng loạt</button>
           <button onClick={() => setPicked(new Set())} className="underline">Bỏ chọn</button>
         </div>
       )}
@@ -8558,6 +8559,15 @@ function Customers({ setOrders, customers, setCustomers, orders, products, curre
               ))}
             </div>
           </Field>
+          {isAdmin && (
+            <Field label="Nhân viên phụ trách" hint="Chỉ nhân viên/CTV được gán mới thấy công nợ, đơn hàng của khách này">
+              <select className={inputCls} style={{ borderColor: LINE, maxWidth: 320 }} value={bulkForm.assignedTo} onChange={(e) => setBulkForm({ ...bulkForm, assignedTo: e.target.value })}>
+                <option value="keep">Giữ nguyên</option>
+                <option value="">Bỏ phụ trách (chỉ QTV thấy)</option>
+                {employeeNames.map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </Field>
+          )}
           <Field label="Công nợ (số ngày)">
             <input type="number" min={0} className={inputCls} style={{ borderColor: LINE, maxWidth: 200 }} value={bulkForm.creditDays} onChange={(e) => setBulkForm({ ...bulkForm, creditDays: e.target.value })} placeholder="Giữ nguyên" />
           </Field>
