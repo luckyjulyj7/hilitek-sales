@@ -4,6 +4,7 @@ import { formatVND, discountPercent, placeholderImage } from "../lib/format.js";
 import { prefetchProduct } from "../lib/api.js";
 import { LOW_STOCK_THRESHOLD } from "../config.js";
 import { useCart } from "../cart.jsx";
+import { askStockAlert } from "./StockNotify.jsx";
 
 export default function ProductCard({ product, onOpen }) {
   const p = product;
@@ -29,50 +30,46 @@ export default function ProductCard({ product, onOpen }) {
       onMouseEnter={warm}
       onMouseLeave={cancelWarm}
       onTouchStart={() => prefetchProduct(p.slug)}
-      className="group flex h-full flex-col bg-white border border-line rounded-lg overflow-hidden hover:shadow-card hover:border-navy/30 transition"
+      className="group flex h-full flex-col bg-white overflow-hidden transition duration-300 hover:-translate-y-0.5 hover:shadow-card"
     >
       <a
         href={`/san-pham/${p.slug}`}
         onClick={(e) => { e.preventDefault(); onOpen(p.slug); }}
-        className="block relative aspect-square bg-navy-050"
+        className="block relative aspect-square overflow-hidden bg-[#E9ECF6]"
       >
-        <img src={img} alt={p.name} loading="lazy" className="w-full h-full object-cover" />
+        <img src={img} alt={p.name} loading="lazy" decoding="async" width="400" height="400" className={"w-full h-full object-cover transition duration-700 group-hover:scale-[1.03]" + (out ? " grayscale opacity-75" : "")} />
         {off > 0 && (
-          <span className="absolute top-2 left-2 bg-yellow text-ink text-[13px] font-bold px-1.5 py-0.5 rounded font-mono">
+          <span className="absolute top-2 left-2 bg-yellow text-ink text-[13px] font-bold px-1.5 py-0.5">
             −{off}%
           </span>
         )}
         {out ? (
-          <span className="absolute top-2 right-2 bg-ink/85 text-white text-[12px] px-1.5 py-0.5 rounded">Hết hàng</span>
+          <span className="absolute top-2 right-2 bg-ink text-white text-[12px] px-2 py-1">Hết hàng</span>
         ) : low ? (
-          <span className="absolute top-2 right-2 bg-[#E8730C] text-white text-[12px] px-1.5 py-0.5 rounded">Còn ít</span>
+          <span className="absolute top-2 right-2 bg-[#B4540A] text-white text-[12px] px-2 py-1">Còn ít</span>
         ) : null}
-        {off > 0 && (
-          <span className="absolute left-0 bottom-2 bg-[#00A8E8] text-white text-[11px] font-semibold px-2 py-0.5 rounded-r-md shadow-sm">
-            Tiết kiệm {off}%
-          </span>
-        )}
       </a>
 
       {/* Bố cục cố định chiều cao từng dòng → giá đỏ luôn nằm đúng một vị trí trên mọi thẻ */}
       <div className="flex flex-col flex-1 p-3">
         <div className="flex items-center justify-between gap-2 min-h-[15px]">
-          <span className="text-[12px] uppercase tracking-wide text-mute font-mono line-clamp-1">{p.brand}</span>
+          <span className="text-[13px] text-mute line-clamp-1">{p.brand}</span>
           {p.variantCount > 1 && (
-            <span className="shrink-0 text-[11px] text-navy bg-navy-050 rounded px-1.5 py-0.5">{p.variantCount} tuỳ chọn</span>
+            <span className="shrink-0 text-[12px] text-navy bg-navy-050 px-1.5 py-0.5">{p.variantCount} tuỳ chọn</span>
           )}
         </div>
         <a
           href={`/san-pham/${p.slug}`}
           onClick={(e) => { e.preventDefault(); onOpen(p.slug); }}
-          className="mt-1 text-[14px] leading-snug text-ink line-clamp-2 hover:text-navy h-[38px]"
+          className="mt-1 text-[15px] font-medium leading-snug text-ink line-clamp-2 hover:text-navy h-[42px]"
         >
           {p.name}
         </a>
+        <div className="mt-1 h-[18px] truncate text-[13px] text-mute">{(p.specChips || []).slice(0, 2).join(" · ")}</div>
 
         {/* Giá — vị trí cố định, không cho xuống dòng chữ "đ"; luôn chừa dòng giá gạch */}
         <div className="mt-2.5">
-          <div className="font-mono font-extrabold text-[17px] sm:text-[23px] text-sale leading-none whitespace-nowrap tabular-nums">
+          <div className="font-display font-bold text-[20px] sm:text-[26px] text-navy leading-none whitespace-nowrap tabular-nums">
             {formatVND(p.price)}
           </div>
           <div className="mt-0.5 h-[15px] font-mono text-[11px] text-mute/80 line-through whitespace-nowrap">
@@ -90,12 +87,19 @@ export default function ProductCard({ product, onOpen }) {
           )}
         </div>
 
+        {out ? (
+          <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
+            <button onClick={() => askStockAlert(p)} className="min-h-[44px] px-1 border-[1.5px] border-ink text-[13px] font-semibold text-ink transition hover:bg-yellow">Báo khi có hàng</button>
+            <button onClick={buy} className="min-h-[44px] px-1 bg-yellow text-[13px] font-semibold text-ink transition hover:brightness-95">Đặt trước</button>
+          </div>
+        ) : (
         <button
           onClick={buy}
-          className="mt-2 w-full inline-flex items-center justify-center gap-1.5 rounded-md text-[14px] font-semibold py-2 transition bg-navy text-white hover:bg-navy-600"
+          className="mt-2 w-full min-h-[44px] inline-flex items-center justify-center gap-1.5 text-[14px] font-semibold transition bg-ink text-white hover:bg-navy"
         >
           {inCart ? <Check size={15} /> : <Plus size={15} />} Đặt hàng
         </button>
+        )}
       </div>
     </div>
   );

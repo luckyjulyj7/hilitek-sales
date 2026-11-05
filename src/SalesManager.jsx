@@ -8238,7 +8238,7 @@ function Customers({ setOrders, customers, setCustomers, orders, products, curre
   const filtered = myCustomers.filter((c) => {
     const q = query.trim().toLowerCase();
     if (!q) return true;
-    return [c.name, c.code, c.phone, c.taxCode, c.assignedTo].some((v) => String(v || "").toLowerCase().includes(q));
+    return [c.name, c.code, c.phone, c.taxCode, c.assignedTo, c.note].some((v) => String(v || "").toLowerCase().includes(q));
   });
   const [customerPage, setCustomerPage] = useState(1);
   useEffect(() => { setCustomerPage(1); }, [query]);

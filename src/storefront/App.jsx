@@ -9,6 +9,7 @@ import Footer from "./components/Footer.jsx";
 import FloatingContact from "./components/FloatingContact.jsx";
 import BottomNav from "./components/BottomNav.jsx";
 import OrderConfirmModal from "./components/OrderConfirmModal.jsx";
+import StockNotify from "./components/StockNotify.jsx";
 import Home from "./pages/Home.jsx";
 import Catalog from "./pages/Catalog.jsx";
 import ProductDetail from "./pages/ProductDetail.jsx";
@@ -155,6 +156,7 @@ export default function App() {
       <FloatingContact />
       <BottomNav route={route} navigate={route.navigate} onOpenCategories={() => setDrawer(true)} />
       <OrderConfirmModal navigate={route.navigate} />
+      <StockNotify />
     </div>
     </CatalogCtx.Provider>
   );

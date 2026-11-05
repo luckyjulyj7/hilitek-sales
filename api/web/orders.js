@@ -19,7 +19,16 @@ export default handler(async (req, res) => {
     const leadPhone = String(lc.phone || "").replace(/\s/g, "");
     if (!lc.name || !/^0\d{8,10}$/.test(leadPhone)) return json(res, 400, { error: "Thiếu họ tên hoặc số điện thoại hợp lệ." });
     const state = await readState();
-    const customerId = upsertWebCustomer(state, { name: lc.name, phone: leadPhone, email: lc.email, note: "Đăng ký nhận ưu đãi trên website" });
+    // "Báo khi có hàng": tên sản phẩm lấy từ dữ liệu thật, không tin chuỗi trình duyệt gửi lên.
+    const wanted = body.stockAlert ? (state.products || []).find((p) => p && p.id === body.stockAlert && p.web && p.web.published) : null;
+    if (body.stockAlert && !wanted) return json(res, 400, { error: "Không tìm thấy sản phẩm." });
+    const day = new Date().toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
+    const leadNote = wanted ? `Báo khi có hàng: ${wanted.name} (${day})` : "Đăng ký nhận ưu đãi trên website";
+    const customerId = upsertWebCustomer(state, { name: String(lc.name).slice(0, 80), phone: leadPhone, email: lc.email, note: leadNote });
+    if (wanted) {
+      const c = state.customers.find((x) => x.id === customerId);
+      if (c && !String(c.note || "").includes(`Báo khi có hàng: ${wanted.name}`)) c.note = [c.note, leadNote].filter(Boolean).join("\n");
+    }
     await writeState(state);
     return json(res, 200, { ok: true, customerId });
   }

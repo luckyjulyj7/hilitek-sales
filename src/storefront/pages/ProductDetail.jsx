@@ -9,16 +9,28 @@ import { LOW_STOCK_THRESHOLD, SITE, MENU, PRODUCT_SIDEBAR, productGroups } from 
 import { href } from "../router.js";
 import { useCart } from "../cart.jsx";
 import TrustBar from "../components/TrustBar.jsx";
+import { askStockAlert } from "../components/StockNotify.jsx";
 import ProductCommitments from "../components/ProductCommitments.jsx";
 import ProductShipping from "../components/ProductShipping.jsx";
 import SocialLinks from "../components/SocialLinks.jsx";
 import PosterSlot from "../components/PosterSlot.jsx";
 import RichText from "../components/RichText.jsx";
 
+// Cặp danh mục hay mua kèm: [sản phẩm đang xem, danh mục gợi ý].
+const PAIRS = [
+  [/bàn phím/i, /chuột|lót/i],
+  [/chuột/i, /bàn phím|lót/i],
+  [/màn hình/i, /arm|giá đỡ|bàn phím/i],
+  [/ssd|ổ cứng/i, /ram/i],
+  [/ram/i, /ssd/i],
+  [/máy chơi game/i, /tay cầm|phụ kiện/i],
+];
+
 export default function ProductDetail({ slug, navigate, catalog }) {
   const { add, openOrder } = useCart();
   const [product, setProduct] = useState(undefined);
   const [imgIdx, setImgIdx] = useState(0);
+  const ctaRef = useRef(null);
   const [zoom, setZoom] = useState(false);
   const [imgOrigin, setImgOrigin] = useState(null); // vị trí con trỏ để phóng to ảnh khi rê chuột — null = không rê
   const [imgHover, setImgHover] = useState(false); // đang rê chuột trên ảnh — tạm dừng tự chạy
@@ -142,6 +154,11 @@ export default function ProductDetail({ slug, navigate, catalog }) {
   const related = (catalog.products || [])
     .filter((x) => x.category === p.category && x.slug !== p.slug && !(p.variantGroupId && x.variantGroupId === p.variantGroupId))
     .slice(0, 5);
+  // "Gợi ý dùng cùng": món thường mua kèm, ưu tiên hàng có sẵn. Không có món phù hợp thì ẩn khối này.
+  const pairRule = PAIRS.find(([own]) => own.test(`${p.category} ${p.name}`));
+  const pairs = pairRule
+    ? (catalog.products || []).filter((x) => pairRule[1].test(x.category) && x.stock > 0 && x.slug !== p.slug).slice(0, 5)
+    : [];
   const descText = (p.description && p.description.trim()) || p.shortDesc || "";
   const promoLines = String(p.promo || "")
     .split("\n")
@@ -168,6 +185,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
 
   return (
     <div className="mx-auto max-w-[1500px] px-3 sm:px-4 py-6 font-sans">
+      <StickyBuy anchor={ctaRef} p={p} price={price} out={out} img={imgs[0]?.src} onBuy={doBuyNow} onAdd={doAdd} />
       <nav className="flex items-center gap-1 text-[13px] text-mute mb-5 flex-wrap">
         <a href="/" onClick={(e) => { e.preventDefault(); navigate("/"); }} className="hover:text-navy">Trang chủ</a>
         <ChevronRight size={12} />
@@ -236,7 +254,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
                   title={img.variantSlug ? "Xem phiên bản này" : undefined}
                   className={"aspect-square w-full border rounded-md overflow-hidden " + (!previewImg && i === imgIdx ? "border-navy" : "border-line")}
                 >
-                  <img src={img.src} alt="" className="w-full h-full object-cover" />
+                  <img src={img.src} alt={p.name} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
@@ -246,22 +264,24 @@ export default function ProductDetail({ slug, navigate, catalog }) {
         {/* Thông tin + mua */}
         <div className="min-w-0">
           <div className="font-mono text-[13px] uppercase tracking-wide text-navy font-semibold">{p.brand}</div>
-          <h1 className="mt-1 font-display text-2xl sm:text-[28px] font-bold text-ink leading-tight">{p.name}</h1>
+          <h1 className="mt-1 font-display text-[34px] sm:text-[46px] font-bold text-ink leading-[1.02]">{p.name}</h1>
 
-          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[14px] text-mute">
-            <span className="font-mono">{p.sku}</span>
-            <span className="inline-flex items-center gap-1"><ShieldCheck size={14} className="text-navy" /> {warrantyLabel(p.warrantyMonths)}</span>
+          <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[13px] font-medium">
+            <span className="inline-flex items-center gap-1 border border-line bg-white px-2 py-1 text-ink"><ShieldCheck size={14} className="text-navy" /> {warrantyLabel(p.warrantyMonths)}</span>
+            <span className="border border-line bg-white px-2 py-1 text-ink">Hàng chính hãng</span>
+            <span className={"px-2 py-1 " + (out ? "bg-ink text-white" : "bg-[#E3F4EA] text-[#17643A]")}>{out ? "Tạm hết" : low ? "Còn ít" : "Có sẵn"}</span>
+            <span className="px-1 text-mute font-normal">{p.sku}</span>
           </div>
 
           {p.variants?.length > 1 && <VariantPicker product={p} onPick={pickProductVariant} attrsOverride={previewAttrs} />}
 
           {p.specChips?.length > 0 && (
-            <div className="mt-4 border-l-[3px] border-yellow bg-navy-050 rounded-r-md px-4 py-2.5 text-[14px] font-mono text-ink/80">
-              {p.specChips.join("  ·  ")}
-            </div>
+            <ul className="mt-4 grid gap-1 text-[15px] text-ink/85 sm:grid-cols-2">
+              {p.specChips.map((s, i) => <li key={i} className="flex gap-2"><span className="mt-[9px] h-1.5 w-1.5 shrink-0 bg-yellow" />{s}</li>)}
+            </ul>
           )}
 
-          <div className="mt-4 border border-line rounded-lg bg-white p-4 shadow-card">
+          <div className="mt-4 bg-white p-4 sm:p-5">
             {/* Giá: font "Bai Jamjuree" theo mẫu Mai Anh PC — giá gạch nhỏ trên, giá bán to dưới */}
             <div className="font-price">
               {off > 0 && (
@@ -270,16 +290,16 @@ export default function ProductDetail({ slug, navigate, catalog }) {
                   <span className="font-semibold text-[#D0021B]">Tiết kiệm {formatVND(p.listPrice - price)}</span>
                 </div>
               )}
-              <div className="text-[32px] sm:text-[38px] font-bold text-sale leading-none mt-0.5">{formatVND(price)}</div>
+              <div className="font-display text-[38px] sm:text-[52px] font-bold text-navy leading-none mt-0.5">{formatVND(price)}</div>
             </div>
             <div className="mt-1 text-[13px] text-mute">Đã bao gồm VAT</div>
 
             <div className="my-3 border-t border-line" />
 
             <div className="text-[14px] text-ink">
-              {out ? <span className="text-[#E8730C] font-semibold">Tạm hết hàng — có thể đặt trước, Hilitek báo khi có hàng</span>
-                : low ? <span className="text-[#E8730C] font-medium">Còn ít hàng</span>
-                : <span className="text-green-700 font-medium">Còn hàng</span>}
+              {out ? <span className="font-semibold">Tạm hết hàng. Bạn có thể đặt trước hoặc để Hili báo khi hàng về.</span>
+                : low ? <span className="text-[#B4540A] font-medium">Còn ít hàng</span>
+                : <span className="text-[#17643A] font-medium">Còn hàng tại Hilitek</span>}
             </div>
 
             <div className="mt-3 flex items-center gap-3">
@@ -308,19 +328,29 @@ export default function ProductDetail({ slug, navigate, catalog }) {
             )}
 
             {/* Thứ tự: Đặt hàng -> Thêm vào giỏ -> Chat Zalo. Hết hàng vẫn cho ĐẶT TRƯỚC. */}
+            <div ref={ctaRef} />
             <button
               onClick={doBuyNow}
-              className={"mt-4 w-full rounded-md font-display font-bold py-3 text-[15px] tracking-wide flex items-center justify-center gap-2 transition text-white " + (out ? "bg-[#E8730C] hover:brightness-110" : "bg-navy hover:bg-navy-600")}
+              className={"mt-4 w-full min-h-[50px] text-[16px] font-semibold flex items-center justify-center gap-2 transition " + (out ? "bg-yellow text-ink hover:brightness-95" : "bg-ink text-white hover:bg-navy")}
             >
-              {out ? <><Clock size={17} /> ĐẶT TRƯỚC</> : <><Zap size={17} /> ĐẶT HÀNG</>}
+              {out ? <><Clock size={17} /> Đặt trước</> : <><Zap size={17} /> Đặt hàng</>}
             </button>
 
+            {out ? (
+              <button
+                onClick={() => askStockAlert(p)}
+                className="mt-2 w-full min-h-[50px] border-[1.5px] border-ink text-[16px] font-semibold flex items-center justify-center gap-2 transition text-ink hover:bg-yellow"
+              >
+                <Clock size={17} /> Báo khi có hàng
+              </button>
+            ) : (
             <button
               onClick={doAdd}
-              className="mt-2 w-full rounded-md font-display font-bold py-3 text-[15px] tracking-wide flex items-center justify-center gap-2 transition bg-yellow text-ink hover:bg-yellow-300"
+              className="mt-2 w-full min-h-[50px] text-[16px] font-semibold flex items-center justify-center gap-2 transition bg-yellow text-ink hover:brightness-95"
             >
-              <ShoppingCart size={17} /> THÊM VÀO GIỎ
+              <ShoppingCart size={17} /> Thêm vào giỏ
             </button>
+            )}
 
             {added && (
               <button onClick={() => navigate("/gio-hang")} className="mt-2 w-full rounded-md border border-navy text-navy font-semibold py-2 text-[14px] inline-flex items-center justify-center gap-1.5 hover:bg-navy-050">
@@ -332,9 +362,9 @@ export default function ProductDetail({ slug, navigate, catalog }) {
               href={SITE.zaloHref}
               target="_blank"
               rel="noreferrer"
-              className="mt-2 w-full rounded-md bg-[#0068FF] text-white font-display font-bold py-3 text-[15px] tracking-wide flex items-center justify-center gap-2 hover:brightness-110 animate-zalo"
+              className="mt-2 w-full min-h-[46px] text-[15px] font-semibold text-[#0068FF] flex items-center justify-center gap-2 hover:underline"
             >
-              <MessageCircle size={18} /> CHAT ZALO NGAY
+              <MessageCircle size={18} /> Hỏi Hili qua Zalo
             </a>
           </div>
 
@@ -411,9 +441,20 @@ export default function ProductDetail({ slug, navigate, catalog }) {
         <TrustBar />
       </div>
 
+      {pairs.length > 0 && (
+        <section className="mt-12">
+          <h2 className="font-display text-[30px] sm:text-[38px] font-bold text-ink mb-4">Gợi ý dùng cùng</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
+            {pairs.map((r) => (
+              <RelatedCard key={r.id} p={r} onOpen={() => navigate(`/san-pham/${r.slug}`)} />
+            ))}
+          </div>
+        </section>
+      )}
+
       {related.length > 0 && (
         <section className="mt-12">
-          <h2 className="font-display text-xl font-bold text-ink mb-4 border-l-4 border-yellow pl-3">Sản phẩm cùng nhóm</h2>
+          <h2 className="font-display text-[30px] sm:text-[38px] font-bold text-ink mb-4">Sản phẩm tương tự</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
             {related.map((r) => (
               <RelatedCard key={r.id} p={r} onOpen={() => navigate(`/san-pham/${r.slug}`)} />
@@ -480,12 +521,12 @@ function VariantPicker({ product, onPick, attrsOverride }) {
                     onClick={() => pickVariant(key, val)}
                     title={anyInStock ? undefined : "Hết hàng"}
                     className={
-                      "px-3 py-1.5 rounded-md border text-[14px] transition " +
-                      (active ? "border-navy bg-navy text-white font-semibold" : "border-line text-ink hover:border-navy") +
-                      (!anyInStock ? " opacity-50" : "")
+                      "min-h-[44px] px-3 py-1 border text-[14px] leading-tight transition " +
+                      (active ? "border-ink bg-ink text-white font-semibold" : "border-line bg-white text-ink hover:border-ink")
                     }
                   >
                     {val}
+                    {!anyInStock && <span className={"block text-[12px] font-normal " + (active ? "text-white/75" : "text-mute")}>Tạm hết</span>}
                   </button>
                 );
               })}
@@ -608,7 +649,37 @@ function RelatedCard({ p, onOpen }) {
     <a href={`/san-pham/${p.slug}`} onClick={(e) => { e.preventDefault(); onOpen(); }} className="border border-line rounded-lg bg-white p-3 hover:shadow-card hover:border-navy/30">
       <img src={p.images?.[0]?.src || p.images?.[0] || placeholderImage(p.brand, p.category)} alt={p.name} className="w-full aspect-square object-cover rounded-md bg-navy-050" />
       <div className="mt-2 text-[13px] text-ink line-clamp-2 min-h-[34px]">{p.name}</div>
-      <div className="mt-1 font-mono text-[15px] font-bold text-sale">{formatVND(p.price)}</div>
+      <div className="mt-1 font-display text-[18px] font-bold text-navy">{formatVND(p.price)}</div>
     </a>
+  );
+}
+
+/** Thanh mua dính đáy màn hình, chỉ hiện khi đã cuộn qua nút mua chính. Trên điện thoại nằm trên thanh menu dưới. */
+function StickyBuy({ anchor, p, price, out, img, onBuy, onAdd }) {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const check = () => { const el = anchor.current; setShow(!!el && el.getBoundingClientRect().top < -120); };
+    check();
+    window.addEventListener("scroll", check, { passive: true });
+    return () => window.removeEventListener("scroll", check);
+  }, [anchor]);
+  return (
+    <div className={"fixed left-0 right-0 bottom-[60px] lg:bottom-0 z-[55] bg-ink text-white transition-transform duration-500 " + (show ? "translate-y-0" : "translate-y-[calc(100%+60px)]")}>
+      <div className="mx-auto flex max-w-[1500px] items-center gap-3 px-3 sm:px-4 py-2">
+        {img && <img src={img} alt="" className="hidden sm:block h-11 w-11 object-cover bg-white" />}
+        <div className="hidden sm:block min-w-0 flex-1 truncate font-display text-[20px] font-bold">{p.name}</div>
+        <div className="font-display text-[22px] font-bold text-yellow whitespace-nowrap">{formatVND(price)}</div>
+        <div className="ml-auto flex shrink-0 gap-2 sm:ml-0">
+          {out ? (
+            <>
+              <button onClick={() => askStockAlert(p)} className="min-h-[44px] px-3 border-[1.5px] border-white text-[14px] font-semibold">Báo khi có hàng</button>
+              <button onClick={onBuy} className="min-h-[44px] px-3 bg-yellow text-[14px] font-semibold text-ink">Đặt trước</button>
+            </>
+          ) : (
+            <button onClick={onAdd} className="min-h-[44px] px-4 bg-yellow text-[14px] font-semibold text-ink">Thêm vào giỏ</button>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

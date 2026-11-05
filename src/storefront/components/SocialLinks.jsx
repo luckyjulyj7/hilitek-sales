@@ -12,7 +12,8 @@ const STYLE = {
 
 /** Các kênh bán hàng / mạng xã hội (SITE.socials trong config.js) — pill có màu theo nền tảng. */
 export default function SocialLinks({ title = "Kênh chính thức", titleClass = "text-mute", className = "" }) {
-  const items = SITE.socials || [];
+  // Kênh chưa có link thì ẩn hẳn, không hiện nút mờ bấm không được trước mặt khách.
+  const items = (SITE.socials || []).filter((s) => s.href && !/^C</.test(s.href));
   if (!items.length) return null;
 
   return (
@@ -22,18 +23,16 @@ export default function SocialLinks({ title = "Kênh chính thức", titleClass 
         {items.map((s) => {
           const style = STYLE[s.kind] || { icon: Link2, bg: "bg-mute" };
           const Icon = style.icon;
-          const missing = /^C</.test(s.href || "");
           return (
             <a
               key={s.kind + s.label}
-              href={missing ? undefined : s.href}
+              href={s.href}
               target="_blank"
               rel="noreferrer"
-              title={missing ? `${s.label} — chưa gắn link` : s.label}
+              title={s.label}
               className={
-                "inline-flex items-center gap-1.5 rounded-full pl-2 pr-3 py-1.5 text-[13px] font-medium text-white " +
-                style.bg +
-                (missing ? " opacity-40 cursor-not-allowed" : " hover:brightness-110")
+                "inline-flex items-center gap-1.5 rounded-full pl-2 pr-3 py-1.5 text-[13px] font-medium text-white hover:brightness-110 " +
+                style.bg
               }
             >
               <Icon size={14} /> {s.label}

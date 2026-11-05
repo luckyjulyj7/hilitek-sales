@@ -5,11 +5,11 @@ export default {
     extend: {
       fontFamily: {
         // "Cứng cáp, công nghệ": Chakra Petch cho tiêu đề/nút, Be Vietnam Pro cho nội dung.
-        display: ["'Chakra Petch'", "system-ui", "sans-serif"],
-        sans: ["'Be Vietnam Pro'", "system-ui", "sans-serif"],
-        mono: ["'IBM Plex Mono'", "monospace"],
+        display: ["var(--font-web, 'Chakra Petch')", "system-ui", "sans-serif"],
+        sans: ["var(--font-web, 'Be Vietnam Pro')", "system-ui", "sans-serif"],
+        mono: ["var(--font-web, 'IBM Plex Mono')", "monospace"],
         // Font giá bán — theo mẫu website Mai Anh PC.
-        price: ["'Bai Jamjuree'", "Roboto", "system-ui", "sans-serif"],
+        price: ["var(--font-web, 'Bai Jamjuree')", "Roboto", "system-ui", "sans-serif"],
       },
       colors: {
         // Nhận diện Hilitek — vàng + xanh (theo logo).

@@ -217,6 +217,16 @@ export default function Catalog({ catalog, route, navigate }) {
   );
 
   return (
+    <>
+    <section className="relative overflow-hidden bg-ink font-sans text-white">
+      <div className="absolute -right-[8%] -top-1/3 h-[170%] w-2/3" style={{ background: "radial-gradient(closest-side,#2C3FD0,transparent)" }} />
+      <div className="relative mx-auto max-w-[1500px] px-4 py-8 sm:py-12">
+        <h1 className="font-display text-[48px] sm:text-[76px] lg:text-[100px] font-bold leading-[1.02] break-words">{title}</h1>
+        <p className="mt-3 text-[16px] text-white/80">
+          {(() => { const ready = list.filter((x) => x.stock > 0).length; return ready === list.length ? `${list.length} mẫu, tất cả có sẵn giao ngay.` : `${list.length} mẫu, ${ready} mẫu có sẵn giao ngay. Mẫu tạm hết vẫn đặt trước được.`; })()}
+        </p>
+      </div>
+    </section>
     <div className="mx-auto max-w-[1500px] px-4 py-6 font-sans">
       <nav className="flex items-center gap-1 text-[13px] text-mute mb-4 flex-wrap">
         <a href="/" onClick={(e) => { e.preventDefault(); navigate("/"); }} className="hover:text-navy">Trang chủ</a>
@@ -242,7 +252,6 @@ export default function Catalog({ catalog, route, navigate }) {
         {!group && !cat && <span className="text-ink/70">Sản phẩm</span>}
       </nav>
 
-      <h1 className="font-display text-2xl sm:text-3xl font-bold text-ink mb-2">{title}</h1>
 
       {filterChips.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-4">
@@ -321,5 +330,6 @@ export default function Catalog({ catalog, route, navigate }) {
         </div>
       )}
     </div>
+    </>
   );
 }
