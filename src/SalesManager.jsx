@@ -2299,13 +2299,13 @@ function ImageLightbox({ images, startIndex, onClose }) {
         )}
 
         <div className="flex items-center gap-2 mt-4 flex-wrap justify-center">
-          <button onClick={copyImage} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm text-white" style={{ background: INK }}>
+          <button onClick={copyImage} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-white" style={{ background: INK }}>
             {copyState === "ok" ? <><Check size={14} /> Đã sao chép!</> : copyState === "fail" ? "Không sao chép được — bấm Tải ảnh" : "Sao chép ảnh"}
           </button>
-          <a href={current.src} download={`${(current.alt || "anh-san-pham").replace(/[^\w\-]+/g, "_")}.png`} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: "rgba(255,255,255,0.4)", color: "#fff" }}>
+          <a href={current.src} download={`${(current.alt || "anh-san-pham").replace(/[^\w\-]+/g, "_")}.png`} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm border" style={{ borderColor: "rgba(255,255,255,0.4)", color: "#fff" }}>
             Tải ảnh
           </a>
-          <button onClick={onClose} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: "rgba(255,255,255,0.4)", color: "#fff" }}>
+          <button onClick={onClose} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm border" style={{ borderColor: "rgba(255,255,255,0.4)", color: "#fff" }}>
             <X size={14} /> Đóng
           </button>
         </div>
@@ -3365,7 +3365,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         )}
         {!isCtv && (
           <button onClick={openNew} className="flex items-center gap-1 px-3 py-1.5 rounded-md text-xs text-white whitespace-nowrap" style={{ background: INK }}>
-            <Plus size={13} /> Thêm sản phẩm
+            <Plus size={13} /> Thêm<span className="hidden sm:inline"> sản phẩm</span>
           </button>
         )}
       </div>
@@ -3443,7 +3443,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                 // diện (PURPLE...) + thụt lề mã/tên, để thấy rõ các dòng này thuộc cùng 1 sản phẩm
                 // chính, không lẫn với sản phẩm đơn lẻ khác.
                 return (
-                  <tr key={p.id} style={{ borderBottom: `1px solid ${LINE}`, background: inGroup ? `${PURPLE}14` : undefined }} className="hover:bg-black/[0.02]">
+                  <tr key={p.id} style={{ borderBottom: `1px solid ${LINE}` }} className={`hover:bg-black/[0.02]${inGroup ? " hili-child" : ""}`}>
                       <td className="px-3 py-3"><input type="checkbox" checked={selectedIds.has(p.id)} onChange={() => toggleSelect(p.id)} /></td>
                       <td className="px-2 py-3">
                         <button onClick={() => openProductDetail(p.id)} className="opacity-60 hover:opacity-100" title="Xem chi tiết"><ChevronRight size={15} /></button>
@@ -3466,7 +3466,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                         <div className="flex gap-1.5 mt-1 flex-wrap">
                           {p.isService && <span className="inline-block text-xs px-1.5 py-0.5 rounded-md font-medium" style={{ background: `${BLUE}1A`, color: BLUE }}>Dịch vụ</span>}
                           {p.hasSeries && <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-md font-medium" style={{ background: `${BLUE}1A`, color: BLUE }}><Barcode size={10} /> Series</span>}
-                          {p.vat && <span className="inline-block text-xs px-1.5 py-0.5 rounded-md font-medium" style={{ background: `${BRASS}1A`, color: BRASS }}>{VAT_OPTIONS.find((v) => v.id === p.vat)?.label || p.vat}</span>}
+                          {p.vat && <span className="hili-vat inline-block text-xs px-1.5 py-0.5 rounded-md font-medium" style={{ background: `${BRASS}1A`, color: BRASS }}>{VAT_OPTIONS.find((v) => v.id === p.vat)?.label || p.vat}</span>}
                           {p.variantAttrs && <span className="inline-block text-xs px-1.5 py-0.5 rounded-md font-medium" style={{ background: `${PURPLE}1A`, color: PURPLE }}>{Object.values(p.variantAttrs).join(" / ")}</span>}
                           {isAdmin && duplicateProductIds.has(p.id) && <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-md font-medium" style={{ background: `${RUST}1A`, color: RUST }}><AlertTriangle size={10} /> Nghi trùng</span>}
                         </div>
@@ -3542,7 +3542,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                   <React.Fragment key={gid}>
                     {/* Chưa mở rộng: nền bình thường như sản phẩm khác, chỉ badge "N phiên bản" tô đậm.
                         Đã mở rộng: tô nền tím rõ hơn hẳn để thấy ngay đang xem đúng nhóm nào. */}
-                    <tr style={{ borderBottom: `1px solid ${LINE}`, background: expanded ? `${PURPLE}1F` : undefined }} className="hover:bg-black/[0.02]">
+                    <tr style={{ borderBottom: `1px solid ${LINE}`, background: expanded ? "#EEF1FB" : undefined }} className="hover:bg-black/[0.02]">
                       <td className="px-3 py-3">
                         <input type="checkbox" checked={allSelected} onChange={() => setSelectedIds((prev) => { const n = new Set(prev); members.forEach((m) => (allSelected ? n.delete(m.id) : n.add(m.id))); return n; })} />
                       </td>
@@ -3672,7 +3672,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
         const stockTone = stats.closingQty <= 0 || lowStock ? RUST : FOREST;
         return (
           <Modal drawer title="Chi tiết sản phẩm" onClose={() => setViewingId(null)}>
-            <div className="flex items-start gap-5 mb-3">
+            <div className="hili-hero flex items-start gap-5 mb-3">
               {viewingProduct.image ? (
                 <img src={viewingProduct.image} alt={viewingProduct.name} onClick={() => setZoomImage({ images: galleryImgs, index: 0 })}
                   className="w-36 h-36 object-cover rounded-md shrink-0 cursor-zoom-in" style={{ border: `1px solid ${LINE}` }} />
@@ -3718,14 +3718,14 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
               </div>
             </div>
 
-            <div className="flex gap-2 mb-5 flex-wrap">
-              {isAdmin && <button onClick={() => openIOFromDetail(viewingProduct, "in")} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm text-white" style={{ background: INK }}><ArrowDownToLine size={14} /> Nhập kho</button>}
-              {!isCtv && <button onClick={() => openIOFromDetail(viewingProduct, "out")} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: INK, color: INK }}><ArrowUpFromLine size={14} /> Xuất kho</button>}
+            <div className="hili-actions flex gap-2 mb-5 flex-wrap">
+              {isAdmin && <button onClick={() => openIOFromDetail(viewingProduct, "in")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-white" style={{ background: INK }}><ArrowDownToLine size={14} /> Nhập kho</button>}
+              {!isCtv && <button onClick={() => openIOFromDetail(viewingProduct, "out")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm border" style={{ borderColor: INK, color: INK }}><ArrowUpFromLine size={14} /> Xuất kho</button>}
               {isAdmin && (
-                <button onClick={() => openEditFromDetail(viewingProduct)} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: LINE, color: TEXT }}><Pencil size={14} /> Sửa thông tin</button>
+                <button onClick={() => openEditFromDetail(viewingProduct)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm border" style={{ borderColor: LINE, color: TEXT }}><Pencil size={14} /> Sửa</button>
               )}
               {isAdmin && goToWebProduct && (
-                <button onClick={() => goToWebProduct(viewingProduct.id)} title="Sửa mô tả, ảnh, giá so sánh... của sản phẩm này trên website" className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: BLUE, color: BLUE }}><Globe size={14} /> Sửa trên Website</button>
+                <button onClick={() => goToWebProduct(viewingProduct.id)} title="Sửa mô tả, ảnh, giá so sánh... của sản phẩm này trên website" className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm border" style={{ borderColor: BLUE, color: BLUE }}><Globe size={14} /> Website</button>
               )}
               {(currentUser.isOwner || currentUser.perms?.deleteProducts) && (
                 <button
@@ -3735,10 +3735,10 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                       setViewingId(null);
                     }
                   }}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm border"
                   style={{ borderColor: RUST, color: RUST }}
                 >
-                  <Trash2 size={14} /> Xoá sản phẩm
+                  <Trash2 size={14} /> Xoá
                 </button>
               )}
             </div>
@@ -4581,7 +4581,7 @@ function BulkEditModal({ count, suppliers, categoryOptions, brandOptions, brandO
       </BulkEditRow>
 
       <div className="flex items-center gap-3 mt-5">
-        <button onClick={submit} disabled={!anyOn} className="px-4 py-2 rounded-md text-sm text-white" style={{ background: INK, opacity: anyOn ? 1 : 0.5 }}>
+        <button onClick={submit} disabled={!anyOn} className="px-3 py-1.5 rounded-md text-sm text-white" style={{ background: INK, opacity: anyOn ? 1 : 0.5 }}>
           Áp dụng cho {count} sản phẩm
         </button>
         <button onClick={onClose} className="text-sm opacity-60 hover:opacity-100">Huỷ</button>
@@ -4648,7 +4648,7 @@ function MergeVariantsModal({ products, onClose, onApply }) {
         ))}
       </div>
       <div className="flex items-center gap-3 mt-5">
-        <button onClick={submit} className="px-4 py-2 rounded-md text-sm text-white" style={{ background: INK }}>Gộp thành phiên bản</button>
+        <button onClick={submit} className="px-3 py-1.5 rounded-md text-sm text-white" style={{ background: INK }}>Gộp thành phiên bản</button>
         <button onClick={onClose} className="text-sm opacity-60 hover:opacity-100">Huỷ</button>
       </div>
     </Modal>
@@ -5308,10 +5308,10 @@ function PurchaseOrders({ goToProduct, goToSupplier, purchaseOrders, setPurchase
       <div className="flex items-center justify-between mb-5">
         <p className="hidden md:block text-sm opacity-60">{purchaseOrders.length} đơn nhập hàng</p>
         <div className="flex gap-2 ml-auto">
-          <button onClick={openQuickAddSupplier} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: LINE, color: TEXT }}>
+          <button onClick={openQuickAddSupplier} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm border" style={{ borderColor: LINE, color: TEXT }}>
             <Truck size={15} /> <span className="hidden sm:inline">Thêm nhà cung cấp</span>
           </button>
-          <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white" style={{ background: INK }}>
+          <button onClick={openNew} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-white" style={{ background: INK }}>
             <Plus size={15} /> Tạo đơn<span className="hidden sm:inline"> nhập hàng</span>
           </button>
         </div>
@@ -5347,7 +5347,7 @@ function PurchaseOrders({ goToProduct, goToSupplier, purchaseOrders, setPurchase
                       <span style={{ borderColor: s.color, color: s.color, fontFamily: "'Inter', sans-serif" }} className="inline-block border rounded-full px-2.5 py-0.5 text-xs">{s.label}</span>
                     </td>
                     <td className="px-3 py-3 opacity-70 whitespace-nowrap">{po.branch}</td>
-                    <td className="px-3 py-3 opacity-70 whitespace-nowrap">{po.supplier || "—"}</td>
+                    <td className="px-3 py-3 opacity-70" style={{ minWidth: 220 }}>{po.supplier || "—"}</td>
                     <td className="px-3 py-3 opacity-70 whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>{po.invoiceNo || "—"}</td>
                     <td className="px-3 py-3 opacity-70 whitespace-nowrap">{po.createdBy || "—"}</td>
                     <td className="px-3 py-3">
@@ -5480,7 +5480,7 @@ function PurchaseOrders({ goToProduct, goToSupplier, purchaseOrders, setPurchase
         <Modal drawer title={`Đơn nhập hàng ${viewingPO.code}`} onClose={closeView}>
           <div className="flex items-start justify-between gap-3 flex-wrap mb-1">
             <POProgressStepper po={viewingPO} />
-            <div className="flex gap-2 flex-wrap">
+            <div className="hili-actions flex gap-2 flex-wrap">
             {!viewingPO.paid && (
               <button onClick={() => markPaid(viewingPO)} className="px-3.5 py-1.5 rounded-md text-sm font-medium text-white" style={{ background: INK }}>
                 Đã thanh toán
@@ -5825,7 +5825,7 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
               <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm theo mã, tên hoặc người liên hệ…"
                 className="w-full pl-7 pr-2 py-2 text-sm rounded-md border outline-none" style={{ borderColor: LINE, background: "#fff" }} />
             </div>
-            <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white" style={{ background: INK }}>
+            <button onClick={openNew} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-white" style={{ background: INK }}>
               <Plus size={15} /> Thêm nhà cung cấp
             </button>
           </div>
@@ -6468,7 +6468,7 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
           <FilterChip active={statusFilter === "all"} onClick={() => setStatusFilter("all")}>Tất cả</FilterChip>
           {WARRANTY_TICKET_STATUSES.map((s) => <FilterChip key={s.id} active={statusFilter === s.id} onClick={() => setStatusFilter(s.id)} color={s.color}>{s.label}</FilterChip>)}
         </div>
-        <button onClick={() => { resetForm(); setView("new"); }} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white shrink-0" style={{ background: INK }}>
+        <button onClick={() => { resetForm(); setView("new"); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-white shrink-0" style={{ background: INK }}>
           <Plus size={15} /> Tạo phiếu bảo hành
         </button>
       </div>
@@ -7147,7 +7147,7 @@ function Shipping({ shippingTickets, setShippingTickets, parcelLabels, setParcel
             {SHIPPING_CARRIERS.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
-        <button onClick={() => { setForm(emptyForm()); setEditingId(null); setView("new"); }} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white shrink-0" style={{ background: INK }}>
+        <button onClick={() => { setForm(emptyForm()); setEditingId(null); setView("new"); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-white shrink-0" style={{ background: INK }}>
           <Plus size={15} /> Tạo phiếu vận chuyển
         </button>
       </div>
@@ -7340,7 +7340,7 @@ function Stocktake({ products, setProducts, stocktakes, setStocktakes, currentUs
       <div>
         <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
           <p className="text-sm opacity-60">{stocktakes.length} phiếu kiểm kê</p>
-          <button onClick={() => { resetSession(); setView("new"); }} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white" style={{ background: INK }}>
+          <button onClick={() => { resetSession(); setView("new"); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-white" style={{ background: INK }}>
             <Plus size={15} /> Bắt đầu kiểm kê mới
           </button>
         </div>
@@ -7601,7 +7601,7 @@ function RepairTickets({ repairTickets, setRepairTickets, currentUser, addLog })
           <FilterChip active={statusFilter === "all"} onClick={() => setStatusFilter("all")}>Tất cả</FilterChip>
           {REPAIR_STATUSES.map((s) => <FilterChip key={s.id} active={statusFilter === s.id} onClick={() => setStatusFilter(s.id)} color={s.color}>{s.label}</FilterChip>)}
         </div>
-        <button onClick={() => { setForm(emptyForm()); setView("new"); }} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white shrink-0" style={{ background: INK }}>
+        <button onClick={() => { setForm(emptyForm()); setView("new"); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-white shrink-0" style={{ background: INK }}>
           <Plus size={15} /> Tạo phiếu sửa chữa
         </button>
       </div>
@@ -7845,7 +7845,7 @@ function HelpdeskTickets({ helpdeskTickets, setHelpdeskTickets, products, setPro
           <FilterChip active={statusFilter === "all"} onClick={() => setStatusFilter("all")}>Tất cả</FilterChip>
           {HELPDESK_STATUSES.map((s) => <FilterChip key={s.id} active={statusFilter === s.id} onClick={() => setStatusFilter(s.id)} color={s.color}>{s.label}</FilterChip>)}
         </div>
-        <button onClick={() => { setForm(emptyForm()); setView("new"); }} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white shrink-0" style={{ background: INK }}>
+        <button onClick={() => { setForm(emptyForm()); setView("new"); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-white shrink-0" style={{ background: INK }}>
           <Plus size={15} /> Tạo phiếu IT Helpdesk
         </button>
       </div>
@@ -8429,14 +8429,14 @@ function Customers({ setOrders, customers, setCustomers, orders, products, curre
               <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm mã, tên, SĐT, MST, phụ trách…"
                 className="w-full pl-7 pr-2 py-2 text-sm rounded-md border outline-none" style={{ borderColor: LINE, background: "#fff" }} />
             </div>
-            <button onClick={exportCustomerList} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: FOREST, color: FOREST }}>
+            <button onClick={exportCustomerList} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm border" style={{ borderColor: FOREST, color: FOREST }}>
               <FileSpreadsheet size={15} /> <span className="hidden sm:inline">Xuất Excel</span>
             </button>
-            <button onClick={triggerImportFile} title="Dùng file đã tải từ nút Xuất Excel — thêm dòng khách hàng mới rồi tải lên lại" className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border whitespace-nowrap" style={{ borderColor: BLUE, color: BLUE }}>
+            <button onClick={triggerImportFile} title="Dùng file đã tải từ nút Xuất Excel — thêm dòng khách hàng mới rồi tải lên lại" className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm border whitespace-nowrap" style={{ borderColor: BLUE, color: BLUE }}>
               <ArrowUpFromLine size={15} /> <span className="hidden sm:inline">Nhập từ Excel</span>
             </button>
             <input ref={importFileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleImportFile} />
-            <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white" style={{ background: INK }}><Plus size={15} /> Thêm<span className="hidden sm:inline"> khách hàng</span></button>
+            <button onClick={openNew} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-white" style={{ background: INK }}><Plus size={15} /> Thêm<span className="hidden sm:inline"> khách hàng</span></button>
           </div>
         )}
       </div>
@@ -8511,7 +8511,7 @@ function Customers({ setOrders, customers, setCustomers, orders, products, curre
                   <td className="px-3 py-3 font-medium whitespace-nowrap">
                     <button onClick={() => setViewingId(c.id)} className="hover:underline" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{c.code}</button>
                   </td>
-                  <td className="px-3 py-3 truncate" style={{ maxWidth: 380 }} title={c.name}><button onClick={() => setViewingId(c.id)} className="text-left hover:underline" style={{ color: TEXT }}>{c.name}</button></td>
+                  <td className="px-3 py-3" style={{ minWidth: 240 }}><button onClick={() => setViewingId(c.id)} className="text-left hover:underline" style={{ color: TEXT }}>{c.name}</button></td>
                   <td className="px-3 py-3 whitespace-nowrap opacity-70" style={{ fontFamily: "'Inter', sans-serif" }}>{c.phone || "—"}</td>
                   <td className="px-3 py-3 whitespace-nowrap">
                     <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: `${BLUE}15`, color: BLUE }}>{g.label}</span>
@@ -10405,7 +10405,7 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm theo mã hoặc tên khách…"
             className="w-full pl-7 pr-2 py-2 text-sm rounded-md border outline-none" style={{ borderColor: LINE, background: "#fff" }} />
         </div>
-        <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white" style={{ background: INK }}>
+        <button onClick={openNew} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-white" style={{ background: INK }}>
           <Plus size={15} /> Tạo báo giá
         </button>
       </div>
@@ -11220,19 +11220,19 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
         </div>
         <div className="flex gap-2 flex-wrap">
           {filterStatus === "pending" && selectedIds.size > 0 && (
-            <button onClick={() => bulkSetStatus("shipping")} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: STATUSES.find((s) => s.id === "shipping")?.color, color: STATUSES.find((s) => s.id === "shipping")?.color }}>
+            <button onClick={() => bulkSetStatus("shipping")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm border" style={{ borderColor: STATUSES.find((s) => s.id === "shipping")?.color, color: STATUSES.find((s) => s.id === "shipping")?.color }}>
               <Truck size={15} /> Chuyển sang Đang giao ({selectedIds.size})
             </button>
           )}
           {filterStatus === "shipping" && selectedIds.size > 0 && (
-            <button onClick={() => bulkSetStatus("delivered")} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: STATUSES.find((s) => s.id === "delivered")?.color, color: STATUSES.find((s) => s.id === "delivered")?.color }}>
+            <button onClick={() => bulkSetStatus("delivered")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm border" style={{ borderColor: STATUSES.find((s) => s.id === "delivered")?.color, color: STATUSES.find((s) => s.id === "delivered")?.color }}>
               <PackageCheck size={15} /> Chuyển sang Đã giao ({selectedIds.size})
             </button>
           )}
-          <button onClick={exportOrders} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm border" style={{ borderColor: FOREST, color: FOREST }}>
+          <button onClick={exportOrders} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm border" style={{ borderColor: FOREST, color: FOREST }}>
             <FileSpreadsheet size={15} /> <span className="hidden sm:inline">Xuất Excel</span>{selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}
           </button>
-          <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white" style={{ background: INK }}><Plus size={15} /> Tạo đơn<span className="hidden sm:inline"> và giao hàng</span></button>
+          <button onClick={openNew} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-white" style={{ background: INK }}><Plus size={15} /> Tạo đơn<span className="hidden sm:inline"> và giao hàng</span></button>
         </div>
       </div>
 
@@ -11329,7 +11329,7 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
                     <button onClick={() => { setViewingId(o.id); setPayInput(""); }} className="hover:underline" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{o.code}</button>
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap opacity-80"><span className="hidden md:inline">{formatDateTime(o.createdAt)}</span><span className="md:hidden">{shortDateTime(o.createdAt)}</span></td>
-                  <td className="px-3 py-3 truncate" style={{ maxWidth: 280 }} title={cust?.name || "Khách lẻ"}>{cust?.name || "Khách lẻ"}</td>
+                  <td className="px-3 py-3" style={{ minWidth: 220 }}>{cust?.name || "Khách lẻ"}</td>
                   <td className="px-3 py-3 whitespace-nowrap opacity-70">{o.branch}</td>
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-1.5">
@@ -11643,7 +11643,7 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
               </div>
             )}
 
-            <div className="flex flex-wrap gap-2 mb-4">
+            <div className="hili-actions flex flex-wrap gap-2 mb-4">
               {!isCtv && (
                 <button onClick={() => { setPrintDocType("invoice"); setPrintPaperSize(printSettings?.defaultPaperSize || "A4"); setPrintBlockedUrl(null); setPrintModalOpen(true); }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>
                   <Printer size={13} /> In đơn hàng
@@ -12352,7 +12352,7 @@ function Plans({ plans, setPlans, orders, purchaseOrders, products, employeeName
             : sub === "stock" ? "chỉ tiêu thêm mã sản phẩm mới vào kho mỗi ngày, có thể giao riêng cho từng nhân viên"
             : "chỉ tiêu đăng sản phẩm lên website mỗi ngày, có thể giao riêng cho từng nhân viên"}
         </p>
-        <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white shrink-0" style={{ background: INK }}><Plus size={15} /> Thêm kế hoạch</button>
+        <button onClick={openNew} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-white shrink-0" style={{ background: INK }}><Plus size={15} /> Thêm kế hoạch</button>
       </div>
 
       {list.length === 0 ? (
@@ -14100,7 +14100,7 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
         <p className="text-sm opacity-60">
           Chỉ tài khoản chủ <Crown size={12} className="inline -mt-0.5" style={{ color: BRASS }} /> mới thấy và chỉnh sửa mục này. QTV đổi mật khẩu của mình tại "Tài khoản cá nhân".
         </p>
-        <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm text-white shrink-0" style={{ background: INK }}><Plus size={15} /> Thêm tài khoản</button>
+        <button onClick={openNew} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-white shrink-0" style={{ background: INK }}><Plus size={15} /> Thêm tài khoản</button>
       </div>
 
       <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 240px)" }}>
@@ -16738,7 +16738,7 @@ function WebConfigForm({ section, webConfig, setWebConfig, setProducts, addLog, 
 
       {section === "settings" && (
       <div className="flex items-center gap-3">
-        <button onClick={() => { addLog("Cập nhật cấu hình web", ""); }} className="px-4 py-2 rounded-md text-sm text-white" style={{ background: INK }}>Đã lưu (tự động)</button>
+        <button onClick={() => { addLog("Cập nhật cấu hình web", ""); }} className="px-3 py-1.5 rounded-md text-sm text-white" style={{ background: INK }}>Đã lưu (tự động)</button>
         <button onClick={async () => { if (await askConfirm("Xoá toàn bộ cấu hình web (web quay về mặc định)?")) setWebConfig({}); }} className="text-xs underline" style={{ color: RUST }}>Đặt lại về mặc định</button>
       </div>
       )}
@@ -17504,7 +17504,8 @@ export default function SalesManager() {
         @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
         select { appearance: none; }
         #app-shell table th { font-size: 12px; font-weight: 600; color: #4B5563 !important; opacity: 1 !important; }
-        #app-shell table tbody tr:hover > td { background: #F9FAFB; }
+        @media (hover: hover) { #app-shell table tbody tr:hover > td { background: #F9FAFB; } }
+        #app-shell tr.hili-child > td:first-child { box-shadow: inset 3px 0 0 #1E2A8A; }
         #app-shell .overflow-auto > table > thead th { position: sticky; top: 0; z-index: 2; background: #fff; box-shadow: inset 0 -1px 0 #E5E7EB; }
         @keyframes hiliDrawerIn { from { transform: translateX(32px); } to { transform: none; } }
         .hili-drawer { animation: hiliDrawerIn .16s ease-out; }
@@ -17538,7 +17539,7 @@ export default function SalesManager() {
           table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td:nth-child(1) { position: absolute; top: 8px; right: 10px; }
           table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td:nth-child(2) { position: absolute; top: 6px; right: 30px; }
           table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td:nth-child(3) { grid-area: 1 / 1 / 3 / 2; }
-          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td[data-label="Tên vật tư"] { grid-area: 1 / 2 / 2 / -1; display: block; width: 0; min-width: 100%; padding-right: 44px !important; overflow: hidden; overflow-wrap: anywhere; font-size: 13px; line-height: 1.3; }
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td[data-label="Tên vật tư"] { grid-area: 1 / 2 / 2 / -1; display: block; width: 0; min-width: 100% !important; padding-right: 44px !important; overflow: hidden; overflow-wrap: anywhere; font-size: 13px; line-height: 1.3; }
           table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td[data-label="Tên vật tư"] * { min-width: 0; max-width: 100%; white-space: normal; }
           table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td[data-label="Mã VT"] { grid-area: 2 / 2; display: block; width: 0; min-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
           table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td[data-label="Mã VT"] > * { white-space: nowrap; display: inline; }
@@ -17547,29 +17548,31 @@ export default function SalesManager() {
           table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td:last-child:not([data-label]) { grid-area: 2 / 4; margin-left: 0; }
           table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td:last-child:not([data-label]) > div { display: flex !important; gap: 4px !important; width: auto !important; margin: 0 !important; }
           table.hili-rt.hili-products:not(.hili-items) > tbody > tr > td[colspan] { grid-column: 1 / -1; }
+          table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Tên khách hàng"], table.hili-rt:not(.hili-items) > tbody > tr > td[data-label="Tên vật tư"] { min-width: 0 !important; }
           /* Thẻ đơn bán: hàng 1 khách + mã, hàng 2 ngày, trạng thái, HĐ, tổng; hàng 3 chỉ hiện khi còn nợ */
-          table.hili-rt.hili-orders:not(.hili-items) > tbody > tr { display: grid; grid-template-columns: 16px auto auto auto minmax(0, 1fr); gap: 3px 6px; align-items: center; padding: 8px 10px; position: relative; }
+          table.hili-rt.hili-orders:not(.hili-items) > tbody > tr { display: grid; grid-template-columns: 16px max-content max-content max-content minmax(0, 1fr); gap: 3px 6px; align-items: center; padding: 8px 10px; position: relative; }
           table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td { min-width: 0; font-size: 11px; }
           table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td span { font-size: 11px; min-width: 0; }
           table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td:first-child { grid-area: 1 / 1; }
-          table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td[data-label="Khách hàng"] { grid-area: 1 / 2 / 2 / -1; display: block; width: 0; min-width: 100%; padding-right: 52px !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+          table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td[data-label="Khách hàng"] { grid-area: 1 / 2 / 2 / -1; display: block; width: 0; min-width: 100% !important; padding-right: 52px !important; white-space: normal; line-height: 1.25; font-size: 13px; }
           table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td[data-label="Mã đơn"] { position: absolute; top: 8px; right: 10px; font-size: 12px; }
           table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td[data-label="Ngày tạo"] { grid-area: 2 / 1 / 3 / 3; white-space: nowrap; }
           table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td[data-label="Trạng thái giao"] { grid-area: 2 / 3; }
           table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td[data-label="Trạng thái giao"] span { padding: 1px 6px; white-space: nowrap; }
           table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td[data-label="Xuất hoá đơn"] { grid-area: 2 / 4; display: inline-flex; }
-          table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td[data-label="Xuất hoá đơn"] span { padding: 1px 6px; white-space: nowrap; }
+          table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td[data-label="Xuất hoá đơn"] span { padding: 0; background: transparent !important; white-space: nowrap; }
           table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td[data-label="Tổng tiền"] { grid-area: 2 / 5; justify-content: flex-end; margin: 0; font-size: 13px; }
           table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td[data-label="Còn phải trả"] { grid-area: 3 / 1 / 4 / 5; font-size: 12px; }
           table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td[data-label="CNợ"] { grid-area: 3 / 5; justify-content: flex-end; font-size: 12px; }
           table.hili-rt.hili-orders:not(.hili-items) > tbody > tr > td:last-child:not([data-label]) { display: none; }
           table.hili-rt:not(.hili-items) > tbody > tr > td:has(.hili-nodata) { display: none; }
           /* Thẻ đơn nhập */
-          table.hili-rt.hili-pos:not(.hili-items) > tbody > tr { display: grid; grid-template-columns: auto auto auto minmax(0, 1fr); gap: 3px 8px; align-items: center; padding: 8px 10px; position: relative; }
+          table.hili-rt.hili-pos:not(.hili-items) > tbody > tr > td[data-label="Giá trị đơn"] span { display: none; }
+          table.hili-rt.hili-pos:not(.hili-items) > tbody > tr { display: grid; grid-template-columns: max-content max-content max-content minmax(0, 1fr); gap: 3px 5px; align-items: center; padding: 8px 10px; position: relative; }
           table.hili-rt.hili-pos:not(.hili-items) > tbody > tr > td { min-width: 0; font-size: 11px; }
           table.hili-rt.hili-pos:not(.hili-items) > tbody > tr > td span { font-size: 11px; }
           table.hili-rt.hili-pos:not(.hili-items) > tbody > tr > td:first-child { display: none; }
-          table.hili-rt.hili-pos:not(.hili-items) > tbody > tr > td[data-label="Nhà cung cấp"] { grid-area: 1 / 1 / 2 / -1; display: block; width: 0; min-width: 100%; padding-right: 60px !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+          table.hili-rt.hili-pos:not(.hili-items) > tbody > tr > td[data-label="Nhà cung cấp"] { grid-area: 1 / 1 / 2 / -1; display: block; width: 0; min-width: 100% !important; padding-right: 60px !important; white-space: normal; line-height: 1.25; font-size: 13px; }
           table.hili-rt.hili-pos:not(.hili-items) > tbody > tr > td[data-label="Mã đơn nhập"] { position: absolute; top: 8px; right: 10px; font-size: 12px; }
           table.hili-rt.hili-pos:not(.hili-items) > tbody > tr > td[data-label="Ngày nhập"] { grid-area: 2 / 1; white-space: nowrap; }
           table.hili-rt.hili-pos:not(.hili-items) > tbody > tr > td[data-label="Thanh toán"] { grid-area: 2 / 2; }
@@ -17608,6 +17611,24 @@ export default function SalesManager() {
           table.hili-items > tbody > tr:has(+ tr > td[colspan]) { border-bottom: 0 !important; border-radius: 8px 8px 0 0; margin-bottom: 0; padding-bottom: 4px; }
           table.hili-items > tbody > tr:has(+ tr > td[colspan]) > td[data-label="Đơn giá"] > div { bottom: 46px; }
           table.hili-items > tbody > tr:has(> td[colspan]) { border-top: 0 !important; border-radius: 0 0 8px 8px; padding-top: 0; }
+          /* Dòng phiên bản con */
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr.hili-child { margin: -4px 0 8px 14px; padding: 6px 8px; border-left: 3px solid #1E2A8A !important; background: #FAFBFF; }
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr.hili-child > td:nth-child(2) { display: none; }
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr.hili-child > td[data-label="Tên vật tư"] > button { display: none; }
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr.hili-child .hili-vat { display: none; }
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr.hili-child > td[data-label="Tên vật tư"] > div { margin-top: 0; }
+          table.hili-rt.hili-products:not(.hili-items) > tbody > tr.hili-child > td:nth-child(3) img, table.hili-rt.hili-products:not(.hili-items) > tbody > tr.hili-child > td:nth-child(3) > div { width: 30px; height: 30px; }
+          /* Phần đầu chi tiết sản phẩm và hàng nút */
+          .hili-hero { gap: 10px; }
+          .hili-hero img, .hili-hero > div:first-child { width: 72px !important; height: 72px !important; }
+          .hili-hero h4 { font-size: 15px; }
+          .hili-hero .text-2xl { font-size: 18px; white-space: nowrap; }
+          .hili-hero .gap-10 { gap: 16px; margin-top: 8px; }
+          .hili-hero .mt-3 { margin-top: 6px; }
+          .hili-hero button { padding: 3px 8px; font-size: 12px; }
+          .hili-actions { flex-wrap: nowrap !important; gap: 4px; }
+          .hili-actions > button { flex: 1 1 0; min-width: 0; justify-content: center; padding: 6px 2px; font-size: 12px; white-space: nowrap; }
+          .hili-actions > button svg { display: none; }
           /* Khung, tab, nút */
           .hili-full { max-width: none !important; height: 100dvh !important; max-height: 100dvh !important; border-radius: 0 !important; }
           .hili-full > div:last-child { overflow-x: hidden; padding: 10px 10px 76px; }
@@ -17628,7 +17649,7 @@ export default function SalesManager() {
         }
       `}</style>
       {saveFailed && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[90] px-4 py-2 rounded-md text-sm text-white shadow-lg" style={{ background: RUST }}>
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[90] px-3 py-1.5 rounded-md text-sm text-white shadow-lg" style={{ background: RUST }}>
           Chưa lưu được dữ liệu lên server — đang tự thử lại. Đừng đóng trang.
         </div>
       )}
