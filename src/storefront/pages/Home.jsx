@@ -106,8 +106,8 @@ export default function Home({ catalog, navigate }) {
       {/* Ưu đãi do chủ shop cấu hình */}
       <section className={WRAP + " pt-8"}>
         <h2 className="mb-3 font-display text-[30px] sm:text-[38px] font-bold text-ink">Chương trình đang diễn ra</h2>
-        <div className="grid gap-2 lg:h-[420px] lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-          <div className="overflow-hidden rounded-2xl lg:h-[420px] [&_a]:h-full [&_div]:h-full [&_img]:h-full [&_img]:w-full [&_img]:object-cover"><PosterSlider slot={HOME_POSTERS.hero} navigate={navigate} /></div>
+        <div className="grid gap-2 lg:h-[clamp(400px,33vw,487px)] lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+          <div className="overflow-hidden rounded-2xl lg:h-[clamp(400px,33vw,487px)] [&_a]:h-full [&_div]:h-full [&_img]:h-full [&_img]:w-full [&_img]:object-cover"><PosterSlider slot={HOME_POSTERS.hero} navigate={navigate} /></div>
           <div className="grid grid-cols-3 gap-2 lg:min-h-0 lg:grid-cols-1 lg:grid-rows-3">
             {HOME_POSTERS.strip.map((p, i) => (
               <div key={i} className="min-h-0 overflow-hidden rounded-2xl [&_a]:block [&_a]:h-full [&_div]:h-full [&_img]:h-full [&_img]:w-full [&_img]:object-cover"><PosterSlot slot={p} navigate={navigate} /></div>
