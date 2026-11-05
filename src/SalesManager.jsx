@@ -2738,7 +2738,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
   // Sản phẩm mới thêm luôn nằm CUỐI mảng products (thêm bằng cách nối vào cuối) — đảo ngược lại
   // để sản phẩm mới tạo hiện lên ĐẦU danh sách, dễ thấy ngay sau khi thêm/tạo phiên bản.
   const filtered = products.filter(
-    (p) => (p.name.toLowerCase().includes(query.toLowerCase()) || p.code.toLowerCase().includes(query.toLowerCase()))
+    (p) => [p.name, p.code, p.sku].some((v) => (v || "").toLowerCase().includes(query.trim().toLowerCase()))
       && (showServices || !p.isService)
       && (!filterCategory || p.category === filterCategory)
       && (!filterBrand || p.brand === filterBrand)
@@ -3324,7 +3324,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
       <div className="flex items-center gap-1.5 mb-3 flex-wrap">
         <div className="relative flex-1 min-w-[220px] max-w-md">
           <Search size={15} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-60" />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm theo mã VT hoặc tên…"
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm theo mã VT, SKU hoặc tên…"
             className="w-full pl-7 pr-2 py-1.5 text-sm rounded-md border-2 outline-none" style={{ borderColor: INK, background: "#fff" }} />
         </div>
         <button onClick={() => setShowFilters((s) => !s)} className="flex items-center gap-1.5 text-sm px-3.5 py-1.5 rounded-md border shrink-0" style={{ borderColor: activeFilterCount ? INK : LINE, color: TEXT, background: showFilters ? PAPER : "#fff" }}>
