@@ -479,6 +479,24 @@ const vnd = (n) => (Math.round(Number(n)) || 0).toLocaleString("vi-VN") + "đ";
 // Ngày theo giờ máy người dùng. Không dùng toISOString vì từ 0h đến 7h sáng sẽ ra ngày hôm trước.
 const localDay = (v) => { const d = v ? new Date(v) : new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 const todayISO = () => localDay();
+// Đổi ngày chứng từ. Các mốc cùng ngày với ngày cũ (giao hàng, thu tiền...) dời theo, mốc ngày khác giữ nguyên.
+function shiftDocDate(doc, newIso, fields) {
+  const from = new Date(doc.createdAt);
+  const to = new Date(newIso);
+  const day = localDay(from);
+  const move = (v) => (v && localDay(v) === day ? new Date(new Date(v).getTime() + (to - from)).toISOString() : v);
+  const out = { ...doc, createdAt: to.toISOString() };
+  fields.forEach((k) => { if (doc[k]) out[k] = move(doc[k]); });
+  if (Array.isArray(doc.payments)) out.payments = doc.payments.map((x) => ({ ...x, date: move(x.date) }));
+  return out;
+}
+// Đổi ngày trên thẻ kho của đúng chứng từ này. Phiếu huỷ, phiếu trả có mã riêng nên không bị ảnh hưởng.
+const moveDocStockDate = (products, docNo, day) => products.map((p) => (
+  p.movements?.some((m) => m.docNo === docNo)
+    ? { ...p, movements: p.movements.map((m) => (m.docNo === docNo ? { ...m, date: day } : m)) }
+    : p
+));
+const toDateTimeInput = (v) => { const d = new Date(v); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); };
 // Đổi chuỗi "YYYY-MM-DD" (từ ô <input type="date">) thành mốc mili-giây ĐẦU/CUỐI ngày theo GIỜ ĐỊA
 // PHƯƠNG — KHÔNG dùng thẳng `new Date("YYYY-MM-DD")` (chuẩn ISO parse ra UTC midnight, lệch múi
 // giờ VN UTC+7 gần 7 tiếng, khiến các bộ lọc "Từ ngày/Đến ngày" bỏ sót hoặc lẫn nhầm dữ liệu của
@@ -5035,6 +5053,24 @@ function DocPager({ page, total, unit, onPage }) {
   );
 }
 
+// Ô đổi ngày chứng từ, chỉ hiện cho quản trị viên. Dùng khi nhập bù đơn của ngày trước.
+function DocDateEditor({ iso, onSave }) {
+  const [val, setVal] = useState(toDateTimeInput(iso));
+  useEffect(() => { setVal(toDateTimeInput(iso)); }, [iso]);
+  const max = toDateTimeInput(new Date());
+  const ready = val && val !== toDateTimeInput(iso) && val <= max;
+  return (
+    <div className="rounded-md p-2.5 mb-3" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-xs font-medium" style={{ color: TEXT }}>Ngày chứng từ</span>
+        <input type="datetime-local" value={val} max={max} onChange={(e) => setVal(e.target.value)} className="border rounded-md py-1 px-2 text-sm" style={{ borderColor: LINE }} />
+        <button type="button" disabled={!ready} onClick={() => onSave(new Date(val).toISOString())} className="text-xs px-3 py-1.5 rounded-md text-white disabled:opacity-40" style={{ background: INK }}>Lưu ngày</button>
+      </div>
+      <p className="text-xs mt-1.5 opacity-60">Báo cáo, thẻ kho và hạn công nợ đổi theo. Giao hàng, thanh toán cùng ngày cũ cũng dời theo.</p>
+    </div>
+  );
+}
+
 function PurchaseOrders({ goToProduct, goToSupplier, purchaseOrders, setPurchaseOrders, products, setProducts, suppliers, setSuppliers, brands, employeeNames, addLog, focusPOId, onFocusHandled, currentUser }) {
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({});
@@ -5275,6 +5311,12 @@ function PurchaseOrders({ goToProduct, goToSupplier, purchaseOrders, setPurchase
     setPurchaseOrders((prev) => prev.map((x) => (x.id === viewingId ? { ...x, supplier: editForm.supplier, supplierId: editForm.supplierId || "", branch: editForm.branch, createdBy: editForm.createdBy, paymentMethod: editForm.paymentMethod, creditDays: editForm.paymentMethod === "credit" ? (Number(editForm.creditDays) || 0) : 0, invoiceNo: editForm.invoiceNo, notes: editForm.notes, tags: editForm.tags, paid, paidAt: paid ? (x.paidAt || new Date().toISOString()) : null, items } : x)));
     closeView();
   };
+  const changePODate = (po, iso) => {
+    const next = shiftDocDate(po, iso, ["receivedAt", "paidAt"]);
+    setPurchaseOrders((prev) => prev.map((x) => (x.id === po.id ? next : x)));
+    setProducts((prev) => moveDocStockDate(prev, po.code, localDay(iso)));
+    addLog("Đổi ngày đơn nhập", `${po.code}: ${formatDateTime(po.createdAt)} → ${formatDateTime(iso)}`);
+  };
   const confirmReceiveFromEdit = () => {
     const items = validateItems(editForm.items);
     if (!items) return;
@@ -5498,6 +5540,8 @@ function PurchaseOrders({ goToProduct, goToSupplier, purchaseOrders, setPurchase
             )}
             </div>
           </div>
+
+          {currentUser?.role === "admin" && <DocDateEditor iso={viewingPO.createdAt} onSave={(iso) => changePODate(viewingPO, iso)} />}
 
           {(() => {
             const due = poDueInfo(viewingPO);
@@ -10977,6 +11021,12 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
     setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, movements: [...p.movements, { id: uid(), type: "out", docNo: order.code, date: todayISO(), qty: item.qty, price: item.price, series }] } : p)));
   };
   const remove = (id) => setOrders((prev) => prev.filter((o) => o.id !== id));
+  const changeOrderDate = (order, iso) => {
+    const next = { ...shiftDocDate(order, iso, ["shippingAt", "deliveredAt", "paidCompleteAt"]), date: localDay(iso) };
+    setOrders((prev) => prev.map((o) => (o.id === order.id ? next : o)));
+    setProducts((prev) => moveDocStockDate(prev, order.code, localDay(iso)));
+    addLog("Đổi ngày đơn hàng", `${order.code}: ${formatDateTime(order.createdAt)} → ${formatDateTime(iso)}`);
+  };
   const [deletingOrder, setDeletingOrder] = useState(null);
   const [deletePasswordInput, setDeletePasswordInput] = useState("");
   const [deletePasswordError, setDeletePasswordError] = useState("");
@@ -11610,6 +11660,8 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
               <ch.icon size={13} /> {ch.label} · {formatDateTime(viewingOrder.createdAt)} · {viewingOrder.branch} · {viewingOrder.seller}{viewingOrder.deliveryDate ? ` · Hẹn giao ${viewingOrder.deliveryDate}` : ""}
               {orderDueInfo(viewingOrder) && <span style={{ opacity: 1 }}> · <CreditDueBadge order={viewingOrder} /></span>}
             </p>
+
+            {isAdmin && <DocDateEditor iso={viewingOrder.createdAt} onSave={(iso) => changeOrderDate(viewingOrder, iso)} />}
 
             <div className="flex flex-wrap gap-1.5 mb-1.5">
               {viewingOrder.status === "cancelled" ? (
