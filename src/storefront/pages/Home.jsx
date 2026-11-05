@@ -72,14 +72,14 @@ export default function Home({ catalog, navigate }) {
       <section className={WRAP + " pt-8"}>
         <h2 className="mb-3 font-display text-[30px] sm:text-[38px] font-bold text-ink">Mua theo danh mục</h2>
         <div className="grid grid-cols-2 gap-3 lg:auto-rows-[176px] lg:grid-cols-12">
-          <Tile {...tile} to={go({ group: "Màn hình" })} title="Màn hình" sub="Gaming và văn phòng" price={screen.from} tone="light" className="col-span-2 min-h-[260px] lg:[grid-area:1/1/3/6]">
-            <img src="/home/cut-monitor.webp" alt="" loading="lazy" className="absolute bottom-0 right-[3%] w-[64%] transition duration-700 group-hover:scale-[1.03]" />
+          <Tile {...tile} to={go({ group: "Màn hình" })} title="Màn hình" sub="Gaming và văn phòng" price={screen.from} tone="light" className="col-span-2 max-lg:min-h-[285px] lg:[grid-area:1/1/3/6]">
+            <img src="/home/cut-monitor.webp" alt="" loading="lazy" className="absolute bottom-0 right-[3%] w-[54%] sm:w-[40%] lg:w-[64%] transition duration-700 group-hover:scale-[1.03]" />
           </Tile>
-          <Tile {...tile} to={go({ group: "Bàn phím" })} title="Bàn phím" sub="Cơ, không dây, văn phòng" price={keyboard.from} tone="light" className="col-span-2 lg:[grid-area:1/6/2/13]">
-            <img src="/home/cut-echo96.webp" alt="" loading="lazy" className="absolute right-[3%] top-1/2 w-[52%] -translate-y-1/2 drop-shadow-[0_14px_14px_rgba(6,10,42,.22)] transition duration-700 group-hover:scale-[1.03]" />
+          <Tile {...tile} to={go({ group: "Bàn phím" })} title="Bàn phím" sub="Cơ, không dây, văn phòng" price={keyboard.from} tone="light" className="col-span-2 max-lg:min-h-[215px] lg:[grid-area:1/6/2/13]">
+            <img src="/home/cut-echo96.webp" alt="" loading="lazy" className="absolute bottom-3 right-[3%] w-[56%] sm:w-[44%] lg:bottom-auto lg:top-1/2 lg:w-[52%] lg:-translate-y-1/2 drop-shadow-[0_14px_14px_rgba(6,10,42,.22)] transition duration-700 group-hover:scale-[1.03]" />
           </Tile>
-          <Tile {...tile} to={go({ group: "Chuột" })} title="Chuột" sub="Gaming, không dây" price={mouse.from} tone="light" className="lg:[grid-area:2/6/4/9]">
-            {mouse.image && <img src={mouse.image} alt="" loading="lazy" className="absolute bottom-0 left-1/2 h-[62%] -translate-x-1/2 mix-blend-multiply transition duration-700 group-hover:scale-105" />}
+          <Tile {...tile} to={go({ group: "Chuột" })} title="Chuột" sub="Gaming, không dây" price={mouse.from} tone="light" className="max-lg:min-h-[255px] lg:[grid-area:2/6/4/9]">
+            {mouse.image && <img src={mouse.image} alt="" loading="lazy" className="absolute bottom-0 left-1/2 h-[38%] -translate-x-1/2 mix-blend-multiply lg:h-[62%] transition duration-700 group-hover:scale-105" />}
           </Tile>
           <Tile {...tile} to={go({ group: "Linh kiện PC" })} title="Linh kiện PC" sub="SSD, nguồn, vỏ, tản nhiệt" price={parts.from} className="lg:[grid-area:2/9/3/13]">
             <img src="/home/m03.webp" alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.04] object-[70%_60%]" />
