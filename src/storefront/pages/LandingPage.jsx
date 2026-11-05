@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { LANDINGS, SITE } from "../config.js";
+import { ArrowLeft } from "lucide-react";
+import { LANDINGS, NEWS_KINDS, NEWS_PATH, SITE } from "../config.js";
 import { fetchLanding } from "../lib/api.js";
 import RichText from "../components/RichText.jsx";
 
@@ -46,9 +47,16 @@ export default function LandingPage({ slug, navigate }) {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 font-sans">
+      {meta.news && (
+        <>
+          <a href={NEWS_PATH} onClick={(e) => { e.preventDefault(); navigate(NEWS_PATH.slice(1)); }} className="mb-4 inline-flex min-h-[44px] items-center gap-1.5 text-[15px] font-semibold text-navy hover:underline"><ArrowLeft size={16} /> Tin tức &amp; video</a>
+          <p className="mb-2 text-[14px] font-semibold text-navy">{NEWS_KINDS[meta.news]}{meta.date ? ` · ${meta.date.split("-").reverse().join("/")}` : ""}</p>
+        </>
+      )}
       <h1 className="font-display text-2xl sm:text-3xl font-bold text-ink mb-5">{meta.title}</h1>
+      {meta.news && meta.cover && !meta.videoUrl && <img src={meta.cover} alt="" className="mb-6 w-full rounded-2xl" />}
       {page ? (
-        <RichText text={page.body} />
+        <RichText text={[meta.videoUrl && !String(page.body).includes(meta.videoUrl) ? meta.videoUrl : "", page.body].filter(Boolean).join("\n\n")} />
       ) : failed ? (
         <p className="text-mute">Không tải được nội dung trang. Vui lòng tải lại trang.</p>
       ) : (

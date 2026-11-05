@@ -1,0 +1,9 @@
+/* Luôn đúng 2 dòng ở mọi cỡ màn hình: 2, 3 hoặc 6 sản phẩm mỗi dòng. */
+@media(max-width:639px){.pt-grid>:nth-child(n+5){display:none}}
+@media(min-width:640px) and (max-width:1023px){.pt-grid>:nth-child(n+7){display:none}}
+.pt-all{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 22px;border-radius:10px;background:#F7C600;color:#060A2A;font-weight:700;font-size:15px;box-shadow:0 4px 0 #A98600;transition:transform .1s ease-out,box-shadow .1s ease-out}
+.pt-all svg{transition:transform .2s ease-out}
+.pt-all:hover{transform:translateY(2px);box-shadow:0 2px 0 #A98600}
+.pt-all:hover svg{transform:translateX(3px)}
+.pt-all:active{transform:translateY(4px);box-shadow:none}
+.pt-all:focus-visible{outline:2px solid #1E2A8A;outline-offset:3px}

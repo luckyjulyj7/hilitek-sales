@@ -14,6 +14,7 @@ import HiliKeys from "../components/HiliKeys.jsx";
 import ProductTabs from "../components/ProductTabs.jsx";
 import BrandRail from "../components/BrandRail.jsx";
 import HeroFilm from "../components/HeroFilm.jsx";
+import NewsVideo from "../components/NewsVideo.jsx";
 
 const WRAP = "mx-auto max-w-[1500px] px-3 sm:px-4";
 
@@ -129,6 +130,8 @@ export default function Home({ catalog, navigate }) {
       <ProductTabs products={products} navigate={navigate} />
 
       <section className={WRAP + " pt-8"}><NeedForm /></section>
+
+      <NewsVideo navigate={navigate} />
 
       <section className={WRAP + " pt-6"}>
         <TrustBar />

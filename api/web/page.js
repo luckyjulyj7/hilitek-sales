@@ -4,7 +4,7 @@
  * Sản phẩm không tồn tại trả mã 404 thật để Google không lập chỉ mục trang rỗng.
  */
 import { readStateCached, publishedProducts, publicProduct, findPublished } from "./_supa.js";
-import { applyHead, productHead, catalogHead, SITE_URL } from "./_seo.js";
+import { applyHead, productHead, catalogHead, plainText, SITE_URL } from "./_seo.js";
 
 // Mỗi bản deploy có function mới, nên shop.html nhớ tạm ở đây luôn khớp tên file JS của bản đó.
 let shell = "";
@@ -50,6 +50,29 @@ export default async function handler(req, res) {
         desc: "Máy chơi game cầm tay Retro, Android và PC cầm tay tại Hilitek. So sánh theo ngân sách, tư vấn trước khi mua, đủ hoá đơn VAT, bảo hành theo serial.",
         url: `${SITE_URL}/may-choi-game-cam-tay`,
         noscript: "<h1>Máy chơi game cầm tay</h1>",
+      }), cache);
+    }
+    if (q.landing === "news") {
+      return send(res, 200, applyHead(html, {
+        title: "Tin tức và video công nghệ | Hilitek",
+        desc: "Tin mới, video và hướng dẫn chọn bàn phím, chuột, màn hình, linh kiện PC và máy chơi game cầm tay từ Hilitek.",
+        url: `${SITE_URL}/tin-tuc`,
+        noscript: "<h1>Tin tức và video</h1>",
+      }), cache);
+    }
+    if (q.trang) {
+      const state = await readStateCached();
+      const list = Array.isArray(state?.webConfig?.LANDINGS) ? state.webConfig.LANDINGS : [];
+      const page = list.find((l) => l && l.slug === String(q.trang) && l.published !== false);
+      if (!page) return send(res, 200, html, cache);
+      // Bỏ ảnh nhúng trong nội dung trước khi lấy mô tả, ảnh có thể là chuỗi base64 rất dài.
+      const body = String(page.body || "").replace(/!\[[^\]]*\]\([^)]*\)/g, " ").replace(/https?:\/\/\S+/g, " ");
+      return send(res, 200, applyHead(html, {
+        title: `${page.title} | Hilitek`,
+        desc: plainText(page.summary || body || page.title, 200),
+        url: `${SITE_URL}/trang/${page.slug}`,
+        image: page.cover || undefined,
+        type: page.news ? "article" : "website",
       }), cache);
     }
     return send(res, 200, applyHead(html, catalogHead(q)), cache);

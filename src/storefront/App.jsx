@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useRoute, match } from "./router.js";
+import News from "./pages/News.jsx";
 import { fetchCatalog, fetchWebConfig, takePrefetchedCatalog } from "./lib/api.js";
 import { applyWebConfig } from "./lib/applyWebConfig.js";
-import { PAGES } from "./config.js";
+import { PAGES, NEWS_PATH } from "./config.js";
 import { CatalogCtx } from "./catalogContext.js";
 import Header from "./components/Header.jsx";
 import Footer from "./components/Footer.jsx";
@@ -100,6 +101,8 @@ export default function App() {
     page = <ProductDetail slug={productMatch.slug} navigate={route.navigate} catalog={catalog} />;
   } else if (landingMatch) {
     page = <LandingPage slug={landingMatch.slug} navigate={route.navigate} />;
+  } else if (route.path === NEWS_PATH) {
+    page = <News navigate={route.navigate} />;
   } else if (route.path === HANDHELD_PATH) {
     page = <Handheld catalog={catalog} navigate={route.navigate} />;
   } else if (route.path === "/danh-muc") {

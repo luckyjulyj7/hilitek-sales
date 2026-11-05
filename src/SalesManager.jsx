@@ -16356,9 +16356,20 @@ function LandingsEditor({ webConfig, setWebConfig }) {
   const delOne = (i) => mut((arr) => arr.filter((_, j) => j !== i));
   const move = (i, d) => mut((arr) => { const j = i + d; if (j < 0 || j >= arr.length) return arr; [arr[i], arr[j]] = [arr[j], arr[i]]; return arr; });
   const reset = () => setWebConfig((x) => { const y = { ...x }; delete y.LANDINGS; return y; });
+  const [coverBusy, setCoverBusy] = useState(-1);
+  const uploadCover = async (i, file) => {
+    if (!file) return;
+    setCoverBusy(i);
+    try { setAt(i, { cover: (await uploadProductImage(file)).url }); }
+    catch (e) { alert(e.message || "Không tải được ảnh."); }
+    finally { setCoverBusy(-1); }
+  };
 
   return (
     <div className="space-y-3">
+      <p className="text-xs opacity-60">
+        Muốn đăng tin hoặc video lên trang chủ: thêm trang, chọn loại ở ô <b>Mục Tin tức &amp; video</b>. Bài xếp trên cùng là bài lớn ở trang chủ.
+      </p>
       <p className="text-xs opacity-60">
         Trang tự tạo để <b>poster / banner</b> trỏ tới (bài viết, hình ảnh, video, chương trình khuyến mãi…).
         Mỗi trang có địa chỉ <code>/trang/&lt;đường-dẫn&gt;</code> — dán địa chỉ này vào ô "link" của poster ở mục bên dưới.
@@ -16391,6 +16402,43 @@ function LandingsEditor({ webConfig, setWebConfig }) {
               onClick={() => { try { navigator.clipboard.writeText(`/trang/${l.slug || webSlugify(l.title || "")}`); } catch (e) {} }}
               className="text-xs px-2 py-1 rounded-md border shrink-0" style={{ borderColor: LINE, color: TEXT }}>Sao chép link</button>
           </div>
+
+          <div className="grid gap-2 md:grid-cols-2">
+            <Field label="Mục Tin tức & video">
+              <select value={l.news || ""} onChange={(e) => setAt(i, { news: e.target.value })} className={inputCls} style={{ borderColor: LINE }}>
+                <option value="">Không hiện ở mục này</option>
+                <option value="tin">Tin tức</option>
+                <option value="huong-dan">Hướng dẫn</option>
+                <option value="video">Video</option>
+              </select>
+            </Field>
+            {l.news && (
+              <Field label="Ngày đăng">
+                <input type="date" value={l.date || ""} onChange={(e) => setAt(i, { date: e.target.value })} className={inputCls} style={{ borderColor: LINE }} />
+              </Field>
+            )}
+          </div>
+          {l.news && (
+            <div className="grid gap-2 md:grid-cols-2">
+              <Field label="Ảnh bìa">
+                <div className="flex items-center gap-2">
+                  <input value={l.cover || ""} onChange={(e) => setAt(i, { cover: e.target.value })} placeholder="Dán link ảnh hoặc tải lên" className={inputCls} style={{ borderColor: LINE }} />
+                  <label className="text-xs px-2 py-1.5 rounded-md border cursor-pointer whitespace-nowrap" style={{ borderColor: LINE, color: INK }}>
+                    {coverBusy === i ? "Đang tải" : "Tải ảnh"}
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => { uploadCover(i, e.target.files?.[0]); e.target.value = ""; }} />
+                  </label>
+                </div>
+              </Field>
+              <Field label="Link video (YouTube, TikTok, Facebook)">
+                <input value={l.videoUrl || ""} onChange={(e) => setAt(i, { videoUrl: e.target.value.trim() })} placeholder="YouTube phát ngay trong bài, tự lấy ảnh bìa" className={inputCls} style={{ borderColor: LINE }} />
+              </Field>
+              <div className="md:col-span-2">
+                <Field label="Mô tả ngắn (hiện ở thẻ bài và khi chia sẻ link)">
+                  <input value={l.summary || ""} onChange={(e) => setAt(i, { summary: e.target.value })} placeholder="1 câu nói bài này có gì" className={inputCls} style={{ borderColor: LINE }} />
+                </Field>
+              </div>
+            </div>
+          )}
 
           <Field label="Nội dung">
             <WebDescEditor rows={10} bg="#fff" value={l.body || ""} onChange={(v) => setAt(i, { body: v })} />
@@ -16557,7 +16605,7 @@ function WebConfigForm({ section, webConfig, setWebConfig, setProducts, addLog, 
     if (!file) return;
     setHeroUploading(i);
     try {
-      setHomeHero(i, "image", await uploadProductImage(file));
+      setHomeHero(i, "image", (await uploadProductImage(file)).url);
     } catch (e) {
       notify(`Chưa tải được ảnh: ${e.message || e}`);
     } finally { setHeroUploading(-1); }

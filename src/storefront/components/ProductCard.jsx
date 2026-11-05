@@ -89,8 +89,8 @@ export default function ProductCard({ product, onOpen }) {
 
         {out ? (
           <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
-            <button onClick={() => askStockAlert(p)} className="min-h-[44px] px-1 border-[1.5px] border-ink text-[13px] font-semibold text-ink transition hover:bg-yellow">Báo khi có hàng</button>
-            <button onClick={buy} className="min-h-[44px] px-1 bg-yellow text-[13px] font-semibold text-ink transition hover:brightness-95">Đặt trước</button>
+            <button onClick={() => askStockAlert(p)} aria-label="Báo khi có hàng" className="min-h-[44px] whitespace-nowrap px-1 border-[1.5px] border-ink text-[13px] font-semibold text-ink transition hover:bg-yellow">Báo có hàng</button>
+            <button onClick={buy} className="min-h-[44px] whitespace-nowrap px-1 bg-yellow text-[13px] font-semibold text-ink transition hover:brightness-95">Đặt trước</button>
           </div>
         ) : (
         <button

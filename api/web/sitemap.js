@@ -17,6 +17,7 @@ export default async function handler(req, res) {
     { loc: `${SITE_URL}/`, priority: "1.0" },
     { loc: `${SITE_URL}/danh-muc`, priority: "0.8" },
     { loc: `${SITE_URL}/may-choi-game-cam-tay`, priority: "0.8" },
+    { loc: `${SITE_URL}/tin-tuc`, priority: "0.7" },
     { loc: `${SITE_URL}/lien-he`, priority: "0.4" },
     { loc: `${SITE_URL}/chinh-sach-bao-hanh`, priority: "0.4" },
     { loc: `${SITE_URL}/chinh-sach-giao-hang`, priority: "0.4" },
@@ -24,6 +25,8 @@ export default async function handler(req, res) {
   try {
     const state = await readState();
     const products = publishedProducts(state);
+    const pages = Array.isArray(state?.webConfig?.LANDINGS) ? state.webConfig.LANDINGS : [];
+    for (const l of pages) if (l && l.slug && l.published !== false) urls.push({ loc: `${SITE_URL}/trang/${l.slug}`, priority: "0.6" });
     const cats = new Set(products.map((p) => publicProduct(p).category).filter((c) => c && c !== "Flash Sale"));
     for (const cat of cats) urls.push({ loc: catalogUrl({ cat }), priority: "0.8" });
     const seen = new Set();

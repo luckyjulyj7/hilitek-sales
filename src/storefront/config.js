@@ -1064,3 +1064,33 @@ export const LANDINGS = [
       `Địa chỉ: ${SITE.address}\nHotline: ${SITE.phone} — Kỹ thuật: ${SITE.techPhone}\n`,
   },
 ];
+
+/**
+ * TIN TỨC & VIDEO: mỗi bài là một "Trang nội dung" (LANDINGS) có chọn loại ở ô "Mục Tin tức & video".
+ * Trường thêm của trang: news ("tin" | "huong-dan" | "video"), cover, summary, date, videoUrl.
+ * Khi chưa đủ bài, web dùng các hướng dẫn dưới đây, tất cả trỏ tới trang có thật trên Hilitek.
+ */
+export const NEWS_PATH = "/tin-tuc";
+export const NEWS_KINDS = { video: "Video", "huong-dan": "Hướng dẫn", tin: "Tin tức" };
+const NEWS_STARTERS = [
+  { kind: "huong-dan", title: "Chọn bàn phím cơ hợp góc máy của bạn", summary: "Không dây hay có dây, 75% hay 96%: xem các mẫu đang có và so giá ngay.", image: "/home/m01.webp", to: "/danh-muc?group=" + encodeURIComponent("Bàn phím") },
+  { kind: "huong-dan", title: "Chọn máy chơi game cầm tay theo ngân sách", summary: "Retro, Android hay PC cầm tay, mỗi tầm tiền hợp với kiểu chơi nào.", image: "", icon: "game", to: "/may-choi-game-cam-tay" },
+  { kind: "huong-dan", title: "Tự chọn linh kiện, web cộng tổng tiền cho bạn", summary: "Chọn từng món theo ngân sách rồi gửi cấu hình cho Hilitek kiểm tra.", image: "/home/m03.webp", to: "/xay-dung-cau-hinh" },
+  { kind: "huong-dan", title: "Sắp xếp góc máy gọn với arm màn hình và mặt bàn", summary: "Các phụ kiện giúp bàn làm việc thoáng hơn.", image: "/home/m02.webp", to: "/danh-muc?group=" + encodeURIComponent("Phụ kiện") },
+  { kind: "huong-dan", title: "Tra bảo hành bằng số serial, không cần hoá đơn giấy", summary: "Nhập số serial để xem hạn bảo hành của sản phẩm.", image: "/home/m04.webp", to: "/bao-hanh" },
+];
+const YT_ID = /(?:youtube\.com\/(?:watch\?(?:[^ ]*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{11})/;
+
+/** Danh sách bài cho trang chủ và /tin-tuc: bài chủ shop đăng trước, hướng dẫn có sẵn theo sau. */
+export function newsItems() {
+  const own = LANDINGS.filter((l) => l && l.news && l.slug && l.published !== false).map((l) => {
+    const yt = YT_ID.exec(l.videoUrl || "");
+    return {
+      kind: l.news, title: l.title, summary: l.summary || "", date: l.date || "",
+      image: l.cover || (yt ? `https://i.ytimg.com/vi/${yt[1]}/hqdefault.jpg` : ""),
+      // Link TikTok hoặc Facebook không nhúng được nên mở thẳng, YouTube phát ngay trong bài.
+      to: l.videoUrl && !yt ? l.videoUrl : `/trang/${l.slug}`,
+    };
+  });
+  return [...own, ...NEWS_STARTERS];
+}
