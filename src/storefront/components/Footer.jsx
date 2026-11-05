@@ -59,6 +59,11 @@ export default function Footer({ navigate }) {
             <Logo size={38} textClass="text-2xl text-white" className="text-white" />
             <p className="mt-4 max-w-[340px] text-[15px] leading-relaxed">Phím chuột, màn hình, linh kiện PC và máy chơi game cầm tay chính hãng. Đủ hoá đơn VAT, bảo hành theo số serial.</p>
             <SocialLinks title="" className="mt-5" />
+            {SITE.mapEmbedUrl && (
+              <div className="mt-5 h-[190px] max-w-[380px] overflow-hidden rounded-xl border border-white/15">
+                <iframe title="Bản đồ Hilitek" src={SITE.mapEmbedUrl} className="h-full w-full border-0" loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
+              </div>
+            )}
           </div>
           <Column title="Sản phẩm">
             {MENU.slice(0, 8).map((g) => <li key={g.slug}><a {...link(href("/danh-muc", { group: g.group }))}>{g.group}</a></li>)}
