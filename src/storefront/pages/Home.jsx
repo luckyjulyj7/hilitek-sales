@@ -1,5 +1,5 @@
 import React from "react";
-import { Building2, Cpu, Gamepad2 } from "lucide-react";
+import { Building2, Cpu } from "lucide-react";
 import { HOME_POSTERS, FLASH_SALE, FLASH_SALE_CATEGORY, SITE, homeSectionProducts } from "../config.js";
 import { formatVND } from "../lib/format.js";
 import NeedForm from "../components/NeedForm.jsx";
@@ -86,7 +86,7 @@ export default function Home({ catalog, navigate }) {
             <div className="absolute inset-0" style={{ background: "linear-gradient(90deg,rgba(6,10,42,.9),rgba(6,10,42,.55) 48%,transparent 82%)" }} />
           </Tile>
           <Tile {...tile} to={HANDHELD_PATH} title="Máy chơi game cầm tay" sub="Retro, Android, PC cầm tay. Chọn theo ngân sách." tone="yellow" className="col-span-2 lg:col-span-1 lg:[grid-area:3/9/5/13]">
-            <Gamepad2 size={250} strokeWidth={1} className="absolute -bottom-12 -right-8 text-ink/15 transition duration-700 group-hover:scale-105" />
+            <img src="/handheld/anbernic-rg-35xx-pro.webp" alt="" loading="lazy" className="absolute -bottom-6 right-[6%] w-[46%] rotate-[8deg] drop-shadow-[0_16px_14px_rgba(6,10,42,.35)] transition duration-700 group-hover:rotate-[4deg] group-hover:scale-105 lg:-bottom-8 lg:w-[52%]" />
           </Tile>
           <Tile {...tile} to={go({ group: "Phụ kiện" })} title="Phụ kiện Decor góc máy" sub="Arm màn hình, mặt bàn, loa để bàn" className="col-span-2 lg:[grid-area:3/1/4/6]">
             <img src="/home/m02.webp" alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]" />
