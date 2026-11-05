@@ -20,14 +20,14 @@ export const PlayMark = ({ size = 56 }) => (
 );
 
 /** Khối Tin tức & video ở cuối trang chủ: một bài lớn và danh sách bài mới bên cạnh. */
-export default function NewsVideo({ navigate }) {
-  const [lead, ...rest] = newsItems();
+export default function NewsVideo({ navigate, title = "Tin tức & video", items }) {
+  const [lead, ...rest] = items || newsItems();
   const side = rest.slice(0, 4);
 
   return (
     <section className="mx-auto max-w-[1500px] px-3 pt-10 sm:px-4">
       <div className="mb-3 flex items-end justify-between gap-3">
-        <h2 className="font-display text-[30px] sm:text-[38px] font-bold text-ink">Tin tức &amp; video</h2>
+        <h2 className="font-display text-[30px] sm:text-[38px] font-bold text-ink">{title}</h2>
         <a {...linkProps(NEWS_PATH, navigate)} className="inline-flex min-h-[44px] shrink-0 items-center gap-1 text-[15px] font-semibold text-navy hover:underline">Xem tất cả <ArrowRight size={15} /></a>
       </div>
       <div className="grid gap-3 lg:h-[468px] lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">

@@ -31,20 +31,33 @@ button.hp-d{cursor:pointer}
 .hp-key:hover{transform:translateY(1px);box-shadow:0 3px 0 #060A2A}
 .hp-key:active{transform:translateY(4px);box-shadow:none}
 
-/* Bốn dòng máy mở rộng khi rê chuột */
-.hh-tiers{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;scrollbar-width:none}
-.hh-tier{position:relative;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;flex:0 0 78%;min-height:400px;overflow:hidden;border-radius:18px;text-align:left;scroll-snap-align:start;cursor:pointer;transition:flex-grow .5s cubic-bezier(.2,.8,.2,1)}
-.hh-tier img{position:absolute;right:-6%;bottom:-2%;width:86%;max-height:62%;object-fit:contain;transition:transform .6s cubic-bezier(.2,.8,.2,1);filter:drop-shadow(0 18px 18px rgba(6,10,42,.35))}
+/* Bốn dòng máy: khung nghiêng theo dấu / của Hilitek, ô đang mở có chữ chạy và máy xoay vào */
+.hh-tiers{--sk:0deg;display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;scrollbar-width:none}
+.hh-tier{--r:-7deg;position:relative;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;flex:0 0 80%;min-height:420px;overflow:hidden;border-radius:20px;text-align:left;scroll-snap-align:start;cursor:pointer;transform:skewX(var(--sk));transition:flex-grow .55s cubic-bezier(.2,.8,.2,1),box-shadow .3s}
+.hh-tier:nth-child(2){--r:6deg}.hh-tier:nth-child(3){--r:-6deg}.hh-tier:nth-child(4){--r:5deg}
+.hh-tx{position:relative;z-index:2;display:block;padding:22px;transform:skewX(calc(var(--sk)*-1))}
+.hh-tier img{position:absolute;z-index:1;left:8%;bottom:7%;width:84%;height:48%;object-fit:contain;object-position:center bottom;transform:skewX(calc(var(--sk)*-1)) rotate(var(--r)) scale(.9);transition:transform .6s cubic-bezier(.2,.8,.2,1);filter:drop-shadow(0 18px 14px rgba(6,10,42,.38))}
+.hh-tier.on img{animation:hh-drop .95s cubic-bezier(.2,1.25,.35,1) both}
+@keyframes hh-drop{
+ from{opacity:0;transform:skewX(calc(var(--sk)*-1)) translate(46%,26%) rotate(calc(var(--r)*-3.2)) scale(.62)}
+ to{opacity:1;transform:skewX(calc(var(--sk)*-1)) rotate(var(--r)) scale(1.03)}}
+.hh-word{position:absolute;left:-10%;right:-10%;bottom:21%;z-index:0;display:flex;overflow:hidden;white-space:nowrap;opacity:0;transition:opacity .4s;pointer-events:none}
+.hh-tier.on .hh-word{opacity:1}
+.hh-word i{flex:none;padding-right:.35em;font:800 clamp(92px,10.5vw,158px)/1 Archivo,sans-serif;font-stretch:76%;font-style:normal;letter-spacing:-.01em;-webkit-text-fill-color:transparent;-webkit-text-stroke:2px currentColor;opacity:.32;animation:hh-word 13s linear infinite}
+@keyframes hh-word{to{transform:translateX(-100%)}}
+.hh-tier.bg-ink:after{content:"";position:absolute;left:10%;right:10%;bottom:6%;height:44%;background:radial-gradient(closest-side,rgba(44,63,208,.6),transparent);pointer-events:none}
 .hh-tier .more{opacity:1}
+.hh-tier.on .more{animation:hh-up .5s .15s cubic-bezier(.2,.8,.2,1) both}
 @media(min-width:1024px){
- .hh-tiers{overflow:visible}
- .hh-tier{flex:1 1 0;min-width:0;min-height:440px}
- .hh-tier.on{flex-grow:2.5}
- .hh-tier img{width:min(430px,92%);transform:translateX(12%) rotate(-5deg)}
- .hh-tier.on img{transform:none}
- .hh-tier .more{opacity:0;transition:opacity .25s}
- .hh-tier.on .more{opacity:1;transition-delay:.18s}
+ .hh-tiers{--sk:-6deg;overflow:visible;gap:14px;padding:0 30px}
+ .hh-tier{flex:1 1 0;min-width:0;min-height:460px}
+ .hh-tier:nth-child(odd){margin-bottom:30px}.hh-tier:nth-child(even){margin-top:30px}
+ .hh-tier.on{flex-grow:2.4;box-shadow:0 22px 40px rgba(6,10,42,.2)}
+ .hh-tx{padding:26px 30px}
+ .hh-tier .more{opacity:0}
+ .hh-tier.on .more{opacity:1}
 }
+@media(prefers-reduced-motion:reduce){.hh-tier.on img,.hh-word i,.hh-tier.on .more{animation:none}}
 
 /* Hàng phím chọn game */
 .hh-eras{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 10px;scrollbar-width:none}

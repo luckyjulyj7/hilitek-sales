@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, Check, ChevronDown, Gamepad2, Plus, Scale, X } from "lucide-react";
-import { SITE } from "../config.js";
+import { SITE, newsItems } from "../config.js";
 import { formatVND } from "../lib/format.js";
 import { submitNeed } from "../lib/api.js";
 import { ERAS, HH_BRANDS, MODELS, SPOTLIGHT, TIERS } from "../data/handhelds.js";
 import HiliPlay from "../components/HiliPlay.jsx";
+import NewsVideo from "../components/NewsVideo.jsx";
 import ProductCard from "../components/ProductCard.jsx";
 import NeedForm from "../components/NeedForm.jsx";
 import TrustBar from "../components/TrustBar.jsx";
@@ -26,6 +27,15 @@ const FAQ = [
   ["PC cầm tay và Mini PC cầm tay khác nhau ra sao?", "PC cầm tay thiết kế để chơi bằng tay cầm tích hợp. Mini PC cầm tay có thêm bàn phím, hợp khi cần làm việc trên Windows."],
   ["Mua tại Hilitek có hoá đơn không?", "Có. Hilitek xuất đủ hoá đơn VAT và bảo hành theo serial."],
   ["Mẫu chưa có sẵn thì sao?", "Bạn để lại số Zalo ở mẫu đang quan tâm, Hili báo giá và thời gian có hàng."],
+];
+
+// Bật khi đã có đủ 4 ảnh public/handheld/life-*.webp.
+const LIFE_READY = false;
+const LIFE = [
+  { id: "retro", title: "Trên chuyến xe về", tier: "Retro", span: "lg:col-span-5" },
+  { id: "android", title: "Ở quán cà phê", tier: "Android", span: "lg:col-span-7" },
+  { id: "pc", title: "Tối ở nhà", tier: "PC cầm tay", span: "lg:col-span-7" },
+  { id: "mini", title: "Giờ làm việc", tier: "Mini PC cầm tay", span: "lg:col-span-5" },
 ];
 
 /** Dãy nhà pixel tự vẽ làm nền, không cần tải ảnh. */
@@ -219,6 +229,17 @@ export default function Handheld({ catalog, navigate }) {
   const [near, setNear] = useState("");
   const page = useRise();
   const list = useRef(null);
+  const tierHold = useRef(false);
+
+  // Bốn dòng máy tự chuyển lần lượt, rê chuột vào thì dừng để khách chọn.
+  useEffect(() => {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return undefined;
+    const t = setInterval(() => {
+      if (tierHold.current || document.hidden) return;
+      setTierOn((v) => TIERS[(TIERS.findIndex((x) => x.id === v) + 1) % TIERS.length].id);
+    }, 4200);
+    return () => clearInterval(t);
+  }, []);
 
   useEffect(() => {
     const prev = document.title;
@@ -280,20 +301,19 @@ export default function Handheld({ catalog, navigate }) {
 
       <section className={WRAP + " pt-9"}>
         <h2 className={H2 + " hh-rise mb-3"}>Bốn dòng máy, chọn theo nhu cầu</h2>
-        <div className="hh-tiers hh-rise">
-          {TIERS.map((t) => {
-            return (
-              <button key={t.id} type="button" onMouseEnter={() => setTierOn(t.id)} onFocus={() => setTierOn(t.id)} onClick={() => toList(t.id)} className={"hh-tier " + t.tone + (tierOn === t.id ? " on" : "")}>
-                <Shot m={{ slug: t.cover, name: t.name }} />
-                <span className="relative block p-5 sm:p-6">
-                  <span className="block font-display text-[28px] font-bold leading-tight sm:text-[32px]">{t.name}</span>
-                  <span className="mt-1 block text-[16px] font-semibold opacity-90">{t.note}</span>
-                  <span className="more mt-2 block max-w-[20em] text-[15px] leading-snug opacity-85">{t.for}</span>
-                  <span className="more mt-3 inline-flex items-center gap-1.5 font-semibold">Xem dòng này <ArrowRight size={16} /></span>
-                </span>
-              </button>
-            );
-          })}
+        <div className="hh-tiers hh-rise" onMouseEnter={() => { tierHold.current = true; }} onMouseLeave={() => { tierHold.current = false; }}>
+          {TIERS.map((t) => (
+            <button key={t.id} type="button" onMouseEnter={() => setTierOn(t.id)} onFocus={() => setTierOn(t.id)} onClick={() => toList(t.id)} className={"hh-tier " + t.tone + (tierOn === t.id ? " on" : "")}>
+              <span className="hh-word" aria-hidden="true"><i>{t.word}</i><i>{t.word}</i><i>{t.word}</i><i>{t.word}</i></span>
+              <Shot m={{ slug: t.cover, name: t.name }} />
+              <span className="hh-tx">
+                <span className="block font-display text-[28px] font-bold leading-tight sm:text-[32px]">{t.name}</span>
+                <span className="mt-1 block text-[16px] font-semibold opacity-90">{t.note}</span>
+                <span className="more mt-2 block max-w-[20em] text-[15px] leading-snug opacity-85">{t.for}</span>
+                <span className="more mt-3 inline-flex items-center gap-1.5 font-semibold">Xem dòng này <ArrowRight size={16} /></span>
+              </span>
+            </button>
+          ))}
         </div>
       </section>
 
@@ -327,6 +347,22 @@ export default function Handheld({ catalog, navigate }) {
           </div>
         </div>
       </section>
+
+      {LIFE_READY && <section className={WRAP + " pt-9"}>
+        <h2 className={H2 + " hh-rise mb-3"}>Chơi ở đâu cũng được</h2>
+        <div className="hh-rise grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-12">
+          {LIFE.map((l) => (
+            <button key={l.id} type="button" onClick={() => toList(l.id)} className={"group relative h-[190px] overflow-hidden rounded-2xl bg-ink text-left text-white sm:h-[300px] " + l.span}>
+              <img src={`/handheld/life-${l.id}.webp`} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.05]" />
+              <span className="absolute inset-0" style={{ background: "linear-gradient(0deg,rgba(6,10,42,.86),transparent 58%)" }} />
+              <span className="absolute inset-x-0 bottom-0 block p-3 sm:p-5">
+                <span className="block font-display text-[20px] font-bold leading-tight sm:text-[28px]">{l.title}</span>
+                <span className="mt-0.5 block text-[14px] font-semibold text-yellow sm:text-[15px]">{l.tier}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </section>}
 
       <section ref={list} className={WRAP + " scroll-mt-40 pt-9"}>
         <h2 className={H2 + " mb-3"}>Tất cả máy</h2>
@@ -362,6 +398,8 @@ export default function Handheld({ catalog, navigate }) {
           <p className="mt-3 rounded-2xl bg-white p-6 text-[16px] text-ink">Chưa có máy khớp bộ lọc. Bạn thử chọn cỡ màn hoặc hãng khác nhé.</p>
         )}
       </section>
+
+      <NewsVideo navigate={navigate} title="Tin tức máy chơi game" items={newsItems("handheld")} />
 
       <section className={WRAP + " pt-9"}>
         <h2 className={H2 + " hh-rise mb-3"}>Câu hỏi thường gặp</h2>

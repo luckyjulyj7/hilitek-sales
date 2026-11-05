@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
-import { LANDINGS, NEWS_KINDS, NEWS_PATH, SITE } from "../config.js";
+import { NEWS_KINDS, NEWS_PATH, SITE, findPage } from "../config.js";
 import { fetchLanding } from "../lib/api.js";
 import RichText from "../components/RichText.jsx";
 
@@ -8,7 +8,7 @@ import RichText from "../components/RichText.jsx";
 export default function LandingPage({ slug, navigate }) {
   // Cấu hình chung chỉ giữ tiêu đề/slug (nội dung nặng — có thể vài MB nếu nhúng ảnh — tải riêng
   // khi mở đúng trang này). Bản mặc định trong config.js (chưa cấu hình) thì còn nguyên nội dung.
-  const meta = LANDINGS.find((l) => l && l.slug === slug && l.published !== false);
+  const meta = findPage(slug);
   const hasMeta = !!meta;
   const hasInlineBody = !!(meta && meta.body);
   const [fetched, setFetched] = useState(null);
@@ -61,6 +61,9 @@ export default function LandingPage({ slug, navigate }) {
         <p className="text-mute">Không tải được nội dung trang. Vui lòng tải lại trang.</p>
       ) : (
         <p className="text-mute">Đang tải…</p>
+      )}
+      {meta.cta && (
+        <a href={meta.cta.to} onClick={(e) => { e.preventDefault(); navigate(meta.cta.to.slice(1)); }} className="mt-6 inline-flex min-h-[46px] items-center rounded-lg bg-ink px-4 font-semibold text-white hover:bg-navy">{meta.cta.label}</a>
       )}
     </div>
   );

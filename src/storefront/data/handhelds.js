@@ -4,10 +4,10 @@
  * Thông số lấy từ nguồn công khai, cần đối chiếu lại khi nhập hàng.
  */
 export const TIERS = [
-  { id: "retro", name: "Retro", note: "Dưới 3 triệu", for: "Nhỏ gọn, chơi lại game tuổi thơ.", tone: "bg-yellow text-ink", cover: "anbernic-rg-35xx-pro" },
-  { id: "android", name: "Android", note: "3 tới 12 triệu", for: "Game mobile và giả lập đời cao, màn đẹp.", tone: "bg-navy text-white", cover: "ayn-odin-3-white" },
-  { id: "pc", name: "PC cầm tay", note: "Từ 12 triệu", for: "Chơi game PC bản quyền trên Steam, Xbox.", tone: "bg-ink text-white", cover: "msi-claw-8-ai" },
-  { id: "mini", name: "Mini PC cầm tay", note: "Theo cấu hình", for: "Có bàn phím, vừa làm việc vừa chơi game.", tone: "bg-white text-ink", cover: "gpd-win-max-2025" },
+  { id: "retro", name: "Retro", word: "RETRO", note: "Dưới 3 triệu", for: "Nhỏ gọn, chơi lại game tuổi thơ.", tone: "bg-yellow text-ink", cover: "anbernic-rg-35xx-pro" },
+  { id: "android", name: "Android", word: "ANDROID", note: "3 tới 12 triệu", for: "Game mobile và giả lập đời cao, màn đẹp.", tone: "bg-navy text-white", cover: "ayn-odin-3-white" },
+  { id: "pc", name: "PC cầm tay", word: "PC GAMING", note: "Từ 12 triệu", for: "Chơi game PC bản quyền trên Steam, Xbox.", tone: "bg-ink text-white", cover: "msi-claw-8-ai" },
+  { id: "mini", name: "Mini PC cầm tay", word: "MINI PC", note: "Theo cấu hình", for: "Có bàn phím, vừa làm việc vừa chơi game.", tone: "bg-white text-ink", cover: "gpd-win-max-2025" },
 ];
 
 // photo: ảnh hãng có nền tối, hiện kín khung. Không có photo: ảnh đã tách nền, đặt trên vạch chéo Hilitek.

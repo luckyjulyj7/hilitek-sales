@@ -1081,9 +1081,44 @@ const NEWS_STARTERS = [
 ];
 const YT_ID = /(?:youtube\.com\/(?:watch\?(?:[^ ]*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{11})/;
 
-/** Danh sách bài cho trang chủ và /tin-tuc: bài chủ shop đăng trước, hướng dẫn có sẵn theo sau. */
-export function newsItems() {
-  const own = LANDINGS.filter((l) => l && l.news && l.slug && l.published !== false).map((l) => {
+// Bài viết có sẵn về máy chơi game cầm tay, không phụ thuộc cấu hình web của chủ shop.
+const HH_CTA = { to: "/may-choi-game-cam-tay", label: "Xem các máy cầm tay" };
+const NEWS_POSTS = [
+  {
+    slug: "chon-may-choi-game-cam-tay", news: "huong-dan", title: "Retro, Android hay PC cầm tay: nên chọn dòng nào?", cover: "/handheld/retroid-pocket-6.webp", cta: HH_CTA,
+    summary: "Ba dòng máy khác nhau ở game chơi được, độ gọn và tầm tiền.",
+    body: "Câu hỏi đầu tiên không phải là chip nào mạnh nhất, mà là bạn muốn chơi gì.\n\n## Retro\nHợp nếu bạn muốn chơi lại game tuổi thơ. Máy nhỏ, nhẹ, dễ mang theo và giá dễ tiếp cận.\n\n## Android\nMàn hình đẹp hơn, chơi được game trên kho ứng dụng và các đời máy cao hơn. Đây là lựa chọn cân bằng cho người muốn một máy dùng lâu.\n\n## PC cầm tay\nChơi trực tiếp game PC trên Steam hoặc Xbox. Máy lớn hơn, nặng hơn và giá cao hơn, đổi lại có thư viện game rất rộng.\n\nChưa chắc chọn dòng nào, bạn cứ nói game hay chơi và ngân sách, Hili gợi ý máy phù hợp.",
+  },
+  {
+    slug: "ayn-thor-may-hai-man-hinh", news: "tin", title: "AYN Thor: máy Android gập với hai màn hình AMOLED", cover: "/handheld/ayn-thor.webp", cta: HH_CTA,
+    summary: "Một trong những máy cầm tay được chú ý nhờ thiết kế gập hai màn hình.",
+    body: "AYN Thor là máy cầm tay Android của AYN, thiết kế gập với hai màn hình AMOLED. Màn hình chính 6 inch nằm ở nắp trên, màn hình phụ nằm ở thân máy.\n\n## Hợp với ai\nThiết kế này hợp với game cần hai màn hình và người muốn vừa chơi vừa xem bản đồ, hướng dẫn ở màn hình còn lại.\n\n## Nên cân nhắc\nMáy có nhiều phiên bản cấu hình. Bạn nhắn Hili để chọn phiên bản phù hợp ngân sách trước khi đặt.",
+  },
+  {
+    slug: "thong-so-can-xem-khi-chon-may-cam-tay", news: "huong-dan", title: "4 thông số cần xem trước khi mua máy cầm tay", cover: "/handheld/retroid-pocket-5.webp", cta: HH_CTA,
+    summary: "Màn hình, chip, kiểu dáng và cần analog ảnh hưởng nhiều nhất khi chơi.",
+    body: "## Màn hình\nMàn OLED cho màu đen sâu, tần số quét 120Hz cho chuyển động mượt. Tỉ lệ 4:3 hợp game cổ, 16:9 hợp game đời mới.\n\n## Chip\nChip quyết định đời game chơi mượt. Game cổ chỉ cần chip nhẹ, game nặng cần chip đời cao.\n\n## Kiểu dáng\nMáy dọc và máy gập nhỏ gọn, bỏ túi được. Máy ngang cầm chắc tay hơn khi chơi lâu.\n\n## Cần analog\nCần Hall bền hơn cần thường vì không ma sát trực tiếp, nên ưu tiên nếu bạn chơi nhiều game 3D.",
+  },
+  {
+    slug: "may-gap-may-doc-may-ngang", news: "huong-dan", title: "Máy gập, máy dọc hay máy ngang: kiểu nào hợp với bạn?", cover: "/handheld/retroid-pocket-duo.webp", cta: HH_CTA,
+    summary: "Kiểu dáng quyết định độ gọn và cảm giác cầm khi chơi lâu.",
+    body: "## Máy gập\nGập lại bảo vệ màn hình, bỏ túi rất tiện. Hợp người hay mang máy đi làm, đi học.\n\n## Máy dọc\nNhỏ gọn, dễ dùng một tay, hợp game cổ.\n\n## Máy ngang\nRộng tay, màn hình lớn hơn, hợp game 3D và phiên chơi dài.",
+  },
+];
+
+/** Tìm trang theo đường dẫn: trang chủ shop tạo trước, bài có sẵn sau. */
+export function findPage(slug) {
+  return LANDINGS.find((l) => l && l.slug === slug && l.published !== false) || NEWS_POSTS.find((p) => p.slug === slug);
+}
+
+const HH_TOPIC = /cầm tay|handheld|retro|máy chơi game|steam deck|retroid|anbernic|miyoo|mangmi|\bayn\b/i;
+
+/**
+ * Danh sách bài. Mặc định cho trang chủ và /tin-tuc: bài chủ shop đăng trước, bài có sẵn theo sau.
+ * newsItems("handheld") chỉ lấy bài về máy chơi game cầm tay.
+ */
+export function newsItems(topic) {
+  const own = LANDINGS.filter((l) => l && l.news && l.slug && l.published !== false && (topic !== "handheld" || HH_TOPIC.test(`${l.title} ${l.summary || ""}`))).map((l) => {
     const yt = YT_ID.exec(l.videoUrl || "");
     return {
       kind: l.news, title: l.title, summary: l.summary || "", date: l.date || "",
@@ -1092,5 +1127,7 @@ export function newsItems() {
       to: l.videoUrl && !yt ? l.videoUrl : `/trang/${l.slug}`,
     };
   });
-  return [...own, ...NEWS_STARTERS];
+  const posts = NEWS_POSTS.map((p) => ({ kind: p.news, title: p.title, summary: p.summary, date: "", image: p.cover, to: `/trang/${p.slug}` }));
+  if (topic === "handheld") return [...own, ...posts, NEWS_STARTERS[1]];
+  return [...own, NEWS_STARTERS[0], ...posts.slice(0, 2), ...NEWS_STARTERS.slice(2), ...posts.slice(2), NEWS_STARTERS[1]];
 }
