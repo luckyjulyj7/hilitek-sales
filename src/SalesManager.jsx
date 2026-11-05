@@ -16532,12 +16532,17 @@ function WebConfigForm({ section, webConfig, setWebConfig, setProducts, addLog, 
   const webProducts = (products || []).filter((p) => p.web?.published);
   const mutHomeHero = (fn) => setWebConfig((x) => ({ ...x, HOME_HERO: fn(Array.isArray(x.HOME_HERO) ? [...x.HOME_HERO] : []) }));
   const setHomeHero = (i, k, v) => mutHomeHero((arr) => { arr[i] = { ...(arr[i] || {}), [k]: v }; return arr; });
+  const heroRef = (p) => ({ productId: p.id, groupId: p.variantGroupId || "", slug: webSlugify(p.web?.slug || p.name) });
+  const pickHomeHero = (i, id) => {
+    const p = webProducts.find((x) => x.id === id);
+    mutHomeHero((arr) => { arr[i] = { ...(arr[i] || {}), ...(p ? heroRef(p) : { productId: "", groupId: "", slug: "" }) }; return arr; });
+  };
   const addHomeHero = () => mutHomeHero((arr) => {
     if (arr.length) return [...arr, { productId: "", image: "", title: "", sub: "" }];
     // Lần đầu: nạp sẵn các mẫu đang chạy để không mất slide nào.
-    const seed = [[/nimbus 65/i, "/home/cut-nimbus.webp"], [/voicsky echo 75/i, "/home/cut-echo.webp"], [/voicsky apex 75/i, "/home/cut-apex.webp"], [/voicsky pulse 75/i, "/home/cut-pulse.webp"], [/voicsky pulse 96/i, "/home/cut-pulse96.webp"], [/voicsky atmos 87/i, "/home/cut-atmos87.webp"]]
-      .map(([re, image]) => ({ p: webProducts.find((p) => re.test(p.name)), image })).filter((x) => x.p)
-      .map(({ p, image }) => ({ productId: p.id, image, title: "", sub: "" }));
+    const seed = [[/nimbus 65/i, "/home/cut-nimbus.webp"], [/voicsky echo 75/i, "/home/cut-echo.webp"], [/voicsky apex 75/i, "/home/cut-apex.webp"], [/voicsky pulse 75.*glacier/i, "/home/cut-pulse-glacier.webp"], [/voicsky pulse 96/i, "/home/cut-pulse96.webp"], [/voicsky atmos 87/i, "/home/cut-atmos87.webp"]]
+      .map(([re, image]) => ({ p: webProducts.find((p) => re.test(`${p.name} ${Object.values(p.variantAttrs || {}).join(" ")}`)), image })).filter((x) => x.p)
+      .map(({ p, image }) => ({ ...heroRef(p), image, title: "", sub: "" }));
     return [...seed, { productId: "", image: "", title: "", sub: "" }];
   });
   const delHomeHero = (i) => mutHomeHero((arr) => arr.filter((_, j) => j !== i));
@@ -16716,9 +16721,9 @@ function WebConfigForm({ section, webConfig, setWebConfig, setProducts, addLog, 
           {homeHero.map((h, i) => (
             <div key={i} className="grid gap-2 items-center rounded-md p-2.5 grid-cols-1 md:grid-cols-[96px_minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_auto]" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
               {thumb(h.image || displayImage(webProducts.find((p) => p.id === h.productId)))}
-              <select value={h.productId || ""} onChange={(e) => setHomeHero(i, "productId", e.target.value)} className={inputCls} style={{ borderColor: LINE }}>
+              <select value={h.productId || ""} onChange={(e) => pickHomeHero(i, e.target.value)} className={inputCls} style={{ borderColor: LINE }}>
                 <option value="">Chọn sản phẩm</option>
-                {webProducts.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                {webProducts.map((p) => <option key={p.id} value={p.id}>{[p.name, ...Object.values(p.variantAttrs || {})].join(" · ")}</option>)}
               </select>
               {ip(h.title, (v) => setHomeHero(i, "title", v), "Tên hiện, VD: Echo 96")}
               {ip(h.sub, (v) => setHomeHero(i, "sub", v), "Dòng phụ, VD: Bàn phím cơ")}

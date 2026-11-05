@@ -11,7 +11,7 @@ const DEFAULTS = [
   { title: "Nimbus 65", match: /nimbus 65/i, image: "/home/cut-nimbus.webp" },
   { title: "Echo 75", match: /voicsky echo 75/i, image: "/home/cut-echo.webp" },
   { title: "Apex 75", match: /voicsky apex 75/i, image: "/home/cut-apex.webp" },
-  { title: "Pulse 75", match: /voicsky pulse 75/i, image: "/home/cut-pulse.webp" },
+  { title: "Pulse 75", match: /voicsky pulse 75/i, image: "/home/cut-pulse-glacier.webp", slug: "ban-phim-co-khong-day-voicsky-pulse-75-glacier" },
   { title: "Pulse 96", match: /voicsky pulse 96/i, image: "/home/cut-pulse96.webp" },
   { title: "Atmos 87", match: /voicsky atmos 87/i, image: "/home/cut-atmos87.webp" },
 ];
@@ -29,7 +29,8 @@ export default function HeroFilm({ products, navigate }) {
   const slides = useMemo(
     () => {
       const list = HOME_HERO.length
-        ? HOME_HERO.map((h) => ({ ...h, p: products.find((x) => x.id === h.productId) }))
+        ? // Web gộp các phiên bản thành 1 sản phẩm, nên phiên bản được chọn tìm qua nhóm phiên bản.
+        HOME_HERO.map((h) => ({ ...h, p: products.find((x) => x.id === h.productId || (h.groupId && x.variantGroupId === h.groupId)) }))
         : DEFAULTS.map((d) => ({ ...d, p: products.find((x) => d.match.test(x.name)) }));
       return list.filter((s) => s.p).map((s, k) => {
         const first = s.p.images?.[0];
@@ -86,7 +87,7 @@ export default function HeroFilm({ products, navigate }) {
               <h2 className="hf-b">{s.head} <em>{s.tail}</em></h2>
               <p className="hf-c">{formatVND(s.p.price)}</p>
               <div className="hf-d">
-                <a href={`/san-pham/${s.p.slug}`} tabIndex={k === i ? undefined : -1} onClick={open(`/san-pham/${s.p.slug}`)} className="hf-btn">Xem sản phẩm <ArrowRight size={16} /></a>
+                <a href={`/san-pham/${s.slug || s.p.slug}`} tabIndex={k === i ? undefined : -1} onClick={open(`/san-pham/${s.slug || s.p.slug}`)} className="hf-btn">Xem sản phẩm <ArrowRight size={16} /></a>
                 <a href={all} tabIndex={k === i ? undefined : -1} onClick={open(all)} className="hf-btn ghost">Tất cả sản phẩm</a>
               </div>
             </div>
