@@ -13775,6 +13775,176 @@ function ProductAdditionReport({ products, employeeNames, onBarClick }) {
   );
 }
 
+// Báo cáo tổng hợp toàn công ty, xuất Excel. Doanh số và giá nhập được hiểu là đã gồm VAT giống cách tính của đơn hàng.
+function buildBusinessReport({ orders, products, customers, purchaseOrders, expenses, from, to, costHasVat, taxRate }) {
+  const inRange = (v) => { const d = localDay(v); return (!from || d >= from) && (!to || d <= to); };
+  const byId = new Map(products.map((p) => [p.id, p]));
+  const round = (n) => Math.round(n);
+  const lineCost = (it) => {
+    const p = byId.get(it.productId);
+    const unit = p?.costPrice || 0;
+    return (it.qty || 0) * (costHasVat ? unit / (1 + vatPercent(p?.vat) / 100) : unit);
+  };
+  let missing = 0;
+  const lines = orders.filter((o) => o.status !== "cancelled" && inRange(o.createdAt)).map((o) => {
+    const sales = orderCalc(o).payable;
+    const vp = vatPercent(o.vat);
+    const vat = sales * vp / (100 + vp);
+    const rets = o.returns || [];
+    const sold = [...o.items, ...rets.flatMap((r) => r.exchangeItems)];
+    const back = rets.flatMap((r) => r.returnedItems);
+    missing += sold.filter((it) => { const p = byId.get(it.productId); return !p?.costPrice && !p?.isService; }).length;
+    const cost = sold.reduce((t, it) => t + lineCost(it), 0) - back.reduce((t, it) => t + lineCost(it), 0);
+    return { o, sales, vat, net: sales - vat, cost };
+  });
+  const group = (keyOf, head) => {
+    const map = new Map();
+    lines.forEach((l) => {
+      const k = keyOf(l.o);
+      const g = map.get(k) || { k, n: 0, sales: 0, vat: 0, net: 0, cost: 0 };
+      g.n += 1; g.sales += l.sales; g.vat += l.vat; g.net += l.net; g.cost += l.cost;
+      map.set(k, g);
+    });
+    return [...map.values()].map((g) => ({ g, row: { ...head(g.k), "Số đơn": g.n, "Doanh số gồm VAT": round(g.sales), "VAT": round(g.vat), "Doanh thu chưa VAT": round(g.net), "Giá vốn": round(g.cost), "Lợi nhuận gộp": round(g.net - g.cost) } }));
+  };
+  const byTime = (keyOf, label) => group(keyOf, (k) => ({ [label]: k })).sort((a, b) => (a.g.k < b.g.k ? -1 : 1)).map((x) => x.row);
+  const weekOf = (o) => {
+    const d = new Date(o.createdAt);
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    const end = new Date(d); end.setDate(end.getDate() + 6);
+    return `${localDay(d)} đến ${localDay(end)}`;
+  };
+  const best = (rows) => rows.sort((a, b) => b.g.sales - a.g.sales).map((x) => x.row);
+  const custOf = new Map(customers.map((c) => [c.id, c]));
+
+  const pos = purchaseOrders.filter((po) => po.status === "received" && inRange(po.receivedAt || po.createdAt));
+  const inProducts = new Map();
+  const inSuppliers = new Map();
+  pos.forEach((po) => {
+    const sup = inSuppliers.get(po.supplier || "Chưa ghi") || { name: po.supplier || "Chưa ghi", n: 0, total: 0, back: 0 };
+    sup.n += 1; sup.total += poTotal(po); sup.back += poReturnedValue(po);
+    inSuppliers.set(sup.name, sup);
+    const add = (it, sign) => {
+      const r = inProducts.get(it.productId) || { id: it.productId, qty: 0, value: 0 };
+      r.qty += sign * it.qty; r.value += sign * it.qty * it.price;
+      inProducts.set(it.productId, r);
+    };
+    po.items.forEach((it) => add(it, 1));
+    (po.returns || []).forEach((r) => r.items.forEach((it) => add(it, -1)));
+  });
+  const purchase = pos.reduce((t, po) => t + poNetTotal(po), 0);
+
+  const costs = expenses.filter((e) => Number(e.amount) > 0 && (!e.date || inRange(e.date)));
+  const totals = lines.reduce((t, l) => ({ sales: t.sales + l.sales, vat: t.vat + l.vat, net: t.net + l.net, cost: t.cost + l.cost }), { sales: 0, vat: 0, net: 0, cost: 0 });
+  const other = costs.reduce((t, e) => t + Number(e.amount), 0);
+  const gross = totals.net - totals.cost;
+  const before = gross - other;
+  const tax = Math.max(0, before) * (Number(taxRate) || 0) / 100;
+  const line = (name, value, note = "") => ({ "Chỉ tiêu": name, "Giá trị": typeof value === "number" ? round(value) : value, "Ghi chú": note });
+  const summary = [
+    line("Kỳ báo cáo", `${from || "Từ đầu"} đến ${to || "nay"}`),
+    line("Số đơn hàng", lines.length, "Không tính đơn huỷ"),
+    line("Tổng doanh số gồm VAT", totals.sales, "Đã trừ chiết khấu và trả hàng, gồm phí vận chuyển"),
+    line("VAT đầu ra", totals.vat, "Ước tính theo mức VAT của từng đơn"),
+    line("Doanh thu chưa VAT", totals.net),
+    line("Giá vốn hàng bán", totals.cost, `Theo giá nhập hiện tại trên sản phẩm, ${costHasVat ? "đã quy về chưa VAT" : "giữ nguyên, coi là chưa VAT"}`),
+    line("Lợi nhuận gộp", gross),
+    line("Chi phí khác", other, "Theo các khoản nhập ở trang Báo cáo"),
+    line("Lợi nhuận trước thuế", before),
+    line(`Thuế TNDN ${Number(taxRate) || 0}%`, tax, "Ước tính, kế toán cần đối chiếu"),
+    line("Lợi nhuận sau thuế", before - tax),
+    line("Tổng nhập hàng", purchase, "Đơn đã nhận, đã trừ hàng trả NCC"),
+  ];
+  if (missing) summary.push(line("Dòng hàng thiếu giá nhập", missing, "Giá vốn đang tính 0 đồng, lợi nhuận sẽ cao hơn thực tế"));
+
+  return [
+    { name: "Tổng quan", rows: summary },
+    { name: "Doanh số theo tuần", rows: byTime(weekOf, "Tuần") },
+    { name: "Doanh số theo tháng", rows: byTime((o) => localDay(o.createdAt).slice(0, 7), "Tháng") },
+    { name: "Doanh số theo năm", rows: byTime((o) => localDay(o.createdAt).slice(0, 4), "Năm") },
+    { name: "Theo nhân viên", rows: best(group((o) => o.seller || "Chưa ghi", (k) => ({ "Nhân viên": k }))) },
+    { name: "Theo khách hàng", rows: best(group((o) => o.customerId || "", (k) => { const c = custOf.get(k); return { "Mã KH": c?.code || "", "Khách hàng": c?.name || "Khách lẻ", "SĐT": c?.phone || "" }; })) },
+    { name: "Nhập theo sản phẩm", rows: [...inProducts.values()].sort((a, b) => b.value - a.value).map((r) => { const x = byId.get(r.id); return { "Mã VT": x?.code || "", "SKU": x?.sku || "", "Sản phẩm": x?.name || "Đã xoá", "Số lượng": r.qty, "Giá trị nhập": round(r.value) }; }) },
+    { name: "Nhập theo NCC", rows: [...inSuppliers.values()].sort((a, b) => b.total - a.total).map((r) => ({ "Nhà cung cấp": r.name, "Số đơn nhập": r.n, "Giá trị nhập": round(r.total), "Đã trả NCC": round(r.back), "Giá trị ròng": round(r.total - r.back) })) },
+    { name: "Chi phí", rows: costs.map((e) => ({ "Ngày": e.date || "", "Khoản chi": e.name || "", "Số tiền": Number(e.amount) })) },
+  ];
+}
+
+const EXPENSE_KEY = "hili-report-expenses";
+function BusinessExport({ orders, products, customers, purchaseOrders }) {
+  const now = new Date();
+  const [open, setOpen] = useState(false);
+  const [from, setFrom] = useState(`${now.getFullYear()}-01-01`);
+  const [to, setTo] = useState(localDay(now));
+  const [taxRate, setTaxRate] = useState(20);
+  const [costHasVat, setCostHasVat] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [expenses, setExpenses] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(EXPENSE_KEY)) || []; } catch (e) { return []; }
+  });
+  useEffect(() => { try { localStorage.setItem(EXPENSE_KEY, JSON.stringify(expenses)); } catch (e) { /* trình duyệt chặn lưu thì vẫn xuất được */ } }, [expenses]);
+  const setRow = (i, patch) => setExpenses((v) => v.map((e, j) => (j === i ? { ...e, ...patch } : e)));
+  const preset = (a, b) => { setFrom(a); setTo(b); };
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const download = async () => {
+    setBusy(true);
+    try {
+      await exportExcel(`Bao-cao-Hili_${from || "dau-ky"}_${to || "nay"}`, buildBusinessReport({ orders, products, customers, purchaseOrders, expenses, from, to, costHasVat, taxRate }));
+    } finally { setBusy(false); }
+  };
+  const chip = "text-xs px-3 py-1.5 rounded-full border whitespace-nowrap";
+  return (
+    <div className="p-4 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <h4 className="text-base font-semibold" style={{ color: TEXT }}>Tải báo cáo tổng hợp Hili</h4>
+          <p className="text-xs" style={{ color: "#6B7280" }}>Doanh số, lợi nhuận, nhập hàng và chi phí của toàn công ty.</p>
+        </div>
+        <button type="button" onClick={() => setOpen((v) => !v)} className="flex items-center gap-1.5 text-sm px-3.5 py-2 rounded-md text-white" style={{ background: INK }}>
+          <FileSpreadsheet size={15} /> {open ? "Thu gọn" : "Tải báo cáo"}
+        </button>
+      </div>
+      {open && (
+        <div className="mt-4 space-y-3">
+          <div className="flex items-end gap-2 flex-wrap">
+            <Field label="Từ ngày"><input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={inputCls} style={{ borderColor: LINE }} /></Field>
+            <Field label="Đến ngày"><input type="date" value={to} onChange={(e) => setTo(e.target.value)} className={inputCls} style={{ borderColor: LINE }} /></Field>
+            <div className="flex gap-1.5 flex-wrap pb-1">
+              <button type="button" className={chip} style={{ borderColor: LINE, color: TEXT }} onClick={() => preset(`${y}-${m}-01`, localDay(now))}>Tháng này</button>
+              <button type="button" className={chip} style={{ borderColor: LINE, color: TEXT }} onClick={() => preset(`${y}-01-01`, localDay(now))}>Năm nay</button>
+              <button type="button" className={chip} style={{ borderColor: LINE, color: TEXT }} onClick={() => preset(`${y - 1}-01-01`, `${y - 1}-12-31`)}>Năm trước</button>
+              <button type="button" className={chip} style={{ borderColor: LINE, color: TEXT }} onClick={() => preset("", "")}>Toàn bộ</button>
+            </div>
+          </div>
+          <div className="flex items-end gap-4 flex-wrap">
+            <Field label="Thuế TNDN (%)"><input type="number" min={0} max={100} value={taxRate} onChange={(e) => setTaxRate(e.target.value)} className={inputCls} style={{ borderColor: LINE, maxWidth: 110 }} /></Field>
+            <label className="flex items-center gap-2 text-sm pb-2" style={{ color: TEXT }}><input type="checkbox" checked={costHasVat} onChange={(e) => setCostHasVat(e.target.checked)} /> Giá nhập trên sản phẩm đã gồm VAT</label>
+          </div>
+          <div>
+            <p className="text-sm font-medium mb-1" style={{ color: TEXT }}>Chi phí khác (nếu có)</p>
+            <p className="text-xs mb-2" style={{ color: "#6B7280" }}>Lưu trên máy này. Để trống ngày thì khoản chi tính vào mọi kỳ.</p>
+            <div className="space-y-2">
+              {expenses.map((e, i) => (
+                <div key={i} className="grid gap-2 grid-cols-[140px_minmax(0,1fr)_150px_auto] items-center">
+                  <input type="date" value={e.date || ""} onChange={(ev) => setRow(i, { date: ev.target.value })} className={inputCls} style={{ borderColor: LINE }} />
+                  <input value={e.name || ""} onChange={(ev) => setRow(i, { name: ev.target.value })} placeholder="Tiền thuê, lương, vận hành…" className={inputCls} style={{ borderColor: LINE }} />
+                  <MoneyInput className={inputCls} style={{ borderColor: LINE }} value={e.amount} onChange={(v) => setRow(i, { amount: v })} />
+                  <button type="button" onClick={() => setExpenses((v) => v.filter((_, j) => j !== i))} className="text-xs px-1.5" style={{ color: RUST }}>Xoá</button>
+                </div>
+              ))}
+            </div>
+            <button type="button" onClick={() => setExpenses((v) => [...v, { date: localDay(now), name: "", amount: "" }])} className="mt-2 text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>+ Thêm khoản chi</button>
+          </div>
+          <button type="button" disabled={busy} onClick={download} className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-md text-white disabled:opacity-60" style={{ background: FOREST }}>
+            <ArrowDownToLine size={15} /> {busy ? "Đang tạo file" : "Tải file Excel"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Reports({ orders, products, customers, accounts, purchaseOrders, warrantyTickets, employeeNames, goToOrdersDateRange, goToProductsDateRange, onOpen }) {
   const [sub, setSub] = useState("overview"); // overview | ranking
   const byCategory = useMemo(() => {
@@ -13855,6 +14025,7 @@ function Reports({ orders, products, customers, accounts, purchaseOrders, warran
         { id: "ranking", label: "Xếp hạng nhân viên", icon: Target, hint: "Doanh số theo người bán. Bấm tên để xem chi tiết." },
       ]} />
 
+      <BusinessExport orders={orders} products={products} customers={customers} purchaseOrders={purchaseOrders} />
       {sub === "ranking" ? <SalesRanking orders={orders} products={products} accounts={accounts} /> : (<>
       {sub === "overview" && (<>
       {(() => {
