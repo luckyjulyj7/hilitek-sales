@@ -21,6 +21,7 @@ export default function Home({ catalog, navigate }) {
 
   return (
     <div className="font-sans">
+      <h1 className="sr-only">Hilitek: linh kiện PC, gaming gear, màn hình và phần mềm bản quyền chính hãng tại TP.HCM</h1>
       {/* ===== Danh mục (trái) + khu poster (giữa/phải) ===== */}
       <section className="mx-auto max-w-[1500px] px-3 sm:px-4 pt-3">
         <div className="grid lg:grid-cols-[256px_minmax(0,1fr)] gap-2">

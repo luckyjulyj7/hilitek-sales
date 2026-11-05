@@ -48,8 +48,19 @@ export default function App() {
       tag.setAttribute("rel", "canonical");
       document.head.appendChild(tag);
     }
-    tag.setAttribute("href", `https://hilipc.vn${route.path === "/" ? "" : route.path}`);
-  }, [route.path]);
+    // Trang danh mục giữ danh mục và hãng trong canonical (khớp api/web/_seo.js), nếu bỏ hết thì mọi
+    // danh mục đều tự khai là trang /danh-muc và Google không lập chỉ mục riêng được.
+    let path = route.path === "/" ? "" : route.path;
+    if (route.path === "/danh-muc") {
+      const { cat, group, brand } = route.query || {};
+      const q = new URLSearchParams();
+      if (cat) q.set("cat", cat); else if (group) q.set("group", group);
+      if (brand) q.set("brand", brand);
+      const s = q.toString().replace(/\+/g, "%20");
+      if (s) path += `?${s}`;
+    }
+    tag.setAttribute("href", `https://hilipc.vn${path}`);
+  }, [route.path, route.query]);
 
   useEffect(() => {
     (takePrefetchedCatalog() || fetchCatalog())

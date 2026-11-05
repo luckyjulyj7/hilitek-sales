@@ -84,8 +84,8 @@ export default function ProductDetail({ slug, navigate, catalog }) {
   useEffect(() => {
     if (!product) return;
     const baseTitle = "Hilitek";
-    const title = (product.seoTitle && product.seoTitle.trim())
-      || (product.name ? `${product.name} | ${baseTitle}` : baseTitle);
+    const title = ((product.seoTitle && product.seoTitle.trim())
+      || (product.name ? `${product.name} | ${baseTitle}` : baseTitle)).replace(/HiliPC/g, baseTitle);
     const descText = (product.seoDesc && product.seoDesc.trim()) || product.shortDesc || "";
     const prevTitle = document.title;
     document.title = title;

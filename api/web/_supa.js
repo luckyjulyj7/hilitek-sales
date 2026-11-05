@@ -265,6 +265,16 @@ export function publicProduct(p, { detail = false } = {}) {
 
 export { baseVariantName } from "../../src/lib/variants.js";
 
+/** Tìm sản phẩm đã đăng theo slug, SKU hoặc id; nhận cả link cũ có gắn "-<sku>" ở đuôi. */
+export function findPublished(list, slug) {
+  return list.find((p) => {
+    const s = p.web && p.web.slug ? slugify(p.web.slug) : productSlug(p);
+    const sku = String(p.sku || "").toLowerCase();
+    const slugNoSku = sku && slug.endsWith("-" + sku) ? slug.slice(0, -(sku.length + 1)) : slug;
+    return s === slug || s === slugNoSku || sku === slug || String(p.id || "").toLowerCase() === slug;
+  });
+}
+
 /** Danh sách sản phẩm đã bật "Đăng web" (web.published). */
 export function publishedProducts(state) {
   const list = Array.isArray(state.products) ? state.products : [];

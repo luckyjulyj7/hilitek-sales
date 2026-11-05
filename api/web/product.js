@@ -4,7 +4,7 @@
  * Sản phẩm thuộc nhóm nhiều phiên bản (màu sắc/kích cỡ...) được trả kèm `variants[]` (các phiên
  * bản khác cùng nhóm) để trang chi tiết hiện nút chọn option.
  */
-import { handler, json, readStateCached, publishedProducts, publicProduct, productSlug, slugify, webStockOf, baseVariantName } from "./_supa.js";
+import { handler, json, readStateCached, publishedProducts, publicProduct, findPublished, productSlug, slugify, webStockOf, baseVariantName } from "./_supa.js";
 
 export default handler(async (req, res) => {
   if (req.method !== "GET") return json(res, 405, { error: "Chỉ hỗ trợ GET." });
@@ -13,13 +13,7 @@ export default handler(async (req, res) => {
   if (!slug) return json(res, 400, { error: "Thiếu slug." });
 
   const list = publishedProducts(await readStateCached());
-  const found = list.find((p) => {
-    const s = p.web && p.web.slug ? slugify(p.web.slug) : productSlug(p);
-    const sku = String(p.sku || "").toLowerCase();
-    // Tương thích link cũ có gắn "-<sku>" ở đuôi: bỏ đuôi đó rồi so lại.
-    const slugNoSku = sku && slug.endsWith("-" + sku) ? slug.slice(0, -(sku.length + 1)) : slug;
-    return s === slug || s === slugNoSku || sku === slug || String(p.id || "").toLowerCase() === slug;
-  });
+  const found = findPublished(list, slug);
 
   if (!found) return json(res, 404, { error: "Không tìm thấy sản phẩm." });
   const detail = publicProduct(found, { detail: true });

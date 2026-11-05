@@ -3,7 +3,8 @@
  * TỪNG sản phẩm đang "Đăng web" (đọc trực tiếp từ Supabase, luôn khớp dữ liệu thật) để Google
  * crawl nhanh và đầy đủ hơn thay vì tự mò từng link. Nộp link này vào Google Search Console.
  */
-import { readState, publishedProducts, productSlug, slugify } from "./_supa.js";
+import { readState, publishedProducts, publicProduct, productSlug, slugify } from "./_supa.js";
+import { catalogUrl } from "./_seo.js";
 
 const SITE_URL = "https://hilipc.vn";
 
@@ -15,10 +16,15 @@ export default async function handler(req, res) {
   const urls = [
     { loc: `${SITE_URL}/`, priority: "1.0" },
     { loc: `${SITE_URL}/danh-muc`, priority: "0.8" },
+    { loc: `${SITE_URL}/lien-he`, priority: "0.4" },
+    { loc: `${SITE_URL}/chinh-sach-bao-hanh`, priority: "0.4" },
+    { loc: `${SITE_URL}/chinh-sach-giao-hang`, priority: "0.4" },
   ];
   try {
     const state = await readState();
     const products = publishedProducts(state);
+    const cats = new Set(products.map((p) => publicProduct(p).category).filter((c) => c && c !== "Flash Sale"));
+    for (const cat of cats) urls.push({ loc: catalogUrl({ cat }), priority: "0.8" });
     const seen = new Set();
     for (const p of products) {
       const slug = (p.web && p.web.slug ? slugify(p.web.slug) : productSlug(p)) || "";

@@ -91,7 +91,7 @@ export default function Catalog({ catalog, route, navigate }) {
     // chính là dạng từ khoá dài (long-tail) khách hay tìm ("bàn phím cơ voicsky") và ít cạnh tranh
     // hơn hẳn so với chỉ riêng tên danh mục.
     const fullName = brand ? `${catName} ${brand}` : catName;
-    const seoTitle = `${fullName} chính hãng, giá tốt | HiliPC`;
+    const seoTitle = `${fullName} chính hãng, giá tốt | Hilitek`;
     const seoDesc = `Mua ${fullName} chính hãng tại Hilitek — đa dạng mẫu mã, giá tốt, giao nhanh toàn quốc, bảo hành uy tín.`;
     const prevTitle = document.title;
     document.title = seoTitle;
