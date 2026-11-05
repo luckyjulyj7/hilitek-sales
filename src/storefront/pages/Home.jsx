@@ -10,6 +10,7 @@ import PosterSlider from "../components/PosterSlider.jsx";
 import FlashSaleBar from "../components/FlashSaleBar.jsx";
 import HomeSectionRow from "../components/HomeSectionRow.jsx";
 import HiliKeys from "../components/HiliKeys.jsx";
+import BrandRail from "../components/BrandRail.jsx";
 
 const HANDHELD = "Máy chơi game cầm tay";
 const WRAP = "mx-auto max-w-[1500px] px-3 sm:px-4";
@@ -208,6 +209,8 @@ export default function Home({ catalog, navigate }) {
           </a>
         </div>
       </section>
+
+      <BrandRail products={products} navigate={navigate} />
 
       {/* Ưu đãi do chủ shop cấu hình */}
       <section className={WRAP + " pt-8"}>
