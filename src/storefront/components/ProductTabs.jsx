@@ -15,7 +15,7 @@ export default function ProductTabs({ products, navigate }) {
   const tabs = useMemo(() => {
     // Hàng còn nhiều xếp trước, thiếu thì lấy thêm mẫu đang hết để luôn đủ 2 dòng.
     const ready = [...products].sort((a, b) => b.stock - a.stock).slice(0, SHOW);
-    const list = [{ key: "hot", label: "Nổi bật", items: ready, to: "/danh-muc", all: "sản phẩm" }];
+    const list = [{ key: "hot", label: "Nổi bật", items: ready, to: "/danh-muc", all: "Tất cả sản phẩm" }];
     HOME_SECTIONS.filter((s) => s && s.enabled !== false).forEach((s, i) => {
       const q = homeSectionSeeAll(s);
       const label = s.title || s.group;
@@ -40,7 +40,12 @@ export default function ProductTabs({ products, navigate }) {
     <section className="mx-auto max-w-[1500px] px-3 pt-8 sm:px-4">
       <div className="flex items-center justify-between gap-3">
         <h2 className="min-w-0 font-display text-[25px] min-[400px]:text-[28px] sm:text-[38px] font-bold leading-tight text-ink">Đang được săn đón</h2>
-        <a href={tab.to} onClick={openAll} aria-label={`Xem tất cả ${tab.all}`} className="pt-all shrink-0">Xem tất cả <ArrowRight size={17} /></a>
+        <a href={tab.to} onClick={openAll} aria-label={`Xem tất cả ${tab.all}`} className="pt-all shrink-0">
+          <span className="flex flex-col items-center leading-tight">
+            <span className="inline-flex items-center gap-1.5">Xem tất cả <ArrowRight size={16} /></span>
+            <span className="max-w-[130px] truncate text-[12px] font-semibold">{tab.all}</span>
+          </span>
+        </a>
       </div>
       <div role="tablist" aria-label="Nhóm sản phẩm" className="mt-3 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
         {tabs.map((t) => (
