@@ -75,6 +75,38 @@ export async function uploadProductImage(fileOrBlob) {
 }
 
 /**
+ * Cắt phần trong suốt thừa quanh logo để logo hiện đúng cỡ, và thu về tối đa 800px.
+ * SVG hoặc ảnh không đọc được thì giữ nguyên file gốc.
+ */
+export async function trimLogo(file) {
+  if (!file || file.type === "image/svg+xml") return file;
+  let bmp;
+  try { bmp = await createImageBitmap(file); } catch { return file; }
+  const { width: w, height: h } = bmp;
+  const src = document.createElement("canvas");
+  src.width = w; src.height = h;
+  const ctx = src.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(bmp, 0, 0);
+  const px = ctx.getImageData(0, 0, w, h).data;
+  let x0 = w, y0 = h, x1 = -1, y1 = -1;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    if (px[(y * w + x) * 4 + 3] > 24) {
+      if (x < x0) x0 = x;
+      if (x > x1) x1 = x;
+      if (y < y0) y0 = y;
+      if (y > y1) y1 = y;
+    }
+  }
+  if (x1 < 0) return file;
+  const cw = x1 - x0 + 1, ch = y1 - y0 + 1, k = Math.min(1, 800 / Math.max(cw, ch));
+  const out = document.createElement("canvas");
+  out.width = Math.round(cw * k); out.height = Math.round(ch * k);
+  out.getContext("2d").drawImage(src, x0, y0, cw, ch, 0, 0, out.width, out.height);
+  const blob = await new Promise((ok) => out.toBlob(ok, "image/webp", 0.95));
+  return blob ? new File([blob], "logo.webp", { type: "image/webp" }) : file;
+}
+
+/**
  * Chuẩn hoá 1 link để nhúng thẳng vào <img> (KHÔNG tải về kho Hilitek).
  *  • Google Drive (link chia sẻ "Bất kỳ ai có đường liên kết"):
  *      .../file/d/<ID>/view   ·   ...?id=<ID>   ·   .../open?id=<ID>

@@ -15,7 +15,7 @@ import { ghn as ghnApi } from "./lib/ghn.js";
 // Nội dung mặc định cho web (dùng làm điểm khởi đầu khi chưa chỉnh trong "Cấu hình web").
 import { PAGES as WEB_DEFAULT_PAGES, MENU as WEB_DEFAULT_MENU, flattenMenuTree as webFlattenMenuTree, MAX_CATEGORY_DEPTH as WEB_MAX_CATEGORY_DEPTH, HOME_SECTIONS as WEB_DEFAULT_HOME_SECTIONS, HOME_SECTION_SORTS, HOME_SECTION_LAYOUTS, LANDINGS as WEB_DEFAULT_LANDINGS, FLASH_SALE_CATEGORY as WEB_FLASH_CAT } from "./storefront/config.js";
 import { GROUP_ICON_NAMES, groupIcon as webGroupIcon } from "./storefront/components/groupIcons.js";
-import { uploadProductImage, rehostExternalImage, toDirectImageUrl } from "./lib/mediaUpload.js";
+import { uploadProductImage, rehostExternalImage, toDirectImageUrl, trimLogo } from "./lib/mediaUpload.js";
 import { SUPABASE_ANON_KEY } from "./lib/supabaseStorage.js";
 import { pointsForPhone, normalizePhone, DEFAULT_LOYALTY } from "./lib/loyalty.js";
 import { baseVariantName } from "./lib/variants.js";
@@ -16876,7 +16876,7 @@ function WebConfigForm({ section, webConfig, setWebConfig, setProducts, addLog, 
     if (!file) return;
     setHeroUploading(i);
     try {
-      setHomeHero(i, "logo", (await uploadProductImage(file)).url);
+      setHomeHero(i, "logo", (await uploadProductImage(await trimLogo(file))).url);
     } catch (e) {
       notify(`Chưa tải được logo: ${e.message || e}`);
     } finally { setHeroUploading(-1); }
@@ -17051,7 +17051,7 @@ function WebConfigForm({ section, webConfig, setWebConfig, setProducts, addLog, 
                   {heroUploading === i ? "Đang tải" : "Tải ảnh"}
                   <input type="file" accept="image/png,image/webp" className="hidden" onChange={(e) => { uploadHomeHero(i, e.target.files?.[0]); e.target.value = ""; }} />
                 </label>
-                <label className="text-xs px-2 py-1 rounded-md border cursor-pointer whitespace-nowrap" style={{ borderColor: LINE, color: INK }} title="Logo hãng hiện ở góc trái. PNG nền trong suốt, màu sáng.">
+                <label className="text-xs px-2 py-1 rounded-md border cursor-pointer whitespace-nowrap" style={{ borderColor: LINE, color: INK }} title="Logo hiện ở góc trái. PNG hoặc WebP nền trong suốt, màu sáng, ngang 600 đến 800px. Viền trong suốt thừa được tự cắt.">
                   {h.logo ? "Đổi logo" : "Tải logo"}
                   <input type="file" accept="image/png,image/webp,image/svg+xml" className="hidden" onChange={(e) => { uploadHomeHeroLogo(i, e.target.files?.[0]); e.target.value = ""; }} />
                 </label>
