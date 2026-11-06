@@ -49,6 +49,7 @@ export default async function handler(req, res) {
         title: "Máy chơi game cầm tay chính hãng | Hilitek",
         desc: "Máy chơi game cầm tay Retro, Android và PC cầm tay tại Hilitek. So sánh theo ngân sách, tư vấn trước khi mua, đủ hoá đơn VAT, bảo hành theo serial.",
         url: `${SITE_URL}/may-choi-game-cam-tay`,
+        image: "/og-handheld.jpg",
         noscript: "<h1>Máy chơi game cầm tay</h1>",
       }), cache);
     }
