@@ -32,7 +32,7 @@ button.hp-d{cursor:pointer}
 .hp-key:active{transform:translateY(4px);box-shadow:none}
 
 /* Bốn dòng máy: khung nghiêng theo dấu / của Hilitek, ô đang mở có chữ chạy và máy xoay vào */
-.hh-tiers{--sk:0deg;display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;scrollbar-width:none}
+.hh-tiers{--sk:0deg;position:relative;display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:6px;scrollbar-width:none}
 .hh-tier{--r:-7deg;position:relative;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;flex:0 0 80%;min-height:420px;overflow:hidden;border-radius:20px;text-align:left;scroll-snap-align:start;cursor:pointer;transform:skewX(var(--sk));transition:flex-grow .55s cubic-bezier(.2,.8,.2,1),box-shadow .3s}
 .hh-tier:nth-child(2){--r:6deg}.hh-tier:nth-child(3){--r:-6deg}.hh-tier:nth-child(4){--r:5deg}
 .hh-tx{position:relative;z-index:2;display:block;padding:22px;transform:skewX(calc(var(--sk)*-1))}

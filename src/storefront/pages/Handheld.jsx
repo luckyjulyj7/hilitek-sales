@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, Check, ChevronDown, Gamepad2, Plus, Scale, X } from "lucide-react";
+import { ArrowRight, ChevronDown, Gamepad2, X } from "lucide-react";
 import { SITE, newsItems } from "../config.js";
 import { formatVND } from "../lib/format.js";
 import { submitNeed } from "../lib/api.js";
@@ -150,15 +150,12 @@ function AskModal({ model, onClose }) {
   );
 }
 
-function ModelCard({ m, real, picked, onPick, onAsk, navigate }) {
+function ModelCard({ m, real, onAsk, navigate }) {
   const open = (e) => { e.preventDefault(); navigate(`san-pham/${real.slug}`); };
   return (
-    <article className="hh-card">
+    <article className="hh-card group/card">
       <div className={"hh-stage" + (m.photo ? " photo" : "")}>
         <Shot m={m} />
-        <button type="button" aria-pressed={picked} onClick={() => onPick(m.slug)} className={"absolute right-2 top-2 z-10 inline-flex min-h-[36px] items-center gap-1 rounded-lg px-2.5 text-[13px] font-semibold " + (picked ? "bg-ink text-yellow" : "bg-white/90 text-ink")}>
-          {picked ? <Check size={14} /> : <Plus size={14} />} So sánh
-        </button>
       </div>
       <div className="flex flex-1 flex-col p-3 sm:p-4">
         <p className="text-[13px] text-mute">{m.brand}</p>
@@ -171,47 +168,13 @@ function ModelCard({ m, real, picked, onPick, onAsk, navigate }) {
               <span>{formatVND(real.price)}</span><ArrowRight size={17} />
             </a>
           ) : (
-            <button type="button" onClick={() => onAsk(m)} className="flex min-h-[44px] w-full items-center justify-between gap-2 rounded-lg bg-ink px-3 font-semibold text-white transition hover:bg-navy">
+            <button type="button" onClick={() => onAsk(m)} className="flex min-h-[44px] w-full items-center justify-between gap-2 rounded-lg bg-navy-050 px-3 font-semibold text-ink transition group-hover/card:bg-ink group-hover/card:text-white">
               Hỏi giá <ArrowRight size={17} />
             </button>
           )}
         </div>
       </div>
     </article>
-  );
-}
-
-function Compare({ list, onClose, onRemove }) {
-  useEffect(() => {
-    const esc = (e) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", esc);
-    return () => window.removeEventListener("keydown", esc);
-  }, [onClose]);
-  const rows = [["Dòng máy", (m) => TIERS.find((t) => t.id === m.tier).name], ["Màn hình", (m) => m.screen], ["Chip", (m) => m.chip]];
-  const most = Math.max(...list.map((m) => m.inch));
-  return (
-    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-ink/60 p-3 sm:items-center" onClick={onClose}>
-      <div role="dialog" aria-modal="true" aria-label="So sánh máy" className="relative max-h-[88vh] w-full max-w-4xl overflow-auto rounded-2xl bg-white p-5 sm:p-7" onClick={(e) => e.stopPropagation()}>
-        <button type="button" onClick={onClose} aria-label="Đóng" className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center text-ink/70"><X size={20} /></button>
-        <h3 className="font-display text-[28px] font-bold text-ink">So sánh máy</h3>
-        <div className="mt-4 grid gap-4" style={{ gridTemplateColumns: `repeat(${list.length},minmax(0,1fr))` }}>
-          {list.map((m) => (
-            <div key={m.slug} className="min-w-0">
-              <div className={"hh-stage rounded-xl" + (m.photo ? " photo" : "")}><Shot m={m} /></div>
-              <h4 className="mt-2 font-display text-[18px] font-bold leading-tight text-ink sm:text-[22px]">{m.name}</h4>
-              <div className="mt-2 h-3 overflow-hidden rounded bg-paper" title="Cỡ màn hình so với máy lớn nhất">
-                <div className="h-full rounded bg-yellow transition-[width] duration-700" style={{ width: `${(m.inch / most) * 100}%` }} />
-              </div>
-              <p className="mt-1 text-[14px] font-semibold text-ink">{m.inch} inch</p>
-              <dl className="mt-2 divide-y divide-line text-[14px]">
-                {rows.map(([k, f]) => <div key={k} className="py-2"><dt className="text-mute">{k}</dt><dd className="font-medium text-ink">{f(m)}</dd></div>)}
-              </dl>
-              <button type="button" onClick={() => onRemove(m.slug)} className="mt-1 min-h-[44px] text-[14px] font-semibold text-navy hover:underline">Bỏ khỏi so sánh</button>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -222,14 +185,16 @@ export default function Handheld({ catalog, navigate }) {
   const [tier, setTier] = useState("");
   const [size, setSize] = useState("");
   const [brand, setBrand] = useState("");
-  const [picked, setPicked] = useState([]);
   const [asking, setAsking] = useState(null);
-  const [comparing, setComparing] = useState(false);
+  const [more, setMore] = useState(false);
   const [far, setFar] = useState("");
   const [near, setNear] = useState("");
   const page = useRise();
   const list = useRef(null);
   const tierHold = useRef(false);
+  const tierBox = useRef(null);
+  const tierTouch = useRef(false);
+  const tierWait = useRef(0);
 
   // Bốn dòng máy tự chuyển lần lượt, rê chuột vào thì dừng để khách chọn.
   useEffect(() => {
@@ -240,6 +205,30 @@ export default function Handheld({ catalog, navigate }) {
     }, 4200);
     return () => clearInterval(t);
   }, []);
+
+  // Điện thoại chỉ thấy một ô mỗi lúc: tự lướt tới ô đang mở để máy và chữ chạy trước mắt khách.
+  useEffect(() => {
+    const box = tierBox.current;
+    if (!box || box.scrollWidth <= box.clientWidth + 8 || tierTouch.current) return;
+    const r = box.getBoundingClientRect();
+    if (r.bottom < 0 || r.top > window.innerHeight) return;
+    const el = box.querySelector(`[data-tier="${tierOn}"]`);
+    if (el) box.scrollTo({ left: el.offsetLeft - box.offsetLeft, behavior: "smooth" });
+  }, [tierOn]);
+
+  // Khách tự vuốt thì ô giữa màn hình là ô đang mở, tạm dừng tự chuyển vài giây.
+  const onTierScroll = () => {
+    if (!tierTouch.current) return;
+    const box = tierBox.current;
+    const mid = box.scrollLeft + box.clientWidth / 2;
+    const hit = [...box.children].find((c) => c.offsetLeft - box.offsetLeft <= mid && c.offsetLeft - box.offsetLeft + c.offsetWidth > mid);
+    if (hit?.dataset.tier) setTierOn(hit.dataset.tier);
+  };
+  const touchTier = () => {
+    tierTouch.current = true; tierHold.current = true;
+    clearTimeout(tierWait.current);
+    tierWait.current = setTimeout(() => { tierTouch.current = false; tierHold.current = false; }, 6000);
+  };
 
   useEffect(() => {
     const prev = document.title;
@@ -260,17 +249,12 @@ export default function Handheld({ catalog, navigate }) {
   const shown = MODELS.filter((m) => (!tier || m.tier === tier)
     && (!brand || m.brand === brand)
     && (SIZES.find((s) => s.id === size)?.test?.(m) ?? true));
+  const visible = more ? shown : shown.slice(0, 8);
   const brands = [...new Set(MODELS.filter((m) => !tier || m.tier === tier).map((m) => m.brand))];
   const eraNow = ERAS.find((e) => e.id === era);
   const toList = (id) => {
     setTier(id); setSize(""); setBrand("");
     list.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-  const pick = (slug) => setPicked((v) => (v.includes(slug) ? v.filter((x) => x !== slug) : [...v, slug].slice(-3)));
-  const removePick = (slug) => {
-    const next = picked.filter((x) => x !== slug);
-    setPicked(next);
-    if (next.length < 2) setComparing(false);
   };
   const chip = (on) => "min-h-[44px] shrink-0 rounded-lg px-4 text-[15px] font-semibold transition " + (on ? "bg-ink text-yellow" : "bg-white text-ink hover:bg-yellow");
 
@@ -300,10 +284,10 @@ export default function Handheld({ catalog, navigate }) {
       </div>
 
       <section className={WRAP + " pt-9"}>
-        <h2 className={H2 + " hh-rise mb-3"}>Bốn dòng máy, chọn theo nhu cầu</h2>
-        <div className="hh-tiers hh-rise" onMouseEnter={() => { tierHold.current = true; }} onMouseLeave={() => { tierHold.current = false; }}>
+        <h2 className={H2 + " hh-rise mb-3"}>Chọn theo dòng máy</h2>
+        <div ref={tierBox} className="hh-tiers hh-rise" onScroll={onTierScroll} onTouchStart={touchTier} onMouseEnter={() => { tierHold.current = true; }} onMouseLeave={() => { tierHold.current = false; }}>
           {TIERS.map((t) => (
-            <button key={t.id} type="button" onMouseEnter={() => setTierOn(t.id)} onFocus={() => setTierOn(t.id)} onClick={() => toList(t.id)} className={"hh-tier " + t.tone + (tierOn === t.id ? " on" : "")}>
+            <button key={t.id} type="button" data-tier={t.id} onMouseEnter={() => setTierOn(t.id)} onFocus={() => setTierOn(t.id)} onClick={() => toList(t.id)} className={"hh-tier " + t.tone + (tierOn === t.id ? " on" : "")}>
               <span className="hh-word" aria-hidden="true"><i>{t.word}</i><i>{t.word}</i><i>{t.word}</i><i>{t.word}</i></span>
               <Shot m={{ slug: t.cover, name: t.name }} />
               <span className="hh-tx">
@@ -365,7 +349,10 @@ export default function Handheld({ catalog, navigate }) {
       </section>}
 
       <section ref={list} className={WRAP + " scroll-mt-40 pt-9"}>
-        <h2 className={H2 + " mb-3"}>Tất cả máy</h2>
+        <div className="mb-3 flex items-baseline justify-between gap-3">
+          <h2 className={H2}>Tất cả máy</h2>
+          <span className="shrink-0 text-[15px] font-semibold text-mute">{shown.length} máy</span>
+        </div>
         <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
           <button type="button" aria-pressed={!tier} onClick={() => { setTier(""); setBrand(""); }} className={chip(!tier)}>Tất cả</button>
           {TIERS.map((t) => <button key={t.id} type="button" aria-pressed={tier === t.id} onClick={() => { setTier(t.id); setBrand(""); }} className={chip(tier === t.id)}>{t.name}</button>)}
@@ -392,10 +379,15 @@ export default function Handheld({ catalog, navigate }) {
         )}
         {shown.length > 0 ? (
           <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 sm:gap-3">
-            {shown.map((m) => <ModelCard key={m.slug} m={m} real={realOf(m)} picked={picked.includes(m.slug)} onPick={pick} onAsk={setAsking} navigate={navigate} />)}
+            {visible.map((m) => <ModelCard key={m.slug} m={m} real={realOf(m)} onAsk={setAsking} navigate={navigate} />)}
           </div>
         ) : (
           <p className="mt-3 rounded-2xl bg-white p-6 text-[16px] text-ink">Chưa có máy khớp bộ lọc. Bạn thử chọn cỡ màn hoặc hãng khác nhé.</p>
+        )}
+        {!more && shown.length > 8 && (
+          <div className="mt-5 text-center">
+            <button type="button" onClick={() => setMore(true)} className="hh-k y w-full sm:w-auto">Xem thêm {shown.length - 8} máy <ChevronDown size={17} /></button>
+          </div>
         )}
       </section>
 
@@ -420,13 +412,6 @@ export default function Handheld({ catalog, navigate }) {
       </section>
       <section className={WRAP + " pb-8 pt-6"}><TrustBar /></section>
 
-      {picked.length > 0 && (
-        <div className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+66px)] z-40 mx-auto flex max-w-xl items-center justify-between gap-3 rounded-xl bg-ink p-2.5 pl-4 text-white shadow-card lg:bottom-5">
-          <span className="text-[15px] font-semibold">Đã chọn {picked.length} máy</span>
-          <button type="button" disabled={picked.length < 2} onClick={() => setComparing(true)} className="hh-k y !min-h-[44px] disabled:opacity-50"><Scale size={17} /> {picked.length < 2 ? "Chọn thêm 1 máy" : "So sánh"}</button>
-        </div>
-      )}
-      {comparing && picked.length > 1 && <Compare list={picked.map((s) => MODELS.find((m) => m.slug === s))} onClose={() => setComparing(false)} onRemove={removePick} />}
       {asking && <AskModal model={asking} onClose={() => setAsking(null)} />}
     </div>
   );
