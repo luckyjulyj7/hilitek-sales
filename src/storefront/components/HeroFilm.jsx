@@ -5,6 +5,8 @@ import { HOME_HERO } from "../config.js";
 import "./hero-film.css";
 
 const MS = 5200;
+// Logo hãng có sẵn. Slide nào gắn logo riêng trong Màn trình chiếu thì dùng logo đó, không có thì để trống.
+const BRAND_LOGOS = { voicsky: "/brands/voicsky.webp" };
 const COLORS = [["#0B1140", "#2C3FD0"], ["#101A5C", "#3A6BE0"], ["#1E2A8A", "#5468F0"], ["#0E1650", "#2C8FD0"]];
 // Dùng khi chủ shop chưa cấu hình mục "Màn trình chiếu".
 const DEFAULTS = [
@@ -40,7 +42,7 @@ export default function HeroFilm({ products, navigate }) {
           ...s, key: `${s.p.id}-${k}`, title, cut: !!s.image, img: s.image || first?.src || first || "",
           head: parts.length > 1 ? parts.slice(0, -1).join(" ") : title,
           tail: parts.length > 1 ? parts[parts.length - 1] : "",
-          word: parts[0], sub: (s.sub && s.sub.trim()) || s.p.category || "",
+          word: parts[0], logo: s.logo || BRAND_LOGOS[String(s.p.brand || "").toLowerCase()] || "", sub: (s.sub && s.sub.trim()) || s.p.category || "",
           bg: COLORS[k % COLORS.length][0], glow: COLORS[k % COLORS.length][1],
         };
       });
@@ -81,6 +83,7 @@ export default function HeroFilm({ products, navigate }) {
         {slides.map((s, k) => (
           <div key={s.key} className={"hf-s" + (k === i ? " on" : "")} aria-hidden={k !== i}>
             <div className="hf-word">{s.word}</div>
+            {s.logo && <img className="hf-logo" src={s.logo} alt={s.p.brand || ""} />}
             <img className={"hf-kb" + (s.cut ? "" : " plain")} src={s.img} alt={s.p.name} fetchpriority={k === 0 ? "high" : undefined} />
             <div className="hf-tx">
               <p className="hf-a">{s.sub}</p>

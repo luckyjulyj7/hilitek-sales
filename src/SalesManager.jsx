@@ -16872,6 +16872,15 @@ function WebConfigForm({ section, webConfig, setWebConfig, setProducts, addLog, 
       notify(`Chưa tải được ảnh: ${e.message || e}`);
     } finally { setHeroUploading(-1); }
   };
+  const uploadHomeHeroLogo = async (i, file) => {
+    if (!file) return;
+    setHeroUploading(i);
+    try {
+      setHomeHero(i, "logo", (await uploadProductImage(file)).url);
+    } catch (e) {
+      notify(`Chưa tải được logo: ${e.message || e}`);
+    } finally { setHeroUploading(-1); }
+  };
   const heroSlides = Array.isArray(HP.hero?.slides) ? HP.hero.slides : [];
   const mutHeroSlides = (fn) => setWebConfig((x) => {
     const hp = { ...(x.HOME_POSTERS || {}) };
@@ -17042,6 +17051,11 @@ function WebConfigForm({ section, webConfig, setWebConfig, setProducts, addLog, 
                   {heroUploading === i ? "Đang tải" : "Tải ảnh"}
                   <input type="file" accept="image/png,image/webp" className="hidden" onChange={(e) => { uploadHomeHero(i, e.target.files?.[0]); e.target.value = ""; }} />
                 </label>
+                <label className="text-xs px-2 py-1 rounded-md border cursor-pointer whitespace-nowrap" style={{ borderColor: LINE, color: INK }} title="Logo hãng hiện ở góc trái. PNG nền trong suốt, màu sáng.">
+                  {h.logo ? "Đổi logo" : "Tải logo"}
+                  <input type="file" accept="image/png,image/webp,image/svg+xml" className="hidden" onChange={(e) => { uploadHomeHeroLogo(i, e.target.files?.[0]); e.target.value = ""; }} />
+                </label>
+                {h.logo && <button onClick={() => setHomeHero(i, "logo", "")} className="text-xs px-1.5 py-1" style={{ color: RUST }}>Bỏ logo</button>}
                 <button onClick={() => moveHomeHero(i, -1)} disabled={i === 0} className="text-xs px-1.5 py-1 rounded-md border disabled:opacity-30" style={{ borderColor: LINE }} title="Lên">↑</button>
                 <button onClick={() => moveHomeHero(i, 1)} disabled={i === homeHero.length - 1} className="text-xs px-1.5 py-1 rounded-md border disabled:opacity-30" style={{ borderColor: LINE }} title="Xuống">↓</button>
                 <button onClick={() => delHomeHero(i)} className="text-xs px-1.5 py-1" style={{ color: RUST }}>Xoá</button>
