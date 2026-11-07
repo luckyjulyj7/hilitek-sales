@@ -12,9 +12,9 @@ import BottomNav from "./components/BottomNav.jsx";
 import OrderConfirmModal from "./components/OrderConfirmModal.jsx";
 import StockNotify from "./components/StockNotify.jsx";
 import Handheld, { HANDHELD_PATH } from "./pages/Handheld.jsx";
+import ProductRoute from "./pages/ProductRoute.jsx";
 import Home from "./pages/Home.jsx";
 import Catalog from "./pages/Catalog.jsx";
-import ProductDetail from "./pages/ProductDetail.jsx";
 import Cart from "./pages/Cart.jsx";
 import Checkout from "./pages/Checkout.jsx";
 import Warranty from "./pages/Warranty.jsx";
@@ -98,7 +98,7 @@ export default function App() {
 
   let page;
   if (productMatch) {
-    page = <ProductDetail slug={productMatch.slug} navigate={route.navigate} catalog={catalog} />;
+    page = <ProductRoute slug={productMatch.slug} navigate={route.navigate} catalog={catalog} />;
   } else if (landingMatch) {
     page = <LandingPage slug={landingMatch.slug} navigate={route.navigate} />;
   } else if (route.path === NEWS_PATH) {

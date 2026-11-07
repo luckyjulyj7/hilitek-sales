@@ -298,6 +298,10 @@ export function productGroups(p) {
   return [...new Set(productCategories(p).map((c) => CATEGORY_TO_GROUP[c]).filter(Boolean))];
 }
 export const productInGroup = (p, group) => productGroups(p).includes(group);
+
+/** Sản phẩm thuộc nhóm này mở trang bán tối riêng thay cho trang sản phẩm thường. */
+export const GAME_GROUP = "Máy chơi game cầm tay";
+export const isGameProduct = (p) => !!p && (productInGroup(p, GAME_GROUP) || productCategories(p).includes(GAME_GROUP));
 // Sản phẩm thuộc 1 danh mục nếu gắn ĐÚNG danh mục đó, HOẶC gắn 1 danh mục con/cháu bên dưới nó
 // (xem danh mục cha sẽ tự gộp luôn hàng của các nhánh con).
 export function productInCategory(p, cat) {

@@ -260,6 +260,7 @@ export function publicProduct(p, { detail = false } = {}) {
     out.description = desc;
     out.seoTitle = typeof web.seoTitle === "string" ? web.seoTitle.trim() : "";
     out.seoDesc = typeof web.seoDesc === "string" ? web.seoDesc.trim() : "";
+    out.game = web.game && typeof web.game === "object" ? web.game : null; // nội dung trang bán máy game
   }
   return out;
 }

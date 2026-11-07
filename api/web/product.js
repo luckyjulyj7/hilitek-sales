@@ -26,7 +26,9 @@ export default handler(async (req, res) => {
         id: p.id,
         slug: p.web && p.web.slug ? slugify(p.web.slug) : productSlug(p),
         attrs: (p.variantAttrs && typeof p.variantAttrs === "object" ? p.variantAttrs : {}),
+        sku: p.sku || "",
         price: Number(p.retailPrice) || 0,
+        listPrice: publicProduct(p).listPrice,
         stock: webStockOf(p),
         image: (p.web && Array.isArray(p.web.images) && p.web.images.filter(Boolean)[0]) || p.image || "",
       }));

@@ -13,7 +13,7 @@ import Quill from "quill";
 import "quill/dist/quill.snow.css";
 import { ghn as ghnApi } from "./lib/ghn.js";
 // Nội dung mặc định cho web (dùng làm điểm khởi đầu khi chưa chỉnh trong "Cấu hình web").
-import { PAGES as WEB_DEFAULT_PAGES, MENU as WEB_DEFAULT_MENU, flattenMenuTree as webFlattenMenuTree, MAX_CATEGORY_DEPTH as WEB_MAX_CATEGORY_DEPTH, HOME_SECTIONS as WEB_DEFAULT_HOME_SECTIONS, HOME_SECTION_SORTS, HOME_SECTION_LAYOUTS, LANDINGS as WEB_DEFAULT_LANDINGS, FLASH_SALE_CATEGORY as WEB_FLASH_CAT } from "./storefront/config.js";
+import { PAGES as WEB_DEFAULT_PAGES, MENU as WEB_DEFAULT_MENU, flattenMenuTree as webFlattenMenuTree, MAX_CATEGORY_DEPTH as WEB_MAX_CATEGORY_DEPTH, HOME_SECTIONS as WEB_DEFAULT_HOME_SECTIONS, HOME_SECTION_SORTS, HOME_SECTION_LAYOUTS, LANDINGS as WEB_DEFAULT_LANDINGS, FLASH_SALE_CATEGORY as WEB_FLASH_CAT, GAME_GROUP as WEB_GAME_GROUP } from "./storefront/config.js";
 import { GROUP_ICON_NAMES, groupIcon as webGroupIcon } from "./storefront/components/groupIcons.js";
 import { uploadProductImage, rehostExternalImage, toDirectImageUrl, trimLogo } from "./lib/mediaUpload.js";
 import { SUPABASE_ANON_KEY } from "./lib/supabaseStorage.js";
@@ -23,6 +23,7 @@ import { autoComparePrice } from "./lib/autoComparePrice.js";
 import HomeTilesEditor from "./HomeTilesEditor.jsx";
 import { HomeHeroEditor, HomeTabsEditor } from "./HomePanels.jsx";
 import HandheldEditor from "./HandheldEditor.jsx";
+import GameProductEditor from "./GameProductEditor.jsx";
 
 // Xuất 1 hoặc nhiều bảng dữ liệu ra 1 file Excel (.xlsx), mỗi bảng là 1 sheet riêng.
 // Thư viện Excel (xlsx) nặng ~400KB — chỉ tải khi thật sự bấm xuất/nhập file, không nằm trong lần tải đầu.
@@ -1115,6 +1116,8 @@ function normalizeWeb(w) {
     // Độ ưu tiên hiển thị ở danh mục/trang chủ khi khách chưa tự chọn sắp xếp (mặc định "Phổ biến")
     // — số càng lớn càng lên đầu. Bằng nhau thì giữ nguyên thứ tự cũ (không random).
     priority: Number(w.priority) || 0,
+    // Nội dung trang bán tối cho máy chơi game. Dùng chung cho mọi phiên bản.
+    game: w.game && typeof w.game === "object" ? w.game : null,
   };
 }
 // Số tồn kho ảo ngẫu nhiên "trông thật" cho hàng dropship (5–29).
@@ -14737,7 +14740,7 @@ function RankBars({ rows, onPick, color = INK }) {
 // Tab cấp 2 trong một biểu mẫu: dạng thẻ, mỗi thẻ cho biết mục đó đã đủ hay còn thiếu.
 function SectionTabs({ tabs, value, onChange }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+    <div className={"grid grid-cols-2 gap-2 " + (tabs.length > 4 ? "md:grid-cols-5" : "md:grid-cols-4")}>
       {tabs.map((t) => {
         const on = value === t.id;
         const tone = t.state === "missing" ? RUST : t.state === "warn" ? BRASS : t.state === "ok" ? FOREST : "#6B7280";
@@ -15693,7 +15696,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
   const p = product;
   // Các phiên bản (màu sắc/kích cỡ...) cùng 1 sản phẩm dùng CHUNG mô tả/thông số/danh mục/trạng
   // thái/giá so sánh — KHÔNG đồng bộ "images": mỗi phiên bản có ảnh riêng, đây là điểm khác duy nhất.
-  const shareKeys = ["description", "specsText", "categories", "shortDesc", "promo", "published", "compareAtPrice"];
+  const shareKeys = ["description", "specsText", "categories", "shortDesc", "promo", "published", "compareAtPrice", "game"];
   const [draft, setDraft] = useState(() => normalizeWeb(product.web));
   const [weightDraft, setWeightDraft] = useState(product.weight ?? 0);
   const [dirty, setDirty] = useState(false);
@@ -15822,6 +15825,8 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
   }, []);
 
   const w = draft;
+  // Sản phẩm trong nhóm máy chơi game có thêm phần nội dung cho trang bán tối.
+  const isGame = (w.categories || []).concat(p.category || "").some((c) => c === WEB_GAME_GROUP || (webCats || []).find((x) => x.name === c)?.group === WEB_GAME_GROUP);
   const effSlug = w.slug || webSlugify(p.name) || webSlugify(p.sku || "");
   const seoTitle = w.seoTitle || p.name;
   const seoDesc = w.seoDesc || w.shortDesc || stripHtmlToText(w.description).slice(0, 160);
@@ -15923,6 +15928,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
                   { id: "images", label: "Ảnh", icon: Images, state: noImage ? "missing" : "ok", note: noImage ? "Chưa có ảnh" : "Đã có ảnh" },
                   { id: "price", label: "Giá & vận chuyển", icon: Tag, note: "Giá gạch, khối lượng" },
                   { id: "seo", label: "SEO", icon: Search, state: noSeo ? "warn" : "ok", note: noSeo ? "Nên bổ sung" : "Đã có SEO riêng" },
+                  ...(isGame ? [{ id: "game", label: "Trang máy game", icon: Sparkles, state: w.game ? "ok" : "warn", note: w.game ? "Đã có nội dung" : "Nên điền thêm" }] : []),
                 ]} />
               </div>
             );
@@ -15961,6 +15967,10 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
               </Field>
             </div>
           </div>
+
+          {isGame && editTab === "game" && (
+            <GameProductEditor value={w.game} onChange={(v) => setWeb({ game: v })} product={p} products={products} displayImage={displayImage} askConfirm={askConfirm} notify={notify} onSpecs={(t) => setWeb({ specsText: t })} />
+          )}
 
           <div hidden={editTab !== "images"} className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
             <p className="text-base font-semibold mb-2" style={{ color: TEXT }}>Ảnh sản phẩm trên web <span className="text-xs font-normal opacity-60">(tối đa 10, chất lượng cao — bỏ trống = dùng ảnh ở form sản phẩm chính)</span></p>

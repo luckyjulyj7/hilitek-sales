@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, ChevronDown, Gamepad2, X } from "lucide-react";
-import { SITE, newsItems } from "../config.js";
+import { SITE, isGameProduct, newsItems } from "../config.js";
 import { formatVND } from "../lib/format.js";
 import { submitNeed } from "../lib/api.js";
 import { ERAS, HH_BRANDS, HH_FAQ, HH_HERO, HH_LIFE, MODELS, SPOTLIGHT, TIERS, hhImage } from "../data/handhelds.js";
@@ -12,7 +12,6 @@ import TrustBar from "../components/TrustBar.jsx";
 import "./handheld.css";
 
 export const HANDHELD_PATH = "/may-choi-game-cam-tay";
-const GROUP = "Máy chơi game cầm tay";
 const WRAP = "mx-auto max-w-[1500px] px-3 sm:px-4";
 const H2 = "font-display text-[30px] sm:text-[38px] font-bold text-ink";
 const SIZES = [
@@ -232,7 +231,7 @@ export default function Handheld({ catalog, navigate }) {
     return (m) => (m.productId && products.find((p) => linkedTo(m, p))) || low.find(([n]) => n.includes(m.name.toLowerCase()))?.[1];
   }, [products]);
   // Máy thật trong nhóm chưa có trong danh sách trưng bày thì hiện riêng ở đầu.
-  const extra = useMemo(() => products.filter((p) => ((p.categories || []).includes(GROUP) || p.category === GROUP)
+  const extra = useMemo(() => products.filter((p) => isGameProduct(p)
     && !MODELS.some((m) => linkedTo(m, p) || p.name.toLowerCase().includes(m.name.toLowerCase()))), [products]);
 
   const all = MODELS.filter((m) => !m.hidden);
