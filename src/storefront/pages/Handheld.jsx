@@ -3,7 +3,7 @@ import { ArrowRight, ChevronDown, Gamepad2, X } from "lucide-react";
 import { SITE, isGameProduct, newsItems } from "../config.js";
 import { formatVND } from "../lib/format.js";
 import { submitNeed } from "../lib/api.js";
-import { ERAS, HH_BRANDS, HH_FAQ, HH_HERO, HH_LIFE, MODELS, SPOTLIGHT, TIERS, hhImage } from "../data/handhelds.js";
+import { ERAS, HH_BRANDS, HH_FAQ, HH_HERO, HH_LIFE, MODELS, SPOTLIGHT, TIERS, hhCard, hhImage } from "../data/handhelds.js";
 import HiliPlay from "../components/HiliPlay.jsx";
 import NewsVideo from "../components/NewsVideo.jsx";
 import ProductCard from "../components/ProductCard.jsx";
@@ -139,11 +139,12 @@ function AskModal({ model, onClose }) {
 }
 
 function ModelCard({ m, real, onAsk, navigate }) {
+  const card = hhCard(m);
   const open = (e) => { e.preventDefault(); navigate(`san-pham/${real.slug}`); };
   return (
     <article className="hh-card group/card">
-      <div className={"hh-stage" + (m.photo ? " photo" : "")}>
-        <Shot m={m} />
+      <div className={"hh-stage" + (card || m.photo ? " photo" : "")}>
+        <Shot m={card ? { ...m, image: card } : m} />
       </div>
       <div className="flex flex-1 flex-col p-3 sm:p-4">
         <p className="text-[13px] text-mute">{m.brand}</p>
@@ -366,9 +367,11 @@ export default function Handheld({ catalog, navigate }) {
             </div>
             <div className="grid grid-cols-3 gap-2">
               {eraNow.picks.map((slug) => MODELS.find((x) => x.slug === slug)).filter(Boolean).map((m) => {
+                const card = hhCard(m);
+                const cover = card || m.photo;
                 return (
                   <button key={m.slug} type="button" onClick={() => setAsking(m)} className="group min-w-0 overflow-hidden rounded-xl bg-white text-left text-ink">
-                    <span className={"block aspect-[5/4] overflow-hidden " + (m.photo ? "" : "p-2")}><Shot m={m} className={"h-full w-full transition duration-500 group-hover:scale-105 " + (m.photo ? "object-cover" : "object-contain")} /></span>
+                    <span className={"block aspect-[5/4] overflow-hidden " + (cover ? "" : "p-2")}><Shot m={card ? { ...m, image: card } : m} className={"h-full w-full transition duration-500 group-hover:scale-105 " + (cover ? "object-cover" : "object-contain")} /></span>
                     <span className="block px-2.5 pb-2.5 text-[14px] font-semibold leading-tight sm:text-[16px]">{m.name}</span>
                   </button>
                 );

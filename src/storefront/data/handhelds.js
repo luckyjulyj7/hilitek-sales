@@ -71,6 +71,12 @@ export const HH_LIFE = {
   ],
 };
 
+// Máy đã có ảnh "sân khấu tối Hili" (nền chung, máy cùng cỡ) trong public/handheld/stage/.
+export const HH_STAGE = new Set(["anbernic-rg-34xx", "anbernic-rg-34xxsp", "anbernic-rg-35xx-pro", "anbernic-rg-476h", "anbernic-rg-557", "ayn-odin-3", "ayn-thor", "gpd-win-max-2025", "legion-go-2", "mangmi-air-x", "mangmi-pocket-max", "miyoo-flip-v2", "miyoo-mini-plus", "msi-claw-8-ai", "retroid-pocket-5", "retroid-pocket-6", "retroid-pocket-nova", "rog-xbox-ally-x", "steam-deck-oled"]);
+
+/** Ảnh cho thẻ máy: ảnh nền tối chủ shop tải lên, rồi tới ảnh sân khấu, không có thì trả về rỗng. */
+export const hhCard = (m) => (m.image && m.photo ? m.image : HH_STAGE.has(m.slug) ? `/handheld/stage/${m.slug}.webp` : "");
+
 /** Ảnh của một máy: ảnh chủ shop tải lên, không có thì lấy ảnh mặc định theo slug. */
 export const hhImage = (m) => m.image || `/handheld/${m.slug}.webp`;
 
