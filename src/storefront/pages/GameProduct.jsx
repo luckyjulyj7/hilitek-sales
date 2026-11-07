@@ -47,6 +47,7 @@ export default function GameProduct({ p, navigate, catalog }) {
   const [askI, setAskI] = useState(0);
   const [sceneI, setSceneI] = useState(0);
   const [sceneHold, setSceneHold] = useState(false);
+  const [wide, setWide] = useState({});
   const [lineI, setLineI] = useState(0);
   const [barOn, setBarOn] = useState(false);
   const [more, setMore] = useState(false);
@@ -165,9 +166,24 @@ export default function GameProduct({ p, navigate, catalog }) {
   }, [sceneHold, scenes.length]);
 
   useEffect(() => {
+    // Máy tính: lướt xuống thì thanh xanh trên cùng tự ẩn để trang rộng hơn, lướt lên thì hiện lại.
     const head = document.querySelector("header");
-    const top = () => { root.current?.style.setProperty("--top", (innerWidth >= 1024 && head ? head.offsetHeight : 0) + "px"); };
+    let lastY = scrollY;
+    let hidden = false;
+    if (head) head.style.transition = "transform .35s cubic-bezier(.16,1,.3,1)";
+    const setTop = () => {
+      const h = innerWidth >= 1024 && head && !hidden ? head.offsetHeight : 0;
+      root.current?.style.setProperty("--top", h + "px");
+    };
+    const hide = (v) => {
+      if (!head || v === hidden) return;
+      hidden = v;
+      head.style.transform = v ? "translateY(-100%)" : "";
+      setTop();
+    };
     const onScroll = () => {
+      const y = scrollY;
+      if (innerWidth >= 1024 && Math.abs(y - lastY) > 6) { hide(y > lastY && y > 240); lastY = y; }
       const f = film.current;
       if (f) {
         const r = f.getBoundingClientRect();
@@ -178,10 +194,14 @@ export default function GameProduct({ p, navigate, catalog }) {
       const b = buy.current;
       if (b) setBarOn(b.getBoundingClientRect().bottom < 40);
     };
-    top(); onScroll();
+    const onResize = () => { if (innerWidth < 1024) hide(false); setTop(); };
+    setTop(); onScroll();
     addEventListener("scroll", onScroll, { passive: true });
-    addEventListener("resize", top);
-    return () => { removeEventListener("scroll", onScroll); removeEventListener("resize", top); };
+    addEventListener("resize", onResize);
+    return () => {
+      removeEventListener("scroll", onScroll); removeEventListener("resize", onResize);
+      if (head) { head.style.transform = ""; head.style.transition = ""; }
+    };
   }, [lines.length]);
 
   const go = (e, to) => { e.preventDefault(); navigate(to.replace(/^\//, "")); };
@@ -309,7 +329,11 @@ export default function GameProduct({ p, navigate, catalog }) {
                 <button key={i} className="dtab" type="button" role="tab" aria-selected={i === sceneI} onClick={() => { setSceneHold(true); setSceneI(i); }}><b>{s.title}</b>{s.text && <span>{s.text}</span>}</button>
               ))}
             </div>
-            <div className="dual-pic">{scenes.map((s, i) => <img key={i} src={s.image} alt={s.title} loading="lazy" className={i === sceneI ? "on" : ""} />)}</div>
+            <div className="dual-pic">{scenes.map((s, i) => (
+              // Ảnh quá ngang (ảnh giao diện, ảnh chụp màn hình) thì hiện trọn, không cắt.
+              <img key={i} src={s.image} alt={s.title} loading="lazy" className={(i === sceneI ? "on" : "") + (wide[i] ? " fit" : "")}
+                onLoad={(e) => { const im = e.currentTarget; if (im.naturalWidth / im.naturalHeight > 1.75) setWide((w) => ({ ...w, [i]: true })); }} />
+            ))}</div>
           </div>
           {(g.screens || []).length > 0 && (
             <div className="screens rise">

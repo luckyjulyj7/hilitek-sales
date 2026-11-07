@@ -285,3 +285,5 @@
 .gp .price strong{font-weight:800;letter-spacing:-.03em}
 .gp .lead,.gp .sub{letter-spacing:-.005em}
 .gp .tape{font-weight:600;letter-spacing:.01em}
+.gp .dual-pic img.fit{object-fit:contain;padding:3%;background:radial-gradient(70% 80% at 50% 50%,color-mix(in srgb,var(--ac) 22%,#0C1026),#07091A 80%)}
+.gp .gallery,.gp .film-sticky{transition:top .35s cubic-bezier(.16,1,.3,1),height .35s cubic-bezier(.16,1,.3,1)}
