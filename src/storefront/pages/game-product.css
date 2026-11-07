@@ -287,3 +287,31 @@
 .gp .tape{font-weight:600;letter-spacing:.01em}
 .gp .dual-pic img.fit{object-fit:contain;padding:3%;background:radial-gradient(70% 80% at 50% 50%,color-mix(in srgb,var(--ac) 22%,#0C1026),#07091A 80%)}
 .gp .gallery,.gp .film-sticky{transition:top .35s cubic-bezier(.16,1,.3,1),height .35s cubic-bezier(.16,1,.3,1)}
+
+/* Ảnh kích thước hiện trọn */
+.gp .dimpic{aspect-ratio:auto;height:auto;object-fit:contain}
+/* Bài viết liên quan trong trang tối */
+.gp .bg-white:not([role=dialog]){background:var(--card)}
+.gp .bg-white:not([role=dialog]) .text-ink{color:var(--tx)}
+.gp .bg-white:not([role=dialog]) .text-ink\/40{color:rgba(236,240,255,.4)}
+.gp h2.text-ink{color:var(--tx)}
+.gp .divide-line>*{border-color:var(--line)}
+.gp .text-navy{color:var(--y)}
+.gp .group:hover .group-hover\:text-navy{color:var(--y)}
+.gp section.mx-auto{max-width:1400px;padding-left:20px;padding-right:20px}
+/* Trang máy game: nền và băng đăng ký cuối trang cũng tối */
+html.hili-dark .bg-paper{background:#07091A}
+html.hili-dark .nl-band{background:#0B0E26;border-top:1px solid rgba(255,255,255,.08)}
+html.hili-dark .nl-band h3,html.hili-dark .nl-band label{color:#F4F6FB}
+html.hili-dark .nl-band p{color:rgba(236,240,255,.6)}
+html.hili-dark .nl-band .bg-line{background:rgba(255,255,255,.1)}
+html.hili-dark .nl-band input{background:#11162F;color:#F4F6FB;border-color:rgba(255,255,255,.14)}
+html.hili-dark .nl-band input::placeholder{color:rgba(236,240,255,.4)}
+html.hili-dark .nl-band button{background:#F7C600;color:#060A2A}
+/* Danh sách soạn bằng trình soạn thảo: data-list="bullet" là gạch đầu dòng, không đánh số */
+.ql-content ol>li[data-list=bullet]{list-style-type:disc}
+.ql-content ol>li[data-list=ordered]{list-style-type:decimal}
+.ql-content .ql-ui{display:none}
+.gp .rich ol{padding-left:1.3em;margin:.2em 0 .9em}
+.gp .rich li{margin:.25em 0}
+.gp .rich li::marker{color:var(--ac)}

@@ -35,7 +35,7 @@ export default function NewsletterSignup() {
   };
 
   return (
-    <div className="bg-navy-050">
+    <div className="nl-band bg-navy-050">
       <div className="mx-auto max-w-[1500px] px-4 py-8 font-sans">
         <div className="flex items-center gap-4 mb-1.5">
           <div className="flex-1 h-px bg-line" />

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { GAME_GROUP, SITE, isGameProduct } from "../config.js";
+import { GAME_GROUP, SITE, isGameProduct, newsItems } from "../config.js";
+import NewsVideo from "../components/NewsVideo.jsx";
 import { discountPercent, formatVND, placeholderImage, warrantyLabel } from "../lib/format.js";
 import { href } from "../router.js";
 import { useCart } from "../cart.jsx";
@@ -59,6 +60,8 @@ export default function GameProduct({ p, navigate, catalog }) {
 
   useEffect(() => { setSel(p.id); }, [p.id]);
   useEffect(() => { window.scrollTo(0, 0); }, []);
+  // Cả trang tối, kể cả nền và băng đăng ký cuối trang.
+  useEffect(() => { document.documentElement.classList.add("hili-dark"); return () => document.documentElement.classList.remove("hili-dark"); }, []);
   // Font riêng của trang máy game, chỉ tải khi mở trang này.
   useEffect(() => {
     if (document.getElementById("gp-font")) return;
@@ -458,7 +461,7 @@ export default function GameProduct({ p, navigate, catalog }) {
       {descText && (
         <section className="sec wrap">
           <h2 className="rise">Giới thiệu sản phẩm</h2>
-          <div className={"rich rise" + (more ? " open" : "")}><RichText text={descText} /></div>
+          <div className="rise"><div className={"rich" + (more ? " open" : "")}><RichText text={descText} /></div></div>
           {!more && <button className="btn o moreb" type="button" onClick={() => setMore(true)}>Xem thêm</button>}
         </section>
       )}
@@ -479,6 +482,8 @@ export default function GameProduct({ p, navigate, catalog }) {
           )}
         </section>
       )}
+
+      {newsItems("handheld").length > 0 && <NewsVideo navigate={navigate} title="Bài viết về máy chơi game" items={newsItems("handheld")} />}
 
       {related.length > 0 && (
         <section className="sec wrap">

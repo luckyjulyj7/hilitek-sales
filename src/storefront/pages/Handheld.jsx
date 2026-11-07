@@ -232,6 +232,8 @@ export default function Handheld({ catalog, navigate }) {
     return () => { document.title = prev; };
   }, []);
 
+  useEffect(() => { document.documentElement.classList.add("hili-dark"); return () => document.documentElement.classList.remove("hili-dark"); }, []);
+
   // Máy tính: lướt xuống thì thanh xanh trên cùng tự ẩn, lướt lên thì hiện lại.
   useEffect(() => {
     const head = document.querySelector("header");
