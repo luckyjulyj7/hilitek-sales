@@ -275,3 +275,13 @@
 .gp .film,.gp .film *{box-sizing:border-box}
 @media(min-width:1024px){.gp .bar{bottom:0}}
 @media(max-width:1000px){.gp .bento:not(.seven) figure{grid-column:span 1!important}.gp .bento:not(.seven) figure:first-child{grid-column:1/-1!important}.gp .bento.seven{grid-auto-rows:auto}}
+
+/* Be Vietnam Pro: font thiết kế cho tiếng Việt, tiêu đề không ép hẹp */
+.gp,.gp button,.gp input{font-family:"Be Vietnam Pro",Archivo,system-ui,sans-serif}
+.gp h1,.gp h2,.gp h3,.gp .price strong,.gp .big,.gp .dims dd,.gp .pick-a h3,.gp .bar strong,.gp figcaption b,.gp .dtab b,.gp .more b,.gp thead th,.gp .faq summary{font-stretch:100%}
+.gp h1{font-weight:800;letter-spacing:-.035em;line-height:1.02}
+.gp h2{font-weight:700;letter-spacing:-.03em;line-height:1.14}
+.gp .film-tx h2{font-weight:800;letter-spacing:-.04em}
+.gp .price strong{font-weight:800;letter-spacing:-.03em}
+.gp .lead,.gp .sub{letter-spacing:-.005em}
+.gp .tape{font-weight:600;letter-spacing:.01em}

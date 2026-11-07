@@ -58,6 +58,14 @@ export default function GameProduct({ p, navigate, catalog }) {
 
   useEffect(() => { setSel(p.id); }, [p.id]);
   useEffect(() => { window.scrollTo(0, 0); }, []);
+  // Font riêng của trang máy game, chỉ tải khi mở trang này.
+  useEffect(() => {
+    if (document.getElementById("gp-font")) return;
+    const l = document.createElement("link");
+    l.id = "gp-font"; l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap";
+    document.head.appendChild(l);
+  }, []);
 
   const v = variants.find((x) => x.id === sel) || null;
   const attrs = v?.attrs || p.variantAttrs || {};
@@ -211,7 +219,7 @@ export default function GameProduct({ p, navigate, catalog }) {
             </div>
             {shots.length > 1 && (
               <div className="thumbs">
-                {shots.slice(0, 8).map((s, i) => (
+                {shots.slice(0, 6).map((s, i) => (
                   <button key={s.src} type="button" aria-label={`Ảnh ${i + 1}`} aria-pressed={i === shot} onClick={() => setShot(i)}><img src={s.src} alt="" /></button>
                 ))}
               </div>
@@ -229,7 +237,8 @@ export default function GameProduct({ p, navigate, catalog }) {
             <p className={"stock" + (out ? " no" : "")}>{out ? "Hết hàng, có thể đặt trước" : "Còn hàng"}</p>
 
             {verKeys.map((k) => {
-              const vals = [...new Set(variants.map((x) => x.attrs[k]).filter(Boolean))];
+              const low = (val) => Math.min(...variants.filter((x) => x.attrs[k] === val).map((x) => x.price || Infinity));
+              const vals = [...new Set(variants.map((x) => x.attrs[k]).filter(Boolean))].sort((a, b) => low(a) - low(b));
               return (
                 <div className="opt" key={k}>
                   <div className="opt-h"><span>{k}</span></div>
