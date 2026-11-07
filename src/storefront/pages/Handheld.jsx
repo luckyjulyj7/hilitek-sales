@@ -221,9 +221,32 @@ export default function Handheld({ catalog, navigate }) {
   useEffect(() => {
     const prev = document.title;
     document.title = "Máy chơi game cầm tay chính hãng | Hilitek";
-    setFar(cityTile(11, 320, "#141C6E", "#2C3FD0"));
-    setNear(cityTile(29, 230, "#060A2A", "#F7C600"));
+    setFar(cityTile(11, 320, "#10165A", "#2C3FD0"));
+    setNear(cityTile(29, 230, "#05071A", "#F7C600"));
+    if (!document.getElementById("gp-font")) {
+      const l = document.createElement("link");
+      l.id = "gp-font"; l.rel = "stylesheet";
+      l.href = "https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap";
+      document.head.appendChild(l);
+    }
     return () => { document.title = prev; };
+  }, []);
+
+  // Máy tính: lướt xuống thì thanh xanh trên cùng tự ẩn, lướt lên thì hiện lại.
+  useEffect(() => {
+    const head = document.querySelector("header");
+    if (!head) return undefined;
+    let lastY = scrollY;
+    head.style.transition = "transform .35s cubic-bezier(.16,1,.3,1)";
+    const onScroll = () => {
+      const y = scrollY;
+      if (innerWidth < 1024) { head.style.transform = ""; return; }
+      if (Math.abs(y - lastY) < 6) return;
+      head.style.transform = y > lastY && y > 240 ? "translateY(-100%)" : "";
+      lastY = y;
+    };
+    addEventListener("scroll", onScroll, { passive: true });
+    return () => { removeEventListener("scroll", onScroll); head.style.transform = ""; head.style.transition = ""; };
   }, []);
 
   const realOf = useMemo(() => {
@@ -235,6 +258,8 @@ export default function Handheld({ catalog, navigate }) {
     && !MODELS.some((m) => linkedTo(m, p) || p.name.toLowerCase().includes(m.name.toLowerCase()))), [products]);
 
   const all = MODELS.filter((m) => !m.hidden);
+  // Máy đang bán thật trên web, đưa lên đầu để khách thấy ngay máy mua được.
+  const inStock = useMemo(() => products.filter((p) => isGameProduct(p)).sort((a, b) => (b.stock > 0) - (a.stock > 0)).slice(0, 6), [products]);
   const shown = all.filter((m) => (!tier || m.tier === tier)
     && (!brand || m.brand === brand)
     && (SIZES.find((s) => s.id === size)?.test?.(m) ?? true));
@@ -246,10 +271,10 @@ export default function Handheld({ catalog, navigate }) {
     setTier(id); setSize(""); setBrand("");
     list.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
-  const chip = (on) => "min-h-[44px] shrink-0 rounded-lg px-4 text-[15px] font-semibold transition " + (on ? "bg-ink text-yellow" : "bg-white text-ink hover:bg-yellow");
+  const chip = (on) => "hh-chip" + (on ? " on" : "");
 
   return (
-    <div ref={page} className="font-sans">
+    <div ref={page} className="hh font-sans">
       <section className="hh-hero">
         <div className="hh-moon" />
         <div className="hh-city" style={{ backgroundImage: far, opacity: 0.8 }} />
@@ -262,6 +287,9 @@ export default function Handheld({ catalog, navigate }) {
               <button type="button" onClick={() => toList("")} className="hh-k y">Xem các máy <ArrowRight size={17} /></button>
               <a href={SITE.zaloHref} target="_blank" rel="noreferrer" className="hh-k n">Hỏi Hili qua Zalo</a>
             </div>
+            <ul className="hh-facts">
+              <li><b>{all.length}</b> mẫu máy</li><li><b>{TIERS.length}</b> dòng máy</li><li>Đủ hoá đơn VAT</li><li>Bảo hành theo serial</li>
+            </ul>
           </div>
           <HiliPlay />
         </div>
@@ -273,7 +301,34 @@ export default function Handheld({ catalog, navigate }) {
         </div>
       </div>
 
-      <section className={WRAP + " pt-9"}>
+      {inStock.length > 0 && (
+        <section className={WRAP + " pt-10"}>
+          <div className="mb-3 flex items-baseline justify-between gap-3">
+            <h2 className={H2 + " hh-rise"}>Có sẵn tại Hilitek</h2>
+            <span className="hh-live"><i />Giao ngay</span>
+          </div>
+          <div className={"hh-stock hh-rise n" + Math.min(inStock.length, 3)}>
+            {inStock.map((p) => {
+              const img = p.images?.[0]?.src || p.images?.[0] || "";
+              const off = p.listPrice > p.price ? Math.round((1 - p.price / p.listPrice) * 100) : 0;
+              return (
+                <a key={p.id} href={`/san-pham/${p.slug}`} onClick={(e) => { e.preventDefault(); navigate(`san-pham/${p.slug}`); }} className="hh-sk">
+                  <span className="hh-sk-pic">{img && <img src={img} alt={p.name} loading="lazy" />}{off > 0 && <em>-{off}%</em>}</span>
+                  <span className="hh-sk-tx">
+                    <span className="hh-sk-b">{[p.brand, p.category].filter(Boolean).join(" · ")}</span>
+                    <b>{p.name}</b>
+                    {p.variantCount > 1 && <span className="hh-sk-v">{p.variantCount} phiên bản</span>}
+                    <span className="hh-sk-p">{p.priceFrom ? "Từ " : ""}{formatVND(p.price)}{off > 0 && <s>{formatVND(p.listPrice)}</s>}</span>
+                    <span className="hh-sk-go">Xem máy <ArrowRight size={16} /></span>
+                  </span>
+                </a>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      <section className={WRAP + " pt-10"}>
         <h2 className={H2 + " hh-rise mb-3"}>Chọn theo dòng máy</h2>
         <div ref={tierBox} className="hh-tiers hh-rise" onScroll={onTierScroll} onTouchStart={touchTier} onMouseEnter={() => { tierHold.current = true; }} onMouseLeave={() => { tierHold.current = false; }}>
           {TIERS.map((t) => (
@@ -291,12 +346,12 @@ export default function Handheld({ catalog, navigate }) {
         </div>
       </section>
 
-      {SPOTLIGHT.length > 0 && <section className={WRAP + " pt-9"}>
+      {SPOTLIGHT.length > 0 && <section className={WRAP + " pt-12"}>
         <h2 className={H2 + " hh-rise mb-3"}>Máy đáng chú ý</h2>
         <div className="hh-rise"><Spotlight onAsk={setAsking} /></div>
       </section>}
 
-      {eraNow && <section className={WRAP + " pt-9"}>
+      {eraNow && <section className={WRAP + " pt-12"}>
         <div className="hh-rise overflow-hidden rounded-2xl p-5 text-white sm:p-7" style={{ background: "radial-gradient(70% 120% at 80% 20%,#1E2A8A,#060A2A 75%)" }}>
           <h2 className="font-display text-[30px] font-bold sm:text-[38px]">Bạn muốn chơi gì?</h2>
           <div className="hh-eras mt-3">
@@ -321,7 +376,7 @@ export default function Handheld({ catalog, navigate }) {
         </div>
       </section>}
 
-      {life && <section className={WRAP + " pt-9"}>
+      {life && <section className={WRAP + " pt-12"}>
         <h2 className={H2 + " hh-rise mb-3"}>Chơi ở đâu cũng được</h2>
         <div className="hh-rise grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-12">
           {HH_LIFE.items.map((l, k) => (
@@ -337,7 +392,7 @@ export default function Handheld({ catalog, navigate }) {
         </div>
       </section>}
 
-      <section ref={list} className={WRAP + " scroll-mt-40 pt-9"}>
+      <section ref={list} className={WRAP + " scroll-mt-40 pt-12"}>
         <div className="mb-3 flex items-baseline justify-between gap-3">
           <h2 className={H2}>Tất cả máy</h2>
           <span className="shrink-0 text-[15px] font-semibold text-mute">{shown.length} máy</span>
@@ -382,7 +437,7 @@ export default function Handheld({ catalog, navigate }) {
 
       <NewsVideo navigate={navigate} title="Tin tức máy chơi game" items={newsItems("handheld")} />
 
-      <section className={WRAP + " pt-9"}>
+      <section className={WRAP + " pt-12"}>
         <h2 className={H2 + " hh-rise mb-3"}>Câu hỏi thường gặp</h2>
         <div className="hh-rise divide-y divide-line rounded-2xl bg-white px-5">
           {HH_FAQ.map(({ q, a }) => (

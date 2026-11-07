@@ -101,3 +101,84 @@ button.hp-d{cursor:pointer}
 .hh-rise.in{opacity:1;transform:none}
 .hh-tape{display:flex;width:max-content;gap:40px;padding:11px 0;animation:marquee 46s linear infinite}
 @media(prefers-reduced-motion:reduce){.hh-city,.hp,.hh-tape,.hh-spot-tx{animation:none}.hh-rise{opacity:1;transform:none;transition:none}}
+
+
+/* ===== Tông tối, cùng ngôn ngữ trang bán máy game ===== */
+.hh{--bg:#07091A;--card:#11162F;--card2:#171D3A;--line:rgba(255,255,255,.1);--tx:#F4F6FB;--mute:rgba(236,240,255,.68);background:var(--bg);color:var(--tx);overflow-x:clip;padding-bottom:8px}
+.hh,.hh button,.hh input,.hh select{font-family:"Be Vietnam Pro",Archivo,system-ui,sans-serif}
+.hh .font-display{font-family:"Be Vietnam Pro",Archivo,sans-serif;font-stretch:100%;letter-spacing:-.03em}
+.hh h1.font-display{font-weight:800;letter-spacing:-.04em}
+.hh h2.text-ink,.hh h2.font-display{color:var(--tx);font-weight:700}
+.hh .hh-hero{background:radial-gradient(60% 90% at 78% 30%,rgba(44,63,208,.42),transparent 70%),linear-gradient(180deg,#05071A 0%,#0A0F38 62%,#121A55 100%)}
+.hh .hh-facts{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:22px;font-size:14px;color:rgba(255,255,255,.75)}
+.hh .hh-facts li{display:flex;align-items:center;gap:7px}
+.hh .hh-facts li:before{content:"";width:5px;height:12px;background:#F7C600;transform:skewX(-20deg);border-radius:1px}
+.hh .hh-facts b{color:#F7C600;font-weight:800}
+.hh .hh-tape{font-family:"Be Vietnam Pro",sans-serif;font-weight:700;font-size:17px;letter-spacing:-.01em}
+
+/* Có sẵn tại Hilitek */
+.hh .hh-live{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:#7BE3A0}
+.hh .hh-live i{width:8px;height:8px;border-radius:50%;background:#7BE3A0;box-shadow:0 0 0 0 rgba(123,227,160,.6);animation:hh-ping 1.8s infinite}
+@keyframes hh-ping{70%{box-shadow:0 0 0 9px rgba(123,227,160,0)}100%{box-shadow:0 0 0 0 rgba(123,227,160,0)}}
+.hh .hh-stock{display:grid;gap:12px}
+@media(min-width:768px){.hh .hh-stock.n2,.hh .hh-stock.n3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:1180px){.hh .hh-stock.n3{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.hh .hh-sk{position:relative;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);overflow:hidden;border-radius:20px;background:linear-gradient(135deg,#171D3A,#0E1229);box-shadow:inset 0 0 0 1px var(--line);transition:transform .35s cubic-bezier(.16,1,.3,1),box-shadow .35s}
+.hh .hh-sk:before{content:"";position:absolute;inset:auto -20% -60% 10%;height:120%;background:radial-gradient(closest-side,rgba(255,122,46,.28),transparent);opacity:.6;transition:opacity .4s;pointer-events:none}
+.hh .hh-sk:hover{transform:translateY(-4px);box-shadow:inset 0 0 0 1px rgba(247,198,0,.6),0 24px 50px rgba(0,0,0,.45)}
+.hh .hh-sk:hover:before{opacity:1}
+.hh .hh-stock.n1 .hh-sk{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);min-height:340px}
+.hh .hh-sk-pic{position:relative;display:block;min-height:220px;overflow:hidden}
+.hh .hh-sk-pic img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .9s cubic-bezier(.16,1,.3,1)}
+.hh .hh-sk:hover .hh-sk-pic img{transform:scale(1.05)}
+.hh .hh-sk-pic em{position:absolute;left:12px;top:12px;padding:3px 9px;border-radius:8px;background:#F7C600;color:#060A2A;font-style:normal;font-weight:800;font-size:13px}
+.hh .hh-sk-tx{position:relative;display:flex;flex-direction:column;gap:4px;padding:20px 22px}
+.hh .hh-sk-b{font-size:13px;color:var(--mute)}
+.hh .hh-sk b{font-size:clamp(20px,1.9vw,28px);font-weight:800;letter-spacing:-.03em;line-height:1.1}
+.hh .hh-sk-v{font-size:13px;color:var(--mute)}
+.hh .hh-sk-p{margin-top:auto;padding-top:12px;font-size:22px;font-weight:800;color:#F7C600;letter-spacing:-.02em}
+.hh .hh-sk-p s{display:block;font-size:14px;font-weight:500;color:var(--mute)}
+.hh .hh-sk-go{display:inline-flex;align-items:center;gap:6px;margin-top:10px;font-size:15px;font-weight:700;transition:gap .25s}
+.hh .hh-sk:hover .hh-sk-go{gap:10px;color:#F7C600}
+@media(max-width:560px){.hh .hh-sk,.hh .hh-stock.n1 .hh-sk{grid-template-columns:1fr}.hh .hh-sk-pic{aspect-ratio:16/10;min-height:0}}
+
+/* Dòng máy */
+.hh .hh-tier.bg-ink{background:linear-gradient(160deg,#1A2150,#0C1030);box-shadow:inset 0 0 0 1px var(--line)}
+.hh .hh-tier.bg-white{background:linear-gradient(160deg,#2B3470,#141A3A);color:#fff;box-shadow:inset 0 0 0 1px var(--line)}
+.hh .hh-tier.bg-navy{box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.hh .hh-tier.on{box-shadow:0 26px 60px rgba(0,0,0,.5),inset 0 0 0 1px rgba(255,255,255,.18)}
+
+/* Máy tiêu điểm, chọn theo game */
+.hh .hh-spot{background:#0B0E26;box-shadow:inset 0 0 0 1px var(--line)}
+.hh .hh-spot-pic:after{background:linear-gradient(90deg,transparent 62%,#0B0E26)}
+
+/* Thẻ máy */
+.hh .hh-card{background:var(--card);box-shadow:inset 0 0 0 1px var(--line)}
+.hh .hh-card:hover{transform:translateY(-4px);box-shadow:inset 0 0 0 1px rgba(247,198,0,.55),0 20px 44px rgba(0,0,0,.45)}
+.hh .hh-stage{background:linear-gradient(160deg,#1C2350,#11162F)}
+.hh .hh-stage:after{background:#F7C600;opacity:.5}
+.hh .hh-card h3{color:var(--tx)}
+.hh .hh-card .text-mute{color:var(--mute)}
+.hh .hh-card .text-ink\/75{color:rgba(236,240,255,.7)}
+.hh .hh-card a.bg-ink{background:#F7C600;color:#060A2A}
+.hh .hh-card button.bg-navy-050{background:rgba(255,255,255,.07);color:var(--tx);box-shadow:inset 0 0 0 1px var(--line)}
+.hh .hh-card:hover button.bg-navy-050{background:#F7C600;color:#060A2A}
+
+/* Nút lọc, ô chọn */
+.hh .hh-chip{min-height:44px;flex-shrink:0;border-radius:10px;padding:0 16px;font-size:15px;font-weight:600;background:rgba(255,255,255,.06);color:var(--tx);box-shadow:inset 0 0 0 1px var(--line);transition:.2s}
+.hh .hh-chip:hover{background:rgba(255,255,255,.12)}
+.hh .hh-chip.on{background:#F7C600;color:#060A2A;box-shadow:none}
+.hh select{background:var(--card)!important;color:var(--tx)!important;border-color:var(--line)!important}
+.hh select+svg{color:var(--mute)!important}
+.hh .text-mute{color:var(--mute)}
+
+/* Khối dùng chung: tin tức, hỏi đáp, cam kết */
+.hh .bg-white:not([role=dialog]){background:var(--card)}
+.hh .bg-white:not([role=dialog]) .text-ink,.hh .bg-white:not([role=dialog]).text-ink{color:var(--tx)}
+.hh .bg-white:not([role=dialog]) .text-ink\/80{color:rgba(236,240,255,.75)}
+.hh .bg-white:not([role=dialog]) .text-ink\/40{color:rgba(236,240,255,.4)}
+.hh .divide-line>*{border-color:var(--line)}
+.hh .text-navy{color:#F7C600}
+.hh .group:hover .group-hover\:text-navy{color:#F7C600}
+.hh .gap-px{background:var(--line)}
+.hh details summary{color:var(--tx)}
