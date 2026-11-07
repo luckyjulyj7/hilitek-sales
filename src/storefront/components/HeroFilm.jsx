@@ -1,12 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatVND } from "../lib/format.js";
-import { HOME_HERO } from "../config.js";
+import { HERO_BRAND_LOGOS, HOME_HERO, heroShortName as shortName } from "../config.js";
 import "./hero-film.css";
 
 const MS = 5200;
-// Logo hãng có sẵn. Slide nào gắn logo riêng trong Màn trình chiếu thì dùng logo đó, không có thì để trống.
-const BRAND_LOGOS = { voicsky: "/brands/voicsky.webp" };
 const COLORS = [["#0B1140", "#2C3FD0"], ["#101A5C", "#3A6BE0"], ["#1E2A8A", "#5468F0"], ["#0E1650", "#2C8FD0"]];
 // Dùng khi chủ shop chưa cấu hình mục "Màn trình chiếu".
 const DEFAULTS = [
@@ -18,12 +16,6 @@ const DEFAULTS = [
   { title: "Atmos 87", match: /voicsky atmos 87/i, image: "/home/cut-atmos87.webp" },
 ];
 
-/** Tên ngắn cho slide: bỏ phần loại hàng đứng trước tên hãng. */
-function shortName(p) {
-  const n = String(p.name || "").split(" (")[0].replace(/^(bàn phím( cơ)?( không dây)?|chuột( gaming)?( không dây)?|màn hình( gaming)?|tai nghe)\s+/i, "");
-  const brand = String(p.brand || "").toLowerCase();
-  return brand && n.toLowerCase().startsWith(`${brand} `) ? n.slice(brand.length + 1) : n;
-}
 const TAPE = ["Hàng chính hãng", "Bảo hành theo serial", "Đủ hoá đơn VAT", "Giao nhanh toàn quốc", "Kỹ thuật tận nơi", "Báo giá doanh nghiệp"];
 
 /** Màn đầu trang chủ: sản phẩm nổi bật tự chuyển, tên sản phẩm chạy nền, dãy chữ chạy bên dưới. */
@@ -42,7 +34,7 @@ export default function HeroFilm({ products, navigate }) {
           ...s, key: `${s.p.id}-${k}`, title, cut: !!s.image, img: s.image || first?.src || first || "",
           head: parts.length > 1 ? parts.slice(0, -1).join(" ") : title,
           tail: parts.length > 1 ? parts[parts.length - 1] : "",
-          word: parts[0], logo: s.logo || BRAND_LOGOS[String(s.p.brand || "").toLowerCase()] || "", sub: (s.sub && s.sub.trim()) || s.p.category || "",
+          word: parts[0], logo: s.logo || HERO_BRAND_LOGOS[String(s.p.brand || "").toLowerCase()] || "", sub: (s.sub && s.sub.trim()) || s.p.category || "",
           bg: COLORS[k % COLORS.length][0], glow: COLORS[k % COLORS.length][1],
         };
       });

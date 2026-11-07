@@ -419,7 +419,7 @@ export function homeSectionProducts(products, s) {
 
   // Chọn tay theo SKU: dùng đúng danh sách, đúng thứ tự.
   if (Array.isArray(s.skus) && s.skus.length) {
-    const bySku = new Map(list.map((p) => [String(p.sku || "").toLowerCase(), p]));
+    const bySku = new Map(list.flatMap((p) => [p.sku, ...(p.variantSkus || [])].map((k) => [String(k || "").toLowerCase(), p])));
     return s.skus
       .map((k) => bySku.get(String(k).trim().toLowerCase()))
       .filter(Boolean)
@@ -522,6 +522,16 @@ export const CHECKOUT = {
  * Mỗi mục: { productId, image, title, sub }. Chỉnh ở app quản lý: Website > Trang chủ > Màn trình chiếu.
  */
 export const HOME_HERO = [];
+
+// Logo hãng có sẵn cho màn trình chiếu. Slide tự tải logo riêng thì dùng logo đó.
+export const HERO_BRAND_LOGOS = { voicsky: "/brands/voicsky.webp" };
+
+/** Tên ngắn cho slide: bỏ phần loại hàng đứng trước tên hãng. */
+export function heroShortName(p) {
+  const n = String(p.name || "").split(" (")[0].replace(/^(bàn phím( cơ)?( không dây)?|chuột( gaming)?( không dây)?|màn hình( gaming)?|tai nghe)\s+/i, "");
+  const brand = String(p.brand || "").toLowerCase();
+  return brand && n.toLowerCase().startsWith(`${brand} `) ? n.slice(brand.length + 1) : n;
+}
 
 /** Tiêu đề các khối ở trang chủ. Chủ shop đổi ở Website, Trang chủ, Khối danh mục. */
 export const HOME_TITLES = {

@@ -20,6 +20,7 @@ import { SUPABASE_ANON_KEY } from "./lib/supabaseStorage.js";
 import { pointsForPhone, normalizePhone, DEFAULT_LOYALTY } from "./lib/loyalty.js";
 import { baseVariantName } from "./lib/variants.js";
 import HomeTilesEditor from "./HomeTilesEditor.jsx";
+import { HomeHeroEditor, HomeTabsEditor } from "./HomePanels.jsx";
 
 // Xuất 1 hoặc nhiều bảng dữ liệu ra 1 file Excel (.xlsx), mỗi bảng là 1 sheet riêng.
 // Thư viện Excel (xlsx) nặng ~400KB — chỉ tải khi thật sự bấm xuất/nhập file, không nằm trong lần tải đầu.
@@ -16582,146 +16583,51 @@ function WebMenuEditor({ webConfig, setWebConfig, setProducts, products }) {
   );
 }
 
-// Trình sửa "Khối sản phẩm trang chủ" — các hàng sản phẩm chạy ngang ở trang chủ web khách.
+// Trình sửa "Khối sản phẩm trang chủ": giữ dữ liệu ở đây, giao diện nằm trong HomePanels.jsx.
 function HomeSectionsEditor({ webConfig, setWebConfig, products }) {
   const menu = webConfig && Array.isArray(webConfig.MENU) && webConfig.MENU.length ? webConfig.MENU : WEB_DEFAULT_MENU;
   const sections = Array.isArray(webConfig.HOME_SECTIONS) ? webConfig.HOME_SECTIONS : WEB_DEFAULT_HOME_SECTIONS;
-  const brands = [...new Set((products || []).map((p) => p.brand).filter(Boolean))].sort((a, b) => a.localeCompare(b, "vi"));
-
   const mut = (fn) => setWebConfig((x) => {
     const cur = Array.isArray(x.HOME_SECTIONS) ? x.HOME_SECTIONS : WEB_DEFAULT_HOME_SECTIONS;
     return { ...x, HOME_SECTIONS: fn(cur.map((s) => ({ ...s }))) };
   });
-  const setAt = (i, patch) => mut((arr) => { arr[i] = { ...arr[i], ...patch }; return arr; });
-  const addBlock = () => mut((arr) => [...arr, {
-    title: "Khối mới", group: "", cat: "", brand: "", onSale: false, pmin: null, pmax: null,
-    skus: [], sort: "discount", limit: 12, rows: 1, layout: "carousel", seeAllText: "Xem tất cả", seeAllHref: "", enabled: true,
-  }]);
-  const delBlock = (i) => mut((arr) => arr.filter((_, j) => j !== i));
-  const moveBlock = (i, d) => mut((arr) => {
-    const j = i + d;
-    if (j < 0 || j >= arr.length) return arr;
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-    return arr;
-  });
   const reset = () => setWebConfig((x) => { const y = { ...x }; delete y.HOME_SECTIONS; return y; });
-  const groupSubs = (g) => { const m = menu.find((x) => x.group === g); return m ? (m.subs || []).map((s) => s.name) : []; };
-
-  return (
-    <div className="space-y-3">
-      <p className="text-xs opacity-60">
-        Mỗi khối = 1 hàng sản phẩm chạy ngang ở trang chủ (kiểu hotgear.vn). Chọn nhóm / danh mục phụ / thương hiệu / “đang giảm giá”… để quyết định sản phẩm nào hiện.
-        Nút “Xem tất cả” tự mở trang danh mục đã lọc sẵn. Sản phẩm phải đang “Đăng web”.
-      </p>
-      {sections.length === 0 && <p className="text-xs" style={{ color: RUST }}>Chưa có khối nào — trang chủ sẽ không hiện hàng sản phẩm. Bấm “+ Thêm khối”.</p>}
-
-      {sections.map((s, i) => (
-        <div key={i} className="rounded-md p-3 space-y-2.5" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
-          <div className="flex items-center gap-2">
-            <input value={s.title || ""} onChange={(e) => setAt(i, { title: e.target.value })} placeholder="Tên khối (VD: Laptop khuyến mãi Hot)"
-              className={inputCls} style={{ borderColor: LINE, fontWeight: 600 }} />
-            <button onClick={() => moveBlock(i, -1)} disabled={i === 0} className="text-xs px-1.5 py-1 rounded-md border disabled:opacity-30" style={{ borderColor: LINE }} title="Lên">↑</button>
-            <button onClick={() => moveBlock(i, 1)} disabled={i === sections.length - 1} className="text-xs px-1.5 py-1 rounded-md border disabled:opacity-30" style={{ borderColor: LINE }} title="Xuống">↓</button>
-            <button onClick={() => delBlock(i)} className="text-xs px-1.5 py-1" style={{ color: RUST }}>Xoá</button>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <label className="text-xs block">Nhóm chính
-              <select value={s.group || ""} onChange={(e) => setAt(i, { group: e.target.value, cat: "" })} className={inputCls} style={{ borderColor: LINE }}>
-                <option value="">— Mọi nhóm —</option>
-                {menu.map((g) => <option key={g.group} value={g.group}>{g.group}</option>)}
-              </select>
-            </label>
-            <label className="text-xs block">Danh mục phụ
-              <select value={s.cat || ""} onChange={(e) => setAt(i, { cat: e.target.value })} className={inputCls} style={{ borderColor: LINE }}>
-                <option value="">— Mọi danh mục —</option>
-                {(s.group ? groupSubs(s.group) : menu.flatMap((g) => (g.subs || []).map((x) => x.name))).map((n) => <option key={n} value={n}>{n}</option>)}
-              </select>
-            </label>
-            <label className="text-xs block">Thương hiệu
-              <select value={s.brand || ""} onChange={(e) => setAt(i, { brand: e.target.value })} className={inputCls} style={{ borderColor: LINE }}>
-                <option value="">— Mọi thương hiệu —</option>
-                {brands.map((b) => <option key={b} value={b}>{b}</option>)}
-              </select>
-            </label>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-            <label className="text-xs block">Sắp xếp
-              <select value={s.sort || "discount"} onChange={(e) => setAt(i, { sort: e.target.value })} className={inputCls} style={{ borderColor: LINE }}>
-                {HOME_SECTION_SORTS.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
-              </select>
-            </label>
-            <label className="text-xs block">Kiểu hiển thị
-              <select value={s.layout || "carousel"} onChange={(e) => setAt(i, { layout: e.target.value })} className={inputCls} style={{ borderColor: LINE }}>
-                {HOME_SECTION_LAYOUTS.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
-              </select>
-            </label>
-            <label className="text-xs block">Số dòng
-              <select value={String(s.rows || 1)} onChange={(e) => setAt(i, { rows: Number(e.target.value) })} className={inputCls} style={{ borderColor: LINE }}>
-                <option value="1">1 dòng</option>
-                <option value="2">2 dòng</option>
-              </select>
-            </label>
-            <label className="text-xs block">Số sản phẩm
-              <input type="number" min={2} max={40} value={s.limit ?? ""}
-                onChange={(e) => {
-                  const raw = e.target.value;
-                  // Cho phép xoá trống khi đang gõ lại số mới — chỉ ép về khoảng 2-40 lúc rời khỏi
-                  // ô (onBlur). Ép ngay trong onChange sẽ "kéo" số cũ về mỗi lần xoá, không xoá được.
-                  if (raw === "") { setAt(i, { limit: "" }); return; }
-                  const n = Number(raw);
-                  if (Number.isFinite(n)) setAt(i, { limit: n });
-                }}
-                onBlur={(e) => setAt(i, { limit: Math.max(2, Math.min(40, Number(e.target.value) || 12)) })}
-                className={inputCls} style={{ borderColor: LINE }} />
-            </label>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-4">
-            <label className="flex items-center gap-1.5 text-xs">
-              <input type="checkbox" checked={!!s.onSale} onChange={(e) => setAt(i, { onSale: e.target.checked })} /> Chỉ hàng đang giảm giá
-            </label>
-            <label className="flex items-center gap-1.5 text-xs">
-              <input type="checkbox" checked={s.enabled !== false} onChange={(e) => setAt(i, { enabled: e.target.checked })} /> Hiện khối này
-            </label>
-          </div>
-
-          <details className="text-xs">
-            <summary className="cursor-pointer opacity-70">Nâng cao — khoảng giá · chọn SKU tay · link “Xem tất cả”</summary>
-            <div className="mt-2 grid sm:grid-cols-2 gap-2">
-              <label className="block">Giá từ (đ)
-                <input type="number" min={0} value={s.pmin ?? ""} onChange={(e) => setAt(i, { pmin: e.target.value === "" ? null : Number(e.target.value) })} className={inputCls} style={{ borderColor: LINE }} />
-              </label>
-              <label className="block">Giá đến (đ)
-                <input type="number" min={0} value={s.pmax ?? ""} onChange={(e) => setAt(i, { pmax: e.target.value === "" ? null : Number(e.target.value) })} className={inputCls} style={{ borderColor: LINE }} />
-              </label>
-              <label className="block sm:col-span-2">Chọn SKU tay (cách nhau bởi dấu phẩy — có giá trị thì bỏ qua mọi bộ lọc trên)
-                <input value={(s.skus || []).join(", ")} onChange={(e) => setAt(i, { skus: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) })}
-                  className={inputCls} style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} placeholder="HI-LAP-001, HI-LAP-004" />
-              </label>
-              <label className="block">Chữ nút “Xem tất cả”
-                <input value={s.seeAllText || ""} onChange={(e) => setAt(i, { seeAllText: e.target.value })} className={inputCls} style={{ borderColor: LINE }} placeholder="Xem tất cả" />
-              </label>
-              <label className="block">Link “Xem tất cả” tự đặt
-                <input value={s.seeAllHref || ""} onChange={(e) => setAt(i, { seeAllHref: e.target.value })} className={inputCls} style={{ borderColor: LINE }} placeholder="/danh-muc?group=Màn hình&sale=1" />
-              </label>
-            </div>
-          </details>
-        </div>
-      ))}
-
-      <div className="flex items-center gap-3">
-        <button onClick={addBlock} className="text-xs px-2.5 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>+ Thêm khối</button>
-        <button onClick={reset} className="text-xs underline" style={{ color: RUST }}>Đặt lại về mặc định</button>
-      </div>
-    </div>
-  );
+  return <HomeTabsEditor sections={sections} products={products} menu={menu} mut={mut} reset={reset} displayImage={displayImage} askConfirm={askConfirm} />;
 }
 
-// Trình sửa "Trang nội dung (landing)" — trang tự tạo để poster/banner trỏ tới (bài viết, ảnh, video…).
+// Nội dung cũ dạng "## tiêu đề, - gạch đầu dòng" đổi sang HTML để khung soạn thảo hiện đúng định dạng.
+function legacyBodyToHtml(text) {
+  const raw = String(text || "");
+  if (!raw.trim() || /^\s*</.test(raw)) return raw;
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const inline = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\*(.+?)\*/g, "<em>$1</em>");
+  const out = [];
+  let list = [];
+  const flush = () => { if (list.length) { out.push(`<ul>${list.map((x) => `<li>${inline(x)}</li>`).join("")}</ul>`); list = []; } };
+  raw.replace(/\r/g, "").split("\n").forEach((l) => {
+    const t = l.trim();
+    const h = t.match(/^(#{1,3})\s+(.*)$/);
+    const img = t.match(/^!\[[^\]]*\]\(\s*(\S+?)\s*\)$/) || t.match(/^((?:https?:\/\/|\/)\S+?\.(?:png|jpe?g|webp|gif|avif))$/i);
+    if (/^[-•]\s+/.test(t)) { list.push(t.replace(/^[-•]\s+/, "")); return; }
+    flush();
+    if (!t) return;
+    if (h) out.push(`<h${Math.min(3, h[1].length + 1)}>${inline(h[2])}</h${Math.min(3, h[1].length + 1)}>`);
+    else if (img) out.push(`<p><img src="${esc(img[1])}"></p>`);
+    else out.push(`<p>${inline(t)}</p>`);
+  });
+  flush();
+  return out.join("");
+}
+
+const LANDING_KINDS = [["", "Trang thường"], ["tin", "Tin tức"], ["huong-dan", "Hướng dẫn"], ["video", "Video"]];
+
+// Trình sửa "Trang nội dung": danh sách gọn, bấm vào một trang mới mở phần soạn.
 function LandingsEditor({ webConfig, setWebConfig }) {
   const list = Array.isArray(webConfig.LANDINGS) ? webConfig.LANDINGS : WEB_DEFAULT_LANDINGS;
+  const [openIdx, setOpenIdx] = useState(-1);
+  const [kind, setKind] = useState("all");
+  const [slugEdit, setSlugEdit] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const mut = (fn) => setWebConfig((x) => {
     const cur = Array.isArray(x.LANDINGS) ? x.LANDINGS : WEB_DEFAULT_LANDINGS;
@@ -16734,103 +16640,154 @@ function LandingsEditor({ webConfig, setWebConfig }) {
     arr[i] = { ...old, title, slug: autoSlug ? webSlugify(title) : old.slug };
     return arr;
   });
-  const addOne = () => mut((arr) => [...arr, { slug: "", title: "Trang mới", body: "", published: true }]);
-  const delOne = (i) => mut((arr) => arr.filter((_, j) => j !== i));
+  const addOne = () => {
+    mut((arr) => [...arr, { slug: "", title: "Trang mới", body: "", published: false }]);
+    setSlugEdit(false);
+    setOpenIdx(list.length);
+  };
+  const delOne = async (i) => {
+    if (!await askConfirm(`Xoá trang "${list[i]?.title || "chưa đặt tên"}"? Link của trang này sẽ không còn mở được.`)) return;
+    mut((arr) => arr.filter((_, j) => j !== i));
+    setOpenIdx(-1);
+  };
   const move = (i, d) => mut((arr) => { const j = i + d; if (j < 0 || j >= arr.length) return arr; [arr[i], arr[j]] = [arr[j], arr[i]]; return arr; });
-  const reset = () => setWebConfig((x) => { const y = { ...x }; delete y.LANDINGS; return y; });
-  const [coverBusy, setCoverBusy] = useState(-1);
+  const reset = async () => {
+    if (!await askConfirm("Khôi phục về trang mặc định? Mọi trang bạn đã tạo sẽ mất.")) return;
+    setWebConfig((x) => { const y = { ...x }; delete y.LANDINGS; return y; });
+    setOpenIdx(-1);
+  };
+  const [coverBusy, setCoverBusy] = useState(false);
   const uploadCover = async (i, file) => {
     if (!file) return;
-    setCoverBusy(i);
+    setCoverBusy(true);
     try { setAt(i, { cover: (await uploadProductImage(file)).url }); }
-    catch (e) { alert(e.message || "Không tải được ảnh."); }
-    finally { setCoverBusy(-1); }
+    catch (e) { notify(e.message || "Không tải được ảnh."); }
+    finally { setCoverBusy(false); }
   };
+  const pathOf = (l) => `/trang/${l.slug || webSlugify(l.title || "")}`;
+  const copy = (l) => {
+    try { navigator.clipboard.writeText(pathOf(l)); } catch (e) { /* trình duyệt chặn */ }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  const kindName = (k) => (LANDING_KINDS.find(([id]) => id === (k || "")) || LANDING_KINDS[0])[1];
+  const iconB = "grid h-8 w-8 shrink-0 place-items-center rounded-md border bg-white transition hover:bg-[#F6F7FB] disabled:opacity-30 disabled:hover:bg-white";
 
-  return (
-    <div className="space-y-3">
-      <p className="text-xs opacity-60">
-        Muốn đăng tin hoặc video lên trang chủ: thêm trang, chọn loại ở ô <b>Mục Tin tức &amp; video</b>. Bài xếp trên cùng là bài lớn ở trang chủ.
-      </p>
-      <p className="text-xs opacity-60">
-        Trang tự tạo để <b>poster / banner</b> trỏ tới (bài viết, hình ảnh, video, chương trình khuyến mãi…).
-        Mỗi trang có địa chỉ <code>/trang/&lt;đường-dẫn&gt;</code> — dán địa chỉ này vào ô "link" của poster ở mục bên dưới.
-        Nội dung soạn giống mô tả sản phẩm: xuống dòng đôi = đoạn mới · <code>## </code> = tiêu đề · <code>- </code> = gạch đầu dòng · dán ảnh / link YouTube = tự nhúng.
-      </p>
-      {list.length === 0 && <p className="text-xs" style={{ color: RUST }}>Chưa có trang nội dung nào. Bấm "+ Thêm trang".</p>}
-
-      {list.map((l, i) => (
-        <div key={i} className="rounded-md p-3 space-y-2.5" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
-          <div className="flex items-center gap-2">
-            <input value={l.title || ""} onChange={(e) => setTitle(i, e.target.value)} placeholder="Tiêu đề trang"
-              className={inputCls} style={{ borderColor: LINE, fontWeight: 600 }} />
-            <label className="flex items-center gap-1 text-xs shrink-0">
-              <input type="checkbox" checked={l.published !== false} onChange={(e) => setAt(i, { published: e.target.checked })} /> Hiện
-            </label>
-            <button onClick={() => move(i, -1)} disabled={i === 0} className="text-xs px-1.5 py-1 rounded-md border disabled:opacity-30" style={{ borderColor: LINE }} title="Lên">↑</button>
-            <button onClick={() => move(i, 1)} disabled={i === list.length - 1} className="text-xs px-1.5 py-1 rounded-md border disabled:opacity-30" style={{ borderColor: LINE }} title="Xuống">↓</button>
-            <button onClick={() => delOne(i)} className="text-xs px-1.5 py-1" style={{ color: RUST }}>Xoá</button>
+  const l = openIdx >= 0 ? list[openIdx] : null;
+  if (l) {
+    const i = openIdx;
+    const shown = l.published !== false;
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={() => setOpenIdx(-1)} className="inline-flex items-center gap-1 rounded-md border bg-white px-2.5 py-1.5 text-sm" style={{ borderColor: LINE, color: TEXT }}><ChevronLeft size={15} /> Tất cả trang</button>
+          <div className="flex-1" />
+          <button type="button" onClick={() => delOne(i)} className="inline-flex items-center gap-1 rounded-md border bg-white px-2.5 py-1.5 text-sm" style={{ borderColor: LINE, color: RUST }}><Trash2 size={14} /> Xoá trang</button>
+        </div>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_270px]">
+          <div className="min-w-0 space-y-3">
+            <input value={l.title || ""} onChange={(e) => setTitle(i, e.target.value)} placeholder="Tiêu đề trang" className="w-full rounded-md border bg-white px-3 py-2.5 text-lg font-semibold outline-none focus:ring-2 focus:ring-blue-200" style={{ borderColor: LINE }} />
+            <WebDescEditor key={i} rows={14} bg="#fff" value={legacyBodyToHtml(l.body)} onChange={(v) => setAt(i, { body: v })} />
           </div>
+          <div className="space-y-3">
+            <div className="rounded-xl p-3.5" style={{ border: `1px solid ${shown ? "#BBF7D0" : LINE}`, background: shown ? "#F0FDF4" : "#fff" }}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-semibold" style={{ color: shown ? FOREST : TEXT }}>{shown ? "Đang hiện trên web" : "Đang ẩn"}</span>
+                <Switch checked={shown} onChange={(v) => setAt(i, { published: v })} label="Hiện trang này trên web" />
+              </div>
+            </div>
 
-          <div className="flex items-center gap-2 text-xs">
-            <span className="opacity-60 shrink-0">Đường dẫn</span>
-            <span className="opacity-60">/trang/</span>
-            <input value={l.slug || ""}
-              onChange={(e) => setAt(i, { slug: webSlugifyLive(e.target.value) })}
-              onBlur={(e) => setAt(i, { slug: webSlugify(e.target.value) })}
-              placeholder={webSlugify(l.title || "") || "duong-dan"}
-              className="flex-1 border rounded-md py-1 px-2" style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} />
-            <button type="button"
-              onClick={() => { try { navigator.clipboard.writeText(`/trang/${l.slug || webSlugify(l.title || "")}`); } catch (e) {} }}
-              className="text-xs px-2 py-1 rounded-md border shrink-0" style={{ borderColor: LINE, color: TEXT }}>Sao chép link</button>
-          </div>
+            <div className="rounded-xl p-3.5" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+              <p className="mb-2 text-sm font-semibold" style={{ color: TEXT }}>Loại trang</p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {LANDING_KINDS.map(([id, name]) => {
+                  const on = (l.news || "") === id;
+                  return <button key={id} type="button" onClick={() => setAt(i, { news: id })} className="rounded-md px-2 py-1.5 text-[13px] font-medium" style={{ background: on ? "#EEF1FB" : "#fff", color: on ? INK : TEXT, border: `1px solid ${on ? INK : LINE}` }}>{name}</button>;
+                })}
+              </div>
+              <p className="mt-2 text-xs" style={{ color: "#6B7280" }}>{l.news ? "Bài sẽ hiện ở mục Tin tức & video." : "Chỉ mở được qua link, ví dụ gắn vào banner."}</p>
+            </div>
 
-          <div className="grid gap-2 md:grid-cols-2">
-            <Field label="Mục Tin tức & video">
-              <select value={l.news || ""} onChange={(e) => setAt(i, { news: e.target.value })} className={inputCls} style={{ borderColor: LINE }}>
-                <option value="">Không hiện ở mục này</option>
-                <option value="tin">Tin tức</option>
-                <option value="huong-dan">Hướng dẫn</option>
-                <option value="video">Video</option>
-              </select>
-            </Field>
             {l.news && (
-              <Field label="Ngày đăng">
-                <input type="date" value={l.date || ""} onChange={(e) => setAt(i, { date: e.target.value })} className={inputCls} style={{ borderColor: LINE }} />
-              </Field>
-            )}
-          </div>
-          {l.news && (
-            <div className="grid gap-2 md:grid-cols-2">
-              <Field label="Ảnh bìa">
-                <div className="flex items-center gap-2">
-                  <input value={l.cover || ""} onChange={(e) => setAt(i, { cover: e.target.value })} placeholder="Dán link ảnh hoặc tải lên" className={inputCls} style={{ borderColor: LINE }} />
-                  <label className="text-xs px-2 py-1.5 rounded-md border cursor-pointer whitespace-nowrap" style={{ borderColor: LINE, color: INK }}>
-                    {coverBusy === i ? "Đang tải" : "Tải ảnh"}
+              <div className="space-y-3 rounded-xl p-3.5" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+                <div>
+                  <p className="mb-1.5 text-sm font-semibold" style={{ color: TEXT }}>Ảnh bìa</p>
+                  <div className="mb-2 grid aspect-video place-items-center overflow-hidden rounded-lg" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
+                    {l.cover ? <img src={l.cover} alt="" className="h-full w-full object-cover" /> : <ImageOff size={18} style={{ color: "#9CA3AF" }} />}
+                  </div>
+                  <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm" style={{ borderColor: LINE, color: TEXT }}>
+                    <ImagePlus size={14} /> {coverBusy ? "Đang tải…" : l.cover ? "Đổi ảnh" : "Tải ảnh lên"}
                     <input type="file" accept="image/*" className="hidden" onChange={(e) => { uploadCover(i, e.target.files?.[0]); e.target.value = ""; }} />
                   </label>
                 </div>
-              </Field>
-              <Field label="Link video (YouTube, TikTok, Facebook)">
-                <input value={l.videoUrl || ""} onChange={(e) => setAt(i, { videoUrl: e.target.value.trim() })} placeholder="YouTube phát ngay trong bài, tự lấy ảnh bìa" className={inputCls} style={{ borderColor: LINE }} />
-              </Field>
-              <div className="md:col-span-2">
-                <Field label="Mô tả ngắn (hiện ở thẻ bài và khi chia sẻ link)">
-                  <input value={l.summary || ""} onChange={(e) => setAt(i, { summary: e.target.value })} placeholder="1 câu nói bài này có gì" className={inputCls} style={{ borderColor: LINE }} />
-                </Field>
+                <Field label="Ngày đăng"><input type="date" value={l.date || ""} onChange={(e) => setAt(i, { date: e.target.value })} className={inputCls} style={{ borderColor: LINE }} /></Field>
+                <Field label="Tóm tắt 1 câu"><textarea rows={2} value={l.summary || ""} onChange={(e) => setAt(i, { summary: e.target.value })} className={inputCls} style={{ borderColor: LINE }} /></Field>
+                <Field label="Link video"><input value={l.videoUrl || ""} onChange={(e) => setAt(i, { videoUrl: e.target.value.trim() })} placeholder="YouTube, TikTok, Facebook" className={inputCls} style={{ borderColor: LINE }} /></Field>
+              </div>
+            )}
+
+            <div className="rounded-xl p-3.5" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+              <p className="mb-1 text-sm font-semibold" style={{ color: TEXT }}>Link của trang</p>
+              <p className="break-all text-xs" style={{ color: "#4B5563" }}>hilipc.vn{pathOf(l)}</p>
+              {slugEdit && (
+                <input value={l.slug || ""} onChange={(e) => setAt(i, { slug: webSlugifyLive(e.target.value) })} onBlur={(e) => setAt(i, { slug: webSlugify(e.target.value) })}
+                  placeholder={webSlugify(l.title || "") || "duong-dan"} className={inputCls + " mt-2"} style={{ borderColor: LINE }} />
+              )}
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                <button type="button" onClick={() => copy(l)} className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs" style={{ borderColor: LINE, color: TEXT }}>{copied ? <Check size={13} /> : <Copy size={13} />} {copied ? "Đã chép" : "Sao chép"}</button>
+                <button type="button" onClick={() => setSlugEdit((v) => !v)} className="rounded-md border px-2.5 py-1.5 text-xs" style={{ borderColor: LINE, color: TEXT }}>Đổi link</button>
               </div>
             </div>
-          )}
-
-          <Field label="Nội dung">
-            <WebDescEditor rows={10} bg="#fff" value={l.body || ""} onChange={(v) => setAt(i, { body: v })} />
-          </Field>
+          </div>
         </div>
-      ))}
+      </div>
+    );
+  }
 
-      <div className="flex items-center gap-3">
-        <button onClick={addOne} className="text-xs px-2.5 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>+ Thêm trang</button>
-        <button onClick={reset} className="text-xs underline" style={{ color: RUST }}>Đặt lại về mặc định</button>
+  const rows = list.map((x, i) => ({ x, i })).filter(({ x }) => kind === "all" || (x.news || "") === kind);
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-1.5">
+          {[["all", "Tất cả"], ...LANDING_KINDS].map(([id, name]) => {
+            const on = kind === id;
+            const n = id === "all" ? list.length : list.filter((x) => (x.news || "") === id).length;
+            return <button key={id} type="button" onClick={() => setKind(id)} className="rounded-full px-3 py-1.5 text-[13px] font-medium" style={{ background: on ? "#EEF1FB" : "#fff", color: on ? INK : TEXT, border: `1px solid ${on ? INK : LINE}` }}>{name} {n}</button>;
+          })}
+        </div>
+        <button type="button" onClick={addOne} className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-white" style={{ background: INK }}><Plus size={15} /> Tạo trang mới</button>
+      </div>
+
+      {rows.length === 0 && <p className="rounded-lg p-8 text-center text-sm" style={{ background: PAPER, color: "#6B7280" }}>Chưa có trang nào ở đây.</p>}
+      <div className="space-y-2">
+        {rows.map(({ x, i }) => {
+          const shown = x.published !== false;
+          return (
+            <div key={i} className="flex items-center gap-3 rounded-xl p-2.5 transition hover:bg-[#F6F7FB]" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+              <button type="button" onClick={() => { setSlugEdit(false); setOpenIdx(i); }} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                <span className="grid h-14 w-20 shrink-0 place-items-center overflow-hidden rounded-lg" style={{ background: "#EEF1FB", color: INK }}>
+                  {x.cover ? <img src={x.cover} alt="" className="h-full w-full object-cover" /> : <FileText size={20} />}
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-semibold" style={{ color: TEXT }}>{x.title || "Chưa đặt tên"}</span>
+                  <span className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs" style={{ color: "#6B7280" }}>
+                    <span className="rounded-full px-2 py-0.5 font-medium" style={{ background: "#EEF1FB", color: INK }}>{kindName(x.news)}</span>
+                    {x.date && <span>{x.date.split("-").reverse().join("/")}</span>}
+                    <span className="truncate">{pathOf(x)}</span>
+                  </span>
+                </span>
+              </button>
+              <span className="hidden text-xs sm:block" style={{ color: shown ? FOREST : "#6B7280" }}>{shown ? "Đang hiện" : "Đang ẩn"}</span>
+              <Switch checked={shown} onChange={(v) => setAt(i, { published: v })} label="Hiện trang này trên web" />
+              <button type="button" onClick={() => move(i, -1)} disabled={i === 0} className={iconB} style={{ borderColor: LINE, color: TEXT }} title="Đưa lên"><ArrowUp size={15} /></button>
+              <button type="button" onClick={() => move(i, 1)} disabled={i === list.length - 1} className={iconB} style={{ borderColor: LINE, color: TEXT }} title="Đưa xuống"><ArrowDown size={15} /></button>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+        <p className="text-xs" style={{ color: "#6B7280" }}>Bài xếp trên cùng là bài lớn ở mục Tin tức & video.</p>
+        <button type="button" onClick={reset} className="text-xs underline" style={{ color: RUST }}>Khôi phục mặc định</button>
       </div>
     </div>
   );
@@ -16974,13 +16931,6 @@ function WebConfigForm({ section, webConfig, setWebConfig, setProducts, addLog, 
       .map(([re, image]) => ({ p: webProducts.find((p) => re.test(`${p.name} ${Object.values(p.variantAttrs || {}).join(" ")}`)), image })).filter((x) => x.p)
       .map(({ p, image }) => ({ ...heroRef(p), image, title: "", sub: "" }));
     return [...seed, { productId: "", image: "", title: "", sub: "" }];
-  });
-  const delHomeHero = (i) => mutHomeHero((arr) => arr.filter((_, j) => j !== i));
-  const moveHomeHero = (i, d) => mutHomeHero((arr) => {
-    const j = i + d;
-    if (j < 0 || j >= arr.length) return arr;
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-    return arr;
   });
   const [heroUploading, setHeroUploading] = useState(-1);
   const uploadHomeHero = async (i, file) => {
@@ -17146,49 +17096,16 @@ function WebConfigForm({ section, webConfig, setWebConfig, setProducts, addLog, 
       </section>
 
       <section hidden={pane !== "homeblocks"} className="p-5 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-        <h3 className="text-base font-semibold mb-4" style={{ color: TEXT }}>Khối sản phẩm trang chủ</h3>
         <HomeSectionsEditor webConfig={webConfig} setWebConfig={setWebConfig} products={products} />
       </section>
 
       <section hidden={pane !== "landing"} className="p-5 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-        <h3 className="text-base font-semibold mb-4" style={{ color: TEXT }}>Trang nội dung (landing)</h3>
+        <h3 className="text-base font-semibold mb-3" style={{ color: TEXT }}>Trang nội dung</h3>
         <LandingsEditor webConfig={webConfig} setWebConfig={setWebConfig} />
       </section>
 
       <section hidden={pane !== "hero"} className="p-5 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-        <div className="flex items-center justify-between gap-3 mb-1">
-          <h3 className="text-base font-semibold" style={{ color: TEXT }}>Màn trình chiếu đầu trang chủ</h3>
-          <button onClick={addHomeHero} className="text-sm px-3 py-1.5 rounded-md text-white whitespace-nowrap" style={{ background: INK }}>+ Thêm sản phẩm</button>
-        </div>
-        <p className="text-xs mb-3" style={{ color: "#6B7280" }}>Chọn sản phẩm đang đăng web, giá và link tự lấy theo sản phẩm. Ảnh nên là PNG hoặc WebP đã xoá nền, để trống thì dùng ảnh sản phẩm trên khung trắng.</p>
-        {homeHero.length === 0 && <p className="text-sm py-2" style={{ color: "#6B7280" }}>Đang dùng các mẫu VOICSKY mặc định. Bấm “+ Thêm sản phẩm” để nạp các mẫu này và thêm mẫu mới.</p>}
-        <div className="space-y-2">
-          {homeHero.map((h, i) => (
-            <div key={i} className="grid gap-2 items-center rounded-md p-2.5 grid-cols-1 md:grid-cols-[96px_minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_auto]" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
-              {thumb(h.image || displayImage(webProducts.find((p) => p.id === h.productId)))}
-              <select value={h.productId || ""} onChange={(e) => pickHomeHero(i, e.target.value)} className={inputCls} style={{ borderColor: LINE }}>
-                <option value="">Chọn sản phẩm</option>
-                {webProducts.map((p) => <option key={p.id} value={p.id}>{[p.name, ...Object.values(p.variantAttrs || {})].join(" · ")}</option>)}
-              </select>
-              {ip(h.title, (v) => setHomeHero(i, "title", v), "Tên hiện, VD: Echo 96")}
-              {ip(h.sub, (v) => setHomeHero(i, "sub", v), "Dòng phụ, VD: Bàn phím cơ")}
-              <div className="flex items-center gap-1">
-                <label className="text-xs px-2 py-1 rounded-md border cursor-pointer whitespace-nowrap" style={{ borderColor: LINE, color: INK }}>
-                  {heroUploading === i ? "Đang tải" : "Tải ảnh"}
-                  <input type="file" accept="image/png,image/webp" className="hidden" onChange={(e) => { uploadHomeHero(i, e.target.files?.[0]); e.target.value = ""; }} />
-                </label>
-                <label className="text-xs px-2 py-1 rounded-md border cursor-pointer whitespace-nowrap" style={{ borderColor: LINE, color: INK }} title="Logo hiện ở góc trái. PNG hoặc WebP nền trong suốt, màu sáng, ngang 600 đến 800px. Viền trong suốt thừa được tự cắt.">
-                  {h.logo ? "Đổi logo" : "Tải logo"}
-                  <input type="file" accept="image/png,image/webp,image/svg+xml" className="hidden" onChange={(e) => { uploadHomeHeroLogo(i, e.target.files?.[0]); e.target.value = ""; }} />
-                </label>
-                {h.logo && <button onClick={() => setHomeHero(i, "logo", "")} className="text-xs px-1.5 py-1" style={{ color: RUST }}>Bỏ logo</button>}
-                <button onClick={() => moveHomeHero(i, -1)} disabled={i === 0} className="text-xs px-1.5 py-1 rounded-md border disabled:opacity-30" style={{ borderColor: LINE }} title="Lên">↑</button>
-                <button onClick={() => moveHomeHero(i, 1)} disabled={i === homeHero.length - 1} className="text-xs px-1.5 py-1 rounded-md border disabled:opacity-30" style={{ borderColor: LINE }} title="Xuống">↓</button>
-                <button onClick={() => delHomeHero(i)} className="text-xs px-1.5 py-1" style={{ color: RUST }}>Xoá</button>
-              </div>
-            </div>
-          ))}
-        </div>
+        <HomeHeroEditor slides={homeHero} products={webProducts} mut={mutHomeHero} pick={pickHomeHero} add={addHomeHero} displayImage={displayImage} upload={uploadHomeHero} uploadLogo={uploadHomeHeroLogo} uploading={heroUploading} />
       </section>
 
       <section hidden={pane !== "posters"} className="p-5 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>

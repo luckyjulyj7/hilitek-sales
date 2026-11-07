@@ -37,6 +37,7 @@ export default handler(async (req, res) => {
       priceFrom: prices.some((v) => v !== minPrice),
       stock: variants.reduce((s, v) => s + v.stock, 0),
       variantCount: variants.length,
+      variantSkus: variants.map((v) => v.sku).filter(Boolean),
     };
   });
 
