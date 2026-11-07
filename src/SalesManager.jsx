@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Package, ShoppingCart, Users, BarChart3,
   Plus, Trash2, Pencil, X, Search, Store, Globe, Menu, Home, Tag, Settings, Images,
   TrendingUp, AlertTriangle, Loader2, ChevronDown, ChevronRight, ChevronLeft, ChevronUp,
-  ArrowDownToLine, ArrowUpFromLine, Barcode, ImagePlus, ImageOff, Check, Printer, RotateCcw, KeyRound, LogOut, Eye, EyeOff, Filter, Target, History, ShieldCheck, XCircle, Wallet, PackageCheck, Truck, Clock, Bell, FileSpreadsheet, FileText, MapPin, UserCircle, Crown, Link2 as LinkIcon, Copy, Wand2, Bold, Italic, Heading1, Heading2, Heading3, List, Sparkles, Save, Layers, Star
+  ArrowDownToLine, ArrowUpFromLine, Barcode, ImagePlus, ImageOff, Check, Printer, RotateCcw, KeyRound, LogOut, Eye, EyeOff, Filter, Target, History, ShieldCheck, XCircle, Wallet, PackageCheck, Truck, Clock, Bell, FileSpreadsheet, FileText, MapPin, UserCircle, Crown, Link2 as LinkIcon, Copy, Wand2, Bold, Italic, Heading1, Heading2, Heading3, List, Sparkles, Save, Layers, Star, ArrowUp, ArrowDown, Info, Zap
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -19,6 +19,7 @@ import { uploadProductImage, rehostExternalImage, toDirectImageUrl, trimLogo } f
 import { SUPABASE_ANON_KEY } from "./lib/supabaseStorage.js";
 import { pointsForPhone, normalizePhone, DEFAULT_LOYALTY } from "./lib/loyalty.js";
 import { baseVariantName } from "./lib/variants.js";
+import HomeTilesEditor from "./HomeTilesEditor.jsx";
 
 // Xuất 1 hoặc nhiều bảng dữ liệu ra 1 file Excel (.xlsx), mỗi bảng là 1 sheet riêng.
 // Thư viện Excel (xlsx) nặng ~400KB — chỉ tải khi thật sự bấm xuất/nhập file, không nằm trong lần tải đầu.
@@ -1522,7 +1523,7 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
           className="text-xs px-2 py-1 rounded-md border inline-flex items-center gap-1" style={{ borderColor: LINE, color: TEXT, opacity: busy ? 0.5 : 1 }}>
           <Sparkles size={13} /> Làm đẹp mô tả
         </button>
-        <span className="text-xs opacity-60">Chèn ảnh: bấm icon ảnh trên thanh công cụ bên dưới · dán ảnh (Ctrl+V) · kéo–thả file · dán cả bài từ web khác</span>
+        <span className="text-xs opacity-60" title="Chèn ảnh: bấm icon ảnh ở thanh công cụ bên dưới, dán ảnh (Ctrl+V), hoặc kéo thả file. Có thể dán cả bài từ web khác.">Dán hoặc kéo thả ảnh thẳng vào khung</span>
         {busy && <span className="text-xs inline-flex items-center gap-1" style={{ color: BLUE }}><Loader2 size={12} className="animate-spin" /> {msg}</span>}
         {!busy && msg && <span className="text-xs" style={{ color: /Lỗi|không|phải/i.test(msg) ? RUST : BLUE }}>{msg}</span>}
         <input ref={fileRef} type="file" accept="image/*" multiple className="hidden"
@@ -1533,7 +1534,7 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
           <button key={emo} type="button" onClick={() => insertEmoji(emo)}
             className="w-7 h-7 grid place-items-center rounded-md border text-[13px]" style={{ borderColor: LINE }}>{emo}</button>
         ))}
-        <span className="text-xs opacity-60 ml-1">Chèn nhanh biểu tượng — đậm/nghiêng/tiêu đề/danh sách... dùng thanh công cụ bên dưới</span>
+        <span className="text-xs opacity-60 ml-1">Chèn nhanh biểu tượng</span>
       </div>
       {linkOpen && (
         <div className="mb-1">
@@ -15684,6 +15685,7 @@ function AIWriteFromUrl({ onApply, product, products, setProducts, addLog }) {
  */
 function WebProductPage({ product, products, setProducts, webCats, onBack, onSwitch, goToInventoryProductEdit, currentUser, addLog }) {
   const [editTab, setEditTab] = useState("content");
+  const [moreOpen, setMoreOpen] = useState(false);
   const [showAI, setShowAI] = useState(false);
   const p = product;
   // Các phiên bản (màu sắc/kích cỡ...) cùng 1 sản phẩm dùng CHUNG mô tả/thông số/danh mục/trạng
@@ -15830,15 +15832,18 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
         </button>
         <div className="min-w-0 flex-1">
           <h3 className="text-base font-semibold truncate" style={{ color: TEXT }} title={p.name}>{p.name}</h3>
-          <div className="text-xs opacity-60 truncate">{p.sku} · {p.category || "—"}</div>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="shrink-0 rounded-full px-2 py-0.5 font-medium" style={{ background: w.published ? "#DCFCE7" : "#F3F4F6", color: w.published ? FOREST : "#4B5563" }}>{w.published ? "Đang bán" : "Đang ẩn"}</span>
+            <span className="truncate opacity-60">{p.sku} · {p.category || "—"}</span>
+          </div>
         </div>
         {dirty && <span className="text-xs font-medium" style={{ color: BRASS }}>● Chưa lưu</span>}
         {p.web?.published && <a href={`https://hilipc.vn/san-pham/${effSlug}`} target="_blank" rel="noopener" className="text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT, background: "#fff" }}>Xem trên web ↗</a>}
         <button onClick={doDiscard} disabled={!dirty} className="text-xs px-3 py-1.5 rounded-md border disabled:opacity-40" style={{ borderColor: LINE, color: TEXT, background: "#fff" }}>
           Huỷ
         </button>
-        <button onClick={doSave} disabled={!dirty} className="text-xs px-3.5 py-1.5 rounded-md text-white disabled:opacity-40 inline-flex items-center gap-1.5" style={{ background: INK }}>
-          <Save size={13} /> Lưu
+        <button onClick={doSave} disabled={!dirty} className="text-sm font-medium px-4 py-2 rounded-md text-white inline-flex items-center gap-1.5 transition" style={{ background: dirty ? INK : "#9CA3AF" }}>
+          {dirty ? <><Save size={15} /> Lưu thay đổi</> : <><Check size={15} /> Đã lưu</>}
         </button>
       </div>
 
@@ -15909,7 +15914,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
             const noSeo = miss.includes("SEO riêng");
             return (
               <div>
-                <p className="text-sm font-medium mb-2" style={{ color: TEXT }}>Chọn phần cần sửa</p>
+                <p className="text-sm font-medium mb-2" style={{ color: TEXT }}>Điền từng phần <span className="font-normal" style={{ color: "#6B7280" }}>· mục có dấu cảnh báo là còn thiếu</span></p>
                 <SectionTabs value={editTab} onChange={setEditTab} tabs={[
                   { id: "content", label: "Nội dung", icon: FileText, state: contentMiss.length ? "missing" : "ok", note: contentMiss.length ? `Thiếu ${contentMiss.join(", ").toLowerCase()}` : "Mô tả, thông số, danh mục" },
                   { id: "images", label: "Ảnh", icon: Images, state: noImage ? "missing" : "ok", note: noImage ? "Chưa có ảnh" : "Đã có ảnh" },
@@ -15923,6 +15928,12 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
 
           <div hidden={!showAI || editTab !== "content"}>
             <AIWriteFromUrl onApply={setWeb} product={p} products={products} setProducts={setProducts} addLog={addLog} />
+          </div>
+
+          <div hidden={editTab !== "content"} className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+            <p className="text-base font-semibold" style={{ color: TEXT }}>Danh mục trên web</p>
+            <p className="text-xs mb-2" style={{ color: "#6B7280" }}>Chọn nơi khách tìm thấy sản phẩm. Chọn được nhiều danh mục.</p>
+            <WebCategoryMultiSelect webCats={webCats} value={w.categories} onChange={(next) => setWeb({ categories: next })} />
           </div>
 
           <div hidden={editTab !== "content"} className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
@@ -15961,17 +15972,10 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
                 <Wand2 size={12} /> Chuẩn hoá "Nhãn | Giá trị"
               </button>
             </div>
-            <p className="text-xs opacity-60 mb-1.5">
-              Mỗi dòng: Nhãn | Giá trị. Dòng không có | sẽ nối tiếp (xuống dòng) vào giá trị phía trên.
-              Dán thông số từ trang khác (dùng dấu ":" hoặc tab) rồi bấm "Chuẩn hoá" để tự thêm dấu |.
-            </p>
+            <p className="text-xs mb-1.5" style={{ color: "#6B7280" }}>Mỗi dòng một thông số, dạng <b>Nhãn | Giá trị</b>. Dán từ trang khác rồi bấm Chuẩn hoá để tự thêm dấu |.</p>
             <textarea rows={8} className={inputCls} style={{ borderColor: LINE, background: "#fff", fontFamily: "'Inter', sans-serif" }}
               value={w.specsText} onChange={(e) => setWeb({ specsText: e.target.value })}
               placeholder={"Chất liệu | Kính cường lực\nĐộ cứng | 9H\nĐặc điểm | Cảm ứng nhạy\n- Viền phủ keo\n- Chống dầu vân tay"} />
-          </div>
-          <div hidden={editTab !== "content"} className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-            <p className="text-base font-semibold mb-2" style={{ color: TEXT }}>Danh mục phụ trên web <span className="text-xs font-normal opacity-60">(mọi cấp — chọn được nhiều)</span></p>
-            <WebCategoryMultiSelect webCats={webCats} value={w.categories} onChange={(next) => setWeb({ categories: next })} />
           </div>
 
           <div hidden={editTab !== "price"} className="p-4 rounded-md space-y-3" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
@@ -16012,73 +16016,89 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
 
         {/* Cột phải */}
         <div className="space-y-4 lg:sticky lg:top-28 self-start">
+          <div className="rounded-xl p-4" style={{ border: `1px solid ${w.published ? "#BBF7D0" : LINE}`, background: w.published ? "#F0FDF4" : "#fff" }}>
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-base font-semibold" style={{ color: w.published ? FOREST : TEXT }}>{w.published ? "Đang bán trên web" : "Đang ẩn khỏi web"}</p>
+                <p className="mt-0.5 text-xs" style={{ color: "#4B5563" }}>{w.published ? "Khách thấy và mua được sản phẩm này." : "Khách chưa thấy sản phẩm này. Bật lên khi đã điền đủ."}</p>
+              </div>
+              <Switch checked={!!w.published} onChange={(v) => setWeb({ published: v })} label="Đăng sản phẩm lên web" />
+            </div>
+          </div>
+
           {(() => {
             const health = webHealth(p, w);
             const done = health.filter((h) => h.ok).length;
+            const tabOf = { "Ảnh sản phẩm": "images", "SEO riêng": "seo" };
             return (
-              <div className="p-4 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+              <div className="rounded-xl p-4" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-base font-semibold" style={{ color: TEXT }}>Sẵn sàng đăng</p>
-                  <span className="text-sm" style={{ color: "#6B7280" }}>{done}/{health.length}</span>
+                  <p className="text-base font-semibold" style={{ color: TEXT }}>{done === health.length ? "Đã điền đủ" : "Cần điền thêm"}</p>
+                  <span className="text-sm font-medium" style={{ color: done === health.length ? FOREST : "#6B7280" }}>{done}/{health.length}</span>
                 </div>
-                <div className="h-1.5 rounded-full mb-3" style={{ background: PAPER }}>
-                  <div className="h-1.5 rounded-full" style={{ width: `${(done / health.length) * 100}%`, background: GOLD }} />
+                <div className="h-1.5 rounded-full mb-2" style={{ background: PAPER }}>
+                  <div className="h-1.5 rounded-full transition-all" style={{ width: `${(done / health.length) * 100}%`, background: done === health.length ? FOREST : GOLD }} />
                 </div>
                 {health.map((h) => (
-                  <div key={h.label} className="flex items-center gap-2 text-sm py-1" style={{ color: h.ok ? TEXT : h.required ? RUST : BRASS }}>
-                    {h.ok ? <Check size={14} style={{ color: FOREST }} /> : <AlertTriangle size={14} />}
-                    {h.label}{!h.ok && !h.required ? " (nên có)" : ""}
-                  </div>
+                  <button key={h.label} type="button" onClick={() => { setEditTab(tabOf[h.label] || "content"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                    className="flex w-full items-center gap-2 rounded-md px-1.5 py-1.5 text-left text-sm transition hover:bg-[#F6F7FB]" style={{ color: h.ok ? TEXT : h.required ? RUST : BRASS }}>
+                    {h.ok ? <Check size={15} style={{ color: FOREST }} /> : <AlertTriangle size={15} />}
+                    <span className="flex-1">{h.label}{!h.ok && !h.required ? " (nên có)" : ""}</span>
+                    {!h.ok && <span className="inline-flex items-center gap-0.5 text-xs font-medium">Điền <ChevronRight size={13} /></span>}
+                  </button>
                 ))}
               </div>
             );
           })()}
-          <div className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-            <p className="text-base font-semibold mb-2" style={{ color: TEXT }}>Trạng thái</p>
-            <div className="flex items-center justify-between gap-2 text-sm">
-              <span>{w.published ? "Đang bán trên web" : "Ẩn khỏi web"}</span>
-              <Switch checked={!!w.published} onChange={(v) => setWeb({ published: v })} label="Đăng sản phẩm lên web" />
-            </div>
 
-            <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${LINE}` }}>
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input type="checkbox" checked={!!w.virtualStock}
-                  onChange={(e) => setWeb({ virtualStock: e.target.checked, virtualStockQty: e.target.checked ? (w.virtualStockQty || randomVirtualStock()) : 0 })} />
-                <span>Tồn kho ảo bán online</span>
-              </label>
-              <p className="text-xs opacity-60 mt-1">Web hiển thị "còn hàng" theo số ảo bên dưới (không lộ tồn thật) — dùng cho hàng dropship / nhập nhanh từ NPP.</p>
-              {w.virtualStock && (
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="text-xs opacity-60">Số lượng ảo</span>
-                  <input type="number" min={1} className="w-20 border rounded-md py-1 px-2 text-sm" style={{ borderColor: LINE }}
-                    value={w.virtualStockQty || ""} onChange={(e) => setWeb({ virtualStockQty: Math.max(0, Math.floor(Number(e.target.value) || 0)) })} />
-                  <button type="button" onClick={() => setWeb({ virtualStockQty: randomVirtualStock() })}
-                    className="text-xs px-2 py-1 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>🎲 Số khác</button>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${LINE}` }}>
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input type="checkbox"
-                  checked={(w.categories || []).includes(WEB_FLASH_CAT)}
-                  onChange={(e) => setWeb({
-                    categories: e.target.checked
-                      ? [...new Set([...(w.categories || []), WEB_FLASH_CAT])]
-                      : (w.categories || []).filter((x) => x !== WEB_FLASH_CAT),
-                  })} />
-                <span>⚡ Đưa vào khối Flash Sale trang chủ</span>
-              </label>
-              <p className="text-xs opacity-60 mt-1">Sản phẩm sẽ hiện trong khối Flash Sale (không cần nằm trong menu danh mục). Số lượng & cách sắp xếp chỉnh ở Cấu hình web → Flash Sale.</p>
-            </div>
-
-            <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${LINE}` }}>
-              <label className="text-sm block mb-1">Độ ưu tiên hiển thị</label>
-              <input type="number" className="w-24 border rounded-md py-1 px-2 text-sm" style={{ borderColor: LINE }}
-                value={w.priority || 0} onChange={(e) => setWeb({ priority: Math.floor(Number(e.target.value) || 0) })} />
-              <p className="text-xs opacity-60 mt-1">Số càng lớn càng hiện lên ĐẦU trang danh mục/trang chủ khi khách chưa tự chọn sắp xếp (mặc định "Phổ biến"). Để 0 = theo thứ tự bình thường. Không ảnh hưởng khi khách tự chọn sắp xếp theo giá/tên.</p>
-            </div>
-          </div>
+          {(() => {
+            const flashOn = (w.categories || []).includes(WEB_FLASH_CAT);
+            const onCount = (w.virtualStock ? 1 : 0) + (flashOn ? 1 : 0) + ((w.priority || 0) > 0 ? 1 : 0);
+            const open = moreOpen || onCount > 0;
+            const row = "flex items-center justify-between gap-3";
+            return (
+              <div className="rounded-xl" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+                <button type="button" onClick={() => setMoreOpen((v) => !v)} className="flex w-full items-center justify-between gap-2 p-4 text-left">
+                  <span className="text-base font-semibold" style={{ color: TEXT }}>Tuỳ chọn thêm</span>
+                  <span className="inline-flex items-center gap-1.5 text-xs" style={{ color: "#6B7280" }}>{onCount > 0 ? `${onCount} đang bật` : "Không bắt buộc"}{open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</span>
+                </button>
+                {open && (
+                  <div className="space-y-4 px-4 pb-4" style={{ borderTop: `1px solid ${LINE}`, paddingTop: 14 }}>
+                    <div>
+                      <div className={row}>
+                        <span className="text-sm font-medium" style={{ color: TEXT }}>Tồn kho ảo</span>
+                        <Switch checked={!!w.virtualStock} onChange={(v) => setWeb({ virtualStock: v, virtualStockQty: v ? (w.virtualStockQty || randomVirtualStock()) : 0 })} label="Bật tồn kho ảo" />
+                      </div>
+                      <p className="mt-1 text-xs" style={{ color: "#6B7280" }}>Web báo còn hàng theo số ảo, không lộ tồn thật. Dùng cho hàng đặt nhanh từ nhà phân phối.</p>
+                      {w.virtualStock && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <input type="number" min={1} className="w-20 rounded-md border px-2 py-1 text-sm" style={{ borderColor: LINE }}
+                            value={w.virtualStockQty || ""} onChange={(e) => setWeb({ virtualStockQty: Math.max(0, Math.floor(Number(e.target.value) || 0)) })} />
+                          <span className="text-xs" style={{ color: "#6B7280" }}>sản phẩm</span>
+                          <button type="button" onClick={() => setWeb({ virtualStockQty: randomVirtualStock() })} className="rounded-md border px-2 py-1 text-xs" style={{ borderColor: LINE, color: TEXT }}>Số khác</button>
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ borderTop: `1px solid ${LINE}`, paddingTop: 14 }}>
+                      <div className={row}>
+                        <span className="inline-flex items-center gap-1 text-sm font-medium" style={{ color: TEXT }}><Zap size={14} style={{ color: BRASS }} /> Đưa vào Flash Sale</span>
+                        <Switch checked={flashOn} onChange={(v) => setWeb({ categories: v ? [...new Set([...(w.categories || []), WEB_FLASH_CAT])] : (w.categories || []).filter((x) => x !== WEB_FLASH_CAT) })} label="Đưa vào Flash Sale" />
+                      </div>
+                      <p className="mt-1 text-xs" style={{ color: "#6B7280" }}>Hiện trong khối Flash Sale ở trang chủ.</p>
+                    </div>
+                    <div style={{ borderTop: `1px solid ${LINE}`, paddingTop: 14 }}>
+                      <div className={row}>
+                        <span className="text-sm font-medium" style={{ color: TEXT }}>Độ ưu tiên hiển thị</span>
+                        <input type="number" className="w-20 rounded-md border px-2 py-1 text-right text-sm" style={{ borderColor: LINE }}
+                          value={w.priority || 0} onChange={(e) => setWeb({ priority: Math.floor(Number(e.target.value) || 0) })} />
+                      </div>
+                      <p className="mt-1 text-xs" style={{ color: "#6B7280" }}>Số càng lớn càng hiện lên đầu danh sách. Để 0 là theo thứ tự thường.</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
         </div>
       </div>
@@ -16283,28 +16303,39 @@ function cascadeCategoryRename(setProducts, renameMap) {
   }));
 }
 
-/** 1 dòng danh mục trong cây nháp (đệ quy) — sửa tên, thêm con, xoá, đổi thứ tự trong nhóm anh em. */
-function MenuNodeRow({ node, siblingsCount, index, depth, onUpdate, onDelete, onAddChild, onMove }) {
+/** 1 dòng danh mục trong cây nháp (đệ quy): tên, số sản phẩm, đổi thứ tự, thêm con, xoá. */
+function MenuNodeRow({ node, siblingsCount, index, depth, counts, dupes, collapsed, toggle, onUpdate, onDelete, onAddChild, onMove }) {
   const childCount = countDraftDescendants(node);
+  const hasKids = (node.subs || []).length > 0;
+  const closed = collapsed.has(node._key);
+  const dup = dupes.has((node.name || "").trim().toLowerCase());
+  const n = counts[node._key] || 0;
+  const ib = "grid h-8 w-8 shrink-0 place-items-center rounded-md border bg-white transition hover:bg-[#F6F7FB] disabled:opacity-30 disabled:hover:bg-white";
   return (
     <div>
-      <div className="flex items-center gap-1.5 py-1" style={{ marginLeft: (depth - 1) * 20 }}>
-        {depth > 1 && <span className="text-mute text-xs shrink-0">└</span>}
+      <div className="group flex items-center gap-1.5 rounded-lg py-1 pr-1 hover:bg-[#F6F7FB]" style={{ marginLeft: (depth - 1) * 22, paddingLeft: 4 }}>
+        <button type="button" onClick={() => hasKids && toggle(node._key)} className="grid h-7 w-7 shrink-0 place-items-center rounded-md" style={{ color: hasKids ? TEXT : "#D1D5DB", cursor: hasKids ? "pointer" : "default" }} aria-label={closed ? "Mở rộng" : "Thu gọn"}>
+          {hasKids ? (closed ? <ChevronRight size={16} /> : <ChevronDown size={16} />) : <span className="block h-1.5 w-1.5 rounded-full" style={{ background: "#CBD5E1" }} />}
+        </button>
         <input
           value={node.name}
           onChange={(e) => onUpdate(node._key, { name: e.target.value })}
           placeholder="Tên danh mục"
-          className="flex-1 border rounded-md px-2 py-1 text-sm min-w-0" style={{ borderColor: LINE }}
+          title={dup ? "Tên này đã dùng ở nơi khác, hãy đổi tên khác" : undefined}
+          className="min-w-0 flex-1 rounded-md border bg-white px-2.5 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-200"
+          style={{ borderColor: dup ? RUST : LINE, fontWeight: depth === 1 ? 600 : 400 }}
         />
-        <button onClick={() => onMove(node._key, -1)} disabled={index === 0} className="text-xs px-1 py-1 rounded-md border disabled:opacity-30 shrink-0" style={{ borderColor: LINE, color: TEXT }} title="Lên">↑</button>
-        <button onClick={() => onMove(node._key, 1)} disabled={index === siblingsCount - 1} className="text-xs px-1 py-1 rounded-md border disabled:opacity-30 shrink-0" style={{ borderColor: LINE, color: TEXT }} title="Xuống">↓</button>
-        {depth < WEB_MAX_CATEGORY_DEPTH && (
-          <button onClick={() => onAddChild(node._key)} className="text-xs px-2 py-1 rounded-md border shrink-0 whitespace-nowrap" style={{ borderColor: LINE, color: TEXT }}>+ Con</button>
-        )}
-        <button onClick={() => onDelete(node._key, node.name, childCount)} className="text-xs px-1.5 shrink-0" style={{ color: RUST }}>Xoá</button>
+        <span className="hidden w-[84px] shrink-0 text-right text-xs sm:block" style={{ color: n ? "#4B5563" : "#9CA3AF" }}>{n ? `${n} sản phẩm` : "Chưa có SP"}</span>
+        <button type="button" onClick={() => onMove(node._key, -1)} disabled={index === 0} className={ib} style={{ borderColor: LINE, color: TEXT }} title="Đưa lên"><ArrowUp size={15} /></button>
+        <button type="button" onClick={() => onMove(node._key, 1)} disabled={index === siblingsCount - 1} className={ib} style={{ borderColor: LINE, color: TEXT }} title="Đưa xuống"><ArrowDown size={15} /></button>
+        {depth < WEB_MAX_CATEGORY_DEPTH
+          ? <button type="button" onClick={() => onAddChild(node._key)} className={ib} style={{ borderColor: LINE, color: INK }} title="Thêm danh mục con"><Plus size={15} /></button>
+          : <span className="h-8 w-8 shrink-0" />}
+        <button type="button" onClick={() => onDelete(node._key, node.name, childCount)} className={ib} style={{ borderColor: LINE, color: RUST }} title="Xoá danh mục"><Trash2 size={15} /></button>
       </div>
-      {(node.subs || []).map((child, i) => (
-        <MenuNodeRow key={child._key} node={child} siblingsCount={node.subs.length} index={i} depth={depth + 1}
+      {dup && <p className="text-xs" style={{ color: RUST, marginLeft: (depth - 1) * 22 + 38 }}>Tên bị trùng</p>}
+      {!closed && (node.subs || []).map((child, i) => (
+        <MenuNodeRow key={child._key} node={child} siblingsCount={node.subs.length} index={i} depth={depth + 1} counts={counts} dupes={dupes} collapsed={collapsed} toggle={toggle}
           onUpdate={onUpdate} onDelete={onDelete} onAddChild={onAddChild} onMove={onMove} />
       ))}
     </div>
@@ -16346,24 +16377,60 @@ function WebPageEditor({ pageKey, label, webConfig, setWebConfig }) {
 
 
 function WebMenuEditor({ webConfig, setWebConfig, setProducts, products }) {
-  const usedCats = useMemo(
-    () => [...new Set((products || []).flatMap((p) => [p.category, ...((p.web && p.web.categories) || [])]).filter(Boolean))].sort(),
-    [products]
-  );
-
   const source = webConfig.MENU && webConfig.MENU.length ? webConfig.MENU : WEB_DEFAULT_MENU;
   const [draft, setDraft] = useState(() => menuToDraft(source));
-  const baselineRef = useRef(collectDraftKeyNames(draft)); // tên tại thời điểm mở trang / lần lưu gần nhất — so sánh để phát hiện đổi tên
+  const baselineRef = useRef(collectDraftKeyNames(draft)); // tên lúc mở trang / lần lưu gần nhất, để phát hiện đổi tên
+  const savedRef = useRef(draft); // bản đã lưu, dùng cho nút Huỷ thay đổi
   const [dirty, setDirty] = useState(false);
+  const [selKey, setSelKey] = useState(() => draft[0]?._key || "");
+  const [iconOpen, setIconOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => new Set());
+  const [help, setHelp] = useState(false);
   const upd = (fn) => { setDraft(fn); setDirty(true); };
+  const toggle = (k) => setCollapsed((s) => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n; });
 
-  const setG = (gi, k, v) => upd((d) => d.map((g, i) => (i === gi ? { ...g, [k]: v } : g)));
-  const addG = () => upd((d) => [...d, { _key: uid(), group: "Nhóm mới", icon: "Package", subs: [] }]);
-  const delG = async (gi, group, childCount) => {
-    if (childCount > 0 && !await askConfirm(`Xoá nhóm "${group}" sẽ xoá luôn ${childCount} danh mục bên trong. Sản phẩm đã gán không bị xoá, chỉ không còn hiện trong menu. Tiếp tục?`)) return;
-    upd((d) => d.filter((_, i) => i !== gi));
+  const gi = Math.max(0, draft.findIndex((g) => g._key === selKey));
+  const g = draft[gi];
+
+  // Số sản phẩm đang gán cho từng danh mục (gồm cả danh mục con bên dưới).
+  const counts = useMemo(() => {
+    const sets = (products || []).map((p) => new Set([p.category, ...((p.web && p.web.categories) || [])].filter(Boolean)));
+    const out = {};
+    const names = (n) => [n.name, ...(n.subs || []).flatMap(names)].filter(Boolean);
+    const walk = (nodes) => (nodes || []).forEach((n) => {
+      const ns = names(n);
+      out[n._key] = sets.reduce((c, s) => c + (ns.some((x) => s.has(x)) ? 1 : 0), 0);
+      walk(n.subs);
+    });
+    draft.forEach((grp) => {
+      walk(grp.subs);
+      const ns = [grp.group, ...(grp.subs || []).flatMap(names)].filter(Boolean);
+      out[grp._key] = sets.reduce((c, s) => c + (ns.some((x) => s.has(x)) ? 1 : 0), 0);
+    });
+    return out;
+  }, [draft, products]);
+  const dupes = useMemo(() => {
+    const names = collectDraftNamesLower(draft);
+    return new Set(names.filter((n, i) => names.indexOf(n) !== i));
+  }, [draft]);
+
+  const setG = (k, v) => upd((d) => d.map((x, i) => (i === gi ? { ...x, [k]: v } : x)));
+  const addG = () => {
+    const key = uid();
+    upd((d) => [...d, { _key: key, group: "Nhóm mới", icon: "Package", subs: [] }]);
+    setSelKey(key);
   };
-  const moveG = (gi, dir) => upd((d) => {
+  const delG = async () => {
+    if (!g) return;
+    const childCount = countDraftDescendants({ subs: g.subs });
+    if (!await askConfirm(childCount > 0
+      ? `Xoá nhóm "${g.group}" sẽ xoá luôn ${childCount} danh mục bên trong. Sản phẩm đã gán không bị xoá, chỉ không còn hiện trong menu. Tiếp tục?`
+      : `Xoá nhóm "${g.group}"?`)) return;
+    const rest = draft.filter((_, i) => i !== gi);
+    upd(() => rest);
+    setSelKey(rest[Math.min(gi, rest.length - 1)]?._key || "");
+  };
+  const moveG = (dir) => upd((d) => {
     const j = gi + dir;
     if (j < 0 || j >= d.length) return d;
     const n = [...d]; [n[gi], n[j]] = [n[j], n[gi]]; return n;
@@ -16371,8 +16438,8 @@ function WebMenuEditor({ webConfig, setWebConfig, setProducts, products }) {
 
   const save = () => {
     const names = collectDraftNamesLower(draft);
-    const dupes = [...new Set(names.filter((n, i) => names.indexOf(n) !== i))];
-    if (dupes.length) { notify(`Tên danh mục bị trùng — mỗi tên chỉ dùng 1 lần trên toàn cây:\n${dupes.join(", ")}`); return; }
+    const dup = [...new Set(names.filter((n, i) => names.indexOf(n) !== i))];
+    if (dup.length) { notify(`Tên danh mục bị trùng, mỗi tên chỉ dùng 1 lần trên toàn cây:\n${dup.join(", ")}`); return; }
 
     const finalNames = collectDraftKeyNames(draft);
     const renameMap = {};
@@ -16384,79 +16451,132 @@ function WebMenuEditor({ webConfig, setWebConfig, setProducts, products }) {
 
     setWebConfig((x) => ({ ...x, MENU: draftToMenu(draft) }));
     baselineRef.current = collectDraftKeyNames(draft);
+    savedRef.current = draft;
     setDirty(false);
   };
-  const reset = () => {
+  const discard = () => {
+    setDraft(savedRef.current);
+    setDirty(false);
+    if (!savedRef.current.some((x) => x._key === selKey)) setSelKey(savedRef.current[0]?._key || "");
+  };
+  const reset = async () => {
+    if (!await askConfirm("Khôi phục danh mục về bản mặc định? Các nhóm bạn đã thêm hoặc đổi tên sẽ mất.")) return;
     setWebConfig((x) => { const y = { ...x }; delete y.MENU; return y; });
     const fresh = menuToDraft(WEB_DEFAULT_MENU);
     setDraft(fresh);
+    savedRef.current = fresh;
     baselineRef.current = collectDraftKeyNames(fresh);
+    setSelKey(fresh[0]?._key || "");
     setDirty(false);
   };
 
+  const ib = "grid h-9 w-9 shrink-0 place-items-center rounded-md border bg-white transition hover:bg-[#F6F7FB] disabled:opacity-30 disabled:hover:bg-white";
+  const total = Object.values(counts).length;
+
   return (
     <div className="space-y-4">
-      <p className="text-xs opacity-70 leading-relaxed">
-        Cây danh mục tối đa <b>{WEB_MAX_CATEGORY_DEPTH + 1} cấp</b>: <b>Nhóm chính</b> → Danh mục phụ → Con → Nhỏ (nút "+ Con" tự ẩn khi đã tới cấp cuối).
-        Xem 1 danh mục CHA sẽ <b>tự gộp</b> luôn hàng của các danh mục con/cháu bên dưới — không cần gán lặp lại.
-        <b> Tên phải khác nhau</b> trên toàn cây. Đổi tên 1 danh mục sẽ <b>tự cập nhật</b> theo cho sản phẩm đã gán, không bị rớt mất.
-        Khi thêm/sửa sản phẩm, chọn được <b>nhiều</b> danh mục cùng lúc (ô "Danh mục phụ trên web").
-        Cột <b>Thương hiệu</b> và <b>Khoảng giá</b> web <b>tự sinh</b> — không cần khai ở đây.
-      </p>
-      {usedCats.length > 0 && (
-        <div className="text-xs opacity-60">
-          Đang được gán cho sản phẩm: <span style={{ color: BLUE }}>{usedCats.join(" · ")}</span>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg px-3.5 py-2.5" style={{ background: "#EEF1FB", border: `1px solid ${LINE}` }}>
+        <p className="text-sm" style={{ color: TEXT }}>Chọn <b>nhóm</b> ở cột trái, rồi thêm hoặc sửa các <b>danh mục</b> trong nhóm đó. Xong bấm <b>Lưu danh mục</b>.</p>
+        <button type="button" onClick={() => setHelp((v) => !v)} className="inline-flex items-center gap-1 text-xs font-medium" style={{ color: INK }}><Info size={14} /> {help ? "Ẩn lưu ý" : "Xem lưu ý"}</button>
+      </div>
+      {help && (
+        <ul className="list-disc space-y-1 rounded-lg px-8 py-3 text-sm" style={{ background: PAPER, border: `1px solid ${LINE}`, color: "#374151" }}>
+          <li>Cây có tối đa <b>{WEB_MAX_CATEGORY_DEPTH + 1} cấp</b>: nhóm, danh mục, danh mục con, danh mục nhỏ. Nút dấu cộng tự ẩn khi đã tới cấp cuối.</li>
+          <li>Khách mở một danh mục cha sẽ <b>thấy luôn sản phẩm của các danh mục con</b>, không cần gán lặp lại.</li>
+          <li><b>Mỗi tên chỉ dùng một lần</b> trên toàn cây. Ô tên bị viền đỏ là tên đang trùng.</li>
+          <li>Đổi tên danh mục sẽ <b>tự cập nhật</b> cho sản phẩm đã gán, không bị rớt.</li>
+          <li>Cột Thương hiệu và Khoảng giá ngoài web <b>tự sinh</b>, không cần khai ở đây.</li>
+        </ul>
       )}
 
-      {draft.map((g, gi) => (
-        <div key={g._key} className="border rounded-md p-3" style={{ borderColor: LINE }}>
-          <div className="flex gap-3 items-end mb-3">
-            <Field label="Tên nhóm chính"><input className={inputCls} style={{ borderColor: LINE }} value={g.group} onChange={(e) => setG(gi, "group", e.target.value)} /></Field>
-            <div style={{ width: 170 }}>
-              <p className="text-xs opacity-60 mb-1 font-medium">Icon</p>
-              <div className="flex items-center gap-2">
-                <span className="shrink-0 grid place-items-center rounded-md" style={{ width: 30, height: 30, border: `1px solid ${LINE}`, background: "#fff" }}>
-                  {React.createElement(webGroupIcon(g.icon), { size: 17, color: TEXT })}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-[250px_minmax(0,1fr)]">
+        <div className="space-y-1.5">
+          <p className="px-1 text-xs font-semibold uppercase tracking-wide" style={{ color: "#6B7280" }}>Nhóm chính ({draft.length})</p>
+          {draft.map((x, i) => {
+            const on = x._key === (g && g._key);
+            return (
+              <button key={x._key} type="button" onClick={() => { setSelKey(x._key); setIconOpen(false); }}
+                className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition"
+                style={{ background: on ? "#fff" : "transparent", border: `1px solid ${on ? INK : "transparent"}`, boxShadow: on ? `0 0 0 1px ${INK}` : "none" }}>
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg" style={{ background: on ? INK : "#EEF1FB", color: on ? "#fff" : INK }}>
+                  {React.createElement(webGroupIcon(x.icon), { size: 18 })}
                 </span>
-                <select className={inputCls} style={{ borderColor: LINE }} value={g.icon} onChange={(e) => setG(gi, "icon", e.target.value)}>
-                  {WEB_ICON_NAMES.map((n) => <option key={n} value={n}>{n}</option>)}
-                </select>
-              </div>
-            </div>
-            <div className="flex items-center gap-1 pb-1.5">
-              <button onClick={() => moveG(gi, -1)} disabled={gi === 0} className="text-xs px-1.5 py-1 rounded-md border disabled:opacity-30" style={{ borderColor: LINE }} title="Lên">↑</button>
-              <button onClick={() => moveG(gi, 1)} disabled={gi === draft.length - 1} className="text-xs px-1.5 py-1 rounded-md border disabled:opacity-30" style={{ borderColor: LINE }} title="Xuống">↓</button>
-              <button onClick={() => delG(gi, g.group, countDraftDescendants({ subs: g.subs }))} className="text-xs px-1.5" style={{ color: RUST }}>Xoá nhóm</button>
-            </div>
-          </div>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold" style={{ color: TEXT }}>{x.group || "Chưa đặt tên"}</span>
+                  <span className="block text-xs" style={{ color: "#6B7280" }}>{countDraftDescendants({ subs: x.subs })} danh mục · {counts[x._key] || 0} sản phẩm</span>
+                </span>
+              </button>
+            );
+          })}
+          <button type="button" onClick={addG} className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed px-3 py-2.5 text-sm font-medium" style={{ borderColor: "#9CA3AF", color: INK }}>
+            <Plus size={16} /> Thêm nhóm chính
+          </button>
+        </div>
 
-          <p className="text-xs uppercase tracking-wide opacity-60 mb-1.5">Danh mục phụ</p>
-          <div className="space-y-0.5">
-            {(g.subs || []).map((node, i) => (
-              <MenuNodeRow key={node._key} node={node} siblingsCount={g.subs.length} index={i} depth={1}
-                onUpdate={(key, patch) => setG(gi, "subs", updateNodeByKey(g.subs, key, patch))}
-                onDelete={async (key, name, childCount) => {
-                  if (childCount > 0 && !await askConfirm(`Xoá "${name}" sẽ xoá luôn ${childCount} danh mục con bên trong. Sản phẩm đã gán không bị xoá, chỉ không còn hiện trong menu. Tiếp tục?`)) return;
-                  setG(gi, "subs", removeNodeByKey(g.subs, key));
-                }}
-                onAddChild={(key) => setG(gi, "subs", addChildByKey(g.subs, key, { _key: uid(), name: "Danh mục mới", subs: [] }))}
-                onMove={(key, dir) => setG(gi, "subs", moveNodeByKey(g.subs, key, dir))}
-              />
-            ))}
-            <button onClick={() => setG(gi, "subs", [...(g.subs || []), { _key: uid(), name: "Danh mục mới", subs: [] }])}
-              className="text-xs px-2.5 py-1.5 rounded-md border mt-1" style={{ borderColor: LINE, color: TEXT }}>
-              + Thêm danh mục phụ
+        {g ? (
+          <div className="min-w-0 rounded-xl p-4" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+            <div className="flex flex-wrap items-center gap-2">
+              <button type="button" onClick={() => setIconOpen((v) => !v)} className="grid h-11 w-11 shrink-0 place-items-center rounded-lg border" style={{ borderColor: iconOpen ? INK : LINE, background: "#EEF1FB", color: INK }} title="Đổi biểu tượng">
+                {React.createElement(webGroupIcon(g.icon), { size: 22 })}
+              </button>
+              <input value={g.group} onChange={(e) => setG("group", e.target.value)} placeholder="Tên nhóm chính" className="min-w-0 flex-1 rounded-md border bg-white px-3 py-2 text-base font-semibold outline-none focus:ring-2 focus:ring-blue-200" style={{ borderColor: LINE }} />
+              <button type="button" onClick={() => moveG(-1)} disabled={gi === 0} className={ib} style={{ borderColor: LINE, color: TEXT }} title="Đưa nhóm lên"><ArrowUp size={16} /></button>
+              <button type="button" onClick={() => moveG(1)} disabled={gi === draft.length - 1} className={ib} style={{ borderColor: LINE, color: TEXT }} title="Đưa nhóm xuống"><ArrowDown size={16} /></button>
+              <button type="button" onClick={delG} className={ib} style={{ borderColor: LINE, color: RUST }} title="Xoá nhóm"><Trash2 size={16} /></button>
+            </div>
+            {iconOpen && (
+              <div className="mt-3 rounded-lg p-3" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
+                <p className="mb-2 text-xs" style={{ color: "#6B7280" }}>Chọn biểu tượng hiện cạnh tên nhóm trên menu web</p>
+                <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-8 lg:grid-cols-10">
+                  {WEB_ICON_NAMES.map((n) => (
+                    <button key={n} type="button" title={n} onClick={() => { setG("icon", n); setIconOpen(false); }} className="grid h-10 place-items-center rounded-md"
+                      style={{ background: g.icon === n ? INK : "#fff", color: g.icon === n ? "#fff" : TEXT, border: `1px solid ${g.icon === n ? INK : LINE}` }}>
+                      {React.createElement(webGroupIcon(n), { size: 18 })}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="mb-1.5 mt-5 flex items-center justify-between">
+              <p className="text-sm font-semibold" style={{ color: TEXT }}>Danh mục trong nhóm “{g.group || "…"}”</p>
+              {(g.subs || []).some((s) => (s.subs || []).length) && (
+                <button type="button" className="text-xs underline" style={{ color: INK }} onClick={() => setCollapsed((s) => {
+                  const all = []; const walk = (ns) => (ns || []).forEach((x) => { if ((x.subs || []).length) all.push(x._key); walk(x.subs); }); walk(g.subs);
+                  return all.every((k) => s.has(k)) ? new Set() : new Set(all);
+                })}>Thu gọn / mở rộng tất cả</button>
+              )}
+            </div>
+            <div className="space-y-0.5">
+              {(g.subs || []).length === 0 && <p className="rounded-lg px-3 py-6 text-center text-sm" style={{ background: PAPER, color: "#6B7280" }}>Nhóm này chưa có danh mục nào.</p>}
+              {(g.subs || []).map((node, i) => (
+                <MenuNodeRow key={node._key} node={node} siblingsCount={g.subs.length} index={i} depth={1} counts={counts} dupes={dupes} collapsed={collapsed} toggle={toggle}
+                  onUpdate={(key, patch) => setG("subs", updateNodeByKey(g.subs, key, patch))}
+                  onDelete={async (key, name, childCount) => {
+                    if (childCount > 0 && !await askConfirm(`Xoá "${name}" sẽ xoá luôn ${childCount} danh mục con bên trong. Sản phẩm đã gán không bị xoá, chỉ không còn hiện trong menu. Tiếp tục?`)) return;
+                    setG("subs", removeNodeByKey(g.subs, key));
+                  }}
+                  onAddChild={(key) => { setCollapsed((s) => { const n = new Set(s); n.delete(key); return n; }); setG("subs", addChildByKey(g.subs, key, { _key: uid(), name: "Danh mục mới", subs: [] })); }}
+                  onMove={(key, dir) => setG("subs", moveNodeByKey(g.subs, key, dir))}
+                />
+              ))}
+            </div>
+            <button type="button" onClick={() => setG("subs", [...(g.subs || []), { _key: uid(), name: "Danh mục mới", subs: [] }])}
+              className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed px-3 py-2.5 text-sm font-medium" style={{ borderColor: "#9CA3AF", color: INK }}>
+              <Plus size={16} /> Thêm danh mục
             </button>
           </div>
-        </div>
-      ))}
+        ) : (
+          <div className="rounded-xl p-8 text-center text-sm" style={{ border: `1px dashed ${LINE}`, color: "#6B7280" }}>Chưa có nhóm nào. Bấm “Thêm nhóm chính” để bắt đầu.</div>
+        )}
+      </div>
 
-      <div className="flex items-center gap-3">
-        <button onClick={addG} className="text-sm px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>+ Thêm nhóm chính</button>
-        <button onClick={save} disabled={!dirty} className="text-sm px-4 py-1.5 rounded-md text-white" style={{ background: dirty ? INK : LINE }}>Lưu danh mục</button>
-        <button onClick={reset} className="text-xs underline" style={{ color: RUST }}>Khôi phục mặc định</button>
-        {dirty && <span className="text-xs" style={{ color: RUST }}>Có thay đổi chưa lưu</span>}
+      <div className="sticky bottom-3 z-10 flex flex-wrap items-center gap-3 rounded-xl px-4 py-3" style={{ background: dirty ? "#FFF8DB" : "#fff", border: `1px solid ${dirty ? GOLD : LINE}`, boxShadow: "0 6px 20px rgba(15,23,70,.10)" }}>
+        <span className="text-sm" style={{ color: TEXT }}>{dirty ? "Có thay đổi chưa lưu" : `Đã lưu · ${draft.length} nhóm · ${total - draft.length} danh mục`}</span>
+        <div className="flex-1" />
+        <button type="button" onClick={reset} className="text-xs underline" style={{ color: RUST }}>Khôi phục mặc định</button>
+        <button type="button" onClick={discard} disabled={!dirty} className="rounded-md border bg-white px-3 py-1.5 text-sm disabled:opacity-40" style={{ borderColor: LINE, color: TEXT }}>Huỷ thay đổi</button>
+        <button type="button" onClick={save} disabled={!dirty} className="inline-flex items-center gap-1.5 rounded-md px-4 py-1.5 text-sm font-medium text-white" style={{ background: dirty ? INK : "#9CA3AF" }}><Save size={14} /> Lưu danh mục</button>
       </div>
     </div>
   );
@@ -16793,7 +16913,7 @@ function CouponsEditor({ webConfig, setWebConfig }) {
 }
 
 const WEB_CONFIG_PANES = {
-  home: [["hero", "Màn trình chiếu"], ["posters", "Banner trang chủ"], ["homeblocks", "Khối sản phẩm"], ["menu", "Menu danh mục"]],
+  home: [["hero", "Màn trình chiếu"], ["tiles", "Khối danh mục"], ["posters", "Banner trang chủ"], ["homeblocks", "Khối sản phẩm"], ["menu", "Menu danh mục"]],
   promo: [["flash", "Flash Sale"], ["coupons", "Mã giảm giá"], ["loyalty", "Điểm tích luỹ"]],
   content: [["landing", "Trang nội dung"], ["policy", "Trang chính sách"], ["media", "Kho ảnh"]],
   settings: [["contact", "Liên hệ"], ["bank", "Tài khoản ngân hàng"]],
@@ -16832,7 +16952,7 @@ function WebConfigForm({ section, webConfig, setWebConfig, setProducts, addLog, 
   });
   const setStripPoster = (i, k, v) => setWebConfig((x) => {
     const hp = { ...(x.HOME_POSTERS || {}) };
-    const arr = Array.isArray(hp.strip) ? [...hp.strip] : [{}, {}, {}];
+    const arr = Array.isArray(hp.strip) ? [...hp.strip] : [{}, {}];
     arr[i] = { ...(arr[i] || {}), [k]: v };
     hp.strip = arr;
     return { ...x, HOME_POSTERS: hp };
@@ -17019,6 +17139,12 @@ function WebConfigForm({ section, webConfig, setWebConfig, setProducts, addLog, 
         </div>
       </section>
 
+      <section hidden={pane !== "tiles"} className="p-5 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+        <h3 className="text-base font-semibold mb-1" style={{ color: TEXT }}>Khối danh mục trang chủ</h3>
+        <p className="text-xs mb-4" style={{ color: "#6B7280" }}>Đổi tên, ảnh, màu, link và vị trí của 8 ô “Hôm nay bạn cần gì?” ngay tại đây.</p>
+        <HomeTilesEditor webConfig={webConfig} setWebConfig={setWebConfig} menu={Array.isArray(c.MENU) && c.MENU.length ? c.MENU : WEB_DEFAULT_MENU} landings={landings} notify={notify} />
+      </section>
+
       <section hidden={pane !== "homeblocks"} className="p-5 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
         <h3 className="text-base font-semibold mb-4" style={{ color: TEXT }}>Khối sản phẩm trang chủ</h3>
         <HomeSectionsEditor webConfig={webConfig} setWebConfig={setWebConfig} products={products} />
@@ -17104,13 +17230,17 @@ function WebConfigForm({ section, webConfig, setWebConfig, setProducts, addLog, 
               <Field label={`Poster phụ ${i + 1} — link`}>{hrefIp((HP.side || [])[i]?.href, (v) => setSidePoster(i, "href", v), "/danh-muc")}</Field>
             </div>
           ))}
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="grid grid-cols-1 sm:grid-cols-[96px_1fr_1fr] gap-3 items-center">
-              {thumb((HP.strip || [])[i]?.image)}
-              <Field label={`Banner ${i + 1} — ảnh`}>{ip((HP.strip || [])[i]?.image, (v) => setStripPoster(i, "image", v), `/posters/banner-${i + 1}.jpg`)}</Field>
-              <Field label={`Banner ${i + 1} — link`}>{hrefIp((HP.strip || [])[i]?.href, (v) => setStripPoster(i, "href", v), "/danh-muc")}</Field>
-            </div>
-          ))}
+          {[0, 1].map((n) => {
+            const strip = HP.strip || [];
+            const i = Math.max(0, strip.length - 2) + n; // web chỉ hiện 2 khối cuối của cột phải
+            return (
+              <div key={n} className="grid grid-cols-1 sm:grid-cols-[96px_1fr_1fr] gap-3 items-center">
+                {thumb(strip[i]?.image)}
+                <Field label={`Khối bên phải ${n + 1} — ảnh`} hint={n === 0 ? "Hai khối cao bằng nhau, tỉ lệ ngang khoảng 2:1 (ví dụ 800 × 400)" : undefined}>{ip(strip[i]?.image, (v) => setStripPoster(i, "image", v), `/posters/banner-${n + 1}.jpg`)}</Field>
+                <Field label={`Khối bên phải ${n + 1} — link`}>{hrefIp(strip[i]?.href, (v) => setStripPoster(i, "href", v), "/danh-muc")}</Field>
+              </div>
+            );
+          })}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3" style={{ borderTop: `1px solid ${LINE}` }}>
             <Field label="Banner dọc trang sản phẩm — ảnh" hint="Cột phải trang chi tiết sản phẩm · khoảng 300 × 520 px">
               {ip(PS.banner?.image, (v) => setSideBanner("image", v), "/posters/banner-doc.jpg")}

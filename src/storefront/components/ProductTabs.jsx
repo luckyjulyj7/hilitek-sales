@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { ArrowRight } from "lucide-react";
-import { HOME_SECTIONS, homeSectionProducts, homeSectionSeeAll } from "../config.js";
+import { HOME_SECTIONS, HOME_TITLES, homeSectionProducts, homeSectionSeeAll } from "../config.js";
 import { href } from "../router.js";
 import ProductCard from "./ProductCard.jsx";
 import "./product-tabs.css";
@@ -39,7 +39,7 @@ export default function ProductTabs({ products, navigate }) {
   return (
     <section className="mx-auto max-w-[1500px] px-3 pt-8 sm:px-4">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="min-w-0 font-display text-[25px] min-[400px]:text-[28px] sm:text-[38px] font-bold leading-tight text-ink">Đang được săn đón</h2>
+        <h2 className="min-w-0 font-display text-[25px] min-[400px]:text-[28px] sm:text-[38px] font-bold leading-tight text-ink">{HOME_TITLES.hot}</h2>
         <a href={tab.to} onClick={openAll} aria-label={`Xem tất cả ${tab.all}`} className="pt-all shrink-0">
           <span className="flex flex-col items-center leading-tight">
             <span className="inline-flex items-center gap-1.5">Xem tất cả <ArrowRight size={16} /></span>

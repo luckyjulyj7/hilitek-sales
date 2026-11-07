@@ -1,4 +1,4 @@
-import { HOME_HERO, SITE, FLASH_SALE, HOME_POSTERS, HOME_SECTIONS, PRODUCT_SIDEBAR, CHECKOUT, PAGES, MENU, LANDINGS, COUPONS, LOYALTY, rebuildCatToGroup } from "../config.js";
+import { HOME_HERO, HOME_TILES, HOME_TITLES, SITE, FLASH_SALE, HOME_POSTERS, HOME_SECTIONS, PRODUCT_SIDEBAR, CHECKOUT, PAGES, MENU, LANDINGS, COUPONS, LOYALTY, rebuildCatToGroup } from "../config.js";
 
 /**
  * Ghi đè cấu hình mặc định (config.js) bằng giá trị chủ shop chỉnh từ app quản lý
@@ -28,7 +28,7 @@ function deepMerge(target, src) {
 export function applyWebConfig(cfg) {
   if (!cfg || typeof cfg !== "object") return;
 
-  const map = { SITE, FLASH_SALE, HOME_POSTERS, PRODUCT_SIDEBAR, CHECKOUT, PAGES, LOYALTY };
+  const map = { SITE, FLASH_SALE, HOME_TITLES, HOME_POSTERS, PRODUCT_SIDEBAR, CHECKOUT, PAGES, LOYALTY };
   for (const key of Object.keys(map)) {
     if (cfg[key] && typeof cfg[key] === "object") deepMerge(map[key], cfg[key]);
   }
@@ -56,6 +56,11 @@ export function applyWebConfig(cfg) {
   if (Array.isArray(cfg.HOME_HERO)) {
     HOME_HERO.length = 0;
     cfg.HOME_HERO.forEach((h) => HOME_HERO.push(h));
+  }
+
+  // HOME_TILES (khối danh mục trang chủ) — thay nguyên mảng, chỉ nhận khi đủ 8 ô.
+  if (Array.isArray(cfg.HOME_TILES) && cfg.HOME_TILES.length === HOME_TILES.length) {
+    cfg.HOME_TILES.forEach((t, i) => { HOME_TILES[i] = t; });
   }
 
   // COUPONS (mã giảm giá chủ shop tạo) — thay nguyên mảng.

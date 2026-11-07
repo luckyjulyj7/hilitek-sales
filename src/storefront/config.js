@@ -337,7 +337,6 @@ export const HOME_POSTERS = {
   strip: [
     { w: 394, h: 150, label: "Banner 1", image: "", href: "" },
     { w: 394, h: 150, label: "Banner 2", image: "", href: "" },
-    { w: 394, h: 150, label: "Banner 3", image: "", href: "" },
   ],
 };
 
@@ -523,6 +522,48 @@ export const CHECKOUT = {
  * Mỗi mục: { productId, image, title, sub }. Chỉnh ở app quản lý: Website > Trang chủ > Màn trình chiếu.
  */
 export const HOME_HERO = [];
+
+/** Tiêu đề các khối ở trang chủ. Chủ shop đổi ở Website, Trang chủ, Khối danh mục. */
+export const HOME_TITLES = {
+  cats: "Hôm nay bạn cần gì?",
+  promo: "Ghé xem Chương trình HOT",
+  hot: "Vào lựa sản phẩm nào",
+};
+
+/**
+ * Khối danh mục ở trang chủ: 8 ô đặt vào 8 vị trí cố định của lưới.
+ *   style  : "cut" ảnh tách nền | "photo" ảnh phủ kín, chữ sáng | "side" ảnh bên phải, chữ bên trái | "fan" nhiều ảnh xếp quạt
+ *   tone   : "light" | "dark" | "navy" | "yellow"
+ *   price  : "" không hiện giá | "group:Tên nhóm" | "re:biểu thức" | "name:biểu thức tên" (lấy giá thấp nhất)
+ *   href   : đường dẫn trong web, link ngoài, hoặc "zalo"
+ *   image  : trống thì ô giá tự lấy ảnh sản phẩm của nhóm
+ */
+const gl = (g) => "/danh-muc?group=" + encodeURIComponent(g);
+export const HOME_TILES = [
+  { id: "t-man-hinh", title: "Màn hình", sub: "Gaming và văn phòng", href: gl("Màn hình"), image: "/home/cut-monitor.webp", style: "cut", tone: "light", price: "re:màn hình" },
+  { id: "t-ban-phim", title: "Bàn phím", sub: "Cơ, không dây, văn phòng", href: gl("Bàn phím"), image: "/home/cut-echo96.webp", style: "cut", tone: "light", price: "re:bàn phím" },
+  { id: "t-chuot", title: "Chuột", sub: "Gaming, không dây", href: gl("Chuột"), image: "", style: "cut", tone: "light", price: "name:^chuột" },
+  { id: "t-linh-kien", title: "Linh kiện PC", sub: "SSD, nguồn, vỏ, tản nhiệt", href: gl("Linh kiện PC"), image: "/home/m03.webp", style: "photo", tone: "dark", price: "re:psu|case|cooling|ssd", pos: "70% 60%" },
+  { id: "t-cam-tay", title: "Máy chơi game cầm tay", sub: "Retro, Android, PC cầm tay. Chọn theo ngân sách.", href: "/may-choi-game-cam-tay", image: "/handheld/ayn-thor-cut.webp", style: "cut", tone: "yellow", price: "" },
+  { id: "t-decor", title: "Phụ kiện Decor góc máy", sub: "Arm màn hình, mặt bàn, loa để bàn", href: gl("Phụ kiện"), image: "/home/m02.webp", style: "photo", tone: "dark", price: "" },
+  { id: "t-it", title: "Dịch vụ IT Help Desk", sub: "Hỗ trợ kỹ thuật cho công ty", href: "zalo", image: "/home/it-helpdesk.webp", style: "side", tone: "light", price: "" },
+  { id: "t-phan-mem", title: "Phần mềm bản quyền cho doanh nghiệp", sub: "Office, Windows, Server, SQL", href: gl("Phần mềm"), image: "", images: ["/home/sw-office.webp", "/home/sw-windows.webp", "/home/sw-server.webp", "/home/sw-sql.webp"], style: "fan", tone: "light", price: "" },
+];
+
+/** Giá thấp nhất và ảnh đại diện của một ô danh mục, tính từ sản phẩm đang bán. */
+export function tilePick(products, key) {
+  const k = String(key || "");
+  if (!k) return { from: 0, image: "" };
+  let test;
+  if (k.startsWith("group:")) { const g = k.slice(6); test = (p) => productInGroup(p, g); }
+  else if (k.startsWith("name:")) { let re; try { re = new RegExp(k.slice(5), "i"); } catch { return { from: 0, image: "" }; } test = (p) => re.test(p.name || ""); }
+  else { let re; try { re = new RegExp(k.replace(/^re:/, ""), "i"); } catch { return { from: 0, image: "" }; } test = (p) => re.test(`${p.category} ${(p.categories || []).join(" ")}`); }
+  const list = (products || []).filter((p) => test(p) && p.price > 0);
+  if (!list.length) return { from: 0, image: "" };
+  const shown = list.find((p) => p.stock > 0 && p.images?.length) || list.find((p) => p.images?.length);
+  const first = shown?.images?.[0];
+  return { from: Math.min(...list.map((p) => p.price)), image: first?.src || first || "" };
+}
 
 export const COUPONS = [];
 

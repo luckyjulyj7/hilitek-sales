@@ -1,9 +1,8 @@
 import React from "react";
-import { HOME_POSTERS, FLASH_SALE, FLASH_SALE_CATEGORY, SITE, homeSectionProducts } from "../config.js";
+import { HOME_POSTERS, HOME_TILES, HOME_TITLES, FLASH_SALE, FLASH_SALE_CATEGORY, homeSectionProducts, tilePick, SITE } from "../config.js";
 import { formatVND } from "../lib/format.js";
 import NeedForm from "../components/NeedForm.jsx";
-import { HANDHELD_PATH } from "./Handheld.jsx";
-import { href } from "../router.js";
+import { resolveLink } from "../router.js";
 import TrustBar from "../components/TrustBar.jsx";
 import PosterSlot from "../components/PosterSlot.jsx";
 import PosterSlider from "../components/PosterSlider.jsx";
@@ -17,30 +16,73 @@ import NewsVideo from "../components/NewsVideo.jsx";
 
 const WRAP = "mx-auto max-w-[1500px] px-3 sm:px-4";
 
-/** Giá thấp nhất và ảnh đại diện của một nhóm, tính từ sản phẩm đang bán. */
-function pick(products, test) {
-  const list = products.filter((p) => test.test(`${p.category} ${(p.categories || []).join(" ")}`) && p.price > 0);
-  if (!list.length) return { from: 0, image: "" };
-  const shown = list.find((p) => p.stock > 0 && p.images?.length) || list.find((p) => p.images?.length);
-  const first = shown?.images?.[0];
-  return { from: Math.min(...list.map((p) => p.price)), image: first?.src || first || "" };
-}
+const SLOTS = [
+  "col-span-2 max-lg:min-h-[285px] lg:[grid-area:1/1/3/6]",
+  "col-span-2 max-lg:min-h-[215px] lg:[grid-area:1/6/2/13]",
+  "max-lg:min-h-[255px] lg:[grid-area:2/6/4/9]",
+  "lg:[grid-area:2/9/3/13] [&_h3]:max-w-[58%] [&_p]:max-w-[52%]",
+  "col-span-2 max-lg:min-h-[320px] lg:col-span-1 lg:[grid-area:3/9/5/13]",
+  "col-span-2 [&_h3]:max-w-[62%] [&_p]:max-w-[56%] lg:[grid-area:3/1/4/6]",
+  "col-span-2 [&_h3]:max-w-[56%] [&_p]:max-w-[52%] lg:[grid-area:4/1/5/5]",
+  "col-span-2 [&_h3]:max-w-[52%] [&_p]:max-w-[50%] lg:[grid-area:4/5/5/9]",
+];
+const TONES = { light: "bg-white text-ink", dark: "bg-ink text-white", navy: "bg-navy text-white", yellow: "bg-yellow text-ink" };
+// Vị trí ảnh tách nền theo từng ô của lưới.
+const CUT = [
+  "absolute bottom-0 right-[3%] w-[54%] sm:w-[40%] lg:w-[64%]",
+  "absolute bottom-3 right-[3%] w-[56%] sm:w-[44%] lg:bottom-auto lg:top-1/2 lg:w-[52%] lg:-translate-y-1/2 drop-shadow-[0_14px_14px_rgba(6,10,42,.22)]",
+  "absolute bottom-0 left-1/2 h-[38%] -translate-x-1/2 object-contain lg:h-[62%]",
+  "absolute right-[4%] top-1/2 h-[82%] w-[40%] -translate-y-1/2 object-contain drop-shadow-[0_10px_10px_rgba(6,10,42,.3)]",
+  "absolute bottom-3 left-1/2 max-h-[62%] w-[84%] -translate-x-1/2 object-contain object-bottom drop-shadow-[0_16px_14px_rgba(6,10,42,.3)]",
+  "absolute right-[3%] top-1/2 h-[82%] w-[38%] -translate-y-1/2 object-contain drop-shadow-[0_10px_10px_rgba(6,10,42,.3)]",
+  "absolute right-[3%] top-1/2 h-[82%] w-[38%] -translate-y-1/2 object-contain drop-shadow-[0_10px_10px_rgba(6,10,42,.3)]",
+  "absolute right-[3%] top-1/2 h-[82%] w-[38%] -translate-y-1/2 object-contain drop-shadow-[0_10px_10px_rgba(6,10,42,.3)]",
+];
+const FAN = [["-rotate-6 z-10", "-mr-[7%]"], ["-rotate-2 z-20", "-mr-[7%]"], ["rotate-2 z-30", "-mr-[7%]"], ["rotate-6 z-40", ""]];
 
-function Tile({ to, title, sub, price, tone = "dark", className = "", children, navigate }) {
+/** Một ô danh mục. Nội dung lấy từ HOME_TILES nên chủ shop tự đổi tên, ảnh, link, giá. */
+function Tile({ t, slot, products, navigate }) {
+  const tone = TONES[t.tone] ? t.tone : "light";
   const dark = tone === "dark" || tone === "navy";
-  const external = /^https?:/.test(to);
+  const style = ["cut", "photo", "side", "fan"].includes(t.style) ? t.style : "cut";
+  const price = tilePick(products, t.price);
+  const auto = !t.image;
+  const img = t.image || price.image;
+  const to = t.href === "zalo" ? SITE.zaloHref : t.href || "/danh-muc";
+  const { internalPath } = resolveLink(to);
+  const fan = (Array.isArray(t.images) ? t.images : []).filter(Boolean).slice(0, 4);
+  const link = internalPath != null
+    ? { href: internalPath, onClick: (e) => { e.preventDefault(); navigate(internalPath.replace(/^\//, "")); } }
+    : { href: to, target: "_blank", rel: "noreferrer" };
   return (
     <a
-      href={to}
-      {...(external ? { target: "_blank", rel: "noreferrer" } : { onClick: (e) => { e.preventDefault(); navigate(to.slice(1)); } })}
-      className={"group relative block min-h-[190px] lg:min-h-0 overflow-hidden rounded-2xl ring-1 transition duration-300 hover:-translate-y-0.5 hover:shadow-card " + (dark ? "ring-white/10 " : "ring-[#D9DFEE] ") +
-        (tone === "navy" ? "bg-navy text-white " : dark ? "bg-ink text-white " : tone === "yellow" ? "bg-yellow text-ink " : "bg-white text-ink ") + className}
+      {...link}
+      className={"group relative block min-h-[190px] lg:min-h-0 overflow-hidden rounded-2xl ring-1 transition duration-300 hover:-translate-y-0.5 hover:shadow-card " + (dark ? "ring-white/10 " : "ring-[#D9DFEE] ") + TONES[tone] + " " + SLOTS[slot]}
     >
-      {children}
+      {style === "photo" && img && (
+        <>
+          <img src={img} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]" style={t.pos ? { objectPosition: t.pos } : undefined} />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(90deg,rgba(6,10,42,.9),rgba(6,10,42,.5) 50%,transparent 85%)" }} />
+        </>
+      )}
+      {style === "side" && img && <img src={img} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover object-right transition duration-700 group-hover:scale-[1.03]" />}
+      {style === "cut" && img && (
+        <>
+          {tone === "yellow" && <div className="absolute bottom-[-8%] left-[8%] h-[92%] w-[46%] -skew-x-[20deg] rounded-2xl bg-white/35 transition duration-700 group-hover:translate-x-3" />}
+          <img src={img} alt="" loading="lazy" className={CUT[slot] + (auto && !dark ? " mix-blend-multiply" : "") + " transition duration-700 group-hover:scale-[1.04]"} />
+        </>
+      )}
+      {style === "fan" && fan.length > 0 && (
+        <div className="absolute inset-y-0 right-[2%] flex w-[50%] items-center justify-end">
+          {fan.map((f, i) => (
+            <img key={i} src={f} alt="" loading="lazy" className={"relative max-h-[78%] w-[31%] object-contain drop-shadow-[0_8px_8px_rgba(6,10,42,.22)] transition duration-500 group-hover:-translate-y-1 " + FAN[i][0] + " " + FAN[i][1]} />
+          ))}
+        </div>
+      )}
       <div className="relative z-10 p-4 sm:p-5">
-        <h3 className="font-display text-[22px] sm:text-[26px] font-bold leading-tight">{title}</h3>
-        {sub && <p className={"mt-1 text-[14px] " + (dark ? "text-white/80" : "text-ink/70")}>{sub}</p>}
-        {price > 0 && <p className={"mt-2 font-display text-[20px] font-bold " + (dark ? "text-yellow" : "text-navy")}>Từ {formatVND(price)}</p>}
+        <h3 className="font-display text-[22px] sm:text-[26px] font-bold leading-tight">{t.title}</h3>
+        {t.sub && <p className={"mt-1 text-[14px] " + (dark ? "text-white/80" : "text-ink/70")}>{t.sub}</p>}
+        {price.from > 0 && <p className={"mt-2 font-display text-[20px] font-bold " + (dark ? "text-yellow" : "text-navy")}>Từ {formatVND(price.from)}</p>}
       </div>
     </a>
   );
@@ -54,12 +96,9 @@ export default function Home({ catalog, navigate }) {
     onSale: false, minDiscount: 0, pmin: null, pmax: null, skus: [],
   };
   const flashItems = FLASH_SALE.enabled ? homeSectionProducts(products, flashSection) : [];
-  const keyboard = pick(products, /bàn phím/i);
-  const screen = pick(products, /màn hình/i);
-  const mouse = pick(products.filter((p) => /^chuột/i.test(p.name)), /./);
-  const parts = pick(products, /psu|case|cooling|ssd/i);
-  const go = (q) => href("/danh-muc", q);
-  const tile = { navigate };
+  // Cột phải chỉ có 2 khối: nếu dữ liệu cũ còn 3 banner thì bỏ banner đầu.
+  const strip = HOME_POSTERS.strip || [];
+  const stripShown = strip.slice(Math.max(0, strip.length - 2));
 
   return (
     <div className="font-sans">
@@ -69,39 +108,9 @@ export default function Home({ catalog, navigate }) {
 
       {/* Danh mục */}
       <section className={WRAP + " pt-8"}>
-        <h2 className="mb-3 font-display text-[30px] sm:text-[38px] font-bold text-ink">Mua theo danh mục</h2>
+        <h2 className="mb-3 font-display text-[30px] sm:text-[38px] font-bold text-ink">{HOME_TITLES.cats}</h2>
         <div className="grid grid-cols-2 gap-3 lg:auto-rows-[176px] lg:grid-cols-12">
-          <Tile {...tile} to={go({ group: "Màn hình" })} title="Màn hình" sub="Gaming và văn phòng" price={screen.from} tone="light" className="col-span-2 max-lg:min-h-[285px] lg:[grid-area:1/1/3/6]">
-            <img src="/home/cut-monitor.webp" alt="" loading="lazy" className="absolute bottom-0 right-[3%] w-[54%] sm:w-[40%] lg:w-[64%] transition duration-700 group-hover:scale-[1.03]" />
-          </Tile>
-          <Tile {...tile} to={go({ group: "Bàn phím" })} title="Bàn phím" sub="Cơ, không dây, văn phòng" price={keyboard.from} tone="light" className="col-span-2 max-lg:min-h-[215px] lg:[grid-area:1/6/2/13]">
-            <img src="/home/cut-echo96.webp" alt="" loading="lazy" className="absolute bottom-3 right-[3%] w-[56%] sm:w-[44%] lg:bottom-auto lg:top-1/2 lg:w-[52%] lg:-translate-y-1/2 drop-shadow-[0_14px_14px_rgba(6,10,42,.22)] transition duration-700 group-hover:scale-[1.03]" />
-          </Tile>
-          <Tile {...tile} to={go({ group: "Chuột" })} title="Chuột" sub="Gaming, không dây" price={mouse.from} tone="light" className="max-lg:min-h-[255px] lg:[grid-area:2/6/4/9]">
-            {mouse.image && <img src={mouse.image} alt="" loading="lazy" className="absolute bottom-0 left-1/2 h-[38%] -translate-x-1/2 mix-blend-multiply lg:h-[62%] transition duration-700 group-hover:scale-105" />}
-          </Tile>
-          <Tile {...tile} to={go({ group: "Linh kiện PC" })} title="Linh kiện PC" sub="SSD, nguồn, vỏ, tản nhiệt" price={parts.from} className="lg:[grid-area:2/9/3/13]">
-            <img src="/home/m03.webp" alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.04] object-[70%_60%]" />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(90deg,rgba(6,10,42,.9),rgba(6,10,42,.55) 48%,transparent 82%)" }} />
-          </Tile>
-          <Tile {...tile} to={HANDHELD_PATH} title="Máy chơi game cầm tay" sub="Retro, Android, PC cầm tay. Chọn theo ngân sách." tone="yellow" className="col-span-2 max-lg:min-h-[320px] lg:col-span-1 lg:[grid-area:3/9/5/13]">
-            <div className="absolute bottom-[-8%] left-[8%] h-[92%] w-[46%] -skew-x-[20deg] rounded-2xl bg-white/35 transition duration-700 group-hover:translate-x-3" />
-            <img src="/handheld/ayn-thor-cut.webp" alt="" loading="lazy" className="absolute bottom-3 left-1/2 max-h-[62%] w-[84%] -translate-x-1/2 object-contain object-bottom drop-shadow-[0_16px_14px_rgba(6,10,42,.3)] transition duration-700 group-hover:scale-[1.04]" />
-          </Tile>
-          <Tile {...tile} to={go({ group: "Phụ kiện" })} title="Phụ kiện Decor góc máy" sub="Arm màn hình, mặt bàn, loa để bàn" className="col-span-2 lg:[grid-area:3/1/4/6]">
-            <img src="/home/m02.webp" alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]" />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(90deg,rgba(6,10,42,.88),rgba(6,10,42,.2) 70%)" }} />
-          </Tile>
-          <Tile {...tile} to={SITE.zaloHref} title="Dịch vụ IT Help Desk" sub="Hỗ trợ kỹ thuật cho công ty" tone="light" className="col-span-2 [&_h3]:max-w-[56%] [&_p]:max-w-[52%] lg:[grid-area:4/1/5/5]">
-            <img src="/home/it-helpdesk.webp" alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover object-right transition duration-700 group-hover:scale-[1.03]" />
-          </Tile>
-          <Tile {...tile} to={go({ group: "Phần mềm" })} title="Phần mềm bản quyền cho doanh nghiệp" sub="Office, Windows, Server, SQL" tone="light" className="col-span-2 [&_h3]:max-w-[52%] [&_p]:max-w-[50%] lg:[grid-area:4/5/5/9]">
-            <div className="absolute inset-y-0 right-[2%] flex w-[50%] items-center justify-end">
-              {[["sw-office", "-rotate-6 z-10", "-mr-[7%]"], ["sw-windows", "-rotate-2 z-20", "-mr-[7%]"], ["sw-server", "rotate-2 z-30", "-mr-[7%]"], ["sw-sql", "rotate-6 z-40", ""]].map(([f, r, m]) => (
-                <img key={f} src={`/home/${f}.webp`} alt="" loading="lazy" className={"relative max-h-[78%] w-[31%] object-contain drop-shadow-[0_8px_8px_rgba(6,10,42,.22)] transition duration-500 group-hover:-translate-y-1 " + r + " " + m} />
-              ))}
-            </div>
-          </Tile>
+          {HOME_TILES.map((t, i) => <Tile key={t.id || i} t={t} slot={i} products={products} navigate={navigate} />)}
         </div>
       </section>
 
@@ -109,12 +118,12 @@ export default function Home({ catalog, navigate }) {
 
       {/* Ưu đãi do chủ shop cấu hình */}
       <section className={WRAP + " pt-8"}>
-        <h2 className="mb-3 font-display text-[30px] sm:text-[38px] font-bold text-ink">Chương trình đang diễn ra</h2>
-        <div className="grid gap-2 lg:h-[clamp(400px,33vw,487px)] lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-          <div className="overflow-hidden rounded-2xl lg:h-[clamp(400px,33vw,487px)] [&_a]:h-full [&_div]:h-full [&_img]:h-full [&_img]:w-full [&_img]:object-cover"><PosterSlider slot={HOME_POSTERS.hero} navigate={navigate} /></div>
-          <div className="grid grid-cols-3 gap-2 lg:min-h-0 lg:grid-cols-1 lg:grid-rows-3">
-            {HOME_POSTERS.strip.map((p, i) => (
-              <div key={i} className="min-h-0 overflow-hidden rounded-2xl [&_a]:block [&_a]:h-full [&_div]:h-full [&_img]:h-full [&_img]:w-full [&_img]:object-cover"><PosterSlot slot={p} navigate={navigate} /></div>
+        <h2 className="mb-3 font-display text-[30px] sm:text-[38px] font-bold text-ink">{HOME_TITLES.promo}</h2>
+        <div className="grid gap-2 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
+          <div className="overflow-hidden rounded-2xl lg:aspect-[2/1] [&_a]:h-full [&_div]:h-full [&_img]:h-full [&_img]:w-full [&_img]:object-cover"><PosterSlider slot={HOME_POSTERS.hero} navigate={navigate} /></div>
+          <div className="grid grid-cols-2 gap-2 lg:min-h-0 lg:grid-cols-1 lg:grid-rows-2">
+            {stripShown.map((p, i) => (
+              <div key={i} className="aspect-[2.63/1] min-h-0 overflow-hidden rounded-2xl lg:aspect-auto [&_a]:block [&_a]:h-full [&_div]:h-full [&_img]:h-full [&_img]:w-full [&_img]:object-cover"><PosterSlot slot={p} navigate={navigate} /></div>
             ))}
           </div>
         </div>
