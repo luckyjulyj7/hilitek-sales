@@ -312,11 +312,14 @@ export default function Handheld({ catalog, navigate }) {
           </div>
           <div className={"hh-stock hh-rise n" + Math.min(inStock.length, 3)}>
             {inStock.map((p) => {
-              const img = p.images?.[0]?.src || p.images?.[0] || "";
+              // Máy đã có ảnh sân khấu ở danh sách trưng bày thì dùng ảnh đó (đủ máy, không bị cắt).
+              const model = MODELS.find((m) => linkedTo(m, p) || p.name.toLowerCase().includes(m.name.toLowerCase()));
+              const stage = model ? hhCard(model) : "";
+              const img = stage || p.images?.[0]?.src || p.images?.[0] || "";
               const off = p.listPrice > p.price ? Math.round((1 - p.price / p.listPrice) * 100) : 0;
               return (
                 <a key={p.id} href={`/san-pham/${p.slug}`} onClick={(e) => { e.preventDefault(); navigate(`san-pham/${p.slug}`); }} className="hh-sk">
-                  <span className="hh-sk-pic">{img && <img src={img} alt={p.name} loading="lazy" />}{off > 0 && <em>-{off}%</em>}</span>
+                  <span className={"hh-sk-pic" + (stage ? "" : " fit")}>{img && <img src={img} alt={p.name} loading="lazy" />}{off > 0 && <em>-{off}%</em>}</span>
                   <span className="hh-sk-tx">
                     <span className="hh-sk-b">{[p.brand, p.category].filter(Boolean).join(" · ")}</span>
                     <b>{p.name}</b>

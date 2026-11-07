@@ -182,3 +182,12 @@ button.hp-d{cursor:pointer}
 .hh .group:hover .group-hover\:text-navy{color:#F7C600}
 .hh .gap-px{background:var(--line)}
 .hh details summary{color:var(--tx)}
+
+/* Có sẵn tại Hilitek: khung ảnh 5:4 khớp ảnh sân khấu, không cắt máy */
+.hh .hh-sk{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.hh .hh-stock.n1 .hh-sk{grid-template-columns:minmax(0,560px) minmax(0,1fr);min-height:0}
+.hh .hh-sk-pic{aspect-ratio:5/4;min-height:0}
+.hh .hh-sk-pic.fit{background:radial-gradient(60% 50% at 50% 46%,rgba(84,104,240,.3),transparent 72%),linear-gradient(180deg,#141A3C,#0B0E28)}
+.hh .hh-sk-pic.fit img{object-fit:contain;padding:6%}
+.hh .hh-stock.n1 .hh-sk-tx{padding:28px 32px}
+@media(max-width:560px){.hh .hh-sk,.hh .hh-stock.n1 .hh-sk{grid-template-columns:1fr}.hh .hh-sk-pic{aspect-ratio:5/4}}
