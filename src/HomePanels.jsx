@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, ChevronDown, ImageOff, Plus, RotateCcw, Search, Trash2, Upload, X } from "lucide-react";
 import { HERO_BRAND_LOGOS, HOME_SECTION_SORTS, heroShortName } from "./storefront/config.js";
+import { autoComparePrice } from "./lib/autoComparePrice.js";
 
 const INK = "#1E2A8A";
 const TEXT = "#111827";
@@ -30,7 +31,7 @@ function Label({ children }) {
 }
 
 /** Ô tìm sản phẩm theo tên hoặc mã, có ảnh, thay cho danh sách thả xuống dài. */
-function ProductPicker({ products, displayImage, onPick, placeholder = "Tìm theo tên hoặc mã sản phẩm" }) {
+export function ProductPicker({ products, displayImage, onPick, placeholder = "Tìm theo tên hoặc mã sản phẩm" }) {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const found = useMemo(() => {
@@ -217,7 +218,7 @@ function tabProducts(s, units, menu) {
   const c = s.cat && menu.map((x) => find(x.subs, s.cat)).find(Boolean);
   const catNames = s.cat ? new Set(c ? names(c) : [s.cat]) : null;
   const price = (p) => Number(p.retailPrice) || 0;
-  const list = (p) => Math.max(Number(p.web?.compareAtPrice) || 0, price(p));
+  const list = (p) => Math.max(Number(p.web?.compareAtPrice) || autoComparePrice(price(p), p.variantGroupId || p.id), price(p));
   const r = units.map((u) => u.p).filter((p) => {
     const cats = (p.web?.categories || []).length ? p.web.categories : [p.category].filter(Boolean);
     if (groupNames && !cats.some((x) => groupNames.has(x))) return false;

@@ -19,8 +19,10 @@ import { uploadProductImage, rehostExternalImage, toDirectImageUrl, trimLogo } f
 import { SUPABASE_ANON_KEY } from "./lib/supabaseStorage.js";
 import { pointsForPhone, normalizePhone, DEFAULT_LOYALTY } from "./lib/loyalty.js";
 import { baseVariantName } from "./lib/variants.js";
+import { autoComparePrice } from "./lib/autoComparePrice.js";
 import HomeTilesEditor from "./HomeTilesEditor.jsx";
 import { HomeHeroEditor, HomeTabsEditor } from "./HomePanels.jsx";
+import HandheldEditor from "./HandheldEditor.jsx";
 
 // Xuất 1 hoặc nhiều bảng dữ liệu ra 1 file Excel (.xlsx), mỗi bảng là 1 sheet riêng.
 // Thư viện Excel (xlsx) nặng ~400KB — chỉ tải khi thật sự bấm xuất/nhập file, không nằm trong lần tải đầu.
@@ -4187,7 +4189,7 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
                     <input readOnly disabled className={inputCls} style={{ borderColor: LINE, background: PAPER }}
                       value={form.retailPrice ? vnd(Number(form.retailPrice)) : "— nhập Giá bán lẻ —"} />
                   </Field>
-                  <Field label="Giá so sánh — gạch bỏ (đ)" hint="Bỏ trống = không hiện giá gạch">
+                  <Field label="Giá so sánh — gạch bỏ (đ)" hint="Để trống thì web tự tính. Nhập số để đặt giá riêng.">
                     <MoneyInput className={inputCls} style={{ borderColor: LINE }} value={form.web?.compareAtPrice || ""} onChange={(v) => setForm({ ...form, web: { ...normalizeWeb(form.web), compareAtPrice: v } })} />
                   </Field>
                 </div>
@@ -15984,7 +15986,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
             <Field label="Giá bán web (đ)" hint="= Giá bán lẻ. Sửa ở tab Sản phẩm & tồn kho.">
               <input readOnly disabled className={inputCls} style={{ borderColor: LINE, background: PAPER }} value={p.retailPrice ? vnd(Number(p.retailPrice)) : "—"} />
             </Field>
-            <Field label="Giá so sánh — gạch bỏ (đ)" hint="Bỏ trống = không hiện giá gạch">
+            <Field label="Giá so sánh — gạch bỏ (đ)" hint={Number(p.retailPrice) > 0 ? `Để trống thì web tự hiện ${vnd(autoComparePrice(p.retailPrice, p.variantGroupId || p.id))}. Nhập số để đặt giá riêng.` : "Để trống thì web tự tính khi có giá bán."}>
               <MoneyInput className={inputCls} style={{ borderColor: LINE }} value={w.compareAtPrice || ""} onChange={(v) => setWeb({ compareAtPrice: v })} />
             </Field>
             <Field label="Khối lượng (gram)" hint="Tính phí ship">
@@ -16872,7 +16874,7 @@ function CouponsEditor({ webConfig, setWebConfig }) {
 const WEB_CONFIG_PANES = {
   home: [["hero", "Màn trình chiếu"], ["tiles", "Khối danh mục"], ["posters", "Banner trang chủ"], ["homeblocks", "Khối sản phẩm"], ["menu", "Menu danh mục"]],
   promo: [["flash", "Flash Sale"], ["coupons", "Mã giảm giá"], ["loyalty", "Điểm tích luỹ"]],
-  content: [["landing", "Trang nội dung"], ["policy", "Trang chính sách"], ["media", "Kho ảnh"]],
+  content: [["landing", "Trang nội dung"], ["handheld", "Máy chơi game cầm tay"], ["policy", "Trang chính sách"], ["media", "Kho ảnh"]],
   settings: [["contact", "Liên hệ"], ["bank", "Tài khoản ngân hàng"]],
 };
 
@@ -17167,6 +17169,10 @@ function WebConfigForm({ section, webConfig, setWebConfig, setProducts, addLog, 
             </Field>
           </div>
         </div>
+      </section>
+
+      <section hidden={pane !== "handheld"} className="p-5 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+        <HandheldEditor webConfig={webConfig} setWebConfig={setWebConfig} products={webProducts} displayImage={displayImage} askConfirm={askConfirm} notify={notify} />
       </section>
 
       <section hidden={pane !== "policy"} className="p-5 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>

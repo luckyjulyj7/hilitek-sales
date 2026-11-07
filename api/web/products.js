@@ -4,6 +4,7 @@
  * sách/lưới sản phẩm) — khách chỉ thấy chọn phiên bản khi vào trang chi tiết. Xem product.js.
  */
 import { handler, json, readStateCached, publishedProducts, publicProduct, baseVariantName } from "./_supa.js";
+import { autoComparePrice } from "../../src/lib/autoComparePrice.js";
 
 export default handler(async (req, res) => {
   if (req.method !== "GET") return json(res, 405, { error: "Chỉ hỗ trợ GET." });
@@ -33,7 +34,8 @@ export default handler(async (req, res) => {
       ...rep,
       name: baseVariantName(rep),
       price: minPrice,
-      listPrice: sameListPrice ? rep.listPrice : 0, // giá gạch bỏ chỉ hiện khi mọi phiên bản đồng giá
+      // Phiên bản khác giá: thẻ sản phẩm hiện giá thấp nhất nên giá gạch tính theo giá đó, trừ khi chủ shop tự nhập.
+      listPrice: sameListPrice ? rep.listPrice : entries.some((e) => Number(e.raw.web?.compareAtPrice) > 0) ? 0 : autoComparePrice(minPrice, entries[0].raw.variantGroupId || entries[0].raw.id),
       priceFrom: prices.some((v) => v !== minPrice),
       stock: variants.reduce((s, v) => s + v.stock, 0),
       variantCount: variants.length,

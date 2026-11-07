@@ -13,6 +13,7 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
+import { autoComparePrice } from "../../src/lib/autoComparePrice.js";
 
 const URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
 const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
@@ -181,8 +182,8 @@ export function publicProduct(p, { detail = false } = {}) {
   const web = p.web || {};
   // Giá bán web = giá bán lẻ ở "Sản phẩm & tồn kho" (đồng bộ 1 giá, không có ô "Giá web" riêng).
   const price = Number(p.retailPrice) || 0;
-  // Giá gạch bỏ: "Giá so sánh" chủ shop tự nhập; bỏ trống = không hiện.
-  const compareAt = Number(web.compareAtPrice) > 0 ? Number(web.compareAtPrice) : 0;
+  // Giá gạch bỏ: "Giá so sánh" chủ shop tự nhập; bỏ trống thì tự tính theo mức giá.
+  const compareAt = Number(web.compareAtPrice) > 0 ? Number(web.compareAtPrice) : autoComparePrice(price, p.variantGroupId || p.id);
   const listPrice = Math.max(compareAt, price); // storefront tự bỏ qua khi listPrice <= price
   const specs = (Array.isArray(web.specs) ? web.specs : [])
     .map((r) => (Array.isArray(r) ? [String(r[0] || "").trim(), String(r[1] || "").trim()] : null))

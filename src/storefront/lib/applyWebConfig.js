@@ -1,5 +1,7 @@
 import { HOME_HERO, HOME_TILES, HOME_TITLES, SITE, FLASH_SALE, HOME_POSTERS, HOME_SECTIONS, PRODUCT_SIDEBAR, CHECKOUT, PAGES, MENU, LANDINGS, COUPONS, LOYALTY, rebuildCatToGroup } from "../config.js";
 
+import { applyHandheld } from "../data/handhelds.js";
+
 /**
  * Ghi đè cấu hình mặc định (config.js) bằng giá trị chủ shop chỉnh từ app quản lý
  * (`/api/web/config`). Chỉ override phần được gửi lên — phần còn lại giữ mặc định.
@@ -62,6 +64,8 @@ export function applyWebConfig(cfg) {
   if (Array.isArray(cfg.HOME_TILES) && cfg.HOME_TILES.length === HOME_TILES.length) {
     cfg.HOME_TILES.forEach((t, i) => { HOME_TILES[i] = t; });
   }
+
+  applyHandheld(cfg.HANDHELD);
 
   // COUPONS (mã giảm giá chủ shop tạo) — thay nguyên mảng.
   if (Array.isArray(cfg.COUPONS)) {

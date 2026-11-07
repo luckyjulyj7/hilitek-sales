@@ -3,7 +3,7 @@ import { ArrowRight, ChevronDown, Gamepad2, X } from "lucide-react";
 import { SITE, newsItems } from "../config.js";
 import { formatVND } from "../lib/format.js";
 import { submitNeed } from "../lib/api.js";
-import { ERAS, HH_BRANDS, MODELS, SPOTLIGHT, TIERS } from "../data/handhelds.js";
+import { ERAS, HH_BRANDS, HH_FAQ, HH_HERO, HH_LIFE, MODELS, SPOTLIGHT, TIERS, hhImage } from "../data/handhelds.js";
 import HiliPlay from "../components/HiliPlay.jsx";
 import NewsVideo from "../components/NewsVideo.jsx";
 import ProductCard from "../components/ProductCard.jsx";
@@ -21,22 +21,7 @@ const SIZES = [
   { id: "m", label: "5 tới 7 inch", test: (m) => m.inch >= 5 && m.inch <= 7 },
   { id: "l", label: "Trên 7 inch", test: (m) => m.inch > 7 },
 ];
-const FAQ = [
-  ["Nên mua dòng nào cho người mới?", "Nếu chỉ muốn chơi lại game tuổi thơ, dòng Retro là đủ. Muốn chơi game PC bản quyền thì chọn PC cầm tay. Bạn nói game hay chơi, Hili gợi ý máy phù hợp."],
-  ["Máy Android khác máy Retro thế nào?", "Máy Android mạnh hơn, chơi được game trên kho ứng dụng và các đời máy sau. Máy Retro gọn và rẻ hơn, tập trung vào game cổ."],
-  ["PC cầm tay và Mini PC cầm tay khác nhau ra sao?", "PC cầm tay thiết kế để chơi bằng tay cầm tích hợp. Mini PC cầm tay có thêm bàn phím, hợp khi cần làm việc trên Windows."],
-  ["Mua tại Hilitek có hoá đơn không?", "Có. Hilitek xuất đủ hoá đơn VAT và bảo hành theo serial."],
-  ["Mẫu chưa có sẵn thì sao?", "Bạn để lại số Zalo ở mẫu đang quan tâm, Hili báo giá và thời gian có hàng."],
-];
-
-// Bật khi đã có đủ 4 ảnh public/handheld/life-*.webp.
-const LIFE_READY = false;
-const LIFE = [
-  { id: "retro", title: "Trên chuyến xe về", tier: "Retro", span: "lg:col-span-5" },
-  { id: "android", title: "Ở quán cà phê", tier: "Android", span: "lg:col-span-7" },
-  { id: "pc", title: "Tối ở nhà", tier: "PC cầm tay", span: "lg:col-span-7" },
-  { id: "mini", title: "Giờ làm việc", tier: "Mini PC cầm tay", span: "lg:col-span-5" },
-];
+const LIFE_SPAN = ["lg:col-span-5", "lg:col-span-7", "lg:col-span-7", "lg:col-span-5"];
 
 /** Dãy nhà pixel tự vẽ làm nền, không cần tải ảnh. */
 function cityTile(seed, tall, body, light) {
@@ -60,6 +45,9 @@ function cityTile(seed, tall, body, light) {
   return `url(${c.toDataURL("image/png")})`;
 }
 
+/** Máy đã được gắn với sản phẩm thật trong trang quản lý. Web gộp phiên bản nên so cả nhóm. */
+const linkedTo = (m, p) => !!m.productId && (p.id === m.productId || (!!m.groupId && p.variantGroupId === m.groupId));
+
 function useRise() {
   const ref = useRef(null);
   useEffect(() => {
@@ -76,24 +64,25 @@ function useRise() {
 function Shot({ m, className = "" }) {
   const [bad, setBad] = useState(false);
   if (bad) return <div className={"flex h-full w-full items-center justify-center text-ink/70 " + className}><Gamepad2 size="42%" strokeWidth={1.2} /></div>;
-  return <img src={`/handheld/${m.slug}.webp`} alt={m.name} loading="lazy" decoding="async" onError={() => setBad(true)} className={className} />;
+  return <img src={hhImage(m)} alt={m.name} loading="lazy" decoding="async" onError={() => setBad(true)} className={className} />;
 }
 
 /** Khối máy tiêu điểm: ảnh lớn nền tối, tự chuyển mỗi 6 giây, rê chuột thì dừng. */
 function Spotlight({ onAsk }) {
-  const list = SPOTLIGHT.map((s) => MODELS.find((m) => m.slug === s));
+  const list = SPOTLIGHT.map((s) => MODELS.find((m) => m.slug === s)).filter((m) => m && !m.hidden);
   const [i, setI] = useState(0);
   const hold = useRef(false);
   useEffect(() => {
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return undefined;
+    if (list.length < 2 || matchMedia("(prefers-reduced-motion: reduce)").matches) return undefined;
     const t = setInterval(() => { if (!hold.current && !document.hidden) setI((v) => (v + 1) % list.length); }, 6000);
     return () => clearInterval(t);
   }, [list.length]);
-  const m = list[i];
+  const m = list[i] || list[0];
+  if (!m) return null;
   return (
     <div className="hh-spot" onMouseEnter={() => { hold.current = true; }} onMouseLeave={() => { hold.current = false; }}>
       <div className="hh-spot-pic">
-        {list.map((x, k) => <img key={x.slug} src={`/handheld/${x.slug}.webp`} alt={k === i ? x.name : ""} loading="lazy" className={k === i ? "on" : ""} />)}
+        {list.map((x, k) => <img key={x.slug} src={hhImage(x)} alt={x === m ? x.name : ""} loading="lazy" className={x === m ? "on" : ""} />)}
       </div>
       <div key={m.slug} className="hh-spot-tx">
         <p className="text-[15px] font-semibold text-yellow">{TIERS.find((t) => t.id === m.tier).name}</p>
@@ -240,18 +229,20 @@ export default function Handheld({ catalog, navigate }) {
 
   const realOf = useMemo(() => {
     const low = products.map((p) => [p.name.toLowerCase(), p]);
-    return (m) => low.find(([n]) => n.includes(m.name.toLowerCase()))?.[1];
+    return (m) => (m.productId && products.find((p) => linkedTo(m, p))) || low.find(([n]) => n.includes(m.name.toLowerCase()))?.[1];
   }, [products]);
   // Máy thật trong nhóm chưa có trong danh sách trưng bày thì hiện riêng ở đầu.
   const extra = useMemo(() => products.filter((p) => ((p.categories || []).includes(GROUP) || p.category === GROUP)
-    && !MODELS.some((m) => p.name.toLowerCase().includes(m.name.toLowerCase()))), [products]);
+    && !MODELS.some((m) => linkedTo(m, p) || p.name.toLowerCase().includes(m.name.toLowerCase()))), [products]);
 
-  const shown = MODELS.filter((m) => (!tier || m.tier === tier)
+  const all = MODELS.filter((m) => !m.hidden);
+  const shown = all.filter((m) => (!tier || m.tier === tier)
     && (!brand || m.brand === brand)
     && (SIZES.find((s) => s.id === size)?.test?.(m) ?? true));
   const visible = more ? shown : shown.slice(0, 8);
-  const brands = [...new Set(MODELS.filter((m) => !tier || m.tier === tier).map((m) => m.brand))];
-  const eraNow = ERAS.find((e) => e.id === era);
+  const brands = [...new Set(all.filter((m) => !tier || m.tier === tier).map((m) => m.brand))];
+  const eraNow = ERAS.find((e) => e.id === era) || ERAS[0];
+  const life = HH_LIFE.on && HH_LIFE.items.every((l) => l.image);
   const toList = (id) => {
     setTier(id); setSize(""); setBrand("");
     list.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -266,8 +257,8 @@ export default function Handheld({ catalog, navigate }) {
         <div className="hh-city near" style={{ backgroundImage: near }} />
         <div className={WRAP + " hh-in"}>
           <div>
-            <h1 className="font-display text-[42px] font-bold leading-[1.02] sm:text-[64px]">Máy chơi game <span className="text-yellow">cầm tay</span></h1>
-            <p className="mt-3 max-w-[30em] text-[17px] leading-snug text-white/90">Từ máy Retro nhỏ gọn tới PC cầm tay chơi game bản quyền. Bấm START, chơi thử một ván rồi chọn máy hợp bạn.</p>
+            <h1 className="font-display text-[42px] font-bold leading-[1.02] sm:text-[64px]">{HH_HERO.head} <span className="text-yellow">{HH_HERO.accent}</span></h1>
+            <p className="mt-3 max-w-[30em] text-[17px] leading-snug text-white/90">{HH_HERO.sub}</p>
             <div className="mt-5 flex flex-wrap gap-3">
               <button type="button" onClick={() => toList("")} className="hh-k y">Xem các máy <ArrowRight size={17} /></button>
               <a href={SITE.zaloHref} target="_blank" rel="noreferrer" className="hh-k n">Hỏi Hili qua Zalo</a>
@@ -289,7 +280,7 @@ export default function Handheld({ catalog, navigate }) {
           {TIERS.map((t) => (
             <button key={t.id} type="button" data-tier={t.id} onMouseEnter={() => setTierOn(t.id)} onFocus={() => setTierOn(t.id)} onClick={() => toList(t.id)} className={"hh-tier " + t.tone + (tierOn === t.id ? " on" : "")}>
               <span className="hh-word" aria-hidden="true"><i>{t.word}</i><i>{t.word}</i><i>{t.word}</i><i>{t.word}</i></span>
-              <Shot m={{ slug: t.cover, name: t.name }} />
+              <Shot m={{ slug: t.cover, name: t.name, image: t.image || MODELS.find((x) => x.slug === t.cover)?.image }} />
               <span className="hh-tx">
                 <span className="block font-display text-[28px] font-bold leading-tight sm:text-[32px]">{t.name}</span>
                 <span className="mt-1 block text-[16px] font-semibold opacity-90">{t.note}</span>
@@ -301,12 +292,12 @@ export default function Handheld({ catalog, navigate }) {
         </div>
       </section>
 
-      <section className={WRAP + " pt-9"}>
+      {SPOTLIGHT.length > 0 && <section className={WRAP + " pt-9"}>
         <h2 className={H2 + " hh-rise mb-3"}>Máy đáng chú ý</h2>
         <div className="hh-rise"><Spotlight onAsk={setAsking} /></div>
-      </section>
+      </section>}
 
-      <section className={WRAP + " pt-9"}>
+      {eraNow && <section className={WRAP + " pt-9"}>
         <div className="hh-rise overflow-hidden rounded-2xl p-5 text-white sm:p-7" style={{ background: "radial-gradient(70% 120% at 80% 20%,#1E2A8A,#060A2A 75%)" }}>
           <h2 className="font-display text-[30px] font-bold sm:text-[38px]">Bạn muốn chơi gì?</h2>
           <div className="hh-eras mt-3">
@@ -318,10 +309,9 @@ export default function Handheld({ catalog, navigate }) {
               <p className="mt-1 max-w-[28em] text-[16px] leading-snug text-white/90">{eraNow.text}</p>
             </div>
             <div className="grid grid-cols-3 gap-2">
-              {eraNow.picks.map((slug) => {
-                const m = MODELS.find((x) => x.slug === slug);
+              {eraNow.picks.map((slug) => MODELS.find((x) => x.slug === slug)).filter(Boolean).map((m) => {
                 return (
-                  <button key={slug} type="button" onClick={() => setAsking(m)} className="group min-w-0 overflow-hidden rounded-xl bg-white text-left text-ink">
+                  <button key={m.slug} type="button" onClick={() => setAsking(m)} className="group min-w-0 overflow-hidden rounded-xl bg-white text-left text-ink">
                     <span className={"block aspect-[5/4] overflow-hidden " + (m.photo ? "" : "p-2")}><Shot m={m} className={"h-full w-full transition duration-500 group-hover:scale-105 " + (m.photo ? "object-cover" : "object-contain")} /></span>
                     <span className="block px-2.5 pb-2.5 text-[14px] font-semibold leading-tight sm:text-[16px]">{m.name}</span>
                   </button>
@@ -330,18 +320,18 @@ export default function Handheld({ catalog, navigate }) {
             </div>
           </div>
         </div>
-      </section>
+      </section>}
 
-      {LIFE_READY && <section className={WRAP + " pt-9"}>
+      {life && <section className={WRAP + " pt-9"}>
         <h2 className={H2 + " hh-rise mb-3"}>Chơi ở đâu cũng được</h2>
         <div className="hh-rise grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-12">
-          {LIFE.map((l) => (
-            <button key={l.id} type="button" onClick={() => toList(l.id)} className={"group relative h-[190px] overflow-hidden rounded-2xl bg-ink text-left text-white sm:h-[300px] " + l.span}>
-              <img src={`/handheld/life-${l.id}.webp`} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.05]" />
+          {HH_LIFE.items.map((l, k) => (
+            <button key={k} type="button" onClick={() => toList(l.id)} className={"group relative h-[190px] overflow-hidden rounded-2xl bg-ink text-left text-white sm:h-[300px] " + LIFE_SPAN[k]}>
+              <img src={l.image} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.05]" />
               <span className="absolute inset-0" style={{ background: "linear-gradient(0deg,rgba(6,10,42,.86),transparent 58%)" }} />
               <span className="absolute inset-x-0 bottom-0 block p-3 sm:p-5">
                 <span className="block font-display text-[20px] font-bold leading-tight sm:text-[28px]">{l.title}</span>
-                <span className="mt-0.5 block text-[14px] font-semibold text-yellow sm:text-[15px]">{l.tier}</span>
+                <span className="mt-0.5 block text-[14px] font-semibold text-yellow sm:text-[15px]">{TIERS.find((t) => t.id === l.id)?.name}</span>
               </span>
             </button>
           ))}
@@ -396,7 +386,7 @@ export default function Handheld({ catalog, navigate }) {
       <section className={WRAP + " pt-9"}>
         <h2 className={H2 + " hh-rise mb-3"}>Câu hỏi thường gặp</h2>
         <div className="hh-rise divide-y divide-line rounded-2xl bg-white px-5">
-          {FAQ.map(([q, a]) => (
+          {HH_FAQ.map(({ q, a }) => (
             <details key={q} className="group py-1">
               <summary className="flex min-h-[52px] cursor-pointer list-none items-center justify-between gap-3 font-display text-[19px] font-bold text-ink [&::-webkit-details-marker]:hidden">
                 {q}<ChevronDown size={20} className="shrink-0 transition group-open:rotate-180" />

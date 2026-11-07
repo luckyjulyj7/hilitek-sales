@@ -49,3 +49,42 @@ export const ERAS = [
 ];
 
 export const HH_BRANDS = ["Anbernic", "Miyoo", "Retroid", "AYN", "Mangmi", "Valve", "ASUS ROG", "Lenovo Legion", "MSI Claw", "GPD", "OneXPlayer"];
+
+export const HH_HERO = {"head": "Máy chơi game", "accent": "cầm tay", "sub": "Từ máy Retro nhỏ gọn tới PC cầm tay chơi game bản quyền. Bấm START, chơi thử một ván rồi chọn máy hợp bạn."};
+
+export const HH_FAQ = [
+  {"q": "Nên mua dòng nào cho người mới?", "a": "Nếu chỉ muốn chơi lại game tuổi thơ, dòng Retro là đủ. Muốn chơi game PC bản quyền thì chọn PC cầm tay. Bạn nói game hay chơi, Hili gợi ý máy phù hợp."},
+  {"q": "Máy Android khác máy Retro thế nào?", "a": "Máy Android mạnh hơn, chơi được game trên kho ứng dụng và các đời máy sau. Máy Retro gọn và rẻ hơn, tập trung vào game cổ."},
+  {"q": "PC cầm tay và Mini PC cầm tay khác nhau ra sao?", "a": "PC cầm tay thiết kế để chơi bằng tay cầm tích hợp. Mini PC cầm tay có thêm bàn phím, hợp khi cần làm việc trên Windows."},
+  {"q": "Mua tại Hilitek có hoá đơn không?", "a": "Có. Hilitek xuất đủ hoá đơn VAT và bảo hành theo serial."},
+  {"q": "Mẫu chưa có sẵn thì sao?", "a": "Bạn để lại số Zalo ở mẫu đang quan tâm, Hili báo giá và thời gian có hàng."},
+];
+
+// Khối ảnh đời sống: chỉ hiện khi bật và đủ 4 ảnh. id là dòng máy khách đi tới khi bấm.
+export const HH_LIFE = {
+  on: false,
+  items: [
+    { id: "retro", title: "Trên chuyến xe về", image: "" },
+    { id: "android", title: "Ở quán cà phê", image: "" },
+    { id: "pc", title: "Tối ở nhà", image: "" },
+    { id: "mini", title: "Giờ làm việc", image: "" },
+  ],
+};
+
+/** Ảnh của một máy: ảnh chủ shop tải lên, không có thì lấy ảnh mặc định theo slug. */
+export const hhImage = (m) => m.image || `/handheld/${m.slug}.webp`;
+
+const fill = (arr, next) => { if (Array.isArray(next)) { arr.length = 0; next.forEach((x) => arr.push(x)); } };
+
+/** Ghi đè nội dung mặc định bằng phần chủ shop chỉnh ở Website, Nội dung, Máy chơi game cầm tay. */
+export function applyHandheld(c) {
+  if (!c || typeof c !== "object") return;
+  fill(MODELS, c.models);
+  fill(SPOTLIGHT, c.spotlight);
+  fill(ERAS, c.eras);
+  fill(HH_FAQ, c.faq);
+  fill(HH_BRANDS, c.brands);
+  if (Array.isArray(c.tiers) && c.tiers.length === TIERS.length) fill(TIERS, c.tiers);
+  if (c.hero) Object.keys(c.hero).forEach((k) => { if (String(c.hero[k] || "").trim()) HH_HERO[k] = c.hero[k]; });
+  if (c.life) { HH_LIFE.on = !!c.life.on; if (Array.isArray(c.life.items) && c.life.items.length === 4) HH_LIFE.items = c.life.items; }
+}
