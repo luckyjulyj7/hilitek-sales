@@ -596,6 +596,42 @@ function seriesList(p) {
     });
   return rows;
 }
+// "Nợ series": sản phẩm quản lý series được nhập kho / xuất bán trước khi có đủ số series — số lượng vẫn cộng/trừ kho,
+// phần series còn thiếu bổ sung sau. Số series còn nợ của 1 dòng hàng = SL - số series đã có.
+function seriesOwedQty(p, it) {
+  if (!p?.hasSeries || !it) return 0;
+  return Math.max(0, (Number(it.qty) || 0) - (it.series || []).length);
+}
+// Các dòng nợ series của 1 phiếu nhập NCC đã nhập kho.
+function poSeriesDebt(po, products) {
+  if (!po || po.status !== "received") return [];
+  return po.items.map((it) => {
+    const p = products.find((x) => x.id === it.productId);
+    return { productId: it.productId, name: p?.name || "?", owed: seriesOwedQty(p, it) };
+  }).filter((x) => x.owed > 0);
+}
+// Các dòng nợ series của 1 đơn bán: đã xuất kho (fulfilled) nhưng chưa chọn đủ series.
+function orderSeriesDebt(order, products) {
+  if (!order || order.status === "cancelled") return [];
+  return order.items.filter((it) => it.fulfilled).map((it) => {
+    const p = products.find((x) => x.id === it.productId);
+    return { productId: it.productId, name: p?.name || "?", owed: seriesOwedQty(p, it) };
+  }).filter((x) => x.owed > 0);
+}
+// Tổng nợ series của 1 sản phẩm: nhập (phiếu nhập NCC chưa đủ series) và bán (đơn đã xuất chưa đủ series).
+function productSeriesDebt(p, purchaseOrders, orders) {
+  if (!p?.hasSeries) return { inOwed: 0, outOwed: 0 };
+  let inOwed = 0, outOwed = 0;
+  (purchaseOrders || []).forEach((po) => {
+    if (po.status !== "received") return;
+    po.items.forEach((it) => { if (it.productId === p.id) inOwed += seriesOwedQty(p, it); });
+  });
+  (orders || []).forEach((o) => {
+    if (o.status === "cancelled") return;
+    o.items.forEach((it) => { if (it.productId === p.id && it.fulfilled) outOwed += seriesOwedQty(p, it); });
+  });
+  return { inOwed, outOwed };
+}
 // Tìm sản phẩm + thông tin series khi chỉ có số series (dùng khi quét series lúc kiểm kho — chưa biết trước thuộc sản phẩm nào).
 function findSeriesOwner(products, serial) {
   for (const p of products) {
@@ -2632,7 +2668,7 @@ function StatCard({ label, value, icon: Icon, accent }) {
 // để hiện thumbnail — dùng chung giữa "Sản phẩm & Tồn kho" và "Sản phẩm web" cho nhất quán.
 function displayImage(p) { return p?.image || (Array.isArray(p?.web?.images) && p.web.images[0]) || null; }
 
-function ProductsInventory({ products, setProducts, addLog, currentUser, focusProductId, focusEdit, initialCreatedFrom, initialCreatedTo, onFocusHandled, goToDoc, suppliers, goToSupplier, goToWebProduct, categories, setCategories, brands, setBrands, webConfig }) {
+function ProductsInventory({ products, setProducts, purchaseOrders, orders, addLog, currentUser, focusProductId, focusEdit, initialCreatedFrom, initialCreatedTo, onFocusHandled, goToDoc, suppliers, goToSupplier, goToWebProduct, categories, setCategories, brands, setBrands, webConfig }) {
   // Cây danh mục web đầy đủ (mọi cấp), dạng phẳng — cho ô chọn "Danh mục phụ trên web".
   const webCatsFlat = useMemo(() => {
     return webFlattenMenuTree(webConfig && Array.isArray(webConfig.MENU) && webConfig.MENU.length ? webConfig.MENU : WEB_DEFAULT_MENU);
@@ -3841,6 +3877,18 @@ function ProductsInventory({ products, setProducts, addLog, currentUser, focusPr
             {viewingProduct.hasSeries && (
               <div>
                 <p className="text-xs mb-2 opacity-60 font-medium">Danh sách series — {rows.filter((r) => r.status === "Còn tồn").length} còn tồn / {rows.length} tổng</p>
+                {(() => {
+                  const debt = productSeriesDebt(viewingProduct, purchaseOrders, orders);
+                  if (!debt.inOwed && !debt.outOwed) return null;
+                  const poList = (purchaseOrders || []).filter((po) => poSeriesDebt(po, products).some((d) => d.productId === viewingProduct.id)).map((po) => po.code);
+                  const oList = (orders || []).filter((o) => orderSeriesDebt(o, products).some((d) => d.productId === viewingProduct.id)).map((o) => o.code);
+                  return (
+                    <div className="mb-2 p-2.5 rounded-md text-xs" style={{ background: `${BRASS}0D`, border: `1px solid ${BRASS}44`, color: TEXT }}>
+                      {debt.inOwed > 0 && <p><b style={{ color: BRASS }}>Nợ series nhập: {debt.inOwed}</b> — đã cộng tồn kho, chưa có số series ({poList.join(", ")}).</p>}
+                      {debt.outOwed > 0 && <p className={debt.inOwed > 0 ? "mt-1" : ""}><b style={{ color: BRASS }}>Nợ series bán: {debt.outOwed}</b> — đã xuất kho, chưa chọn series ({oList.join(", ")}).</p>}
+                    </div>
+                  );
+                })()}
                 {rows.length === 0 ? <p className="text-sm opacity-60">Chưa có series nào — nhập kho để thêm.</p> : (
                   <div className="rounded-md overflow-hidden" style={{ border: `1px solid ${LINE}` }}>
                     <table className="w-full text-xs">
@@ -5001,7 +5049,10 @@ function ItemsTable({ items, products, onUpdate, onRemove, lockQtyPrice, onOpenP
                   <tr style={{ borderBottom: `1px solid ${LINE}` }}>
                     <td></td>
                     <td colSpan={colCount - 1} className="px-2 pb-3">
-                      <span className="block opacity-60 mb-1 text-xs">Series ({(it.series || []).length}/{it.qty})</span>
+                      <span className="block mb-1 text-xs">
+                        <span className="opacity-60">Series ({(it.series || []).length}/{it.qty})</span>
+                        {(it.series || []).length < it.qty && <span className="ml-1.5 font-medium" style={{ color: BRASS }}>Nợ {it.qty - (it.series || []).length} series — vẫn nhập kho được, bổ sung sau</span>}
+                      </span>
                       <SeriesTagInput series={it.series} setSeries={(arr) => onUpdate(it.productId, { series: arr })} placeholder="VD: 03305377170620" />
                     </td>
                   </tr>
@@ -5197,8 +5248,9 @@ function PurchaseOrders({ goToProduct, goToSupplier, purchaseOrders, setPurchase
     const built = [];
     for (const it of itemsRaw) {
       const p = products.find((x) => x.id === it.productId);
-      if (p.hasSeries && it.series.length !== it.qty) {
-        notify(`"${p.name}" quản lý theo series — cần đúng ${it.qty} số series (đang có ${it.series.length}). Vui lòng điền đủ số series trước khi nhập hàng.`);
+      // Cho phép nhập thiếu series (nợ series, bổ sung sau) — chỉ chặn khi nhiều series hơn số lượng.
+      if (p.hasSeries && it.series.length > it.qty) {
+        notify(`"${p.name}" có ${it.series.length} số series nhưng số lượng chỉ ${it.qty} — vui lòng kiểm tra lại.`);
         return null;
       }
       if (p.hasSeries && it.series.length > 0) {
@@ -5216,7 +5268,7 @@ function PurchaseOrders({ goToProduct, goToSupplier, purchaseOrders, setPurchase
     if (!itemsRaw || itemsRaw.length === 0) return true;
     return itemsRaw.some((it) => {
       const p = products.find((x) => x.id === it.productId);
-      return p?.hasSeries && it.series.length !== it.qty;
+      return p?.hasSeries && it.series.length > it.qty;
     });
   };
 
@@ -5287,8 +5339,8 @@ function PurchaseOrders({ goToProduct, goToSupplier, purchaseOrders, setPurchase
   const saveReceivedEdits = () => {
     for (const it of editForm.items) {
       const p = products.find((x) => x.id === it.productId);
-      if (p?.hasSeries && it.series.length !== it.qty) {
-        notify(`"${p.name}" cần đúng ${it.qty} số series (đang có ${it.series.length}).`);
+      if (p?.hasSeries && it.series.length > it.qty) {
+        notify(`"${p.name}" có ${it.series.length} số series nhưng số lượng chỉ ${it.qty}.`);
         return;
       }
       if (p?.hasSeries && it.series.length > 0) {
@@ -5394,6 +5446,7 @@ function PurchaseOrders({ goToProduct, goToSupplier, purchaseOrders, setPurchase
                     <td className="px-3 py-3 whitespace-nowrap opacity-80"><span className="hidden md:inline">{formatDateTime(po.createdAt)}</span><span className="md:hidden">{shortDateTime(po.createdAt)}</span></td>
                     <td className="px-3 py-3">
                       <span style={{ borderColor: s.color, color: s.color, fontFamily: "'Inter', sans-serif" }} className="inline-block border rounded-full px-2.5 py-0.5 text-xs">{s.label}</span>
+                      {(() => { const owed = poSeriesDebt(po, products).reduce((n, x) => n + x.owed, 0); return owed > 0 ? <span title="Đã nhập kho nhưng chưa đủ số series — mở đơn để bổ sung" className="ml-1.5 inline-block rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap" style={{ background: `${BRASS}1A`, color: BRASS }}>Nợ {owed} series</span> : null; })()}
                     </td>
                     <td className="px-3 py-3 opacity-70 whitespace-nowrap">{po.branch}</td>
                     <td className="px-3 py-3 opacity-70" style={{ minWidth: 220 }}>{po.supplier || "—"}</td>
@@ -8095,7 +8148,7 @@ function ProductsSection({ products, setProducts, purchaseOrders, setPurchaseOrd
         ...(isAdmin ? [{ id: "stocktake", label: "Kiểm kho", icon: PackageCheck }] : []),
         ...(!isCtv ? [{ id: "warranty", label: "Phiếu bảo hành", icon: ShieldCheck }, { id: "service", label: "Phiếu dịch vụ", icon: Settings }] : []),
       ]} />
-      {sub === "list" && <ProductsInventory products={products} setProducts={setProducts} addLog={addLog} currentUser={currentUser} focusProductId={navTarget?.type === "product" ? navTarget.id : null} focusEdit={navTarget?.type === "product" && !!navTarget.edit} initialCreatedFrom={navTarget?.type === "products-daterange" ? navTarget.from : null} initialCreatedTo={navTarget?.type === "products-daterange" ? navTarget.to : null} onFocusHandled={onFocusHandled} goToDoc={goToDoc} suppliers={suppliers} goToSupplier={goToSupplier} goToWebProduct={goToWebProduct} categories={categories} setCategories={setCategories} brands={brands} setBrands={setBrands} webConfig={webConfig} />}
+      {sub === "list" && <ProductsInventory products={products} setProducts={setProducts} purchaseOrders={purchaseOrders} orders={orders} addLog={addLog} currentUser={currentUser} focusProductId={navTarget?.type === "product" ? navTarget.id : null} focusEdit={navTarget?.type === "product" && !!navTarget.edit} initialCreatedFrom={navTarget?.type === "products-daterange" ? navTarget.from : null} initialCreatedTo={navTarget?.type === "products-daterange" ? navTarget.to : null} onFocusHandled={onFocusHandled} goToDoc={goToDoc} suppliers={suppliers} goToSupplier={goToSupplier} goToWebProduct={goToWebProduct} categories={categories} setCategories={setCategories} brands={brands} setBrands={setBrands} webConfig={webConfig} />}
       {isAdmin && sub === "stocktake" && <Stocktake products={products} setProducts={setProducts} stocktakes={stocktakes} setStocktakes={setStocktakes} currentUser={currentUser} addLog={addLog} />}
       {!isCtv && sub === "warranty" && <WarrantyTickets products={products} setProducts={setProducts} orders={orders} customers={customers} warrantyTickets={warrantyTickets} setWarrantyTickets={setWarrantyTickets} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} />}
       {!isCtv && sub === "service" && <ServiceTickets repairTickets={repairTickets} setRepairTickets={setRepairTickets} helpdeskTickets={helpdeskTickets} setHelpdeskTickets={setHelpdeskTickets} products={products} setProducts={setProducts} orders={orders} setOrders={setOrders} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} />}
@@ -9162,8 +9215,9 @@ function SalesItemsTable({ items, products, onUpdate, onRemove, role }) {
                     <td colSpan={4} className="px-2 pb-3">
                       <div className="flex items-center gap-2 mb-1 text-xs">
                         <span style={{ color: TEXT, opacity: 0.6 }}>Series {it.series.length}/{it.qty} · còn tồn {available.length}</span>
-                        {it.series.length < it.qty && (
-                          <span title="Vẫn tạo được đơn, bổ sung series sau khi nhập hàng về" style={{ color: BRASS }}>· Chờ hàng</span>
+                        {it.series.length < it.qty && (Number(it.qty) <= productStats(p).closingQty
+                          ? <span title="Đủ tồn kho: vẫn xuất kho, bổ sung series sau" style={{ color: BRASS }}>· Nợ {it.qty - it.series.length} series</span>
+                          : <span title="Vẫn tạo được đơn, bổ sung series sau khi nhập hàng về" style={{ color: BRASS }}>· Chờ hàng</span>
                         )}
                       </div>
                       <SeriesPicker growable available={available} selected={it.series} setSelected={(arr) => onUpdate(it.productId, { series: arr, qty: Math.max(Number(it.qty) || 0, arr.length) })} need={it.qty} />
@@ -10883,7 +10937,7 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
       const fulfilled = p?.isService
         ? true
         : p?.hasSeries
-        ? it.series.length === it.qty
+        ? it.series.length === it.qty || Number(it.qty) <= closing // đủ tồn kho mà chưa đủ series -> vẫn xuất kho, "nợ series"
         : Number(it.qty) <= closing;
       return { ...it, fulfilled };
     });
@@ -11027,6 +11081,22 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
     const item = order.items.find((it) => it.productId === productId);
     setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, movements: [...p.movements, { id: uid(), type: "out", docNo: order.code, date: todayISO(), qty: item.qty, price: item.price, series }] } : p)));
   };
+  // Bổ sung series còn nợ cho sản phẩm đã xuất kho trước (đơn "nợ series"): ghi series vào đơn và vào đúng bút toán xuất kho của đơn.
+  const fillOwedSeries = (order, productId, added) => {
+    if (!added.length) return;
+    const item = order.items.find((it) => it.productId === productId);
+    if (!item) return;
+    const series = [...(item.series || []), ...added].slice(0, item.qty);
+    setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, items: o.items.map((it) => (it.productId === productId ? { ...it, series } : it)) } : o)));
+    setProducts((prev) => prev.map((p) => {
+      if (p.id !== productId) return p;
+      let idx = -1;
+      p.movements.forEach((m, i) => { if (m.type === "out" && m.docNo === order.code) idx = i; });
+      if (idx < 0) return p;
+      return { ...p, movements: p.movements.map((m, i) => (i === idx ? { ...m, series } : m)) };
+    }));
+    addLog("Bổ sung series đơn hàng", `${order.code} · ${products.find((p) => p.id === productId)?.name || ""} · ${added.join(", ")}`);
+  };
   const remove = (id) => setOrders((prev) => prev.filter((o) => o.id !== id));
   const changeOrderDate = (order, iso) => {
     const next = { ...shiftDocDate(order, iso, ["shippingAt", "deliveredAt", "paidCompleteAt"]), date: localDay(iso) };
@@ -11108,7 +11178,10 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
     if (active.length === 0) return true;
     for (const it of active) {
       const p = products.find((x) => x.id === it.productId);
-      if (p?.hasSeries && it.series.length !== it.qty) return true;
+      // Dòng hàng còn nợ series: chỉ chọn được trong số series đã giao, phần còn lại trả theo số lượng.
+      const orig = viewingOrder?.items.find((x) => x.productId === it.productId);
+      const allowed = orig ? (orig.series || []).filter((s) => !returnedSeriesOf(viewingOrder, it.productId).includes(s)).length : it.qty;
+      if (p?.hasSeries && it.series.length !== Math.min(it.qty, allowed)) return true;
     }
     if (returnForm.type === "exchange") {
       if (returnForm.exchangeItems.length === 0) return true;
@@ -11441,6 +11514,7 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
                     <div className="flex items-center gap-1.5">
                       <Stamp status={o.status} />
                       {o.status !== "cancelled" && o.items.some((it) => !it.fulfilled) && <span className="text-xs px-1.5 py-0.5 rounded-md font-medium" style={{ background: `${BRASS}1A`, color: BRASS }}>Chờ hàng</span>}
+                      {(() => { const owed = orderSeriesDebt(o, products).reduce((n, x) => n + x.owed, 0); return owed > 0 ? <span className="text-xs px-1.5 py-0.5 rounded-md font-medium whitespace-nowrap" style={{ background: `${BRASS}1A`, color: BRASS }}>Nợ {owed} series</span> : null; })()}
                       {o.status !== "cancelled" && o.approvalStatus === "pending" && <span className="text-xs px-1.5 py-0.5 rounded-md font-medium" style={{ background: `${RUST}1A`, color: RUST }}>Chờ duyệt</span>}
                       {o.status !== "cancelled" && o.cancelRequest && <span className="text-xs px-1.5 py-0.5 rounded-md font-medium" style={{ background: `${RUST}1A`, color: RUST }}>Yêu cầu huỷ</span>}
                       {o.status !== "cancelled" && o.returnRequest && <span className="text-xs px-1.5 py-0.5 rounded-md font-medium" style={{ background: `${BRASS}1A`, color: BRASS }}>Yêu cầu đổi trả</span>}
@@ -11871,10 +11945,11 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
                             <SeriesPicker available={available} selected={draft} setSelected={(arr) => setPendingFulfillDraft((d) => ({ ...d, [it.productId]: arr }))} need={it.qty} />
                             <button
                               onClick={() => { fulfillPendingItem(viewingOrder, it.productId, draft); setPendingFulfillDraft((d) => { const n = { ...d }; delete n[it.productId]; return n; }); }}
-                              disabled={draft.length !== it.qty}
+                              disabled={draft.length > it.qty || (draft.length < it.qty && closing < it.qty)}
                               className="mt-2 text-xs px-3 py-1.5 rounded-md text-white disabled:opacity-40" style={{ background: INK }}>
-                              Xác nhận đã có hàng — xuất kho
+                              {draft.length < it.qty ? `Xuất kho trước — nợ ${it.qty - draft.length} series` : "Xác nhận đã có hàng — xuất kho"}
                             </button>
+                            {draft.length < it.qty && closing < it.qty && <p className="text-xs mt-1.5" style={{ color: RUST }}>Tồn kho ({closing}) chưa đủ {it.qty} — chưa xuất kho được.</p>}
                           </>
                         ) : (
                           <>
@@ -11883,6 +11958,42 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
                               onClick={() => fulfillPendingItem(viewingOrder, it.productId, [])}
                               className="text-xs px-3 py-1.5 rounded-md text-white" style={{ background: INK }}>
                               Xác nhận đã có hàng — xuất kho
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {orderSeriesDebt(viewingOrder, products).length > 0 && (
+              <div className="mb-4 p-4 rounded-md" style={{ background: `${BRASS}0D`, border: `1px solid ${BRASS}44` }}>
+                <p className="text-sm font-medium mb-1" style={{ color: BRASS }}>Nợ series — đã xuất kho, chưa đủ số series</p>
+                <p className="text-xs opacity-60 mb-3">Khi phiếu nhập đã bổ sung series, chọn series giao cho khách ở đây.</p>
+                <div className="space-y-3">
+                  {orderSeriesDebt(viewingOrder, products).map((d) => {
+                    const p = products.find((x) => x.id === d.productId);
+                    const it = viewingOrder.items.find((x) => x.productId === d.productId);
+                    const available = p ? seriesList(p).filter((s) => s.status === "Còn tồn" && !(it.series || []).includes(s.serial)) : [];
+                    const draft = pendingFulfillDraft["owed-" + d.productId] || [];
+                    return (
+                      <div key={d.productId} className="p-3 rounded-md" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+                        <div className="flex items-center justify-between text-sm mb-2 gap-2">
+                          <span style={{ color: TEXT }} className="font-medium">{d.name}</span>
+                          <span className="text-xs opacity-60 whitespace-nowrap">đã có {(it.series || []).length}/{it.qty} · nợ {d.owed} · series còn tồn {available.length}</span>
+                        </div>
+                        {available.length === 0 ? (
+                          <p className="text-xs" style={{ color: BRASS }}>Kho chưa có series nào để chọn — bổ sung series ở phiếu nhập trước.</p>
+                        ) : (
+                          <>
+                            <SeriesPicker available={available} selected={draft} setSelected={(arr) => setPendingFulfillDraft((x) => ({ ...x, ["owed-" + d.productId]: arr }))} need={d.owed} />
+                            <button
+                              onClick={() => { fillOwedSeries(viewingOrder, d.productId, draft); setPendingFulfillDraft((x) => { const n = { ...x }; delete n["owed-" + d.productId]; return n; }); }}
+                              disabled={draft.length === 0}
+                              className="mt-2 text-xs px-3 py-1.5 rounded-md text-white disabled:opacity-40" style={{ background: INK }}>
+                              Lưu {draft.length || ""} series
                             </button>
                           </>
                         )}
@@ -14620,6 +14731,7 @@ const NOTIF_CATEGORIES = [
   { id: "approval", label: "Đơn hàng cần duyệt", color: RUST },
   { id: "pending_stock", label: "Đơn chờ hàng (thiếu series/tồn kho)", color: RUST },
   { id: "po_due", label: "Công nợ NCC sắp/đã đến hạn", color: RUST },
+  { id: "series_debt", label: "Nợ series (phiếu nhập/đơn bán chưa đủ series)", color: BRASS },
   { id: "b2b_due", label: "Khách B2B quá hạn công nợ", color: RUST },
   { id: "neg_stock", label: "Sản phẩm âm tồn", color: RUST },
   { id: "low_stock", label: "Sản phẩm dưới định mức tồn", color: BRASS },
@@ -17805,6 +17917,8 @@ export default function SalesManager() {
     purchaseOrders.forEach((po) => {
       const due = poDueInfo(po);
       if (due && due.nearDue) push(`podue:${po.id}`, "po_due", `${po.code} (${po.supplier || "NCC"}) — ${due.overdue ? `quá hạn ${-due.daysLeft} ngày` : due.daysLeft === 0 ? "đến hạn hôm nay" : `còn ${due.daysLeft} ngày`}`);
+      // Nợ series: khoá theo ngày để mỗi ngày báo lại 1 lần (thông báo ngày cũ tự xoá khi sang ngày mới).
+      { const d = poSeriesDebt(po, products); if (d.length) push(`poser:${po.id}:${todayISO()}`, "series_debt", `${po.code} (${po.supplier || "NCC"}) — chưa bổ sung series: ${d.map((x) => `${x.name} (thiếu ${x.owed})`).join(", ")}.`); }
     });
     orders.forEach((o) => {
       const cust = customers.find((c) => c.id === o.customerId);
@@ -17816,6 +17930,7 @@ export default function SalesManager() {
         if (o.approvalStatus === "pending") push(`appr:${o.id}`, "approval", `${o.code} — ${o.approvalReason || "CTV tạo đơn"}`);
         if (o.cancelRequest) push(`cxreq:${o.id}`, "approval", `${o.code} — Yêu cầu huỷ bởi ${o.cancelRequest.requestedByName}`);
         if (o.returnRequest) push(`rtreq:${o.id}`, "approval", `${o.code} — Yêu cầu ${o.returnRequest.type === "exchange" ? "đổi hàng" : "hoàn tiền"} bởi ${o.returnRequest.requestedByName}`);
+        { const d = orderSeriesDebt(o, products); if (d.length) push(`soser:${o.id}:${todayISO()}`, "series_debt", `${o.code} — đã xuất kho, nợ series: ${d.map((x) => `${x.name} (thiếu ${x.owed})`).join(", ")}.`); }
         const pendingItems = o.items.filter((it) => !it.fulfilled);
         if (pendingItems.length > 0) {
           const names = pendingItems.map((it) => products.find((p) => p.id === it.productId)?.name || "?").join(", ");
