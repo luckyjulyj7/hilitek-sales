@@ -217,7 +217,9 @@ export function publicProduct(p, { detail = false } = {}) {
     id: p.id,
     sku: p.sku || "",
     slug: web.slug ? slugify(web.slug) : productSlug(p),
-    name: p.name || "",
+    // Tên trên web (ngắn) nếu có, không thì tên vật tư; invoiceName giữ tên đầy đủ để tìm kiếm.
+    name: (typeof web.name === "string" && web.name.trim()) || p.name || "",
+    invoiceName: p.name || "",
     // Phiên bản (màu sắc/kích cỡ...) — sản phẩm tạo hàng loạt phiên bản ở admin dùng chung
     // variantGroupId, mỗi phiên bản có variantAttrs riêng (VD {"Màu sắc":"Đen"}). Web dùng để
     // gộp các phiên bản thành 1 sản phẩm có nút chọn option, thay vì hiện thành nhiều SP rời rạc.

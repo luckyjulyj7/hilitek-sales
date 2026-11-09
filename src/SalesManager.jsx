@@ -1142,6 +1142,8 @@ function normalizeWeb(w) {
     images: Array.isArray(w.images)
       ? [...new Set(w.images.filter((x) => typeof x === "string" && x.trim()).map((x) => x.trim()))].slice(0, 10)
       : [],
+    // Tên hiển thị trên web (ngắn gọn cho khách) — bỏ trống = dùng Tên vật tư (tên theo hoá đơn). Cùng 1 mã, tồn kho/giá dùng chung.
+    name: typeof w.name === "string" ? w.name : "",
     seoTitle: typeof w.seoTitle === "string" ? w.seoTitle : "",
     seoDesc: typeof w.seoDesc === "string" ? w.seoDesc : "",
     virtualStock: !!w.virtualStock,               // bật tồn kho ảo bán online (dropship)
@@ -4234,6 +4236,10 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
                     value={form.web?.categories}
                     onChange={(next) => setForm({ ...form, web: { ...normalizeWeb(form.web), categories: next } })}
                   />
+                </Field>
+                <Field label="Tên hiển thị trên web" hint="Bỏ trống = dùng Tên vật tư (tên hoá đơn). Mã, tồn kho, giá vẫn dùng chung.">
+                  <input className={inputCls} style={{ borderColor: LINE }} value={form.web?.name ?? ""} placeholder={form.name || ""}
+                    onChange={(e) => setForm({ ...form, web: { ...normalizeWeb(form.web), name: e.target.value } })} />
                 </Field>
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Giá bán trên web (đ)" hint="Luôn = Giá bán lẻ ở trên. Sửa giá bán lẻ để đổi giá web.">
@@ -16058,7 +16064,10 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
           </div>
 
           <div hidden={editTab !== "content"} className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-            <div className="flex items-center justify-between gap-2 mb-2">
+            <Field label="Tên hiển thị trên web" hint={`Bỏ trống = dùng tên vật tư: "${p.name}". Chỉ đổi tên khách thấy, mã/tồn kho/giá vẫn dùng chung.`}>
+              <input className={inputCls} style={{ borderColor: LINE, background: "#fff" }} value={w.name} onChange={(e) => setWeb({ name: e.target.value })} placeholder={p.name} />
+            </Field>
+            <div className="flex items-center justify-between gap-2 mb-2 mt-3">
               <p className="text-base font-semibold" style={{ color: TEXT }}>Mô tả sản phẩm</p>
               <button type="button" onClick={() => setShowAI((v) => !v)} className="text-sm px-3 py-1.5 rounded-md border inline-flex items-center gap-1.5" style={{ borderColor: LINE, color: TEXT }}><Wand2 size={14} /> {showAI ? "Ẩn viết bằng AI" : "Viết bằng AI"}</button>
             </div>
