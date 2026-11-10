@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
+import "./home-pro.css";
 import { HOME_POSTERS, HOME_TILES, HOME_TITLES, FLASH_SALE, FLASH_SALE_CATEGORY, homeSectionProducts, tilePick, SITE } from "../config.js";
 import { formatVND } from "../lib/format.js";
 import NeedForm from "../components/NeedForm.jsx";
@@ -15,6 +16,28 @@ import HeroFilm from "../components/HeroFilm.jsx";
 import NewsVideo from "../components/NewsVideo.jsx";
 
 const WRAP = "mx-auto max-w-[1500px] px-3 sm:px-4";
+
+/** Tiêu đề mục: 3 vạch chéo vàng kiểu logo Hili + dòng phụ bên phải. */
+function H({ children, sub }) {
+  return (
+    <div className="hc-h">
+      <h2 className="font-display"><span className="hc-mark" aria-hidden="true"><i /><i /><i /></span>{children}</h2>
+      {sub && <p className="hc-sub">{sub}</p>}
+    </div>
+  );
+}
+
+/** Các khối .hc-rv hiện dần khi cuộn tới. */
+function useReveal(ref) {
+  useEffect(() => {
+    const root = ref.current;
+    if (!root || typeof IntersectionObserver === "undefined") return;
+    const els = root.querySelectorAll(".hc-rv");
+    const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { rootMargin: "0px 0px -8% 0px" });
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, [ref]);
+}
 
 const SLOTS = [
   "col-span-2 max-lg:min-h-[285px] lg:[grid-area:1/1/3/6]",
@@ -57,6 +80,7 @@ function Tile({ t, slot, products, navigate }) {
   return (
     <a
       {...link}
+      data-tile={slot}
       className={"group relative block min-h-[190px] lg:min-h-0 overflow-hidden rounded-2xl ring-1 transition duration-300 hover:-translate-y-0.5 hover:shadow-card " + (dark ? "ring-white/10 " : "ring-[#D9DFEE] ") + TONES[tone] + " " + SLOTS[slot]}
     >
       {style === "photo" && img && (
@@ -79,6 +103,7 @@ function Tile({ t, slot, products, navigate }) {
           ))}
         </div>
       )}
+      <span className={"hc-key hc-num" + (tone === "yellow" ? "" : " y")} aria-hidden="true">{slot + 1}</span>
       <div className="relative z-10 p-4 sm:p-5">
         <h3 className="font-display text-[22px] sm:text-[26px] font-bold leading-tight">{t.title}</h3>
         {t.sub && <p className={"mt-1 text-[14px] " + (dark ? "text-white/80" : "text-ink/70")}>{t.sub}</p>}
@@ -100,15 +125,34 @@ export default function Home({ catalog, navigate }) {
   const strip = HOME_POSTERS.strip || [];
   const stripShown = strip.slice(Math.max(0, strip.length - 2));
 
+  const rootRef = useRef(null);
+  useReveal(rootRef);
+  // Trang chủ nền tối: header/chân trang theo (giống trang Máy chơi game).
+  useEffect(() => { document.documentElement.classList.add("hili-dark"); return () => document.documentElement.classList.remove("hili-dark"); }, []);
+  // Phím tắt: bấm 1–8 để nhảy tới ô danh mục tương ứng.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || e.target.isContentEditable) return;
+      if (!/^[1-8]$/.test(e.key)) return;
+      const t = rootRef.current?.querySelector(`[data-tile="${+e.key - 1}"]`);
+      if (!t) return;
+      t.scrollIntoView({ behavior: "smooth", block: "center" });
+      const k = t.querySelector(".hc-num"); k?.classList.add("dn"); setTimeout(() => k?.classList.remove("dn"), 160);
+      t.animate?.([{ boxShadow: "0 0 0 0 rgba(247,198,0,.9)" }, { boxShadow: "0 0 0 14px rgba(247,198,0,0)" }], { duration: 900 });
+    };
+    addEventListener("keydown", onKey);
+    return () => removeEventListener("keydown", onKey);
+  }, []);
+
   return (
-    <div className="font-sans">
+    <div ref={rootRef} className="hc font-sans">
       <h1 className="sr-only">Hilitek: máy chơi game cầm tay, phím chuột và linh kiện PC chính hãng tại TP.HCM</h1>
 
       <HeroFilm products={products} navigate={navigate} />
 
       {/* Danh mục */}
-      <section className={WRAP + " pt-8"}>
-        <h2 className="mb-3 font-display text-[30px] sm:text-[38px] font-bold text-ink">{HOME_TITLES.cats}</h2>
+      <section className={WRAP + " hc-cats hc-rv pt-10"}>
+        <H sub="Bấm phím số 1 đến 8 để nhảy nhanh tới danh mục">{HOME_TITLES.cats}</H>
         <div className="grid grid-cols-2 gap-3 lg:auto-rows-[176px] lg:grid-cols-12">
           {HOME_TILES.map((t, i) => <Tile key={t.id || i} t={t} slot={i} products={products} navigate={navigate} />)}
         </div>
@@ -117,8 +161,8 @@ export default function Home({ catalog, navigate }) {
       <BrandRail products={products} navigate={navigate} />
 
       {/* Ưu đãi do chủ shop cấu hình */}
-      <section className={WRAP + " pt-8"}>
-        <h2 className="mb-3 font-display text-[30px] sm:text-[38px] font-bold text-ink">{HOME_TITLES.promo}</h2>
+      <section className={WRAP + " hc-promo hc-rv pt-10"}>
+        <H sub="Khuyến mãi đang chạy tại Hilitek">{HOME_TITLES.promo}</H>
         <div className="grid gap-2 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
           <div className="overflow-hidden rounded-2xl lg:aspect-[2/1] [&_a]:h-full [&_div]:h-full [&_img]:h-full [&_img]:w-full [&_img]:object-cover"><PosterSlider slot={HOME_POSTERS.hero} navigate={navigate} /></div>
           <div className="grid grid-cols-2 gap-2 lg:min-h-0 lg:grid-cols-1 lg:grid-rows-2">
@@ -130,7 +174,7 @@ export default function Home({ catalog, navigate }) {
       </section>
 
       {FLASH_SALE.enabled && flashItems.length > 0 && (
-        <section className={WRAP + " pt-6"}>
+        <section className={WRAP + " hc-flash hc-rv pt-10"}>
           <div className="rounded-2xl bg-white p-2.5 sm:p-6">
             <FlashSaleBar navigate={navigate} />
             <div className="mt-3 sm:mt-5">
@@ -140,13 +184,13 @@ export default function Home({ catalog, navigate }) {
         </section>
       )}
 
-      <ProductTabs products={products} navigate={navigate} />
+      <div className="hc-show hc-rv pt-10"><ProductTabs products={products} navigate={navigate} /></div>
 
-      <section className={WRAP + " pt-8"}><NeedForm /></section>
+      <section className={WRAP + " hc-need hc-rv pt-10"}><NeedForm /></section>
 
-      <NewsVideo navigate={navigate} />
+      <div className="hc-news hc-rv pt-10"><NewsVideo navigate={navigate} /></div>
 
-      <section className={WRAP + " pt-6"}>
+      <section className={WRAP + " hc-trust hc-rv pt-8"}>
         <TrustBar />
       </section>
 

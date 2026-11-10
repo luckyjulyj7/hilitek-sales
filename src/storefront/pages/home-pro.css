@@ -1,0 +1,114 @@
+/* Trang chủ "Hili Lab": nền showroom tối, nút/tab/danh mục kiểu phím cơ. Màn hình chiếu (HeroFilm) giữ nguyên.
+   Mọi quy tắc nằm trong .hc (và html.hili-dark cho header/chân trang) nên không ảnh hưởng trang khác. */
+.hc {
+  --hc-bg: #070B22; --hc-ink: #0B1230; --hc-navy: #1E2A8A; --hc-y: #F7C600; --hc-y2: #FFD84D;
+  --hc-line: rgba(255, 255, 255, .09); --hc-mut: #9AA3C7;
+  position: relative; color: #E9ECF8; padding-bottom: 8px;
+  background:
+    radial-gradient(50% 40% at 85% 12%, rgba(59, 79, 224, .22), transparent 70%),
+    radial-gradient(40% 30% at 5% 55%, rgba(247, 198, 0, .06), transparent 70%),
+    var(--hc-bg);
+}
+html.hili-dark .bg-paper { background: #070B22; }
+html.hili-dark .nl-band { background: #0B0E26; border-top: 1px solid rgba(255,255,255,.08); }
+html.hili-dark .nl-band h3, html.hili-dark .nl-band label { color: #F4F6FB; }
+html.hili-dark .nl-band p { color: rgba(236,240,255,.6); }
+html.hili-dark .nl-band .bg-line { background: rgba(255,255,255,.1); }
+html.hili-dark .nl-band input { background: #11162F; color: #F4F6FB; border-color: rgba(255,255,255,.14); }
+html.hili-dark .nl-band input::placeholder { color: rgba(236,240,255,.4); }
+html.hili-dark .nl-band button { background: #F7C600; color: #060A2A; }
+
+/* ---- Keycap dùng chung ---- */
+.hc-key {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 0 16px; border-radius: 10px;
+  font-family: "Chakra Petch", system-ui, sans-serif; font-weight: 600; color: #fff;
+  background: linear-gradient(180deg, #1A2363, #121A4E);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.14), inset 0 -3px 0 rgba(0,0,0,.35), 0 4px 0 #050822, 0 8px 18px -6px rgba(0,0,0,.6);
+  transition: transform .09s, box-shadow .09s, background .2s, color .2s;
+}
+.hc-key.dn { transform: translateY(3px); box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 1px 0 #050822; }
+.hc-key.y { color: var(--hc-ink); background: linear-gradient(180deg, #FFD84D, #F2BF00); box-shadow: inset 0 1px 0 rgba(255,255,255,.6), inset 0 -3px 0 rgba(140,100,0,.45), 0 4px 0 #8D6E00, 0 10px 24px -8px rgba(247,198,0,.55); }
+
+/* ---- Tiêu đề mục ---- */
+.hc-h { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.hc-h h2 { display: flex; align-items: center; gap: 14px; font-size: clamp(26px, 3vw, 40px); line-height: 1.05; font-weight: 700; color: #fff; letter-spacing: -.01em; }
+.hc-mark { display: inline-flex; gap: 4px; flex: none; }
+.hc-mark i { display: block; width: 7px; height: 26px; background: var(--hc-y); transform: skewX(-20deg); }
+.hc-mark i:first-child { opacity: .38; }
+.hc-mark i:last-child { height: 15px; align-self: flex-end; }
+.hc-h .hc-sub { color: var(--hc-mut); font-size: 15px; max-width: 44ch; text-align: right; }
+@media (max-width: 640px) { .hc-h .hc-sub { display: none; } .hc-mark i { height: 20px; width: 6px; } .hc-mark i:last-child { height: 12px; } }
+/* Tiêu đề trong component có sẵn (Tin tức, Sản phẩm) */
+.hc-show h2, .hc-news h2 { color: #fff !important; display: flex; align-items: center; }
+.hc-show h2::before, .hc-news h2::before { content: ""; flex: none; width: 7px; height: .75em; margin: 0 26px 0 11px; background: var(--hc-y); transform: skewX(-20deg); box-shadow: 11px 0 0 var(--hc-y), -11px 0 0 rgba(247,198,0,.38); }
+
+/* ---- Dải cam kết chạy ngang dưới màn hình chiếu ---- */
+.hc-tick { margin-top: 18px; border-block: 1px solid var(--hc-line); overflow: hidden; background: linear-gradient(90deg, rgba(247,198,0,.07), transparent 30%, transparent 70%, rgba(247,198,0,.07)); }
+.hc-tick > div { display: flex; gap: 46px; width: max-content; padding: 12px 0; animation: hc-run 40s linear infinite; font-family: "Chakra Petch", system-ui, sans-serif; font-weight: 600; font-size: 15px; color: var(--hc-mut); }
+.hc-tick span { display: inline-flex; align-items: center; gap: 12px; white-space: nowrap; }
+.hc-tick span::before { content: ""; width: 8px; height: 16px; background: var(--hc-y); transform: skewX(-20deg); }
+.hc-tick:hover > div { animation-play-state: paused; }
+@keyframes hc-run { to { transform: translateX(-50%); } }
+
+/* ---- Ô danh mục: giữ nội dung/ảnh từ admin, thêm phím số + phát sáng ---- */
+.hc-cats a.group { isolation: isolate; box-shadow: 0 18px 40px -24px rgba(0,0,0,.8); transition: transform .35s cubic-bezier(.2,.7,.2,1), box-shadow .35s; }
+.hc-cats a.group:hover { transform: translateY(-4px); box-shadow: 0 0 0 1.5px var(--hc-y), 0 26px 50px -22px rgba(247,198,0,.4); }
+.hc-cats a.group::after { content: ""; position: absolute; top: 0; bottom: 0; left: -60%; width: 40%; z-index: 20; pointer-events: none; background: linear-gradient(100deg, transparent, rgba(255,255,255,.3), transparent); transform: skewX(-20deg); transition: left .8s cubic-bezier(.2,.7,.2,1); }
+.hc-cats a.group:hover::after { left: 130%; }
+.hc-num { position: absolute; right: 12px; top: 12px; z-index: 25; width: 32px; height: 32px; min-height: 0; padding: 0; font-size: 14px; border-radius: 9px; pointer-events: none; }
+@media (max-width: 640px) { .hc-num { display: none; } }
+
+/* ---- Thương hiệu: khối đã tối sẵn, thêm viền ---- */
+.hc .br { border: 1px solid var(--hc-line); }
+
+/* ---- Chương trình ưu đãi ---- */
+.hc-promo > div > div { box-shadow: 0 0 0 1px var(--hc-line), 0 20px 40px -24px rgba(0,0,0,.8); }
+
+/* ---- Flash sale: khung kính tối, thẻ sản phẩm giữ nền trắng cho ảnh ---- */
+.hc-flash > div { background: linear-gradient(180deg, #10184A, #0B1239) !important; border: 1px solid var(--hc-line); box-shadow: 0 24px 50px -30px rgba(0,0,0,.9); }
+.hc-flash .bg-ink { background: #fff !important; color: var(--hc-ink) !important; }
+
+/* ---- Sản phẩm (ProductTabs): tab là phím cơ ---- */
+.hc-show > section { padding-top: 0 !important; }
+.hc-show [role=tablist] { padding: 4px 2px 10px; gap: 10px; }
+.hc-show [role=tablist] button { padding: 0 18px; border-radius: 10px; color: #fff !important; background: linear-gradient(180deg, #1A2363, #121A4E) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.14), inset 0 -3px 0 rgba(0,0,0,.35), 0 4px 0 #050822; transition: transform .09s, box-shadow .09s; }
+.hc-show [role=tablist] button:hover { background: linear-gradient(180deg, #232E7A, #18215E) !important; }
+.hc-show [role=tablist] button[aria-selected=true] { color: var(--hc-ink) !important; background: linear-gradient(180deg, #FFD84D, #F2BF00) !important; transform: translateY(3px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 1px 0 #8D6E00, 0 10px 24px -8px rgba(247,198,0,.55); }
+.hc-show .pt-grid > * { border-radius: 14px; transition: transform .3s cubic-bezier(.2,.7,.2,1), box-shadow .3s; }
+.hc-show .pt-grid > *:hover { transform: translateY(-4px); box-shadow: 0 0 0 1.5px var(--hc-y), 0 22px 44px -18px rgba(0,0,0,.9); }
+
+/* ---- Form "Hili chọn giúp" ---- */
+.hc-need form { position: relative; overflow: hidden; border-radius: 22px; padding: clamp(22px, 3vw, 38px); background: linear-gradient(110deg, #FFD84D, #F7C600 60%, #F2BF00); }
+.hc-need form::before { content: ""; position: absolute; right: -6%; top: -40%; width: 42%; height: 180%; pointer-events: none; background: repeating-linear-gradient(90deg, rgba(11,18,48,.07) 0 22px, transparent 22px 56px); transform: skewX(-20deg); }
+.hc-need form > * { position: relative; }
+.hc-need form input { height: 48px; box-shadow: inset 0 0 0 1px rgba(11,18,48,.1), 0 3px 0 rgba(140,100,0,.35); }
+.hc-need form input:focus { box-shadow: inset 0 0 0 2px var(--hc-navy), 0 3px 0 rgba(140,100,0,.35); }
+.hc-need form button[type=submit] { min-height: 48px; border-radius: 10px; background: linear-gradient(180deg, #1A2363, #0B1230); box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 4px 0 #050822; transition: transform .09s, box-shadow .09s; }
+.hc-need form button[type=submit]:active { transform: translateY(3px); box-shadow: 0 1px 0 #050822; }
+
+/* ---- Tin tức: danh sách bên phải chuyển sang kính tối ---- */
+.hc-news > section { padding-top: 0 !important; }
+.hc-news a.text-navy { color: var(--hc-y) !important; }
+.hc-news .bg-white { background: linear-gradient(180deg, #10184A, #0B1239) !important; border: 1px solid var(--hc-line); }
+.hc-news .divide-line > * { border-color: var(--hc-line) !important; }
+.hc-news .bg-white .text-navy { color: var(--hc-y) !important; }
+.hc-news .bg-white .text-ink { color: #fff !important; }
+.hc-news .bg-white .text-ink\/40 { color: rgba(255,255,255,.4) !important; }
+
+/* ---- Cam kết ---- */
+.hc-trust > div { border: 1px solid var(--hc-line) !important; background: var(--hc-line) !important; border-radius: 16px; }
+.hc-trust > div > div { background: linear-gradient(180deg, #0E1543, #0A1036) !important; padding: 20px !important; transition: background .3s; }
+.hc-trust > div > div:hover { background: linear-gradient(180deg, #141E52, #1A2470) !important; }
+.hc-trust svg { color: var(--hc-y) !important; }
+.hc-trust .text-ink { color: #fff !important; }
+.hc-trust .text-mute { color: var(--hc-mut) !important; }
+
+/* ---- Hiện dần khi cuộn ---- */
+.hc-rv { opacity: 0; transform: translateY(18px); transition: opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1); }
+.hc-rv.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .hc-rv { opacity: 1; transform: none; transition: none; }
+  .hc-tick > div { animation: none; }
+}
