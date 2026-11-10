@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { HOME_SECTIONS, HOME_TITLES, homeSectionProducts, homeSectionSeeAll } from "../config.js";
 import { href } from "../router.js";
@@ -27,6 +27,18 @@ export default function ProductTabs({ products, navigate }) {
     return list.filter((t) => t.items.length);
   }, [products]);
   const [cur, setCur] = useState("hot");
+  // Phím F1, F2… đổi nhóm sản phẩm (tab thứ 1, 2…), như hàng phím F trên bàn phím.
+  useEffect(() => {
+    const onKey = (e) => {
+      const m = /^F(\d)$/.exec(e.key);
+      if (!m || e.ctrlKey || e.metaKey || e.altKey) return;
+      const t = tabs[+m[1] - 1];
+      if (!t) return;
+      e.preventDefault(); setCur(t.key);
+    };
+    addEventListener("keydown", onKey);
+    return () => removeEventListener("keydown", onKey);
+  }, [tabs]);
   const tab = tabs.find((t) => t.key === cur) || tabs[0];
   if (!tab) return null;
 

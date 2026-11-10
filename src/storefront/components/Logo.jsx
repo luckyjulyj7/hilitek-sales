@@ -32,3 +32,26 @@ export default function Logo({ size = 40, wordmark = true, className = "", textC
     </span>
   );
 }
+
+// Dấu Hili: 2 vạch chéo dài + chữ "i" (thân ngắn + chấm), cùng góc nghiêng như logo.
+const MARK = "M4 50h8l13.1-36h-8zM18 50h8l13.1-36h-8zM32 50h8l7.3-20h-8zM40.7 26h8l2.6-7h-8z";
+export function HiliMark({ className = "", style }) {
+  return (
+    <svg viewBox="2 12 51 40" className={className} style={style} aria-hidden="true" fill="currentColor"><path d="M4 50h8l13.1-36h-8z" opacity=".42" /><path d={MARK.replace(/^M4 50h8l13\.1-36h-8z/, "")} /></svg>
+  );
+}
+/** Logo kiểu Hili Lab: ô vàng, dấu xanh đêm (vạch đầu mờ) + chữ HILITEK. */
+export function LabLogo({ size = 40, textClass = "" }) {
+  return (
+    <span className="flex items-center gap-2.5">
+      <svg viewBox="0 0 60 60" width={size} height={size} className="shrink-0" aria-hidden="true">
+        <rect width="60" height="60" rx="14" fill="#F7C600" />
+        <g fill="#0B1230" transform="translate(2.5 -2)">
+          <path d="M4 50h8l13.1-36h-8z" opacity=".45" />
+          <path d="M18 50h8l13.1-36h-8zM32 50h8l7.3-20h-8zM40.7 26h8l2.6-7h-8z" />
+        </g>
+      </svg>
+      <span className={"font-display font-bold tracking-[0.04em] leading-none " + (textClass || "text-2xl")}>HILITEK</span>
+    </span>
+  );
+}

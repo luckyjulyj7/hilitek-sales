@@ -2,7 +2,7 @@ import React from "react";
 import { MapPin, MessageCircle, Phone } from "lucide-react";
 import { SITE, MENU, NEWS_PATH, POLICY_LINKS } from "../config.js";
 import { href } from "../router.js";
-import Logo from "./Logo.jsx";
+import { LabLogo } from "./Logo.jsx";
 import SocialLinks from "./SocialLinks.jsx";
 import NewsletterSignup from "./NewsletterSignup.jsx";
 
@@ -15,15 +15,13 @@ const HELP = [
   { label: "Liên hệ và bản đồ", to: "/lien-he" },
 ];
 
-function Card({ icon: Icon, label, title, note, ...link }) {
+/** Một "phím" liên hệ lớn: bấm như phím cơ. */
+function Card({ icon: Icon, label, title, note, go, ...link }) {
   return (
-    <a {...link} className="group flex min-w-0 items-center gap-4 rounded-xl border border-white/10 p-4 transition hover:border-yellow/60 sm:p-5">
-      <Icon size={26} strokeWidth={1.6} className="shrink-0 text-yellow" />
-      <span className="min-w-0">
-        <span className="block text-[14px] text-white/60">{label}</span>
-        <span className="block truncate font-display text-[20px] font-bold text-white">{title}</span>
-        <span className="block truncate text-[14px] text-white/60">{note}</span>
-      </span>
+    <a {...link} className="hx-cc">
+      <span className="ic"><Icon size={22} strokeWidth={2} /></span>
+      <span className="min-w-0"><small>{label}</small><b>{title}</b><span className="n">{note}</span></span>
+      <span className="go" aria-hidden="true">{go} →</span>
     </a>
   );
 }
@@ -31,8 +29,8 @@ function Card({ icon: Icon, label, title, note, ...link }) {
 function Column({ title, children }) {
   return (
     <div>
-      <h4 className="mb-4 font-display text-[17px] font-bold text-white">{title}</h4>
-      <ul className="space-y-3 text-[15px]">{children}</ul>
+      <h4>{title}</h4>
+      <ul>{children}</ul>
     </div>
   );
 }
@@ -44,24 +42,24 @@ export default function Footer({ navigate }) {
     : { href: "/lien-he", onClick: (e) => { e.preventDefault(); navigate("lien-he"); } };
 
   return (
-    <footer className="mt-16 bg-ink text-white/70 font-sans pb-[calc(env(safe-area-inset-bottom)+56px)] lg:pb-0">
+    <footer className="hx-foot mt-16 font-sans pb-[calc(env(safe-area-inset-bottom)+56px)] lg:pb-0">
       <NewsletterSignup />
 
       <div className="mx-auto max-w-[1280px] px-4">
-        <div className="grid gap-3 border-b border-white/10 py-8 md:grid-cols-3">
-          <Card icon={Phone} label="Gọi mua hàng" title={SITE.phone} note={SITE.workingHours} href={"tel:" + SITE.phoneRaw} />
-          <Card icon={MessageCircle} label="Tư vấn qua Zalo" title={`Zalo ${SITE.zalo}`} note="Hỏi kỹ trước khi mua" href={SITE.zaloHref} target="_blank" rel="noreferrer" />
-          <Card icon={MapPin} label="Cửa hàng" title="Phường Phú Thọ, TP.HCM" note="Bấm để xem đường đi" {...shop} />
+        <div className="hx-contact pt-10">
+          <Card icon={Phone} label="Gọi mua hàng" title={SITE.phone} note={SITE.workingHours} go="Gọi" href={"tel:" + SITE.phoneRaw} />
+          <Card icon={MessageCircle} label="Tư vấn qua Zalo" title={`Zalo ${SITE.zalo}`} note="Hỏi kỹ trước khi mua" go="Nhắn" href={SITE.zaloHref} target="_blank" rel="noreferrer" />
+          <Card icon={MapPin} label="Cửa hàng" title="Phường Phú Thọ, TP.HCM" note="Xem đường đi" go="Đi" {...shop} />
         </div>
 
-        <div className="grid gap-x-12 gap-y-10 py-12 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1.35fr]">
+        <div className="hx-cols">
           <div>
-            <Logo size={38} textClass="text-2xl text-white" className="text-white" />
+            <LabLogo size={38} textClass="text-2xl text-white" />
             <p className="mt-4 max-w-[340px] text-[15px] leading-relaxed">Phím chuột, màn hình, linh kiện PC và máy chơi game cầm tay chính hãng. Đủ hoá đơn VAT, bảo hành theo số serial.</p>
             <SocialLinks title="" className="mt-5" />
             {SITE.mapEmbedUrl && (
-              <div className="mt-5 h-[190px] max-w-[380px] overflow-hidden rounded-xl border border-white/15">
-                <iframe title="Bản đồ Hilitek" src={SITE.mapEmbedUrl} className="h-full w-full border-0" loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
+              <div className="hx-map">
+                <iframe title="Bản đồ Hilitek" src={SITE.mapEmbedUrl} loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
               </div>
             )}
           </div>
@@ -77,7 +75,8 @@ export default function Footer({ navigate }) {
         </div>
       </div>
 
-      <div className="border-t border-white/10">
+
+      <div className="hx-legal">
         <div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-x-8 gap-y-4 px-4 py-5 text-[14px] text-white/60">
           <div className="min-w-0 flex-1 basis-[420px] leading-relaxed">
             <p>{SITE.legalName}{SITE.taxCode && <> · MST {SITE.taxCode}</>}</p>

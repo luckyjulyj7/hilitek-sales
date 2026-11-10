@@ -10,18 +10,26 @@ import PosterSlider from "../components/PosterSlider.jsx";
 import FlashSaleBar from "../components/FlashSaleBar.jsx";
 import HomeSectionRow from "../components/HomeSectionRow.jsx";
 import HiliKeys from "../components/HiliKeys.jsx";
+import { HiliMark } from "../components/Logo.jsx";
 import ProductTabs from "../components/ProductTabs.jsx";
 import BrandRail from "../components/BrandRail.jsx";
 import HeroFilm from "../components/HeroFilm.jsx";
 import NewsVideo from "../components/NewsVideo.jsx";
 
 const WRAP = "mx-auto max-w-[1500px] px-3 sm:px-4";
+const TICK = ["Hàng chính hãng, đủ VAT", "Bảo hành theo serial", "Giao nội thành trong ngày", "Kỹ thuật tận nơi", "Trả góp 0%", "Đổi mới 7 ngày", "Báo giá doanh nghiệp"];
+const HH = "/may-choi-game-cam-tay";
+const TIERS = [
+  { t: "Retro", s: "Game đời cũ, nhỏ gọn, pin trâu", img: "/handheld/stage/anbernic-rg-557.webp" },
+  { t: "Android", s: "Giả lập PS2, Switch, chơi cả game mobile", img: "/handheld/stage/retroid-pocket-6.webp" },
+  { t: "PC cầm tay", s: "Chạy Steam, game PC thật", img: "/handheld/stage/steam-deck-oled.webp" },
+];
 
 /** Tiêu đề mục: 3 vạch chéo vàng kiểu logo Hili + dòng phụ bên phải. */
 function H({ children, sub }) {
   return (
     <div className="hc-h">
-      <h2 className="font-display"><span className="hc-mark" aria-hidden="true"><i /><i /><i /></span>{children}</h2>
+      <h2 className="font-display"><HiliMark className="hc-mark" />{children}</h2>
       {sub && <p className="hc-sub">{sub}</p>}
     </div>
   );
@@ -150,6 +158,8 @@ export default function Home({ catalog, navigate }) {
 
       <HeroFilm products={products} navigate={navigate} />
 
+      <div className="hc-tick" aria-hidden="true"><div>{[...TICK, ...TICK].map((x, i) => <span key={i}>{x}</span>)}</div></div>
+
       {/* Danh mục */}
       <section className={WRAP + " hc-cats hc-rv pt-10"}>
         <H sub="Bấm phím số 1 đến 8 để nhảy nhanh tới danh mục">{HOME_TITLES.cats}</H>
@@ -185,6 +195,24 @@ export default function Home({ catalog, navigate }) {
       )}
 
       <div className="hc-show hc-rv pt-10"><ProductTabs products={products} navigate={navigate} /></div>
+
+      {/* Máy chơi game cầm tay: 3 dòng máy, dẫn sang trang riêng */}
+      <section className={WRAP + " hc-rv pt-10"}>
+        <div className="hc-hh">
+          <div className="hc-hh-in">
+            <span className="hc-tag">Máy chơi game cầm tay</span>
+            <h3>Chơi game mọi lúc, <em>từ Retro đến PC</em></h3>
+            <p>Ba dòng máy theo ngân sách. Chưa biết chọn máy nào, Hili tư vấn qua Zalo.</p>
+            <a href={HH} onClick={(e) => { e.preventDefault(); navigate(HH.slice(1)); }} className="hc-key y">Xem tất cả máy</a>
+          </div>
+          {TIERS.map((x) => (
+            <a key={x.t} href={HH} onClick={(e) => { e.preventDefault(); navigate(HH.slice(1)); }} className="hc-tier">
+              <img src={x.img} alt={"Máy chơi game " + x.t} loading="lazy" />
+              <div><b>{x.t}</b><span>{x.s}</span><i>Xem máy →</i></div>
+            </a>
+          ))}
+        </div>
+      </section>
 
       <section className={WRAP + " hc-need hc-rv pt-10"}><NeedForm /></section>
 

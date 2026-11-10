@@ -6,10 +6,11 @@ import {
 import { SITE, MENU, FEATURES, LOYALTY, SUPPORT_LINKS, categoryBreadcrumb } from "../config.js";
 import { href } from "../router.js";
 import { useCart } from "../cart.jsx";
-import Logo from "./Logo.jsx";
+import { LabLogo } from "./Logo.jsx";
 import CategoryRail from "./CategoryRail.jsx";
 import CategoryTree from "./CategoryTree.jsx";
 import { groupIcon } from "./groupIcons.js";
+import "./chrome.css";
 
 const ICONS = { CreditCard, Wallet, Truck, ShieldCheck, Wrench };
 
@@ -20,6 +21,17 @@ export default function Header({ route, navigate, drawer, setDrawer }) {
   const [mobileGroup, setMobileGroup] = useState(null);
   const [cartBump, setCartBump] = useState(false);
   const closeTimer = useRef(null);
+  const searchRef = useRef(null);
+
+  // Phím "/" để nhảy vào ô tìm kiếm (như các trang công nghệ lớn).
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== "/" || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || e.target.isContentEditable) return;
+      e.preventDefault(); searchRef.current?.focus();
+    };
+    addEventListener("keydown", onKey);
+    return () => removeEventListener("keydown", onKey);
+  }, []);
 
   useEffect(() => {
     setCatOpen(false);
@@ -85,7 +97,7 @@ export default function Header({ route, navigate, drawer, setDrawer }) {
       </div>
 
       {/* Hàng chính: [LOGO góc trái + tên] [tìm kiếm] ... [hotline] [giỏ] */}
-      <div className="bg-navy text-white">
+      <div className="hx-main">
         <div className="mx-auto max-w-[1500px] px-4 min-h-[76px] flex items-center gap-3 sm:gap-5 py-2">
           <button className="lg:hidden -ml-1 p-1 shrink-0" onClick={() => setDrawer(true)} aria-label="Menu">
             <Menu size={26} />
@@ -93,41 +105,36 @@ export default function Header({ route, navigate, drawer, setDrawer }) {
 
           {/* LOGO — góc trên bên trái, kèm tên Hilitek */}
           <a href="/" onClick={(e) => { e.preventDefault(); go("/"); }} className="shrink-0">
-            <Logo size={46} textClass="text-xl sm:text-2xl text-white" className="text-white" />
+            <LabLogo size={46} textClass="text-xl sm:text-[23px] text-white" />
           </a>
 
-          <form onSubmit={submitSearch} className="hidden md:flex flex-1 max-w-[620px]">
-            <div className="flex w-full items-center bg-white rounded-md pl-4 pr-1 py-1.5">
-              <Search size={18} className="text-mute shrink-0" />
+          <form onSubmit={submitSearch} className="hidden md:flex flex-1 max-w-[640px]">
+            <div className="hx-search">
+              <Search size={18} className="text-yellow shrink-0" />
               <input
+                ref={searchRef}
                 value={term}
                 onChange={(e) => setTerm(e.target.value)}
                 placeholder="Tìm sản phẩm: ssd 1tb, main b760, ram ddr5…"
-                className="flex-1 px-3 py-1 text-sm text-ink bg-transparent outline-none"
+                aria-label="Tìm sản phẩm"
               />
-              <button className="rounded-md bg-navy text-white text-[14px] font-semibold px-4 py-2 hover:bg-navy-600 shrink-0">
-                TÌM KIẾM
-              </button>
+              <kbd className="hidden lg:inline-block" title="Bấm / để tìm nhanh">/</kbd>
+              <button className="hx-key y shrink-0">Tìm kiếm</button>
             </div>
           </form>
 
           {/* Hotline */}
           {hotlines.length === 1 ? (
-            <a href={"tel:" + hotlines[0].raw} className="hidden lg:flex items-center gap-2 ml-auto shrink-0 hover:text-yellow">
-              <Phone size={22} className="text-yellow" />
-              <span className="leading-tight">
-                <span className="block text-[12px] text-white/60 tracking-wide">{hotlines[0].label} · {SITE.workingHours}</span>
-                <span className="block font-mono text-lg font-bold text-yellow tracking-wide">{hotlines[0].number}</span>
-              </span>
+            <a href={"tel:" + hotlines[0].raw} className="hx-hot hidden lg:flex ml-auto shrink-0">
+              <i><Phone size={17} /></i>
+              <span><small>{hotlines[0].label} · {SITE.workingHours}</small><b>{hotlines[0].number}</b></span>
             </a>
           ) : (
-            <div className="hidden lg:flex flex-col justify-center leading-tight ml-auto shrink-0">
-              {hotlines.slice(0, 4).map((h, i) => (
-                <a key={i} href={"tel:" + h.raw} className="flex items-center gap-1.5 text-[13px] hover:text-yellow">
-                  {i === 0 && <Phone size={13} className="text-yellow shrink-0" />}
-                  <span className={i === 0 ? "font-semibold tracking-wide" : "text-white/70"}>
-                    {h.label}: <span className="font-mono font-semibold text-yellow">{h.number}</span>
-                  </span>
+            <div className="hidden lg:flex items-center gap-2 ml-auto shrink-0">
+              {hotlines.slice(0, 2).map((h, i) => (
+                <a key={i} href={"tel:" + h.raw} className="hx-hot">
+                  {i === 0 && <i><Phone size={17} /></i>}
+                  <span><small>{h.label}</small><b>{h.number}</b></span>
                 </a>
               ))}
             </div>
@@ -136,8 +143,7 @@ export default function Header({ route, navigate, drawer, setDrawer }) {
           <button
             onClick={() => go("/gio-hang")}
             className={
-              "shrink-0 relative inline-flex items-center gap-2 rounded-md px-3 py-2 font-semibold transition-colors " +
-              (cartBump ? "bg-yellow text-ink animate-cartbump " : "bg-white text-navy hover:bg-yellow-300")
+              "hx-key y hx-cart shrink-0 " + (cartBump ? "animate-cartbump" : "")
             }
           >
             <span className="relative">
@@ -145,7 +151,7 @@ export default function Header({ route, navigate, drawer, setDrawer }) {
               {count > 0 && (
                 <span className={
                   "absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full text-[12px] font-bold font-mono grid place-items-center " +
-                  (cartBump ? "bg-navy text-white" : "bg-yellow text-ink")
+                  "bg-navy text-white ring-2 ring-yellow"
                 }>
                   {count}
                 </span>
@@ -157,27 +163,26 @@ export default function Header({ route, navigate, drawer, setDrawer }) {
 
         {/* Tìm kiếm mobile */}
         <form onSubmit={submitSearch} className="md:hidden px-4 pb-3">
-          <div className="flex w-full items-center bg-white rounded-md pl-4 pr-1 py-1.5">
-            <Search size={18} className="text-mute shrink-0" />
+          <div className="hx-search sm">
+            <Search size={18} className="text-yellow shrink-0" />
             <input
               value={term}
               onChange={(e) => setTerm(e.target.value)}
               placeholder="Tìm sản phẩm, mã SKU…"
-              className="flex-1 px-3 py-1 text-sm text-ink bg-transparent outline-none"
+              aria-label="Tìm sản phẩm"
             />
           </div>
         </form>
 
         {/* Thanh nav: [Danh mục sản phẩm] + link hỗ trợ (desktop) */}
-        <nav className="hidden lg:block border-t border-white/10 relative">
+      </div>
+      <div>
+        <nav className="hx-nav hidden lg:block relative">
           <div className="mx-auto max-w-[1500px] px-4 flex items-stretch">
             <div onMouseEnter={openCat} onMouseLeave={closeCat} className="relative">
               <button
                 onClick={() => setCatOpen((v) => !v)}
-                className={
-                  "flex items-center gap-2 h-11 px-4 font-semibold text-[14px] uppercase tracking-wide transition-colors " +
-                  (catOpen ? "bg-yellow text-ink" : "bg-white/10 text-white hover:bg-yellow hover:text-ink")
-                }
+                className={"hx-key hx-cat " + (catOpen ? "y" : "")}
               >
                 <LayoutGrid size={17} /> Danh mục sản phẩm
                 <ChevronDown size={15} className={catOpen ? "rotate-180 transition" : "transition"} />
@@ -191,16 +196,16 @@ export default function Header({ route, navigate, drawer, setDrawer }) {
               )}
             </div>
 
-            <div className="flex items-center gap-1 pl-2">
+            <div className="flex items-center gap-1 pl-3">
               {SUPPORT_LINKS.map((l) => {
                 const Icon = ICONS[l.icon] || Wrench;
                 return (
                   <button
                     key={l.label}
                     onClick={() => go(l.to)}
-                    className="flex items-center gap-1.5 h-11 px-3 text-[14px] text-white/90 hover:text-yellow"
+                    className="hx-link"
                   >
-                    <Icon size={15} className="text-yellow" /> {l.label}
+                    <Icon size={15} /> {l.label}
                   </button>
                 );
               })}

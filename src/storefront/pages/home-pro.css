@@ -32,21 +32,18 @@ html.hili-dark .nl-band button { background: #F7C600; color: #060A2A; }
 /* ---- Tiêu đề mục ---- */
 .hc-h { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
 .hc-h h2 { display: flex; align-items: center; gap: 14px; font-size: clamp(26px, 3vw, 40px); line-height: 1.05; font-weight: 700; color: #fff; letter-spacing: -.01em; }
-.hc-mark { display: inline-flex; gap: 4px; flex: none; }
-.hc-mark i { display: block; width: 7px; height: 26px; background: var(--hc-y); transform: skewX(-20deg); }
-.hc-mark i:first-child { opacity: .38; }
-.hc-mark i:last-child { height: 15px; align-self: flex-end; }
+.hc-mark { flex: none; width: 1.05em; height: auto; color: var(--hc-y); }
 .hc-h .hc-sub { color: var(--hc-mut); font-size: 15px; max-width: 44ch; text-align: right; }
-@media (max-width: 640px) { .hc-h .hc-sub { display: none; } .hc-mark i { height: 20px; width: 6px; } .hc-mark i:last-child { height: 12px; } }
+@media (max-width: 640px) { .hc-h .hc-sub { display: none; } }
 /* Tiêu đề trong component có sẵn (Tin tức, Sản phẩm) */
 .hc-show h2, .hc-news h2 { color: #fff !important; display: flex; align-items: center; }
-.hc-show h2::before, .hc-news h2::before { content: ""; flex: none; width: 7px; height: .75em; margin: 0 26px 0 11px; background: var(--hc-y); transform: skewX(-20deg); box-shadow: 11px 0 0 var(--hc-y), -11px 0 0 rgba(247,198,0,.38); }
+.hc-show h2::before, .hc-news h2::before { content: ""; flex: none; width: 1.05em; height: .82em; margin-right: 14px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='2 12 51 40'%3E%3Cpath fill='%23F7C600' opacity='.42' d='M4 50h8l13.1-36h-8z'/%3E%3Cpath fill='%23F7C600' d='M18 50h8l13.1-36h-8zM32 50h8l7.3-20h-8zM40.7 26h8l2.6-7h-8z'/%3E%3C/svg%3E") center / contain no-repeat; }
 
 /* ---- Dải cam kết chạy ngang dưới màn hình chiếu ---- */
 .hc-tick { margin-top: 18px; border-block: 1px solid var(--hc-line); overflow: hidden; background: linear-gradient(90deg, rgba(247,198,0,.07), transparent 30%, transparent 70%, rgba(247,198,0,.07)); }
 .hc-tick > div { display: flex; gap: 46px; width: max-content; padding: 12px 0; animation: hc-run 40s linear infinite; font-family: "Chakra Petch", system-ui, sans-serif; font-weight: 600; font-size: 15px; color: var(--hc-mut); }
 .hc-tick span { display: inline-flex; align-items: center; gap: 12px; white-space: nowrap; }
-.hc-tick span::before { content: ""; width: 8px; height: 16px; background: var(--hc-y); transform: skewX(-20deg); }
+.hc-tick span::before { content: ""; width: 7px; height: 17px; background: var(--hc-y); transform: skewX(-20deg); border-radius: 1px; }
 .hc-tick:hover > div { animation-play-state: paused; }
 @keyframes hc-run { to { transform: translateX(-50%); } }
 
@@ -70,8 +67,10 @@ html.hili-dark .nl-band button { background: #F7C600; color: #060A2A; }
 
 /* ---- Sản phẩm (ProductTabs): tab là phím cơ ---- */
 .hc-show > section { padding-top: 0 !important; }
-.hc-show [role=tablist] { padding: 4px 2px 10px; gap: 10px; }
-.hc-show [role=tablist] button { padding: 0 18px; border-radius: 10px; color: #fff !important; background: linear-gradient(180deg, #1A2363, #121A4E) !important;
+.hc-show [role=tablist] { padding: 4px 2px 10px; gap: 10px; counter-reset: fk; }
+.hc-show [role=tablist] button { counter-increment: fk; padding-left: 34px !important; }
+.hc-show [role=tablist] button::before { content: "F" counter(fk); position: absolute; left: 9px; top: 6px; font: 600 10px/1 "Chakra Petch", sans-serif; opacity: .55; }
+.hc-show [role=tablist] button { position: relative; padding: 0 18px; border-radius: 10px; color: #fff !important; background: linear-gradient(180deg, #1A2363, #121A4E) !important;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.14), inset 0 -3px 0 rgba(0,0,0,.35), 0 4px 0 #050822; transition: transform .09s, box-shadow .09s; }
 .hc-show [role=tablist] button:hover { background: linear-gradient(180deg, #232E7A, #18215E) !important; }
 .hc-show [role=tablist] button[aria-selected=true] { color: var(--hc-ink) !important; background: linear-gradient(180deg, #FFD84D, #F2BF00) !important; transform: translateY(3px);
@@ -81,7 +80,6 @@ html.hili-dark .nl-band button { background: #F7C600; color: #060A2A; }
 
 /* ---- Form "Hili chọn giúp" ---- */
 .hc-need form { position: relative; overflow: hidden; border-radius: 22px; padding: clamp(22px, 3vw, 38px); background: linear-gradient(110deg, #FFD84D, #F7C600 60%, #F2BF00); }
-.hc-need form::before { content: ""; position: absolute; right: -6%; top: -40%; width: 42%; height: 180%; pointer-events: none; background: repeating-linear-gradient(90deg, rgba(11,18,48,.07) 0 22px, transparent 22px 56px); transform: skewX(-20deg); }
 .hc-need form > * { position: relative; }
 .hc-need form input { height: 48px; box-shadow: inset 0 0 0 1px rgba(11,18,48,.1), 0 3px 0 rgba(140,100,0,.35); }
 .hc-need form input:focus { box-shadow: inset 0 0 0 2px var(--hc-navy), 0 3px 0 rgba(140,100,0,.35); }
@@ -112,3 +110,26 @@ html.hili-dark .nl-band button { background: #F7C600; color: #060A2A; }
   .hc-rv { opacity: 1; transform: none; transition: none; }
   .hc-tick > div { animation: none; }
 }
+
+/* ---- Dải máy chơi game cầm tay ---- */
+.hc-hh { display: grid; grid-template-columns: 1.1fr repeat(3, 1fr); gap: 14px; padding: 32px; border-radius: 26px; border: 1px solid var(--hc-line);
+  background: radial-gradient(60% 90% at 80% 10%, rgba(155,123,255,.28), transparent 60%), radial-gradient(50% 80% at 10% 100%, rgba(247,198,0,.15), transparent 60%), #0A0F33; }
+.hc-tag { display: inline-flex; font: 600 13px "Chakra Petch", sans-serif; color: var(--hc-y); padding: 5px 12px; border-radius: 999px; background: rgba(247,198,0,.1); border: 1px solid rgba(247,198,0,.3); }
+.hc-hh-in { align-self: center; }
+.hc-hh-in h3 { margin-top: 14px; font: 700 clamp(28px, 2.8vw, 42px)/1.04 "Chakra Petch", sans-serif; color: #fff; }
+.hc-hh-in h3 em { font-style: normal; color: var(--hc-y); }
+.hc-hh-in p { color: var(--hc-mut); margin: 12px 0 20px; max-width: 32ch; }
+.hc-tier { display: flex; flex-direction: column; border-radius: 18px; overflow: hidden; background: rgba(255,255,255,.04); border: 1px solid var(--hc-line); transition: transform .3s cubic-bezier(.2,.7,.2,1), border-color .3s; }
+.hc-tier:hover { transform: translateY(-5px); border-color: rgba(247,198,0,.55); }
+.hc-tier img { width: 100%; aspect-ratio: 5/4; object-fit: cover; transition: transform .6s cubic-bezier(.2,.7,.2,1); }
+.hc-tier:hover img { transform: scale(1.04); }
+.hc-tier div { padding: 14px 16px 16px; }
+.hc-tier b { display: block; font: 700 19px "Chakra Petch", sans-serif; color: #fff; }
+.hc-tier span { color: var(--hc-mut); font-size: 13.5px; }
+.hc-tier i { display: block; margin-top: 6px; font: 700 14px "Chakra Petch", sans-serif; font-style: normal; color: var(--hc-y); }
+@media (max-width: 1000px) { .hc-hh { grid-template-columns: 1fr 1fr; } .hc-hh-in { grid-column: span 2; } }
+@media (max-width: 600px) { .hc-hh { grid-template-columns: 1fr; padding: 20px; } .hc-hh-in { grid-column: auto; } }
+
+/* Dải vàng có sẵn của màn hình chiếu: ẩn trên trang chủ, thay bằng dải .hc-tick (K chọn 10/11/2026). */
+.hc .hf-tape { display: none; }
+.hc .hc-tick { margin-top: 0; }

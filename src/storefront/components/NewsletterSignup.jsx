@@ -35,56 +35,20 @@ export default function NewsletterSignup() {
   };
 
   return (
-    <div className="nl-band bg-navy-050">
-      <div className="mx-auto max-w-[1500px] px-4 py-8 font-sans">
-        <div className="flex items-center gap-4 mb-1.5">
-          <div className="flex-1 h-px bg-line" />
-          <h3 className="font-display text-lg sm:text-xl font-semibold text-ink text-center whitespace-nowrap">
-            Đăng ký để nhận ưu đãi
-          </h3>
-          <div className="flex-1 h-px bg-line" />
+    <div className="mx-auto max-w-[1280px] px-4 pt-14 font-sans">
+      <div className="hx-deal">
+        <div className="hx-ticket">
+          <span className="pct" aria-hidden="true">%</span>
+          <h3>Nhận mã ưu đãi<br />từ Hilitek</h3>
+          <p>Chỉ mất 3 giây. Có hàng mới, giảm giá, Hili nhắn bạn trước.</p>
         </div>
-        <p className="text-center text-[13px] text-ink/60 mb-5">Chỉ mất 3s đăng ký nhận ngay mã ưu đãi</p>
-        <form onSubmit={submit} className="flex flex-wrap items-end justify-center gap-3">
-          <label className="text-[13px] text-ink/70 flex-1 min-w-[180px] max-w-xs">
-            Họ và tên
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Nhập họ và tên"
-              className="mt-1 w-full border border-line rounded-md px-3 py-2 text-[14px] bg-white text-ink outline-none focus:border-navy"
-            />
-          </label>
-          <label className="text-[13px] text-ink/70 flex-1 min-w-[180px] max-w-xs">
-            Số điện thoại
-            <input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="09xx xxx xxx"
-              inputMode="tel"
-              className="mt-1 w-full border border-line rounded-md px-3 py-2 text-[14px] bg-white text-ink outline-none focus:border-navy"
-            />
-          </label>
-          <label className="text-[13px] text-ink/70 flex-1 min-w-[180px] max-w-xs">
-            Địa chỉ email
-            <input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="exam@gmail.com"
-              inputMode="email"
-              className="mt-1 w-full border border-line rounded-md px-3 py-2 text-[14px] bg-white text-ink outline-none focus:border-navy"
-            />
-          </label>
-          <button
-            type="submit"
-            disabled={sending}
-            className="px-6 py-2.5 rounded-full bg-navy text-white font-display font-semibold text-[14px] hover:bg-navy-600 disabled:opacity-60 whitespace-nowrap"
-          >
-            {sending ? "ĐANG GỬI…" : "ĐĂNG KÝ"}
-          </button>
+        <form onSubmit={submit} className="hx-form">
+          <label>Họ và tên<input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nhập họ và tên" autoComplete="name" /></label>
+          <label>Số điện thoại<input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="09xx xxx xxx" inputMode="tel" autoComplete="tel" /></label>
+          <label>Email (không bắt buộc)<input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ban@gmail.com" inputMode="email" autoComplete="email" /></label>
+          <button type="submit" disabled={sending} className="hx-key y disabled:opacity-60">{sending ? "Đang gửi…" : "Nhận ưu đãi"}</button>
+          <p role="status" className="msg" style={err ? { color: "#FF8A80" } : undefined}>{err || msg}</p>
         </form>
-        {msg && <p className="mt-3 text-[13px] text-center font-medium" style={{ color: "#1a7a3c" }}>{msg}</p>}
-        {err && <p className="mt-3 text-[13px] text-center text-sale">{err}</p>}
       </div>
     </div>
   );
