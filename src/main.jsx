@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import SalesManager from "./SalesManager.jsx";
+import SalesManager, { LoginScreen } from "./SalesManager.jsx";
 import { initStorage } from "./lib/storage.js";
 import "./index.css";
 
@@ -59,7 +59,11 @@ initStorage()
       root.render(<ErrorScreen message={res.error} />);
       return;
     }
-    if (res.backend === "supabase") console.info("[storage] Supabase");
+    if (res.needLogin) {
+      // Chưa đăng nhập: KHÔNG tải dữ liệu nào cả, chỉ hiện màn đăng nhập. Đăng nhập xong tải lại trang.
+      root.render(<LoginScreen accounts={[]} onLogin={() => window.location.reload()} />);
+      return;
+    }
     root.render(<SalesManager />);
   })
   .catch((e) => {

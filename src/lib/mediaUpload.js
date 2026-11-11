@@ -3,9 +3,11 @@
  * Trả link dạng "/media/..." — được vercel.json rewrite về storage công khai,
  * KHÔNG lộ trang nguồn. Chỉ dùng ở app quản lý (không nhúng vào web khách).
  *
- * Cần chạy 1 lần: supabase/storage.sql  (tạo bucket + policy cho phép upload).
+ * Tải lên bằng link dùng 1 lần do /api/admin?op=upload cấp (chỉ người đã đăng nhập mới xin được),
+ * khoá anon không có quyền ghi vào kho ảnh.
  */
-import { getClient, isSupabaseConfigured, SUPABASE_ANON_KEY } from "./supabaseStorage.js";
+import { getClient, isSupabaseConfigured } from "./supabaseStorage.js";
+import { adminApi } from "./adminApi.js";
 
 const BUCKET = "product-media";
 
@@ -15,10 +17,6 @@ function extFromType(type) {
     .split("+")[0]
     .split(";")[0]
     .toLowerCase();
-}
-
-function randPath(ext) {
-  return `desc/${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 }
 
 // Giới hạn cạnh dài nhất + chất lượng nén khi upload trực tiếp từ trình duyệt (chọn file / kéo-thả /
@@ -60,10 +58,10 @@ export async function uploadProductImage(fileOrBlob) {
     throw new Error("Chưa cấu hình Supabase (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY).");
   const compressed = await compressImage(fileOrBlob);
   const type = compressed.type || fileOrBlob.type || "image/png";
-  const path = randPath(extFromType(type));
+  const { path, token } = await adminApi("upload", { method: "POST", body: { ext: extFromType(type) } });
   const { error } = await getClient()
     .storage.from(BUCKET)
-    .upload(path, compressed, { contentType: type, upsert: false, cacheControl: "31536000" });
+    .uploadToSignedUrl(path, token, compressed, { contentType: type, upsert: false, cacheControl: "31536000" });
   if (error) {
     const m = error.message || String(error);
     const hint = /bucket|not found|row-level|policy|unauthorized/i.test(m)
@@ -134,7 +132,7 @@ function fetchWithTimeout(url, opts = {}, ms = 15000) {
 /**
  * Đưa 1 ảnh từ URL ngoài về kho Hilitek. Trả link "/media/..." mới.
  * Thử tải trực tiếp ở trình duyệt trước (CDN cho phép CORS), không được thì
- * nhờ serverless /api/web/fetch-image tải hộ. Có timeout ở cả 2 bước để KHÔNG bị treo.
+ * nhờ máy chủ (/api/admin?op=fetch-image) tải hộ. Có timeout ở cả 2 bước để KHÔNG bị treo.
  */
 export async function rehostExternalImage(src) {
   try {
@@ -147,8 +145,8 @@ export async function rehostExternalImage(src) {
     /* CORS chặn / quá lâu -> thử proxy */
   }
   const r = await fetchWithTimeout(
-    `/api/web/fetch-image?url=${encodeURIComponent(src)}`,
-    { headers: { "x-media-key": SUPABASE_ANON_KEY } },
+    `/api/admin?op=fetch-image&url=${encodeURIComponent(src)}`,
+    { credentials: "same-origin" },
     30000
   );
   const j = await r.json().catch(() => ({}));

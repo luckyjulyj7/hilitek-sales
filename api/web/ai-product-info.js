@@ -6,13 +6,13 @@
  * liệu. Ảnh vẫn lấy trực tiếp từ các trang bằng heuristic (không qua AI, đỡ tốn phí và ảnh thật
  * không cần "viết lại").
  * Cần biến môi trường GEMINI_API_KEY (tạo tại aistudio.google.com/apikey, cấu hình trong Vercel →
- * Settings → Environment Variables). Chặn lạm dụng: header x-media-key phải khớp
- * VITE_SUPABASE_ANON_KEY (giống fetch-image.js).
+ * Settings → Environment Variables). Chỉ người đã đăng nhập
+ * trang quản lý gọi được (cookie phiên, xem _auth.js).
  */
 import * as cheerio from "cheerio";
 import { handler, json, slugify } from "./_supa.js";
+import { requireSession } from "./_auth.js";
 
-const GATE = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
 const GEMINI_KEY = process.env.GEMINI_API_KEY || "";
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
 const SKIP_IMG_RE = /logo|icon|favicon|sprite|avatar|payment|thanh-toan|zalo\.(png|svg)|facebook\.(png|svg)|qr-?code|dmca|banner|\/advs?\//i;
@@ -20,7 +20,7 @@ const MAX_URLS = 3;
 
 export default handler(async (req, res) => {
   if (req.method !== "POST") return json(res, 405, { error: "Chỉ hỗ trợ POST." });
-  if (GATE && req.headers["x-media-key"] !== GATE) return json(res, 401, { error: "Không có quyền." });
+  if (!requireSession(req, res)) return;
   if (!GEMINI_KEY) return json(res, 503, { error: "Server chưa cấu hình GEMINI_API_KEY." });
 
   const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};

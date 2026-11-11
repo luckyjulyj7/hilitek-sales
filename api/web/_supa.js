@@ -22,7 +22,7 @@ const TABLE = "app_state";
 const STORAGE_KEY = "solbh-data-v2";
 
 let _client = null;
-function client() {
+export function client() {
   if (!URL || !KEY) {
     const e = new Error("Thiếu SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY trong Environment Variables của Vercel.");
     e.code = "NO_CONFIG";
@@ -90,7 +90,13 @@ export async function snapshotBackup(reason = "cron") {
   const { data, error: readErr } = await client()
     .from(TABLE).select("value").eq("key", STORAGE_KEY).maybeSingle();
   if (readErr) throw new Error("Đọc blob lỗi: " + readErr.message);
-  const value = (data && data.value) || "{}";
+  let value = (data && data.value) || "{}";
+  // Kèm hàng mật khẩu (<key>:auth — chỉ máy chủ đọc được) vào bản sao lưu, dưới trường "__auth",
+  // để khôi phục được cả đăng nhập nếu hàng đó hỏng/mất.
+  const { data: authRow } = await client().from(TABLE).select("value").eq("key", STORAGE_KEY + ":auth").maybeSingle();
+  if (authRow && authRow.value) {
+    try { const st = JSON.parse(value); st.__auth = JSON.parse(authRow.value); value = JSON.stringify(st); } catch { /* giữ bản không kèm */ }
+  }
   const { error } = await client()
     .from(BACKUP_TABLE)
     .insert({ reason: String(reason).slice(0, 40), bytes: value.length, value });

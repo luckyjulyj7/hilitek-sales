@@ -16,7 +16,7 @@ import { ghn as ghnApi } from "./lib/ghn.js";
 import { PAGES as WEB_DEFAULT_PAGES, MENU as WEB_DEFAULT_MENU, flattenMenuTree as webFlattenMenuTree, MAX_CATEGORY_DEPTH as WEB_MAX_CATEGORY_DEPTH, HOME_SECTIONS as WEB_DEFAULT_HOME_SECTIONS, HOME_SECTION_SORTS, HOME_SECTION_LAYOUTS, LANDINGS as WEB_DEFAULT_LANDINGS, FLASH_SALE_CATEGORY as WEB_FLASH_CAT, GAME_GROUP as WEB_GAME_GROUP } from "./storefront/config.js";
 import { GROUP_ICON_NAMES, groupIcon as webGroupIcon } from "./storefront/components/groupIcons.js";
 import { uploadProductImage, rehostExternalImage, toDirectImageUrl, trimLogo } from "./lib/mediaUpload.js";
-import { SUPABASE_ANON_KEY } from "./lib/supabaseStorage.js";
+import { adminApi } from "./lib/adminApi.js";
 import { pointsForPhone, normalizePhone, DEFAULT_LOYALTY } from "./lib/loyalty.js";
 import { baseVariantName } from "./lib/variants.js";
 import { autoComparePrice } from "./lib/autoComparePrice.js";
@@ -265,6 +265,11 @@ async function verifyPassword(password, salt, hash, algo = "sha256", iter = PBKD
 // bộ trường PBKDF2 mới để nơi gọi lưu lại (nâng cấp trong suốt, không phiền người dùng).
 async function verifyAccountPassword(acc, password) {
   if (!acc) return { ok: false };
+  // Chế độ máy chủ: trình duyệt không có mã băm — máy chủ kiểm mật khẩu của CHÍNH người đang đăng nhập.
+  if (typeof window !== "undefined" && window.storage && window.storage.api) {
+    const r = await adminApi("verify", { method: "POST", body: { password } });
+    return { ok: Boolean(r && r.ok) };
+  }
   const ok = await verifyPassword(password, acc.passwordSalt, acc.passwordHash, acc.passwordAlgo, acc.passwordIter);
   if (!ok) return { ok: false };
   if (acc.passwordAlgo !== "pbkdf2") {
@@ -14369,7 +14374,7 @@ const LOGIN_FAIL_KEY = "hili-login-fails";
 function readLoginFails() { try { return JSON.parse(localStorage.getItem(LOGIN_FAIL_KEY) || "{}") || {}; } catch { return {}; } }
 function writeLoginFails(v) { try { localStorage.setItem(LOGIN_FAIL_KEY, JSON.stringify(v)); } catch { /* bộ nhớ trình duyệt bị chặn */ } }
 
-function LoginScreen({ accounts, onLogin, onUpgradeHash }) {
+export function LoginScreen({ accounts, onLogin, onUpgradeHash }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -14379,6 +14384,22 @@ function LoginScreen({ accounts, onLogin, onUpgradeHash }) {
   const submit = async () => {
     if (busy) return;
     const uname = username.trim().toLowerCase();
+    // Chế độ máy chủ: máy chủ kiểm mật khẩu, đếm số lần sai và cấp cookie phiên.
+    if (window.storage && window.storage.api) {
+      if (!uname || !password) { setError("Nhập tên đăng nhập và mật khẩu."); return; }
+      setBusy(true);
+      try {
+        const r = await adminApi("login", { method: "POST", body: { username: uname, password }, retries: 1 });
+        try { localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now())); } catch { /* bỏ qua */ }
+        setError("");
+        onLogin(r.userId);
+      } catch (e) {
+        setError(e.message || "Đăng nhập thất bại.");
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
     // Khoá tạm theo tên đăng nhập trên máy này khi sai liên tiếp nhiều lần (chống đoán mật khẩu).
     const fails = readLoginFails();
     const f = fails[uname] || { n: 0, until: 0 };
@@ -15711,7 +15732,8 @@ function AIWriteFromUrl({ onApply, product, products, setProducts, addLog }) {
     try {
       const r = await fetch(`/api/web/ai-product-info`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-media-key": SUPABASE_ANON_KEY },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ urls: list }),
       });
       const j = await r.json().catch(() => ({}));
@@ -17413,7 +17435,7 @@ function MediaCleanupPanel() {
   const [msg, setMsg] = useState("");
 
   const call = async (method) => {
-    const r = await fetch("/api/web/media-cleanup", { method, headers: { "x-media-key": SUPABASE_ANON_KEY } });
+    const r = await fetch("/api/admin?op=media-cleanup", { method, credentials: "same-origin", headers: method === "POST" ? { "x-hili": "1" } : {} });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(j.error || `Lỗi máy chủ (mã ${r.status})`);
     return j;
@@ -17512,6 +17534,27 @@ const TABS = [
   { id: "plans", label: "Kế hoạch", icon: Target },
   { id: "reports", label: "Báo cáo", icon: BarChart3 },
 ];
+
+// Đăng xuất ở chế độ máy chủ: đợi lượt lưu đang chờ xong (tối đa 15 giây), huỷ cookie phiên rồi tải
+// lại trang để về màn đăng nhập (dữ liệu trên máy không còn giữ trong bộ nhớ).
+function ServerLogout({ pendingRef }) {
+  useEffect(() => {
+    let stopped = false;
+    (async () => {
+      const until = Date.now() + 15000;
+      let calm = 0;
+      while (!stopped && Date.now() < until && calm < 3) {
+        calm = pendingRef.current ? 0 : calm + 1;
+        await new Promise((r) => setTimeout(r, 500));
+      }
+      try { await adminApi("logout", { method: "POST", retries: 1 }); } catch { /* cookie hết hạn sẵn */ }
+      try { localStorage.removeItem("hilitek:session-userId"); } catch { /* bỏ qua */ }
+      if (!stopped) window.location.reload();
+    })();
+    return () => { stopped = true; };
+  }, []);
+  return <div className="flex items-center justify-center h-96" style={{ color: TEXT }}><Loader2 className="animate-spin mr-2" size={18} /> Đang đăng xuất…</div>;
+}
 
 export default function SalesManager() {
   const [tab, setTab] = useState("dashboard");
@@ -17941,10 +17984,20 @@ export default function SalesManager() {
   // Tự tải lại trang khi RẢNH 10 phút (không ai gõ/bấm/cuộn) để màn hình luôn là bản mới nhất. Chỉ tải
   // lại khi chắc chắn không mất gì: không mở cửa sổ (popup) nào, không đang gõ dở trong ô nhập/ô ghi
   // chú nào, và mọi thay đổi đã lưu xong lên server. Không thoả thì đợi lượt kiểm tra sau (mỗi phút).
-  // Tự đăng xuất khi không thao tác 120 phút. Mốc hoạt động lưu ở localStorage nên vẫn đúng khi
-  // trang tự tải lại (sau 10 phút rảnh) hoặc khi tắt máy rồi mở lại; các tab cùng máy dùng chung mốc.
+  // Máy chủ báo phiên hết hạn / bị đá ra / tài khoản bị khoá -> đăng xuất ngay.
   useEffect(() => {
     if (!loaded || !currentUserId) return;
+    const onLost = (e) => { notify((e && e.detail) || "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại."); setCurrentUserId(null); };
+    window.addEventListener("hili-auth-lost", onLost);
+    return () => window.removeEventListener("hili-auth-lost", onLost);
+  }, [loaded, currentUserId]);
+
+  // Tự đăng xuất khi không thao tác 120 phút — CHỈ áp dụng cho Nhân viên / Cộng tác viên; Quản trị viên
+  // không bị đăng xuất (K yêu cầu 11/11). Mốc hoạt động lưu ở localStorage nên vẫn đúng khi trang tự tải
+  // lại (sau 10 phút rảnh) hoặc khi tắt máy rồi mở lại; các tab cùng máy dùng chung mốc.
+  const myRole = (accounts.find((a) => a.id === currentUserId) || {}).role || "";
+  useEffect(() => {
+    if (!loaded || !currentUserId || !myRole || myRole === "admin") return;
     const readLast = () => { try { return Number(localStorage.getItem(LAST_ACTIVE_KEY)) || 0; } catch { return 0; } };
     const mark = () => { try { localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now())); } catch { /* bỏ qua */ } };
     const expired = () => { const last = readLast(); return last > 0 && Date.now() - last > IDLE_LOGOUT_MS; };
@@ -17958,7 +18011,7 @@ export default function SalesManager() {
       if (expired() && !pendingSaveRef.current) { setCurrentUserId(null); notify("Đã tự đăng xuất vì không thao tác quá 120 phút."); }
     }, 60 * 1000);
     return () => { clearInterval(iv); evs.forEach((e) => window.removeEventListener(e, bump, { capture: true })); };
-  }, [loaded, currentUserId]);
+  }, [loaded, currentUserId, myRole]);
 
   useEffect(() => {
     if (!loaded) return;
@@ -18103,6 +18156,9 @@ export default function SalesManager() {
   }
 
   const currentUser = accounts.find((a) => a.id === currentUserId) || null;
+  if (!currentUser && window.storage && window.storage.api) {
+    return <ServerLogout pendingRef={pendingSaveRef} />;
+  }
   if (!currentUser) {
     return <LoginScreen accounts={accounts} onLogin={(id) => setCurrentUserId(id)} onUpgradeHash={(id, fields) => setAccounts((prev) => prev.map((a) => (a.id === id ? { ...a, ...fields } : a)))} />;
   }

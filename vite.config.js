@@ -1,4 +1,5 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
+import crypto from "node:crypto";
 import react from "@vitejs/plugin-react";
 import { resolve } from "node:path";
 
@@ -35,8 +36,43 @@ const shopSpaFallbackDev = {
   },
 };
 
+
+// DEV: HILI_API=1 chạy API quản trị (api/admin.js, api/web/ai-product-info.js) ngay trong Vite, mô
+// phỏng Vercel Functions. Mặc định trỏ sang BẢN SAO dữ liệu (HILI_STORAGE_KEY=solbh-data-v2-devtest)
+// để thử đăng nhập/lưu không đụng dữ liệu thật.
+const adminApiDev = {
+  name: "admin-api-dev",
+  apply: "serve",
+  configureServer(server) {
+    if (!process.env.HILI_API) return;
+    Object.assign(process.env, { ...loadEnv("development", process.cwd(), ""), ...process.env });
+    process.env.HILI_STORAGE_KEY ||= "solbh-data-v2-devtest";
+    process.env.ADMIN_SESSION_SECRET ||= crypto.randomBytes(32).toString("hex");
+    const routes = { "/api/admin": "/api/admin.js", "/api/web/ai-product-info": "/api/web/ai-product-info.js" };
+    server.middlewares.use(async (req, res, next) => {
+      const [path, qs = ""] = (req.url || "").split("?");
+      if (!routes[path]) return next();
+      const chunks = [];
+      for await (const c of req) chunks.push(c);
+      const raw = Buffer.concat(chunks).toString("utf8");
+      req.query = Object.fromEntries(new URLSearchParams(qs));
+      try { req.body = raw && /json/.test(req.headers["content-type"] || "") ? JSON.parse(raw) : raw; } catch { req.body = raw; }
+      res.status = (c) => { res.statusCode = c; return res; };
+      res.json = (o) => { if (!res.getHeader("Content-Type")) res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify(o)); return res; };
+      res.send = (b) => { res.end(typeof b === "string" || Buffer.isBuffer(b) ? b : JSON.stringify(b)); return res; };
+      res.redirect = (c, u) => { res.statusCode = c; res.setHeader("Location", u); res.end(); return res; };
+      try {
+        const mod = await server.ssrLoadModule(routes[path]);
+        await mod.default(req, res);
+      } catch (e) {
+        res.statusCode = 500; res.end(JSON.stringify({ error: String(e && e.message || e) }));
+      }
+    });
+  },
+};
+
 export default defineConfig({
-  plugins: [react(), shopSpaFallbackDev],
+  plugins: [react(), shopSpaFallbackDev, adminApiDev],
   server: {
     port: 5173,
     open: false,

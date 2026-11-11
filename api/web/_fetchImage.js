@@ -1,8 +1,8 @@
 /**
- * GET /api/web/fetch-image?url=<link ảnh ngoài>
+ * GET /api/admin?op=fetch-image&url=?url=<link ảnh ngoài>
  * Tải ảnh từ trang khác (server không bị CORS), NÉN LẠI (giới hạn kích thước, đổi định dạng
  * nén tốt hơn) rồi lưu vào Supabase Storage bucket "product-media", trả { url: "/media/desc/xxx" }.
- * Chặn lạm dụng: header x-media-key phải khớp VITE_SUPABASE_ANON_KEY.
+ * Gọi qua /api/admin?op=fetch-image — chỉ người đã đăng nhập trang quản lý.
  */
 import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
@@ -10,7 +10,6 @@ import { handler, json } from "./_supa.js";
 
 const SB_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
 const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
-const GATE = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
 const BUCKET = "product-media";
 const MAX = 8 * 1024 * 1024;
 // Giới hạn cạnh dài nhất + chất lượng nén — đủ nét để xem trên web, giảm hẳn dung lượng so
@@ -41,7 +40,6 @@ async function compress(buf, ct) {
 
 export default handler(async (req, res) => {
   if (req.method !== "GET") return json(res, 405, { error: "Chỉ hỗ trợ GET." });
-  if (GATE && req.headers["x-media-key"] !== GATE) return json(res, 401, { error: "Không có quyền." });
   if (!SB_URL || !SB_KEY) return json(res, 503, { error: "Thiếu cấu hình Supabase trên máy chủ." });
 
   const src = req.query && req.query.url;
