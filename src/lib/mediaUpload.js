@@ -42,9 +42,11 @@ async function compressImage(fileOrBlob) {
     const ctx = canvas.getContext("2d");
     ctx.drawImage(bitmap, 0, 0, w, h);
     bitmap.close && bitmap.close();
-    // PNG/WebP có thể có nền trong suốt -> giữ bằng WebP; còn lại nén JPEG cho nhẹ.
-    const outType = /png|webp/i.test(fileOrBlob.type || "") ? "image/webp" : "image/jpeg";
-    const out = await new Promise((resolve) => canvas.toBlob(resolve, outType, QUALITY));
+    // Mọi ảnh -> WebP (nhẹ hơn JPEG ~25-35%, giữ nền trong suốt). Trình duyệt không mã hoá được WebP
+    // (Safari cũ trả về PNG) thì: ảnh có thể trong suốt giữ PNG, ảnh chụp nén JPEG.
+    const toBlob = (t) => new Promise((resolve) => canvas.toBlob(resolve, t, QUALITY));
+    let out = await toBlob("image/webp");
+    if (out && out.type !== "image/webp" && !/png|webp/i.test(fileOrBlob.type || "")) out = await toBlob("image/jpeg");
     if (out && out.size > 0 && out.size < fileOrBlob.size) return out;
   } catch {
     /* trình duyệt không hỗ trợ / ảnh lỗi -> giữ bản gốc, không chặn upload */
