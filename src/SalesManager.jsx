@@ -4166,11 +4166,6 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
                     {m} tháng
                   </button>
                 ))}
-                <button type="button" onClick={() => setForm({ ...form, warrantyMonths: WARRANTY_LIFETIME })}
-                  className="px-3 py-1.5 rounded-md text-sm border"
-                  style={{ borderColor: Number(form.warrantyMonths) === WARRANTY_LIFETIME ? INK : LINE, background: Number(form.warrantyMonths) === WARRANTY_LIFETIME ? INK : "transparent", color: Number(form.warrantyMonths) === WARRANTY_LIFETIME ? "#fff" : INK }}>
-                  Vĩnh viễn
-                </button>
               </div>
             </Field>
 
@@ -4948,7 +4943,6 @@ function ProductPicker({ products, onPick, onQuickCreate, brands }) {
                 {WARRANTY_OPTIONS.map((m) => (
                   <button key={m} type="button" onClick={() => setNewForm({ ...newForm, warrantyMonths: m })} className="px-2 py-1 rounded-md text-xs border" style={{ borderColor: Number(newForm.warrantyMonths) === m ? INK : LINE, background: Number(newForm.warrantyMonths) === m ? INK : "transparent", color: Number(newForm.warrantyMonths) === m ? "#fff" : INK }}>{m}th</button>
                 ))}
-                <button type="button" onClick={() => setNewForm({ ...newForm, warrantyMonths: WARRANTY_LIFETIME })} className="px-2 py-1 rounded-md text-xs border" style={{ borderColor: Number(newForm.warrantyMonths) === WARRANTY_LIFETIME ? INK : LINE, background: Number(newForm.warrantyMonths) === WARRANTY_LIFETIME ? INK : "transparent", color: Number(newForm.warrantyMonths) === WARRANTY_LIFETIME ? "#fff" : INK }}>Vĩnh viễn</button>
               </div>
               <p className="text-xs opacity-60 mb-1 font-medium">VAT</p>
               <div className="flex gap-1.5 flex-wrap mb-3">
