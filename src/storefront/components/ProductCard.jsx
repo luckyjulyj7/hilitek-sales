@@ -2,7 +2,6 @@ import React, { useRef } from "react";
 import { Bell, Plus, Check, Gift } from "lucide-react";
 import { formatVND, discountPercent, placeholderImage } from "../lib/format.js";
 import { prefetchProduct } from "../lib/api.js";
-import { LOW_STOCK_THRESHOLD } from "../config.js";
 import { useCart } from "../cart.jsx";
 import { askStockAlert } from "./StockNotify.jsx";
 
@@ -16,7 +15,6 @@ export default function ProductCard({ product, onOpen }) {
   };
   const off = discountPercent(p.price, p.listPrice);
   const img = p.images?.[0]?.src || p.images?.[0] || placeholderImage(p.brand, p.category);
-  const low = p.stock > 0 && p.stock <= LOW_STOCK_THRESHOLD;
   const out = !p.stock;
 
   // Tải trước chi tiết sản phẩm khi rê chuột dừng lại ~150ms (không bắn request khi chỉ lướt qua)
@@ -43,11 +41,6 @@ export default function ProductCard({ product, onOpen }) {
             −{off}%
           </span>
         )}
-        {out ? (
-          <span className="absolute top-2 right-2 bg-ink/60 backdrop-blur-[2px] text-white text-[12px] px-2 py-1">Hết hàng</span>
-        ) : low ? (
-          <span className="absolute top-2 right-2 bg-[#B4540A]/75 backdrop-blur-[2px] text-white text-[12px] px-2 py-1">Còn ít</span>
-        ) : null}
       </a>
 
       {/* Bố cục cố định chiều cao từng dòng → giá đỏ luôn nằm đúng một vị trí trên mọi thẻ */}
