@@ -14427,7 +14427,34 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
   const [restoreErr, setRestoreErr] = useState("");
   const [restoreBusy, setRestoreBusy] = useState(false);
   const fileRef = useRef(null);
-  const pickRestore = () => { setRestoreErr(""); fileRef.current && fileRef.current.click(); };
+  // Thao tác nguy hiểm (xoá tài khoản, phục hồi, xoá dữ liệu giao dịch) phải nhập lại mật khẩu của
+  // chính người đang đăng nhập — phòng trường hợp máy để mở, người khác ngồi vào bấm.
+  const [pwAsk, setPwAsk] = useState(null); // { title, desc, danger, run }
+  const [pwInput, setPwInput] = useState("");
+  const [pwErr, setPwErr] = useState("");
+  const [pwBusy, setPwBusy] = useState(false);
+  const pwFails = useRef({ n: 0, until: 0 });
+  const askPassword = (title, desc, run, danger = "Xác nhận") => { setPwInput(""); setPwErr(""); setPwAsk({ title, desc, run, danger }); };
+  const submitPw = async () => {
+    if (!pwAsk || pwBusy) return;
+    const now = Date.now();
+    if (pwFails.current.until > now) { setPwErr(`Sai quá nhiều lần, thử lại sau ${Math.ceil((pwFails.current.until - now) / 1000)} giây.`); return; }
+    setPwBusy(true);
+    const me = accounts.find((x) => x.id === currentUser.id);
+    const res = await verifyAccountPassword(me, pwInput).catch(() => ({ ok: false }));
+    setPwBusy(false);
+    if (!res.ok) {
+      pwFails.current.n += 1;
+      if (pwFails.current.n >= 5) { pwFails.current = { n: 0, until: Date.now() + 60000 }; addLog && addLog("Cảnh báo bảo mật", `Nhập sai mật khẩu xác nhận 5 lần (${pwAsk.title})`); }
+      setPwErr("Mật khẩu không đúng.");
+      return;
+    }
+    pwFails.current = { n: 0, until: 0 };
+    const run = pwAsk.run;
+    setPwAsk(null); setPwInput("");
+    run();
+  };
+  const pickRestore = () => askPassword("Phục hồi dữ liệu", "Phục hồi sẽ ghi đè toàn bộ dữ liệu hiện tại. Nhập mật khẩu của bạn để tiếp tục chọn file.", () => { setRestoreErr(""); fileRef.current && fileRef.current.click(); }, "Tiếp tục");
   const onRestoreFile = async (e) => {
     const f = e.target.files && e.target.files[0];
     e.target.value = "";
@@ -14486,8 +14513,11 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
     if (a.isOwner) { notify("Không thể xoá tài khoản chủ."); return; }
     if (a.id === currentUser.id) { notify("Không thể xoá tài khoản đang đăng nhập."); return; }
     if (!canManage(a)) return;
-    setAccounts((prev) => prev.filter((x) => x.id !== a.id));
-    addLog && addLog("Xoá tài khoản", a.username);
+    askPassword(`Xoá tài khoản "${a.username}"`, `Tài khoản ${a.fullName || a.username} sẽ bị xoá vĩnh viễn và không đăng nhập được nữa. Nếu chỉ muốn tạm chặn, hãy dùng "Khoá" trong phần sửa tài khoản. Nhập mật khẩu của bạn để xác nhận.`, () => {
+      setAccounts((prev) => prev.filter((x) => x.id !== a.id));
+      onKickAccount && onKickAccount(a.id); // đăng xuất ngay mọi phiên đang mở của tài khoản này
+      addLog && addLog("Xoá tài khoản", a.username);
+    }, "Xoá tài khoản");
   };
 
   return (
@@ -14592,13 +14622,28 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
         </div>
       )}
 
+      {pwAsk && (
+        <Modal title={pwAsk.title} onClose={() => setPwAsk(null)}>
+          <p className="text-sm mb-3" style={{ color: TEXT }}>{pwAsk.desc}</p>
+          <form onSubmit={(e) => { e.preventDefault(); submitPw(); }}>
+            <Field label={`Mật khẩu của ${currentUser.username}`}>
+              <input type="password" autoFocus autoComplete="current-password" className={inputCls} style={{ borderColor: pwErr ? RUST : LINE }}
+                value={pwInput} onChange={(e) => { setPwInput(e.target.value); setPwErr(""); }} />
+            </Field>
+            {pwErr && <p className="text-xs mt-1" style={{ color: RUST }}>{pwErr}</p>}
+            <button type="submit" disabled={!pwInput || pwBusy} className="w-full py-2.5 rounded-md text-white text-sm mt-3 disabled:opacity-40" style={{ background: RUST }}>
+              {pwBusy ? "Đang kiểm tra…" : pwAsk.danger}
+            </button>
+          </form>
+        </Modal>
+      )}
       {confirmReset && (
         <Modal title="Xác nhận đặt lại dữ liệu" onClose={() => setConfirmReset(false)}>
           <p className="text-sm mb-3">Thao tác này sẽ <b style={{ color: RUST }}>xoá vĩnh viễn</b> toàn bộ đơn bán, đơn nhập hàng, báo giá và các bút toán kho liên quan. Không thể hoàn tác. Sản phẩm, khách hàng, nhà cung cấp, kế hoạch, tài khoản sẽ không bị ảnh hưởng.</p>
           <Field label={<>Gõ <b>XOA</b> để xác nhận</>}>
             <input className={inputCls} style={{ borderColor: LINE }} value={confirmResetText} onChange={(e) => setConfirmResetText(e.target.value)} placeholder="XOA" />
           </Field>
-          <button onClick={() => { onResetTestData(); setConfirmReset(false); }} disabled={confirmResetText.trim().toUpperCase() !== "XOA"}
+          <button onClick={() => { setConfirmReset(false); askPassword("Xoá dữ liệu giao dịch", "Bước cuối: nhập mật khẩu của bạn để xoá toàn bộ đơn bán, đơn nhập và báo giá.", () => onResetTestData(), "Xoá dữ liệu"); }} disabled={confirmResetText.trim().toUpperCase() !== "XOA"}
             className="w-full py-2.5 rounded-md text-white text-sm mt-2 disabled:opacity-40" style={{ background: RUST }}>
             Xác nhận xoá toàn bộ dữ liệu giao dịch
           </button>
