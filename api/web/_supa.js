@@ -49,7 +49,7 @@ export async function readState() {
 // Edge) sẽ dùng chung bản đã đọc thay vì mỗi lần đọc lại. KHÔNG dùng cho API ghi (orders...) —
 // ghi dựa trên dữ liệu cũ sẽ làm mất thay đổi. Nơi gọi KHÔNG được sửa object trả về.
 let _stateCache = { at: 0, state: null, pending: null };
-const STATE_CACHE_MS = 20000;
+const STATE_CACHE_MS = 120000; // 2 phút: gói Supabase Free giới hạn egress, mỗi lần đọc là ~1,2MB
 export async function readStateCached() {
   if (_stateCache.state && Date.now() - _stateCache.at < STATE_CACHE_MS) return _stateCache.state;
   if (_stateCache.pending) return _stateCache.pending;

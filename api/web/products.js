@@ -46,5 +46,5 @@ export default handler(async (req, res) => {
   const products = [...singles, ...merged];
   // Cache ngắn ở Vercel Edge — đọc lại toàn bộ blob Supabase mỗi lần là phần chậm nhất khi duyệt
   // web; 20s vẫn đủ nhanh cập nhật tồn kho/giá sau khi admin sửa, không đáng lo bị "cũ" lâu.
-  json(res, 200, { products, count: products.length }, "public, max-age=10, s-maxage=30, stale-while-revalidate=120");
+  json(res, 200, { products, count: products.length }, "public, max-age=30, s-maxage=300, stale-while-revalidate=86400");
 });

@@ -1,7 +1,7 @@
 /** GET /api/web/config — state.webConfig (chủ shop chỉnh từ app quản lý). */
 import { handler, json, readStateCached } from "./_supa.js";
 
-const CACHE = "public, max-age=60, stale-while-revalidate=300";
+const CACHE = "public, max-age=60, s-maxage=300, stale-while-revalidate=86400";
 
 export default handler(async (req, res) => {
   if (req.method !== "GET") return json(res, 405, { error: "Chỉ hỗ trợ GET." });

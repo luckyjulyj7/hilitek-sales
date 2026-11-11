@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     res.setHeader("Retry-After", "30");
     return send(res, 503, "<!doctype html><title>Hilitek</title><p>Trang đang tải lại, bạn thử lại sau ít giây.</p>", "no-store");
   }
-  const cache = "public, max-age=0, s-maxage=300, stale-while-revalidate=3600";
+  const cache = "public, max-age=0, s-maxage=600, stale-while-revalidate=86400";
   const q = req.query || {};
   try {
     if (q.slug) {
