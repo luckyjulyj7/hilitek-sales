@@ -14365,6 +14365,16 @@ function HiliLogo({ size = 40, radius = 8 }) {
   );
 }
 
+// ---- Bảo mật đăng nhập ----
+const PASSWORD_MIN = 10; // mật khẩu mới / đổi mật khẩu
+const LOGIN_MAX_FAILS = 5; // sai 5 lần liên tiếp -> khoá tạm
+const LOGIN_LOCK_MS = 5 * 60 * 1000;
+const IDLE_LOGOUT_MS = 120 * 60 * 1000; // không thao tác 120 phút -> tự đăng xuất
+const LAST_ACTIVE_KEY = "hili-last-active";
+const LOGIN_FAIL_KEY = "hili-login-fails";
+function readLoginFails() { try { return JSON.parse(localStorage.getItem(LOGIN_FAIL_KEY) || "{}") || {}; } catch { return {}; } }
+function writeLoginFails(v) { try { localStorage.setItem(LOGIN_FAIL_KEY, JSON.stringify(v)); } catch { /* bộ nhớ trình duyệt bị chặn */ } }
+
 function LoginScreen({ accounts, onLogin, onUpgradeHash }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -14374,12 +14384,25 @@ function LoginScreen({ accounts, onLogin, onUpgradeHash }) {
 
   const submit = async () => {
     if (busy) return;
-    const acc = accounts.find((a) => a.username === username.trim().toLowerCase());
+    const uname = username.trim().toLowerCase();
+    // Khoá tạm theo tên đăng nhập trên máy này khi sai liên tiếp nhiều lần (chống đoán mật khẩu).
+    const fails = readLoginFails();
+    const f = fails[uname] || { n: 0, until: 0 };
+    if (f.until > Date.now()) { setError(`Sai mật khẩu quá ${LOGIN_MAX_FAILS} lần. Thử lại sau ${Math.ceil((f.until - Date.now()) / 60000)} phút.`); return; }
+    const acc = accounts.find((a) => a.username === uname);
     if (!acc || !acc.active) { setError("Tài khoản không tồn tại hoặc đã bị khoá."); return; }
     setBusy(true);
     try {
       const { ok, upgrade } = await verifyAccountPassword(acc, password);
-      if (!ok) { setError("Sai mật khẩu."); return; }
+      if (!ok) {
+        const n = (f.until && f.until <= Date.now() ? 0 : f.n) + 1;
+        fails[uname] = n >= LOGIN_MAX_FAILS ? { n: 0, until: Date.now() + LOGIN_LOCK_MS } : { n, until: 0 };
+        writeLoginFails(fails);
+        setError(n >= LOGIN_MAX_FAILS ? `Sai mật khẩu ${LOGIN_MAX_FAILS} lần. Tạm khoá đăng nhập ${LOGIN_LOCK_MS / 60000} phút.` : `Sai mật khẩu (còn ${LOGIN_MAX_FAILS - n} lần thử).`);
+        return;
+      }
+      delete fails[uname]; writeLoginFails(fails);
+      try { localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now())); } catch { /* bỏ qua */ }
       setError("");
       // Nâng cấp băm SHA-256 cũ -> PBKDF2 ngay khi đăng nhập thành công (một lần).
       if (upgrade && onUpgradeHash) onUpgradeHash(acc.id, upgrade);
@@ -14488,7 +14511,7 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
     if (!editing.id && !form.password) { notify("Vui lòng đặt mật khẩu cho tài khoản mới."); return; }
     if (accounts.some((a) => a.username === username && a.id !== editing.id)) { notify("Tên đăng nhập đã tồn tại."); return; }
     if (editing.id && !canManage(editing)) { notify("Bạn không có quyền sửa tài khoản này."); return; }
-    if (form.password && form.password.length < 6) { notify("Mật khẩu tối thiểu 6 ký tự."); return; }
+    if (form.password && form.password.length < PASSWORD_MIN) { notify(`Mật khẩu tối thiểu ${PASSWORD_MIN} ký tự.`); return; }
     const passFields = form.password ? await makePasswordFields(form.password) : {};
     const perms = { ...EMPTY_PERMS, ...form.perms };
     if (editing.id) {
@@ -14718,7 +14741,7 @@ function MyProfile({ currentUser, setAccounts, addLog }) {
   const changePw = async () => {
     setPwMsg(null);
     if (!curPw) { setPwMsg({ ok: false, text: "Nhập mật khẩu hiện tại." }); return; }
-    if (!newPw || newPw.length < 6) { setPwMsg({ ok: false, text: "Mật khẩu mới tối thiểu 6 ký tự." }); return; }
+    if (!newPw || newPw.length < PASSWORD_MIN) { setPwMsg({ ok: false, text: `Mật khẩu mới tối thiểu ${PASSWORD_MIN} ký tự.` }); return; }
     if (newPw !== newPw2) { setPwMsg({ ok: false, text: "Xác nhận mật khẩu mới không khớp." }); return; }
     const { ok } = await verifyAccountPassword(currentUser, curPw);
     if (!ok) { setPwMsg({ ok: false, text: "Mật khẩu hiện tại không đúng." }); return; }
@@ -14762,7 +14785,7 @@ function MyProfile({ currentUser, setAccounts, addLog }) {
         <Field label="Mật khẩu hiện tại">
           <input type={showPw ? "text" : "password"} className={inputCls} style={{ borderColor: LINE }} value={curPw} onChange={(e) => setCurPw(e.target.value)} />
         </Field>
-        <Field label="Mật khẩu mới" hint="tối thiểu 6 ký tự">
+        <Field label="Mật khẩu mới" hint={`tối thiểu ${PASSWORD_MIN} ký tự`}>
           <input type={showPw ? "text" : "password"} className={inputCls} style={{ borderColor: LINE }} value={newPw} onChange={(e) => setNewPw(e.target.value)} />
         </Field>
         <Field label="Nhập lại mật khẩu mới">
@@ -17924,6 +17947,25 @@ export default function SalesManager() {
   // Tự tải lại trang khi RẢNH 10 phút (không ai gõ/bấm/cuộn) để màn hình luôn là bản mới nhất. Chỉ tải
   // lại khi chắc chắn không mất gì: không mở cửa sổ (popup) nào, không đang gõ dở trong ô nhập/ô ghi
   // chú nào, và mọi thay đổi đã lưu xong lên server. Không thoả thì đợi lượt kiểm tra sau (mỗi phút).
+  // Tự đăng xuất khi không thao tác 120 phút. Mốc hoạt động lưu ở localStorage nên vẫn đúng khi
+  // trang tự tải lại (sau 10 phút rảnh) hoặc khi tắt máy rồi mở lại; các tab cùng máy dùng chung mốc.
+  useEffect(() => {
+    if (!loaded || !currentUserId) return;
+    const readLast = () => { try { return Number(localStorage.getItem(LAST_ACTIVE_KEY)) || 0; } catch { return 0; } };
+    const mark = () => { try { localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now())); } catch { /* bỏ qua */ } };
+    const expired = () => { const last = readLast(); return last > 0 && Date.now() - last > IDLE_LOGOUT_MS; };
+    if (expired()) { setCurrentUserId(null); notify("Đã tự đăng xuất vì không thao tác quá 120 phút."); return; }
+    mark();
+    let lastWrite = Date.now();
+    const bump = () => { if (Date.now() - lastWrite > 30000) { lastWrite = Date.now(); mark(); } };
+    const evs = ["mousedown", "keydown", "wheel", "touchstart", "input"];
+    evs.forEach((e) => window.addEventListener(e, bump, { passive: true, capture: true }));
+    const iv = setInterval(() => {
+      if (expired() && !pendingSaveRef.current) { setCurrentUserId(null); notify("Đã tự đăng xuất vì không thao tác quá 120 phút."); }
+    }, 60 * 1000);
+    return () => { clearInterval(iv); evs.forEach((e) => window.removeEventListener(e, bump, { capture: true })); };
+  }, [loaded, currentUserId]);
+
   useEffect(() => {
     if (!loaded) return;
     const IDLE_MS = 10 * 60 * 1000;
