@@ -133,3 +133,7 @@ html.hili-dark .nl-band button { background: #F7C600; color: #060A2A; }
 /* Dải vàng có sẵn của màn hình chiếu: ẩn trên trang chủ, thay bằng dải .hc-tick (K chọn 10/11/2026). */
 .hc .hf-tape { display: none; }
 .hc .hc-tick { margin-top: 0; }
+
+/* Khối phím HILITEK cuối trang chủ: nhỏ gọn hơn (K 11/11/2026). */
+.hc .hk { font-size: clamp(4px, .9vw, 9px); padding: clamp(14px, 2vw, 26px) 12px clamp(18px, 2.4vw, 30px); }
+.hc .hk-plate { max-width: 620px; }

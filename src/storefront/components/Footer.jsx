@@ -42,7 +42,7 @@ export default function Footer({ navigate }) {
     : { href: "/lien-he", onClick: (e) => { e.preventDefault(); navigate("lien-he"); } };
 
   return (
-    <footer className="hx-foot mt-16 font-sans pb-[calc(env(safe-area-inset-bottom)+56px)] lg:pb-0">
+    <footer className="hx-foot mt-10 font-sans pb-[calc(env(safe-area-inset-bottom)+56px)] lg:pb-0">
       <NewsletterSignup />
 
       <div className="mx-auto max-w-[1280px] px-4">

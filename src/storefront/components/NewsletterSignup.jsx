@@ -35,7 +35,7 @@ export default function NewsletterSignup() {
   };
 
   return (
-    <div className="mx-auto max-w-[1280px] px-4 pt-14 font-sans">
+    <div className="mx-auto max-w-[1180px] px-4 pt-10 font-sans">
       <div className="hx-deal">
         <div className="hx-ticket">
           <span className="pct" aria-hidden="true">%</span>

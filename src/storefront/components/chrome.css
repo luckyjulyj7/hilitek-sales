@@ -51,23 +51,23 @@
   background: radial-gradient(50% 60% at 90% 0%, rgba(59,79,224,.25), transparent 70%), radial-gradient(40% 50% at 0% 100%, rgba(247,198,0,.07), transparent 70%), #070B22; }
 
 /* Khối ưu đãi: vé giảm giá + form */
-.hx-deal { position: relative; display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.6fr); gap: 0; border-radius: 24px; overflow: hidden;
+.hx-deal { position: relative; display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.7fr); gap: 0; border-radius: 20px; overflow: hidden;
   background: linear-gradient(180deg, #121A52, #0C1340); border: 1px solid rgba(255,255,255,.09); box-shadow: 0 30px 60px -36px rgba(0,0,0,.9); }
-.hx-ticket { position: relative; padding: 30px 34px; color: #0B1230; overflow: hidden; background: linear-gradient(120deg, #FFD84D, #F7C600 70%, #F2BF00); }
+.hx-ticket { position: relative; padding: 22px 28px; color: #0B1230; overflow: hidden; background: linear-gradient(120deg, #FFD84D, #F7C600 70%, #F2BF00); }
 .hx-ticket::after { content: ""; position: absolute; right: -9px; top: 0; bottom: 0; width: 18px;
   background: radial-gradient(circle at 9px 9px, #0E1544 7px, transparent 7.5px) 0 0 / 18px 22px repeat-y; }
 .hx-ticket > * { position: relative; z-index: 1; }
-.hx-ticket .pct { display: inline-grid; place-items: center; width: 54px; height: 54px; border-radius: 13px; font: 700 26px/1 "Chakra Petch", sans-serif; color: #fff;
+.hx-ticket .pct { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; font: 700 20px/1 "Chakra Petch", sans-serif; color: #fff;
   background: linear-gradient(180deg, #1F2A73, #0B1230); box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 4px 0 #050822; }
-.hx-ticket h3 { margin-top: 16px; font: 700 clamp(24px, 2.4vw, 32px)/1.05 "Chakra Petch", sans-serif; }
-.hx-ticket p { margin-top: 8px; font-size: 14.5px; color: rgba(11,18,48,.72); }
-.hx-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 12px; align-items: end; padding: 30px 34px; }
+.hx-ticket h3 { margin-top: 12px; font: 700 clamp(20px, 1.8vw, 25px)/1.08 "Chakra Petch", sans-serif; }
+.hx-ticket p { margin-top: 6px; font-size: 13.5px; color: rgba(11,18,48,.72); }
+.hx-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 12px; align-items: end; padding: 22px 28px; }
 .hx-form label { font-size: 13px; color: rgba(220,226,255,.7); }
-.hx-form input { display: block; width: 100%; margin-top: 6px; height: 48px; border-radius: 11px; padding: 0 14px; font-size: 15px; color: #fff; outline: 0;
+.hx-form input { display: block; width: 100%; margin-top: 5px; height: 44px; border-radius: 10px; padding: 0 14px; font-size: 15px; color: #fff; outline: 0;
   background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14); transition: border-color .2s, box-shadow .2s; }
 .hx-form input::placeholder { color: rgba(220,226,255,.4); }
 .hx-form input:focus { border-color: #F7C600; box-shadow: 0 0 0 4px rgba(247,198,0,.14); }
-.hx-form .hx-key { height: 48px; padding: 0 22px; font-size: 15px; }
+.hx-form .hx-key { height: 44px; padding: 0 20px; font-size: 14.5px; }
 .hx-form .msg { grid-column: 1 / -1; min-height: 20px; font-size: 14px; color: #FFD84D; }
 @media (max-width: 1000px) { .hx-deal { grid-template-columns: 1fr; } .hx-ticket::after { display: none; } .hx-form { grid-template-columns: 1fr 1fr; } .hx-form label:first-child { grid-column: span 2; } .hx-form .hx-key { grid-column: span 2; } }
 @media (max-width: 560px) { .hx-ticket, .hx-form { padding: 22px; } .hx-form { grid-template-columns: 1fr; } .hx-form label:first-child, .hx-form .hx-key { grid-column: auto; } }
