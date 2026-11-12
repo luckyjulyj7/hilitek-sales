@@ -16,6 +16,19 @@ import { ghn as ghnApi } from "./lib/ghn.js";
 // Nội dung mặc định cho web (dùng làm điểm khởi đầu khi chưa chỉnh trong "Cấu hình web").
 import { PAGES as WEB_DEFAULT_PAGES, MENU as WEB_DEFAULT_MENU, flattenMenuTree as webFlattenMenuTree, MAX_CATEGORY_DEPTH as WEB_MAX_CATEGORY_DEPTH, HOME_SECTIONS as WEB_DEFAULT_HOME_SECTIONS, HOME_SECTION_SORTS, HOME_SECTION_LAYOUTS, LANDINGS as WEB_DEFAULT_LANDINGS, FLASH_SALE_CATEGORY as WEB_FLASH_CAT, GAME_GROUP as WEB_GAME_GROUP } from "./storefront/config.js";
 import { GROUP_ICON_NAMES, groupIcon as webGroupIcon } from "./storefront/components/groupIcons.js";
+
+// Danh mục web để chọn cho sản phẩm: thêm cả NHÓM CHÍNH (cấp cao nhất, VD "Gia dụng", "Tai nghe")
+// vào trước các danh mục con của nó. Nhóm chưa có danh mục con thì đây là cách duy nhất gán được sản phẩm.
+// Bỏ nhóm "Thương hiệu" (menu nhãn hiệu, không phải loại hàng).
+function webCatsWithGroups(menu) {
+  const out = [];
+  (menu || []).forEach((g) => {
+    if (!g || !g.group) return;
+    if (g.group !== "Thương hiệu") out.push({ name: g.group, slug: "", depth: 0, parent: "", group: g.group, hasChildren: !!(g.subs || []).length, isGroup: true });
+    out.push(...webFlattenMenuTree([g]));
+  });
+  return out;
+}
 import { uploadProductImage, uploadProductAudio, rehostExternalImage, toDirectImageUrl, trimLogo } from "./lib/mediaUpload.js";
 import { adminApi } from "./lib/adminApi.js";
 import { pointsForPhone, normalizePhone, DEFAULT_LOYALTY } from "./lib/loyalty.js";
@@ -1609,9 +1622,21 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
     quill.setSelection(idx + emo.length + 1, 0, "user");
   };
 
-  const doBeautify = () => {
+  const doBeautify = async () => {
     const quill = quillRef.current;
     if (!quill) return;
+    // "Làm đẹp" dựng lại bài từ CHỮ TRƠN (getText) nên mất ảnh, tiêu đề, link, màu, âm thanh đã chèn.
+    // Bài đã có những thứ đó thì cảnh báo rõ và mặc định là KHÔNG làm (chỉ dùng cho chữ vừa dán thô).
+    const root = quill.root;
+    const nImg = root.querySelectorAll("img, iframe").length;
+    const nHead = root.querySelectorAll("h1, h2, h3").length;
+    const nLink = root.querySelectorAll("a").length;
+    const nColor = root.querySelectorAll('[style*="color"]').length;
+    if (nImg || nHead || nLink || nColor) {
+      const lost = [nImg && `${nImg} ảnh/video`, nHead && `${nHead} tiêu đề`, nLink && `${nLink} link/âm thanh`, nColor && "màu chữ"].filter(Boolean).join(", ");
+      const ok = await askConfirm(`Bài đang có ${lost}. "Làm đẹp mô tả" chỉ giữ lại CHỮ TRƠN nên sẽ XOÁ hết những thứ này.\n\nNút này chỉ nên dùng cho chữ vừa dán thô, chưa định dạng. Vẫn làm?\n(Lỡ làm thì bấm Ctrl+Z ngay để hoàn tác, hoặc bấm Huỷ ở trên để bỏ thay đổi chưa lưu.)`);
+      if (!ok) { setMsg("Đã giữ nguyên bài (không làm đẹp)."); return; }
+    }
     const html = beautifyDescriptionHtml(quill.getText());
     quill.setText("");
     quill.clipboard.dangerouslyPasteHTML(0, html, "user");
@@ -2772,7 +2797,7 @@ function displayImage(p) { return p?.image || (Array.isArray(p?.web?.images) && 
 function ProductsInventory({ products, setProducts, purchaseOrders, orders, addLog, currentUser, focusProductId, focusEdit, initialCreatedFrom, initialCreatedTo, onFocusHandled, goToDoc, suppliers, goToSupplier, goToWebProduct, categories, setCategories, brands, setBrands, webConfig }) {
   // Cây danh mục web đầy đủ (mọi cấp), dạng phẳng — cho ô chọn "Danh mục phụ trên web".
   const webCatsFlat = useMemo(() => {
-    return webFlattenMenuTree(webConfig && Array.isArray(webConfig.MENU) && webConfig.MENU.length ? webConfig.MENU : WEB_DEFAULT_MENU);
+    return webCatsWithGroups(webConfig && Array.isArray(webConfig.MENU) && webConfig.MENU.length ? webConfig.MENU : WEB_DEFAULT_MENU);
   }, [webConfig]);
   const isAdmin = currentUser.role === "admin";
   const isCtv = currentUser.role === "ctv";
@@ -4969,9 +4994,9 @@ function WebCategoryMultiSelect({ webCats, value, onChange }) {
               {subs.map((c) => {
                 const on = sel.includes(c.name);
                 return (
-                  <label key={c.name} className="flex items-center gap-2 py-1 px-1 rounded-md hover:bg-black/5 cursor-pointer text-sm" style={{ paddingLeft: 4 + (c.depth - 1) * 14 }}>
+                  <label key={c.name} className="flex items-center gap-2 py-1 px-1 rounded-md hover:bg-black/5 cursor-pointer text-sm" style={{ paddingLeft: 4 + Math.max(0, c.depth - 1) * 14 }}>
                     <input type="checkbox" checked={on} onChange={() => toggle(c.name)} />
-                    <span>{c.depth > 1 ? "› " : ""}{c.name}</span>
+                    <span>{c.depth > 1 ? "› " : ""}{c.isGroup ? <><b>{c.name}</b> <span className="text-xs opacity-60">(nhóm chính{c.hasChildren ? ", nên chọn danh mục con nếu có" : ""})</span></> : c.name}</span>
                   </label>
                 );
               })}
@@ -15368,7 +15393,7 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
   // kèm cấp (depth) để hiện thụt lề đúng thứ bậc khi chọn cho sản phẩm.
   const webCats = useMemo(() => {
     const src = webConfig && Array.isArray(webConfig.MENU) && webConfig.MENU.length ? webConfig.MENU : WEB_DEFAULT_MENU;
-    return webFlattenMenuTree(src);
+    return webCatsWithGroups(src);
   }, [webConfig]);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("all"); // all | on | off
@@ -15985,6 +16010,18 @@ function AIWriteFromUrl({ onApply, product, products, setProducts, addLog }) {
  * Trang sửa 1 sản phẩm trên web — bố cục 2 cột kiểu Sapo.
  * Sửa trên bản NHÁP tại chỗ — KHÔNG tự lưu; phải bấm "Lưu" mới ghi vào dữ liệu thật.
  */
+// Bộ đếm ký tự SEO: xanh khi trong khoảng chuẩn, cam khi ngắn hơn, đỏ khi dài hơn.
+function SeoCounter({ len, min, max, usingFallback }) {
+  const ok = len >= min && len <= max;
+  const color = ok ? FOREST : len > max ? RUST : BRASS;
+  const note = ok ? "đạt chuẩn" : len > max ? `dài hơn ${len - max} ký tự` : `ngắn hơn ${min - len} ký tự`;
+  return (
+    <div className="text-xs mt-1 font-medium" style={{ color }}>
+      {len} ký tự · {note} (chuẩn {min}-{max}){usingFallback ? " · đang trống, web dùng nội dung thay thế" : ""}
+    </div>
+  );
+}
+
 function WebProductPage({ product, products, setProducts, webCats, onBack, onSwitch, goToInventoryProductEdit, currentUser, addLog }) {
   // Thanh công cụ của ô Mô tả dính ngay DƯỚI thanh đầu trang (Lưu/Quay lại) khi cuộn: đo chiều cao thanh đầu.
   const stickyHeadRef = useRef(null);
@@ -16006,6 +16043,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
   const [draft, setDraft] = useState(() => normalizeWeb(product.web));
   const [weightDraft, setWeightDraft] = useState(product.weight ?? 0);
   const [dirty, setDirty] = useState(false);
+  const [seoFill, setSeoFill] = useState(false); // Lưu: điền SEO này cho phiên bản cùng nhóm đang trống SEO
   const [otherEditor, setOtherEditor] = useState(null); // { by, at } — người khác đang mở sửa CHÍNH sản phẩm này
   const [lockDebug, setLockDebug] = useState(""); // dòng debug tạm — xem cơ chế "báo đang sửa" có chạy đúng không
 
@@ -16055,6 +16093,11 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
       // Đồng bộ nội dung/thông số/danh mục/ảnh/mô tả ngắn/khuyến mãi sang các phiên bản cùng nhóm.
       if (p.variantGroupId && x.variantGroupId === p.variantGroupId) {
         const sh = {}; shareKeys.forEach((k) => { sh[k] = draft[k]; });
+        // Chỉ điền SEO vào ô ĐANG TRỐNG của phiên bản khác (không đè SEO riêng đã có).
+        if (seoFill) {
+          if (draft.seoTitle && !(x.web && x.web.seoTitle)) sh.seoTitle = draft.seoTitle;
+          if (draft.seoDesc && !(x.web && x.web.seoDesc)) sh.seoDesc = draft.seoDesc;
+        }
         // Đại diện danh sách chỉ 1 phiên bản/nhóm — nếu vừa chọn phiên bản NÀY làm đại diện thì
         // bỏ cờ đó ở mọi phiên bản khác cùng nhóm.
         if (draft.isDefaultVariant) sh.isDefaultVariant = false;
@@ -16063,6 +16106,8 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
       return x;
     }));
     setDirty(false);
+    const seoFilledCount = seoFill ? seoEmptySiblings.length : 0;
+    setSeoFill(false);
     if (addLog) {
       // Ghi chi tiết ĐÃ SỬA GÌ vào Nhật ký — mô tả/thông số (HTML/văn bản dài) chỉ báo "đã sửa" thay
       // vì in nguyên nội dung; các field ngắn (tiêu đề SEO, slug, giá so sánh...) so trực tiếp.
@@ -16080,6 +16125,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
       if (JSON.stringify(oldWeb.categories || []) !== JSON.stringify(newWeb.categories || [])) changes.push(`Danh mục: ${(oldWeb.categories || []).length} → ${(newWeb.categories || []).length} mục`);
       if (JSON.stringify(oldWeb.images || []) !== JSON.stringify(newWeb.images || [])) changes.push(`Ảnh: ${(oldWeb.images || []).length} → ${(newWeb.images || []).length} ảnh`);
       if ((Number(p.weight) || 0) !== (Number(weightDraft) || 0)) changes.push(`Khối lượng: "${p.weight || 0}g" → "${weightDraft || 0}g"`);
+      if (seoFilledCount) changes.push(`Điền SEO cho ${seoFilledCount} phiên bản đang trống`);
       addLog("Lưu thông tin web sản phẩm", `${p.sku} · ${p.name} — ${diffSummary(changes, "không đổi thông tin")}`);
     }
   };
@@ -16134,6 +16180,8 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
   // Sản phẩm trong nhóm máy chơi game có thêm phần nội dung cho trang bán tối.
   const isGame = (w.categories || []).concat(p.category || "").some((c) => c === WEB_GAME_GROUP || (webCats || []).find((x) => x.name === c)?.group === WEB_GAME_GROUP);
   const effSlug = w.slug || webSlugify(p.name) || webSlugify(p.sku || "");
+  // Phiên bản khác cùng nhóm đang để trống SEO (tiêu đề hoặc mô tả) — để điền nhanh một lần khi Lưu.
+  const seoEmptySiblings = p.variantGroupId ? (products || []).filter((x) => x.id !== p.id && x.variantGroupId === p.variantGroupId && (!(x.web && x.web.seoTitle) || !(x.web && x.web.seoDesc))) : [];
   const seoTitle = w.seoTitle || p.name;
   const seoDesc = w.seoDesc || w.shortDesc || stripHtmlToText(w.description).slice(0, 160);
 
@@ -16321,12 +16369,20 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
                 onBlur={(e) => setWeb({ slug: webSlugify(e.target.value) })}
                 placeholder={effSlug} />
             </Field>
-            <Field label="Tiêu đề SEO" hint={`Bỏ trống = dùng tên sản phẩm. ~60 ký tự (${seoTitle.length})`}>
+            <Field label="Tiêu đề SEO" hint="Bỏ trống = dùng tên sản phẩm. Chuẩn Hilitek: 50-60 ký tự.">
               <input className={inputCls} style={{ borderColor: LINE }} value={w.seoTitle} onChange={(e) => setWeb({ seoTitle: e.target.value })} placeholder={p.name} />
+              <SeoCounter len={seoTitle.length} min={50} max={60} usingFallback={!w.seoTitle} />
             </Field>
-            <Field label="Mô tả SEO" hint={`Bỏ trống = dùng mô tả ngắn. ~155 ký tự (${seoDesc.length})`}>
+            <Field label="Mô tả SEO" hint="Bỏ trống = dùng mô tả ngắn. Chuẩn Hilitek: 140-160 ký tự.">
               <textarea rows={3} className={inputCls} style={{ borderColor: LINE }} value={w.seoDesc} onChange={(e) => setWeb({ seoDesc: e.target.value })} placeholder={seoDesc} />
+              <SeoCounter len={seoDesc.length} min={140} max={160} usingFallback={!w.seoDesc} />
             </Field>
+            {seoEmptySiblings.length > 0 && (w.seoTitle || w.seoDesc) && (
+              <label className="flex items-start gap-2 text-xs mt-1 p-2 rounded-md cursor-pointer" style={{ background: PAPER, border: `1px solid ${LINE}`, color: TEXT }}>
+                <input type="checkbox" checked={seoFill} onChange={(e) => { setSeoFill(e.target.checked); setDirty(true); }} className="mt-0.5" />
+                <span>Khi Lưu, điền tiêu đề/mô tả SEO này cho <b>{seoEmptySiblings.length}</b> phiên bản khác cùng nhóm đang <b>để trống</b> SEO ({seoEmptySiblings.map((x) => x.variantAttrs ? Object.values(x.variantAttrs).join(" - ") : x.sku).join(", ")}). Phiên bản đã có SEO riêng giữ nguyên.</span>
+              </label>
+            )}
             <div className="rounded-md p-2.5" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
               <p className="text-xs opacity-60 mb-1 font-medium">Xem trước trên Google</p>
               <div className="text-[13px] leading-snug" style={{ color: "#1a0dab" }}>{seoTitle}</div>

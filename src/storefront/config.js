@@ -249,7 +249,12 @@ export const CATEGORY_TO_GROUP = {};
 export const CATEGORY_PARENT = {};
 export const CATEGORY_DEPTH = {};
 const CATEGORY_DESCENDANTS = {};
+// Tên các NHÓM CHÍNH (cấp cao nhất). Sản phẩm có thể gán thẳng vào nhóm chính (VD "Gia dụng" khi
+// nhóm chưa có danh mục con) — productGroups() nhận các tên này là nhóm của sản phẩm.
+const GROUP_NAMES = new Set();
 function rebuildCatToGroup(menu = MENU) {
+  GROUP_NAMES.clear();
+  (menu || []).forEach((g) => { if (g && g.group) GROUP_NAMES.add(g.group); });
   [CATEGORY_TO_GROUP, CATEGORY_PARENT, CATEGORY_DEPTH, CATEGORY_DESCENDANTS].forEach((obj) =>
     Object.keys(obj).forEach((k) => delete obj[k])
   );
@@ -295,7 +300,7 @@ export function productCategories(p) {
 }
 export function productGroups(p) {
   if (p.group) return [p.group];
-  return [...new Set(productCategories(p).map((c) => CATEGORY_TO_GROUP[c]).filter(Boolean))];
+  return [...new Set(productCategories(p).map((c) => CATEGORY_TO_GROUP[c] || (GROUP_NAMES.has(c) ? c : "")).filter(Boolean))];
 }
 export const productInGroup = (p, group) => productGroups(p).includes(group);
 
