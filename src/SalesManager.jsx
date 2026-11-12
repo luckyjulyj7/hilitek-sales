@@ -892,18 +892,19 @@ function seedData() {
 const MIGRATION_MARKER_KEY = STORAGE_KEY + ":shared-migrated";
 
 async function loadData() {
+  // Đọc dữ liệu chính TRƯỚC. Lỗi mạng/máy chủ -> NÉM lỗi ra ngoài (KHÔNG trả null): trả null sẽ làm app
+  // tưởng chưa có dữ liệu, tự tạo dữ liệu mẫu + admin mặc định rồi LƯU ĐÈ lên dữ liệu thật (sự cố 12/11).
+  const main = await window.storage.get(STORAGE_KEY, true);
+  if (main && main.value) {
+    const parsed = JSON.parse(main.value);
+    parsed.__updatedAt = main.updatedAt || null;
+    return parsed;
+  }
+  if (window.storage && window.storage.api) throw new Error("Máy chủ không trả về dữ liệu.");
   try {
     // Đã từng chuyển sang kho dùng chung rồi — chỉ đọc từ kho chung từ nay về sau.
     const marker = await window.storage.get(MIGRATION_MARKER_KEY, true).catch(() => null);
-    if (marker && marker.value === "1") {
-      const shared = await window.storage.get(STORAGE_KEY, true);
-      if (shared && shared.value) {
-        const parsed = JSON.parse(shared.value);
-        parsed.__updatedAt = shared.updatedAt || null;
-        return parsed;
-      }
-      return null;
-    }
+    if (marker && marker.value === "1") return null;
     // Lần đầu tiên sau khi bật chế độ dùng chung: đánh dấu ngay (tránh 2 người cùng mở app trong lúc
     // chuyển đổi làm chạy migrate 2 lần đè lên nhau), sau đó thử lấy dữ liệu cá nhân (personal) cũ của
     // đúng người đang mở app này để làm dữ liệu khởi tạo cho kho chung — không mất dữ liệu đã thiết lập lúc test.
@@ -17693,6 +17694,7 @@ export default function SalesManager() {
   const [printSettings, setPrintSettings] = useState(DEFAULT_PRINT_SETTINGS);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [loaded, setLoaded] = useState(false);
+  const [loadFailed, setLoadFailed] = useState("");
   // Mốc thời gian bản dữ liệu chung mà máy này đang có (từ lần tải/lưu gần nhất) — dùng để phát
   // hiện "có người khác vừa lưu đè lên" trước khi tự lưu, tránh mất dữ liệu của họ (xem saveData()).
   const lastSyncedAtRef = useRef(null);
@@ -17788,7 +17790,12 @@ export default function SalesManager() {
   useEffect(() => {
     (async () => {
       let data = null;
-      try { data = await loadData(); } catch (e) { console.error("Lỗi tải dữ liệu:", e); }
+      try { data = await loadData(); } catch (e) {
+        console.error("Lỗi tải dữ liệu:", e);
+        // Chế độ máy chủ: KHÔNG BAO GIỜ dựng dữ liệu mẫu (sẽ bị lưu đè lên dữ liệu thật) — dừng hẳn, báo tải lại.
+        if (window.storage && window.storage.api) { setLoadFailed(String((e && e.message) || e)); return; }
+      }
+      if (!data && window.storage && window.storage.api) { setLoadFailed("Máy chủ không trả về dữ liệu."); return; }
       try {
         if (data) {
           const accs = await applyRemoteData(data);
@@ -17817,6 +17824,7 @@ export default function SalesManager() {
         }
       } catch (e) {
         console.error("Lỗi chuẩn hoá dữ liệu, dùng dữ liệu mẫu:", e);
+        if (window.storage && window.storage.api) { setLoadFailed("Lỗi đọc dữ liệu: " + String((e && e.message) || e)); return; }
         const seed = seedData();
         setProducts(seed.products);
         setOrders(seed.orders);
@@ -18151,6 +18159,15 @@ export default function SalesManager() {
     });
   }, [loaded, purchaseOrders]);
 
+  if (loadFailed) {
+    return (
+      <div className="flex flex-col items-center justify-center h-96 gap-3 text-center px-4" style={{ color: TEXT }}>
+        <div className="font-semibold">Không tải được dữ liệu từ máy chủ.</div>
+        <div className="text-sm opacity-70">Chưa mở app để tránh ghi đè dữ liệu. Chi tiết: {loadFailed}</div>
+        <button className="px-4 py-2 rounded-md text-white" style={{ background: "#1F2A8A" }} onClick={() => window.location.reload()}>Tải lại trang</button>
+      </div>
+    );
+  }
   if (!loaded) {
     return <div className="flex items-center justify-center h-96" style={{ color: TEXT }}><Loader2 className="animate-spin mr-2" size={18} /> Đang tải dữ liệu…</div>;
   }

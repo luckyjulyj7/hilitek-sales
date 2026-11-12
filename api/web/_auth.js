@@ -154,6 +154,13 @@ export async function splitSecrets(rawValue, auth) {
     e.status = 409; throw e;
   }
   auth = auth || (await loadAuth());
+  // Chặn ghi đè bằng dữ liệu mẫu (app tải lỗi rồi tự tạo tài khoản admin mặc định với id MỚI):
+  // đã có tài khoản mà không id nào trùng -> chắc chắn là dữ liệu lạ, không cho ghi.
+  const known = Object.keys(auth.accounts || {});
+  if (known.length && !incoming.some((a) => known.includes(a.id))) {
+    const e = new Error("Dữ liệu gửi lên không khớp tài khoản hiện có (có thể là dữ liệu mẫu) — đã chặn để tránh mất dữ liệu. Tải lại trang.");
+    e.status = 409; throw e;
+  }
   const before = JSON.stringify(auth.accounts);
   const next = {};
   for (const a of incoming) next[a.id] = entryFromAccount(a, auth.accounts[a.id]);
