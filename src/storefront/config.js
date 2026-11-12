@@ -489,9 +489,9 @@ export const PRODUCT_SIDEBAR = {
   banner: { image: "", href: "", w: 300, h: 520, label: "Banner dọc (tuỳ chỉnh)" },
   shippingTitle: "Giao hàng & thanh toán",
   shipping: [
-    "Giao COD toàn quốc — freeship nội thành cho đơn từ 500K",
+    "Giao COD toàn quốc, miễn phí giao nội thành TP.HCM cho đơn từ 1.000.000đ",
     "Giao hoả tốc nội thành trong 2 giờ",
-    "Chính hãng — Full VAT — Bảo hành 1 đổi 1",
+    "Chính hãng, đủ VAT, bảo hành nhanh chóng: 1 đổi 1 trong thời gian bảo hành theo quy định của hãng",
   ],
   payments: ["Tiền mặt", "Chuyển khoản", "VISA", "Mastercard", "MoMo", "ZaloPay"],
 };
