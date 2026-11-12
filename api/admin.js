@@ -181,7 +181,7 @@ async function write(req, res, conditional) {
   let value = b.value;
   if (key === MAIN_KEY) {
     try {
-      value = (await splitSecrets(value, ss.auth)).value;
+      value = (await splitSecrets(value, ss.auth, { allowRestore: ss.auth.accounts[ss.s.u]?.role === "admin" })).value;
     } catch (e) {
       return bad(res, e.message, e.status || 400);
     }

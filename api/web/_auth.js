@@ -143,7 +143,7 @@ export async function loadAuth() {
  * thái, gỡ tài khoản đã xoá, rồi trả về blob đã bỏ sạch mật khẩu để lưu.
  * Trả { state, value } — value là chuỗi JSON sẽ ghi vào hàng chính.
  */
-export async function splitSecrets(rawValue, auth) {
+export async function splitSecrets(rawValue, auth, { allowRestore = false } = {}) {
   let state;
   try { state = JSON.parse(rawValue); } catch { const e = new Error("Dữ liệu gửi lên không hợp lệ."); e.status = 400; throw e; }
   if (!state || typeof state !== "object") { const e = new Error("Dữ liệu gửi lên không hợp lệ."); e.status = 400; throw e; }
@@ -157,7 +157,10 @@ export async function splitSecrets(rawValue, auth) {
   // Chặn ghi đè bằng dữ liệu mẫu (app tải lỗi rồi tự tạo tài khoản admin mặc định với id MỚI):
   // đã có tài khoản mà không id nào trùng -> chắc chắn là dữ liệu lạ, không cho ghi.
   const known = Object.keys(auth.accounts || {});
-  if (known.length && !incoming.some((a) => known.includes(a.id))) {
+  // Ngoại lệ duy nhất: Quản trị viên chủ động "Phục hồi dữ liệu" từ file sao lưu (cờ __restore).
+  const restoring = allowRestore && state.__restore === true;
+  delete state.__restore;
+  if (!restoring && known.length && !incoming.some((a) => known.includes(a.id))) {
     const e = new Error("Dữ liệu gửi lên không khớp tài khoản hiện có (có thể là dữ liệu mẫu) — đã chặn để tránh mất dữ liệu. Tải lại trang.");
     e.status = 409; throw e;
   }

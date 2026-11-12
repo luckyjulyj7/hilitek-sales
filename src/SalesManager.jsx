@@ -18223,7 +18223,9 @@ export default function SalesManager() {
       throw new Error("File không đúng định dạng sao lưu Hilitek.");
     }
     const { _backup, ...state } = parsed;
-    await saveData({ ...state, session: { userId: currentUserId } });
+    // __restore: báo máy chủ đây là phục hồi chủ động (được thay toàn bộ danh sách tài khoản).
+    const r = await saveData({ ...state, __restore: true, session: { userId: currentUserId } });
+    if (r && r.error) throw new Error("Phục hồi thất bại: " + (r.error.message || r.error));
     location.reload();
   };
 
