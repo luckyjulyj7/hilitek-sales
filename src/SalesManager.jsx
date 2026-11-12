@@ -16,7 +16,7 @@ import { ghn as ghnApi } from "./lib/ghn.js";
 // Nội dung mặc định cho web (dùng làm điểm khởi đầu khi chưa chỉnh trong "Cấu hình web").
 import { PAGES as WEB_DEFAULT_PAGES, MENU as WEB_DEFAULT_MENU, flattenMenuTree as webFlattenMenuTree, MAX_CATEGORY_DEPTH as WEB_MAX_CATEGORY_DEPTH, HOME_SECTIONS as WEB_DEFAULT_HOME_SECTIONS, HOME_SECTION_SORTS, HOME_SECTION_LAYOUTS, LANDINGS as WEB_DEFAULT_LANDINGS, FLASH_SALE_CATEGORY as WEB_FLASH_CAT, GAME_GROUP as WEB_GAME_GROUP } from "./storefront/config.js";
 import { GROUP_ICON_NAMES, groupIcon as webGroupIcon } from "./storefront/components/groupIcons.js";
-import { uploadProductImage, rehostExternalImage, toDirectImageUrl, trimLogo } from "./lib/mediaUpload.js";
+import { uploadProductImage, uploadProductAudio, rehostExternalImage, toDirectImageUrl, trimLogo } from "./lib/mediaUpload.js";
 import { adminApi } from "./lib/adminApi.js";
 import { pointsForPhone, normalizePhone, DEFAULT_LOYALTY } from "./lib/loyalty.js";
 import { baseVariantName } from "./lib/variants.js";
@@ -1331,6 +1331,12 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
   const [drag, setDrag] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkVal, setLinkVal] = useState("");
+  // Chèn âm thanh (VD tiếng gõ switch): lưu thành 1 dòng link riêng tới file .mp3 trong kho.
+  // Web khách (RichText) tự đổi dòng link đó thành thẻ "nghe thử" có nút phát.
+  const [soundOpen, setSoundOpen] = useState(false);
+  const [soundFile, setSoundFile] = useState(null);
+  const [soundTitle, setSoundTitle] = useState("");
+  const [soundSub, setSoundSub] = useState("");
 
   // Chặn "click ma" — trình duyệt đôi khi tự phát sinh thêm 1 sự kiện click vào nút này ngay sau khi
   // bấm vào vùng soạn thảo bên dưới (không rõ nguyên nhân, đang tìm hiểu thêm), làm tự mở hộp thoại
@@ -1562,6 +1568,30 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
     setMsg(/drive\.google\.com/.test(u) ? "Đã chèn link Google Drive (ảnh phải ở chế độ 'Bất kỳ ai có link')." : "Đã chèn link ảnh ngoài.");
   };
 
+  const addSound = async () => {
+    const quill = quillRef.current;
+    if (!quill) return;
+    if (!soundFile) { setMsg("Chọn file âm thanh (.mp3) trước."); return; }
+    if (!soundTitle.trim()) { setMsg("Nhập tên, VD: TONE Linear."); return; }
+    const range = pendingRangeRef.current || quill.getSelection(true);
+    setBusy(true); setMsg("Đang tải âm thanh…");
+    try {
+      const { url } = await uploadProductAudio(soundFile);
+      const label = "🔊 " + soundTitle.trim() + (soundSub.trim() ? " | " + soundSub.trim() : "");
+      let idx = range ? range.index : quill.getLength() - 1;
+      // Dòng link phải đứng riêng 1 dòng: chưa ở đầu dòng thì xuống dòng trước.
+      const [line, offset] = quill.getLine(idx);
+      if (line && offset > 0) { quill.insertText(idx, "\n", "user"); idx += 1; }
+      quill.insertText(idx, label, { link: url }, "user");
+      quill.insertText(idx + label.length, "\n", { link: false }, "user");
+      quill.setSelection(idx + label.length + 1, 0, "user");
+      pendingRangeRef.current = null;
+      setSoundFile(null); setSoundTitle(""); setSoundSub(""); setSoundOpen(false);
+      setMsg("Đã chèn âm thanh. Trên web sẽ hiện thành thẻ nghe thử.");
+    } catch (err) { setMsg("Lỗi: " + (err.message || err)); }
+    finally { setBusy(false); }
+  };
+
   const insertEmoji = (emo) => {
     const quill = quillRef.current;
     if (!quill) return;
@@ -1589,6 +1619,14 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
           disabled={busy}
           className="text-xs px-2 py-1 rounded-md border inline-flex items-center gap-1" style={{ borderColor: LINE, color: TEXT, opacity: busy ? 0.5 : 1 }}>
           <LinkIcon size={13} /> Link ảnh ngoài
+        </button>
+        <button type="button"
+          onMouseDown={arm("amThanh")}
+          onClick={guardedClick("amThanh", () => { setSoundOpen((v) => !v); setLinkOpen(false); setMsg(""); })}
+          disabled={busy}
+          title="Chèn file âm thanh (VD tiếng gõ switch). Trên web hiện thành thẻ có nút nghe thử."
+          className="text-xs px-2 py-1 rounded-md border inline-flex items-center gap-1" style={{ borderColor: LINE, color: TEXT, opacity: busy ? 0.5 : 1 }}>
+          🔊 Âm thanh switch
         </button>
         <button type="button"
           onMouseDown={arm("beautify")}
@@ -1620,6 +1658,21 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
             <button type="button" onClick={addExternalLink} className="px-3 py-1 rounded-md text-white text-sm" style={{ background: INK }}>Chèn</button>
           </div>
           <div className="text-xs opacity-60 mt-1">Ảnh giữ nguyên link gốc, không tải về kho. Google Drive: chia sẻ ở chế độ “Bất kỳ ai có đường liên kết”.</div>
+        </div>
+      )}
+      {soundOpen && (
+        <div className="mb-1 p-2 rounded-md" style={{ border: `1px solid ${LINE}`, background: PAPER }}>
+          <div className="flex flex-wrap gap-2 items-center">
+            <input type="file" accept=".mp3,.m4a,.wav,.ogg,audio/*" className="text-xs"
+              onChange={(e) => setSoundFile(e.target.files && e.target.files[0] ? e.target.files[0] : null)} />
+            <input value={soundTitle} onChange={(e) => setSoundTitle(e.target.value)}
+              placeholder="Tên, VD: TONE Linear" className="border rounded-md px-2 py-1 text-sm w-44" style={{ borderColor: LINE }} />
+            <input value={soundSub} onChange={(e) => setSoundSub(e.target.value)}
+              placeholder="Dòng ngắn, VD: 43g · hành trình 1,9mm" className="border rounded-md px-2 py-1 text-sm flex-1 min-w-[200px]" style={{ borderColor: LINE }}
+              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSound())} />
+            <button type="button" onClick={addSound} disabled={busy} className="px-3 py-1 rounded-md text-white text-sm" style={{ background: INK, opacity: busy ? 0.5 : 1 }}>Chèn</button>
+          </div>
+          <div className="text-xs opacity-60 mt-1">Đặt con trỏ vào chỗ muốn chèn trước khi bấm. File .mp3 tối đa 2MB, tải vào kho Hilitek. Trong khung soạn thảo hiện thành 1 dòng link “🔊 Tên | dòng ngắn”; trên web hiện thành thẻ có nút nghe thử. Không sửa chữ của dòng link đó.</div>
         </div>
       )}
       <div className="relative rounded-md" style={{ border: `1px solid ${drag ? BLUE : LINE}` }}

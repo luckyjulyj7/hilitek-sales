@@ -1,5 +1,74 @@
 import { loadDescFonts, fontsInHtml } from "../../lib/descFonts.js";
-import React from "react";
+import React, { useEffect, useRef } from "react";
+
+// ---- Thẻ "nghe thử" âm thanh trong mô tả (VD tiếng gõ switch bàn phím) ----
+// Trang quản lý lưu âm thanh thành 1 dòng link riêng: <p><a href="/media/desc/x.mp3">🔊 Tên | dòng ngắn</a></p>.
+// Ở đây đổi dòng đó thành thẻ có nút phát. File mẫu thường chỉ là 1 tiếng gõ (~0,2 giây) nên khi bấm
+// phát lặp lại theo nhịp gõ phím ~2 giây cho khách nghe rõ; file dài hơn 1 giây thì phát 1 lần.
+const SOUND_P_RE = /<p[^>]*>\s*<a\b[^>]*\bhref="([^"]+\.(?:mp3|m4a|wav|ogg)(?:\?[^"]*)?)"[^>]*>([\s\S]*?)<\/a>\s*<\/p>/gi;
+const escAttr = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+const WAVE = [3, 6, 4, 9, 5, 12, 7, 4, 10, 6, 3, 8, 5, 11, 4, 7, 3, 9, 6, 4, 8, 5, 3, 6];
+
+function soundCards(html) {
+  return html.replace(SOUND_P_RE, (_, src, inner) => {
+    const text = inner.replace(/<[^>]+>/g, "").replace(/^\s*🔊\s*/u, "").trim();
+    const [title, ...rest] = text.split("|");
+    const sub = rest.join("|").trim();
+    const bars = WAVE.map((h) => `<i style="height:${h * 2}px"></i>`).join("");
+    return `<div class="hili-sound" data-src="${escAttr(src)}">` +
+      `<button type="button" class="hili-sound__play" aria-label="Nghe thử ${escAttr(title.trim())}"><span class="hili-sound__icon"></span></button>` +
+      `<div class="hili-sound__body"><div class="hili-sound__title">${title.trim()}</div>` +
+      (sub ? `<div class="hili-sound__sub">${sub}</div>` : "") +
+      `<div class="hili-sound__wave" aria-hidden="true">${bars}</div></div></div>`;
+  });
+}
+
+// Phát / dừng cho các thẻ âm thanh trong 1 khối nội dung (bắt sự kiện ở khối cha).
+function useSoundCards(ref, deps) {
+  useEffect(() => {
+    const root = ref.current;
+    if (!root) return undefined;
+    let timers = [];
+    let playing = null;
+    const stop = () => {
+      timers.forEach(clearTimeout); timers = [];
+      if (playing) playing.classList.remove("is-playing");
+      playing = null;
+    };
+    const onClick = (e) => {
+      const btn = e.target.closest(".hili-sound__play");
+      if (!btn || !root.contains(btn)) return;
+      const card = btn.closest(".hili-sound");
+      if (playing === card) { stop(); return; }
+      stop();
+      const src = card.getAttribute("data-src");
+      const base = new Audio(src);
+      base.preload = "auto";
+      playing = card;
+      card.classList.add("is-playing");
+      const startPattern = () => {
+        const dur = base.duration;
+        if (!isFinite(dur) || dur > 1) {
+          base.currentTime = 0;
+          base.play().catch(stop);
+          base.onended = stop;
+          return;
+        }
+        // Nhịp gõ: 14 tiếng, khoảng cách 110-200ms (giống người gõ thật, không đều tăm tắp).
+        let t = 0;
+        for (let i = 0; i < 14; i++) {
+          timers.push(setTimeout(() => { const a = base.cloneNode(); a.volume = 0.9; a.play().catch(() => {}); }, t));
+          t += 110 + Math.round(Math.random() * 90);
+        }
+        timers.push(setTimeout(stop, t + 300));
+      };
+      if (base.readyState >= 1) startPattern();
+      else { base.addEventListener("loadedmetadata", startPattern, { once: true }); base.addEventListener("error", stop, { once: true }); base.load(); }
+    };
+    root.addEventListener("click", onClick);
+    return () => { root.removeEventListener("click", onClick); stop(); };
+  }, deps); // eslint-disable-line react-hooks/exhaustive-deps
+}
 
 const YT_RE = /(?:youtube\.com\/(?:watch\?(?:[^ ]*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{11})/;
 const IMG_MD_RE = /^!\[([^\]]*)\]\(\s*((?:https?:\/\/|\/)[^\s)]+)\s*\)$/;
@@ -33,13 +102,16 @@ function parseInline(text) {
  */
 export default function RichText({ text, className = "" }) {
   const raw = String(text || "");
+  const htmlRef = useRef(null);
+  useSoundCards(htmlRef, [raw]); // nút phát cho thẻ âm thanh (chỉ có tác dụng với mô tả HTML)
   // Mô tả tạo bằng trình soạn thảo mới (Quill) lưu dạng HTML — nhận diện qua thẻ mở đầu, hiện
   // trực tiếp. Mô tả cũ (trước khi đổi sang Quill) là văn bản kiểu Markdown tự chế — parse như cũ.
   if (/^\s*</.test(raw)) {
     // Ảnh trong mô tả chỉ tải khi khách cuộn tới (mô tả nhiều ảnh không làm chậm lúc mở trang).
-    const html = raw.replace(/<img(?![^>]*\bloading=)/gi, '<img loading="lazy" decoding="async"');
+    // Dòng link tới file .mp3 đứng riêng -> thẻ nghe thử (xem soundCards ở trên).
+    const html = soundCards(raw.replace(/<img(?![^>]*\bloading=)/gi, '<img loading="lazy" decoding="async"'));
     loadDescFonts(fontsInHtml(raw)); // mô tả có dùng font riêng thì mới tải font đó
-    return <div className={"ql-content space-y-3 text-[15px] text-ink/80 leading-relaxed " + className} dangerouslySetInnerHTML={{ __html: html }} />;
+    return <div ref={htmlRef} className={"ql-content space-y-3 text-[15px] text-ink/80 leading-relaxed " + className} dangerouslySetInnerHTML={{ __html: html }} />;
   }
   const lines = raw.replace(/\r/g, "").split("\n");
   const blocks = [];

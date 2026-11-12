@@ -74,6 +74,26 @@ export async function uploadProductImage(fileOrBlob) {
   return { path, url: "/media/" + path };
 }
 
+// Âm thanh trong mô tả (VD tiếng gõ switch bàn phím): file nhỏ, không nén lại.
+const AUDIO_EXTS = ["mp3", "m4a", "wav", "ogg"];
+const AUDIO_MAX = 2 * 1024 * 1024;
+
+/** Upload 1 file âm thanh (mp3/m4a/wav/ogg, tối đa 2MB). Trả { path, url } với url = "/media/desc/xxx.mp3". */
+export async function uploadProductAudio(file) {
+  if (!isSupabaseConfigured())
+    throw new Error("Chưa cấu hình Supabase (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY).");
+  const ext = String((file.name || "").split(".").pop() || "").toLowerCase();
+  if (!AUDIO_EXTS.includes(ext)) throw new Error("Chỉ nhận file âm thanh .mp3, .m4a, .wav, .ogg.");
+  if (file.size > AUDIO_MAX) throw new Error("File âm thanh quá lớn (tối đa 2MB).");
+  const type = file.type || (ext === "mp3" ? "audio/mpeg" : "audio/" + ext);
+  const { path, token } = await adminApi("upload", { method: "POST", body: { ext } });
+  const { error } = await getClient()
+    .storage.from(BUCKET)
+    .uploadToSignedUrl(path, token, file, { contentType: type, upsert: false, cacheControl: "31536000" });
+  if (error) throw new Error("Tải âm thanh lên thất bại: " + (error.message || String(error)));
+  return { path, url: "/media/" + path };
+}
+
 /**
  * Cắt phần trong suốt thừa quanh logo để logo hiện đúng cỡ, và thu về tối đa 800px.
  * SVG hoặc ảnh không đọc được thì giữ nguyên file gốc.
