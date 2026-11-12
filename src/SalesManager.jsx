@@ -1323,6 +1323,7 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
   const quillRef = useRef(null);
   const fileRef = useRef(null);
   const pendingRangeRef = useRef(null);
+  const loadingRef = useRef(false); // true trong lúc nạp nội dung đã lưu (không phải người dùng dán)
   const lastEmitted = useRef(value);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
@@ -1460,7 +1461,10 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
 
     // Dán nội dung từ trang khác thường mang theo màu chữ/nền riêng của trang đó — bỏ 2 định dạng
     // này khi dán để chữ dán vào không bị lem màu lạ từ nguồn copy.
+    // CHỈ áp dụng khi người dùng dán: lúc nạp nội dung đã lưu (loadingRef) thì giữ nguyên màu, nếu không
+    // mỗi lần mở bài sẽ xoá hết màu chữ đã tô (tiêu đề/nhãn xanh Hili) và lần Lưu sau mất màu thật.
     quill.clipboard.addMatcher(Node.ELEMENT_NODE, (_node, delta) => {
+      if (loadingRef.current) return delta;
       delta.ops.forEach((op) => { if (op.attributes) { delete op.attributes.background; delete op.attributes.color; } });
       return delta;
     });
@@ -1469,7 +1473,7 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
     // "silent" khiến Quill KHÔNG bắn sự kiện text-change cho lần nạp này, nên không còn báo nhầm
     // "có thay đổi chưa lưu" ngay khi vừa mở trang (gán innerHTML trực tiếp trước đây khiến
     // MutationObserver nội bộ của Quill tự coi đây là 1 thay đổi thật).
-    if (value) quill.clipboard.dangerouslyPasteHTML(value, "silent");
+    if (value) { loadingRef.current = true; try { quill.clipboard.dangerouslyPasteHTML(value, "silent"); } finally { loadingRef.current = false; } }
     quill.on("text-change", () => {
       const html = quill.root.innerHTML;
       lastEmitted.current = html;
@@ -1513,7 +1517,8 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
     const quill = quillRef.current;
     if (!quill) return;
     if (value !== lastEmitted.current) {
-      quill.clipboard.dangerouslyPasteHTML(value || "", "silent");
+      loadingRef.current = true;
+      try { quill.clipboard.dangerouslyPasteHTML(value || "", "silent"); } finally { loadingRef.current = false; }
       lastEmitted.current = value;
     }
   }, [value]);
@@ -1578,13 +1583,16 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
     try {
       const { url } = await uploadProductAudio(soundFile);
       const label = "🔊 " + soundTitle.trim() + (soundSub.trim() ? " | " + soundSub.trim() : "");
-      let idx = range ? range.index : quill.getLength() - 1;
-      // Dòng link phải đứng riêng 1 dòng: chưa ở đầu dòng thì xuống dòng trước.
-      const [line, offset] = quill.getLine(idx);
-      if (line && offset > 0) { quill.insertText(idx, "\n", "user"); idx += 1; }
+      // Luôn chèn thành 1 dòng MỚI ngay dưới dòng đang đứng (không chèn vào giữa tiêu đề/đoạn văn).
+      const at = range ? range.index : Math.max(0, quill.getLength() - 1);
+      const [line, offset] = quill.getLine(at);
+      const lineEnd = line ? at - offset + line.length() - 1 : Math.max(0, quill.getLength() - 1);
+      quill.insertText(lineEnd, "\n", "user");
+      const idx = lineEnd + 1;
       quill.insertText(idx, label, { link: url }, "user");
-      quill.insertText(idx + label.length, "\n", { link: false }, "user");
-      quill.setSelection(idx + label.length + 1, 0, "user");
+      // Dòng âm thanh là đoạn thường: bỏ tiêu đề/danh sách/căn lề có thể kế thừa từ dòng trên.
+      quill.formatLine(idx, label.length, { header: false, list: false, align: false, blockquote: false }, "user");
+      quill.setSelection(idx + label.length, 0, "user");
       pendingRangeRef.current = null;
       setSoundFile(null); setSoundTitle(""); setSoundSub(""); setSoundOpen(false);
       setMsg("Đã chèn âm thanh. Trên web sẽ hiện thành thẻ nghe thử.");
@@ -1621,7 +1629,7 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
           <LinkIcon size={13} /> Link ảnh ngoài
         </button>
         <button type="button"
-          onMouseDown={arm("amThanh")}
+          onMouseDown={() => { arm("amThanh")(); const q = quillRef.current; const r = q && q.getSelection(); if (r) pendingRangeRef.current = r; }}
           onClick={guardedClick("amThanh", () => { setSoundOpen((v) => !v); setLinkOpen(false); setMsg(""); })}
           disabled={busy}
           title="Chèn file âm thanh (VD tiếng gõ switch). Trên web hiện thành thẻ có nút nghe thử."
