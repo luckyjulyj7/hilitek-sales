@@ -2196,7 +2196,8 @@ function poNetTotal(po) { return poTotal(po) - poReturnedValue(po); }
 
 // Thông tin hạn công nợ NCC cho đơn nhập trả chậm — dùng để cảnh báo khi gần/đã quá hạn.
 function poDueInfo(po) {
-  if (po.paymentMethod !== "credit" || po.paid || !po.creditDays) return null;
+  // Đã trả lại NCC hết giá trị đơn -> không còn nợ, không tính hạn công nợ.
+  if (po.paymentMethod !== "credit" || po.paid || !po.creditDays || poNetTotal(po) <= 0) return null;
   const due = new Date(po.createdAt);
   due.setDate(due.getDate() + po.creditDays);
   due.setHours(0, 0, 0, 0);
@@ -5589,7 +5590,7 @@ function PurchaseOrders({ goToProduct, goToSupplier, purchaseOrders, setPurchase
           <div className="flex items-start justify-between gap-3 flex-wrap mb-1">
             <POProgressStepper po={viewingPO} />
             <div className="hili-actions flex gap-2 flex-wrap">
-            {!viewingPO.paid && (
+            {!viewingPO.paid && poNetTotal(viewingPO) > 0 && (
               <button onClick={() => markPaid(viewingPO)} className="px-3.5 py-1.5 rounded-md text-sm font-medium text-white" style={{ background: INK }}>
                 Đã thanh toán
               </button>
@@ -5611,7 +5612,7 @@ function PurchaseOrders({ goToProduct, goToSupplier, purchaseOrders, setPurchase
 
           {(() => {
             const due = poDueInfo(viewingPO);
-            const dueText = !due ? (viewingPO.paid ? "Đã thanh toán" : "Không có") : due.overdue ? `Quá hạn ${-due.daysLeft} ngày` : due.daysLeft === 0 ? "Đến hạn hôm nay" : `Còn ${due.daysLeft} ngày`;
+            const dueText = !due ? (viewingPO.paid ? "Đã thanh toán" : (viewingPO.returns || []).length && poNetTotal(viewingPO) <= 0 ? "Đã trả hết hàng — không còn nợ" : "Không có") : due.overdue ? `Quá hạn ${-due.daysLeft} ngày` : due.daysLeft === 0 ? "Đến hạn hôm nay" : `Còn ${due.daysLeft} ngày`;
             return (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-lg mb-4" style={{ background: PAPER }}>
                 <div className="col-span-2 min-w-0">
@@ -5874,7 +5875,7 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
 
   // Công nợ phải trả từng NCC: cộng dồn các đơn nhập chưa thanh toán khớp với NCC đó.
   const debtList = suppliers.map((s) => {
-    const unpaidPOs = purchaseOrders.filter((po) => po.status === "received" && !po.paid && poMatchesSupplier(po, s));
+    const unpaidPOs = purchaseOrders.filter((po) => po.status === "received" && !po.paid && poNetTotal(po) > 0 && poMatchesSupplier(po, s));
     const total = unpaidPOs.reduce((sum, po) => sum + poNetTotal(po), 0);
     const dues = unpaidPOs.map((po) => poDueInfo(po)).filter(Boolean);
     const nearestDue = dues.length ? dues.reduce((a, b) => (a.daysLeft < b.daysLeft ? a : b)) : null;
@@ -6041,7 +6042,7 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
         const sup = suppliers.find((x) => x.id === viewingSupplierId);
         if (!sup) return null;
         const pos = purchaseOrders.filter((po) => poMatchesSupplier(po, sup)).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        const unpaid = pos.filter((po) => !po.paid);
+        const unpaid = pos.filter((po) => !po.paid && poNetTotal(po) > 0);
         return (
           <Modal drawer title={sup.name} onClose={() => setViewingSupplierId(null)}
             headerAction={<button onClick={() => { setViewingSupplierId(null); openEdit(sup); }} className="text-sm px-3 py-1.5 rounded-md text-white inline-flex items-center gap-1.5" style={{ background: INK }}><Pencil size={14} /> Sửa</button>}>
