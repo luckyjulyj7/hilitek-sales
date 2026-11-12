@@ -1223,9 +1223,11 @@ function beautifyDescription(raw) {
 function webTextToSpecs(text) {
   const rows = [];
   String(text || "").split("\n").forEach((line) => {
-    const i = line.indexOf("|");
+    // Nhận cả các dấu gạch đứng "lạ" hay gặp khi dán từ web/Word/Excel: ｜ │ ┃ ∣ ¦ ǀ và phím Tab.
+    const m = line.match(/[|｜│┃∣¦ǀ	]/);
+    const i = m ? m.index : -1;
     if (i >= 0) {
-      rows.push([line.slice(0, i).trim(), line.slice(i + 1).trim()]);
+      rows.push([line.slice(0, i).trim(), line.slice(i + 1).replace(/\s*[|｜│┃∣¦ǀ\t]\s*/g, " ").trim()]);
     } else if (line.trim() && rows.length) {
       rows[rows.length - 1][1] = (rows[rows.length - 1][1] + "\n" + line.trim()).replace(/^\n+/, "");
     } else if (line.trim()) {

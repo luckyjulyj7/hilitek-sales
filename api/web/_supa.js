@@ -83,6 +83,20 @@ export async function writeState(state) {
 
 /* ---------------- Sao lưu tự động (bảng app_state_backups) ---------------- */
 
+
+// Giống webTextToSpecs ở SalesManager.jsx: mỗi dòng "Nhãn | Giá trị"; dòng không có dấu gạch đứng
+// nối vào giá trị dòng trên. Nhận cả ｜ │ ┃ ∣ ¦ ǀ và Tab.
+function textToSpecs(text) {
+  const rows = [];
+  String(text || "").split("\n").forEach((line) => {
+    const m = line.match(/[|｜│┃∣¦ǀ\t]/);
+    if (m) rows.push([line.slice(0, m.index).trim(), line.slice(m.index + 1).replace(/\s*[|｜│┃∣¦ǀ	]\s*/g, " ").trim()]);
+    else if (line.trim() && rows.length) rows[rows.length - 1][1] = (rows[rows.length - 1][1] + "\n" + line.trim()).replace(/^\n+/, "");
+    else if (line.trim()) rows.push([line.trim(), ""]);
+  });
+  return rows;
+}
+
 const BACKUP_TABLE = "app_state_backups";
 
 /** Chụp 1 bản blob hiện tại vào bảng backup. Cần SUPABASE_SERVICE_ROLE_KEY (bảng khoá anon). */
@@ -191,7 +205,9 @@ export function publicProduct(p, { detail = false } = {}) {
   // Giá gạch bỏ: "Giá so sánh" chủ shop tự nhập; bỏ trống thì tự tính theo mức giá.
   const compareAt = Number(web.compareAtPrice) > 0 ? Number(web.compareAtPrice) : autoComparePrice(price, p.variantGroupId || p.id);
   const listPrice = Math.max(compareAt, price); // storefront tự bỏ qua khi listPrice <= price
-  const specs = (Array.isArray(web.specs) ? web.specs : [])
+  // Ưu tiên tách lại từ specsText (văn bản chủ shop gõ) — sản phẩm lưu trước khi app nhận các dấu
+  // gạch đứng "lạ" (｜ │ ...) có mảng specs bị gộp sai thành 1 dòng; tách lại ở đây là sửa luôn.
+  const specs = (typeof web.specsText === "string" && web.specsText.trim() ? textToSpecs(web.specsText) : Array.isArray(web.specs) ? web.specs : [])
     .map((r) => (Array.isArray(r) ? [String(r[0] || "").trim(), String(r[1] || "").trim()] : null))
     .filter((r) => r && (r[0] || r[1]));
   const desc = typeof web.description === "string" ? web.description : "";
