@@ -1636,7 +1636,7 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
           .hilitek-ql .ql-editor.ql-blank::before { color: ${INK}66; font-style: normal; }
           .hilitek-ql .ql-picker-options { z-index: 20; }
           /* Thanh công cụ dính trên cùng khi cuộn xuống mô tả dài */
-          .hilitek-ql .ql-toolbar.ql-snow { position: sticky; top: 0; z-index: 15; box-shadow: 0 2px 6px rgba(15,23,70,.06); }
+          .hilitek-ql .ql-toolbar.ql-snow { position: sticky; top: var(--hili-sticky-top, 0px); z-index: 9; box-shadow: 0 2px 6px rgba(15,23,70,.06); }
           .hilitek-ql .ql-color .ql-picker-options, .hilitek-ql .ql-background .ql-picker-options { width: 196px; padding: 4px; }
           .hilitek-ql .ql-color .ql-picker-item, .hilitek-ql .ql-background .ql-picker-item { width: 16px; height: 16px; margin: 1px; }
           .hilitek-ql .ql-picker.ql-font { width: 132px; }
@@ -15925,6 +15925,16 @@ function AIWriteFromUrl({ onApply, product, products, setProducts, addLog }) {
  * Sửa trên bản NHÁP tại chỗ — KHÔNG tự lưu; phải bấm "Lưu" mới ghi vào dữ liệu thật.
  */
 function WebProductPage({ product, products, setProducts, webCats, onBack, onSwitch, goToInventoryProductEdit, currentUser, addLog }) {
+  // Thanh công cụ của ô Mô tả dính ngay DƯỚI thanh đầu trang (Lưu/Quay lại) khi cuộn: đo chiều cao thanh đầu.
+  const stickyHeadRef = useRef(null);
+  useEffect(() => {
+    const el = stickyHeadRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const set = () => document.documentElement.style.setProperty("--hili-sticky-top", el.offsetHeight + "px");
+    set();
+    const ro = new ResizeObserver(set); ro.observe(el);
+    return () => { ro.disconnect(); document.documentElement.style.removeProperty("--hili-sticky-top"); };
+  }, []);
   const [editTab, setEditTab] = useState("content");
   const [moreOpen, setMoreOpen] = useState(false);
   const [showAI, setShowAI] = useState(false);
@@ -16068,7 +16078,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
 
   return (
     <div>
-      <div data-web-editor className="sticky top-0 z-10 pt-1 pb-3 mb-3 -mt-1" style={{ background: PAPER, borderBottom: `1px solid ${LINE}` }}>
+      <div data-web-editor ref={stickyHeadRef} className="sticky top-0 z-10 pt-1 pb-3 mb-3 -mt-1" style={{ background: PAPER, borderBottom: `1px solid ${LINE}` }}>
       <div className="flex items-center gap-3 flex-wrap">
         <button onClick={handleBack} title="Danh sách sản phẩm web" className="w-8 h-8 rounded-md border inline-flex items-center justify-center shrink-0" style={{ borderColor: LINE, color: TEXT, background: "#fff" }}>
           <ChevronLeft size={16} />
@@ -18286,7 +18296,7 @@ export default function SalesManager() {
   const employeeNames = accounts.filter((a) => a.active).map((a) => a.fullName);
 
   return (
-    <div style={{ background: PAPER, minHeight: "100%", fontFamily: "'Inter', sans-serif" }} className="w-full overflow-x-hidden">
+    <div style={{ background: PAPER, minHeight: "100%", fontFamily: "'Inter', sans-serif", overflowX: "clip" }} className="w-full">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
         select { appearance: none; }
