@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
+import { DESC_FONTS, DESC_COLORS, loadDescFonts } from "./lib/descFonts.js";
 import { ghn as ghnApi } from "./lib/ghn.js";
 // Nội dung mặc định cho web (dùng làm điểm khởi đầu khi chưa chỉnh trong "Cấu hình web").
 import { PAGES as WEB_DEFAULT_PAGES, MENU as WEB_DEFAULT_MENU, flattenMenuTree as webFlattenMenuTree, MAX_CATEGORY_DEPTH as WEB_MAX_CATEGORY_DEPTH, HOME_SECTIONS as WEB_DEFAULT_HOME_SECTIONS, HOME_SECTION_SORTS, HOME_SECTION_LAYOUTS, LANDINGS as WEB_DEFAULT_LANDINGS, FLASH_SALE_CATEGORY as WEB_FLASH_CAT, GAME_GROUP as WEB_GAME_GROUP } from "./storefront/config.js";
@@ -1290,12 +1291,18 @@ function beautifyDescriptionHtml(raw) {
 // S/L/XL, không thì nút hiện trống rỗng (nhìn như "biến mất").
 const SizeIcons = Quill.import("ui/icons");
 SizeIcons.size = { small: "S", large: "L", huge: "XL" };
+SizeIcons.colorpick = '<svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="6.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M9 2.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg>';
+// Font chữ: ghi thẳng font-family vào HTML (style) để web khách hiện đúng mà không cần class riêng.
+const DescFontStyle = Quill.import("attributors/style/font");
+DescFontStyle.whitelist = DESC_FONTS.map((f) => f.family);
+Quill.register(DescFontStyle, true);
 
 const DESC_TOOLBAR = [
   [{ header: 2 }, { header: 3 }],
   [{ size: "small" }, { size: "large" }, { size: "huge" }],
   ["bold", "italic", "underline", "strike"],
-  [{ color: [] }, { background: [] }],
+  [{ font: [false, ...DESC_FONTS.map((f) => f.family)] }],
+  [{ color: DESC_COLORS }, { background: DESC_COLORS }, "colorpick"],
   [{ align: [] }],
   ["blockquote"],
   [{ list: "ordered" }, { list: "bullet" }],
@@ -1419,15 +1426,30 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
     const editorEl = document.createElement("div");
     containerRef.current.appendChild(editorEl);
 
+    // Màu tự chọn (ngoài bảng màu): mở ô chọn màu của trình duyệt.
+    function colorPickHandler() {
+      const q = this.quill;
+      const range = q.getSelection(true);
+      const inp = document.createElement("input");
+      inp.type = "color";
+      inp.value = (q.getFormat(range).color || "#1e2a8a").slice(0, 7);
+      inp.style.cssText = "position:fixed;left:-100px;top:0;opacity:0";
+      document.body.appendChild(inp);
+      inp.addEventListener("input", () => { q.setSelection(range); q.format("color", inp.value, "user"); });
+      inp.addEventListener("change", () => inp.remove());
+      inp.addEventListener("blur", () => setTimeout(() => inp.remove(), 300));
+      inp.click();
+    }
     function imageHandler() {
       pendingRangeRef.current = this.quill.getSelection(true);
       fileRef.current && fileRef.current.click();
     }
 
+    loadDescFonts(DESC_FONTS.map((f) => f.family)); // để xem trước đúng font trong khung soạn
     const quill = new Quill(editorEl, {
       theme: "snow",
       placeholder: "Nội dung mô tả…",
-      modules: { toolbar: { container: DESC_TOOLBAR, handlers: { image: imageHandler } } },
+      modules: { toolbar: { container: DESC_TOOLBAR, handlers: { image: imageHandler, colorpick: colorPickHandler } } },
     });
 
     // Dán nội dung từ trang khác thường mang theo màu chữ/nền riêng của trang đó — bỏ 2 định dạng
@@ -1613,6 +1635,13 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
           .hilitek-ql .ql-editor img { max-width: 100%; border-radius: 4px; }
           .hilitek-ql .ql-editor.ql-blank::before { color: ${INK}66; font-style: normal; }
           .hilitek-ql .ql-picker-options { z-index: 20; }
+          /* Thanh công cụ dính trên cùng khi cuộn xuống mô tả dài */
+          .hilitek-ql .ql-toolbar.ql-snow { position: sticky; top: 0; z-index: 15; box-shadow: 0 2px 6px rgba(15,23,70,.06); }
+          .hilitek-ql .ql-color .ql-picker-options, .hilitek-ql .ql-background .ql-picker-options { width: 196px; padding: 4px; }
+          .hilitek-ql .ql-color .ql-picker-item, .hilitek-ql .ql-background .ql-picker-item { width: 16px; height: 16px; margin: 1px; }
+          .hilitek-ql .ql-picker.ql-font { width: 132px; }
+          .hilitek-ql .ql-picker.ql-font .ql-picker-label::before, .hilitek-ql .ql-picker.ql-font .ql-picker-item::before { content: "Font mặc định"; }
+          ${DESC_FONTS.map((f) => `.hilitek-ql .ql-picker.ql-font [data-value="${f.family}"]::before { content: "${f.family}"; font-family: "${f.family}"; }`).join(" ")}
         `}</style>
         {drag && (
           <div className="absolute inset-0 grid place-items-center text-sm font-medium pointer-events-none"

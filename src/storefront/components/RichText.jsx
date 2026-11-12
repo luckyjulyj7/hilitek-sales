@@ -1,3 +1,4 @@
+import { loadDescFonts, fontsInHtml } from "../../lib/descFonts.js";
 import React from "react";
 
 const YT_RE = /(?:youtube\.com\/(?:watch\?(?:[^ ]*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{11})/;
@@ -37,6 +38,7 @@ export default function RichText({ text, className = "" }) {
   if (/^\s*</.test(raw)) {
     // Ảnh trong mô tả chỉ tải khi khách cuộn tới (mô tả nhiều ảnh không làm chậm lúc mở trang).
     const html = raw.replace(/<img(?![^>]*\bloading=)/gi, '<img loading="lazy" decoding="async"');
+    loadDescFonts(fontsInHtml(raw)); // mô tả có dùng font riêng thì mới tải font đó
     return <div className={"ql-content space-y-3 text-[15px] text-ink/80 leading-relaxed " + className} dangerouslySetInnerHTML={{ __html: html }} />;
   }
   const lines = raw.replace(/\r/g, "").split("\n");
