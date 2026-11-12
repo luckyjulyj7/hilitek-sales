@@ -35,7 +35,9 @@ export default function RichText({ text, className = "" }) {
   // Mô tả tạo bằng trình soạn thảo mới (Quill) lưu dạng HTML — nhận diện qua thẻ mở đầu, hiện
   // trực tiếp. Mô tả cũ (trước khi đổi sang Quill) là văn bản kiểu Markdown tự chế — parse như cũ.
   if (/^\s*</.test(raw)) {
-    return <div className={"ql-content space-y-3 text-[15px] text-ink/80 leading-relaxed " + className} dangerouslySetInnerHTML={{ __html: raw }} />;
+    // Ảnh trong mô tả chỉ tải khi khách cuộn tới (mô tả nhiều ảnh không làm chậm lúc mở trang).
+    const html = raw.replace(/<img(?![^>]*\bloading=)/gi, '<img loading="lazy" decoding="async"');
+    return <div className={"ql-content space-y-3 text-[15px] text-ink/80 leading-relaxed " + className} dangerouslySetInnerHTML={{ __html: html }} />;
   }
   const lines = raw.replace(/\r/g, "").split("\n");
   const blocks = [];
