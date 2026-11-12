@@ -17335,7 +17335,15 @@ function WebConfigForm({ section, webConfig, setWebConfig, setProducts, addLog, 
         <datalist id="webPosterLinks">
           <option value="/danh-muc?sort=discount">Trang danh mục — đang giảm giá</option>
           {(Array.isArray(c.MENU) && c.MENU.length ? c.MENU : WEB_DEFAULT_MENU).map((g) => (
-            <option key={g.group} value={`/danh-muc?group=${encodeURIComponent(g.group)}`}>{`Danh mục: ${g.group}`}</option>
+            <React.Fragment key={g.group}>
+              <option value={`/danh-muc?group=${encodeURIComponent(g.group)}`}>{`Danh mục: ${g.group}`}</option>
+              {(function flat(nodes, path) {
+                return (nodes || []).flatMap((n) => (n && n.name ? [
+                  <option key={path + n.name} value={`/danh-muc?cat=${encodeURIComponent(n.name)}`}>{`Danh mục: ${path}${n.name}`}</option>,
+                  ...flat(n.subs, path + n.name + " › "),
+                ] : []));
+              })(g.subs, g.group + " › ")}
+            </React.Fragment>
           ))}
           {landings.map((l) => (
             <option key={l.slug} value={`/trang/${l.slug || webSlugify(l.title || "")}`}>{`Trang nội dung: ${l.title || l.slug}`}</option>

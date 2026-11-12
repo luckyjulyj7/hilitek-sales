@@ -117,7 +117,16 @@ export default function HomeTilesEditor({ webConfig, setWebConfig, menu, landing
   // Danh sách link chọn nhanh.
   const linkOpts = useMemo(() => {
     const o = [];
-    (menu || []).forEach((g) => o.push([`/danh-muc?group=${encodeURIComponent(g.group)}`, `Danh mục: ${g.group}`]));
+    // Nhóm chính + mọi danh mục con (nhiều tầng), thụt lề theo cấp để dễ nhìn.
+    const addSubs = (nodes, depth) => (nodes || []).forEach((n) => {
+      if (!n || !n.name) return;
+      o.push([`/danh-muc?cat=${encodeURIComponent(n.name)}`, `${"   ".repeat(depth)}└ ${n.name}`]);
+      addSubs(n.subs, depth + 1);
+    });
+    (menu || []).forEach((g) => {
+      o.push([`/danh-muc?group=${encodeURIComponent(g.group)}`, `Danh mục: ${g.group}`]);
+      addSubs(g.subs, 1);
+    });
     o.push(["/danh-muc?sort=discount", "Danh mục: đang giảm giá"]);
     o.push(["/may-choi-game-cam-tay", "Trang Máy chơi game cầm tay"]);
     o.push(["/tin-tuc", "Trang Tin tức"]);
