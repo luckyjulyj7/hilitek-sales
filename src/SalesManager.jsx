@@ -17496,7 +17496,11 @@ function MediaCleanupPanel() {
 function ScrollTopButton() {
   const [show, setShow] = useState(false);
   useEffect(() => {
-    const onScroll = () => setShow(window.scrollY > 400);
+    // Ẩn khi đã cuộn gần cuối trang — chỗ đó thường có thanh chuyển trang, nút sẽ che mất nút "trang sau".
+    const onScroll = () => {
+      const nearBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 140;
+      setShow(window.scrollY > 400 && !nearBottom);
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
