@@ -16168,6 +16168,7 @@ function BulkApplyCard({ product, products, setProducts, suppliers, draft, dirty
     <div className="rounded-xl p-4" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
       <p className="text-base font-semibold" style={{ color: TEXT }}>Áp dụng cho cả nhóm</p>
       <p className="mt-0.5 text-xs" style={{ color: "#6B7280" }}>Nhập 1 lần cho {group.length} phiên bản: nhà cung cấp, giá sỉ, tồn kho ảo, SEO. Có xem trước và hoàn tác.</p>
+      <p className="mt-1 text-xs" style={{ color: "#6B7280" }}>Mô tả, thông số, danh mục, mô tả ngắn, khuyến mãi, giá so sánh, đăng web <b>tự dùng chung cả nhóm</b> mỗi khi bấm Lưu, không cần nút này.</p>
       <div className="mt-2.5 flex flex-wrap gap-2">
         <button type="button" onClick={start} className="rounded-md px-3 py-1.5 text-sm font-medium text-white" style={{ background: INK }}>Áp dụng cho tất cả phiên bản</button>
         {undo && <button type="button" onClick={doUndo} className="rounded-md border px-3 py-1.5 text-sm" style={{ borderColor: LINE, color: TEXT }} title={`Lần áp dụng lúc ${new Date(undo.at).toLocaleString("vi-VN")}`}>Hoàn tác ({new Date(undo.at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })})</button>}
@@ -16548,8 +16549,13 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
                       if (!src) return;
                       const imgs = normalizeWeb(src.web).images || [];
                       if ((w.images || []).length && !await askConfirm(`Thay ${(w.images || []).length} ảnh hiện tại bằng ${imgs.length} ảnh của phiên bản "${variantLabel(src)}"?`)) return;
-                      setWeb({ images: [...imgs] });
-                      notify(`Đã sao chép ${imgs.length} ảnh từ "${variantLabel(src)}". Bấm Lưu để giữ lại, hoặc Huỷ để bỏ.`);
+                      // Lưu thẳng ảnh vào phiên bản này ngay (không phụ thuộc nút Lưu) — trước đây chỉ đổi bản nháp,
+                      // chưa Lưu mà tải lại trang là mất. Các ô khác đang sửa dở vẫn giữ nguyên trong bản nháp.
+                      const copied = [...imgs];
+                      setProducts((prev) => prev.map((x) => (x.id === p.id ? { ...x, web: normalizeWeb({ ...normalizeWeb(x.web), images: copied }) } : x)));
+                      setDraft((d) => normalizeWeb({ ...d, images: copied }));
+                      if (addLog) addLog("Sao chép ảnh từ phiên bản khác", `${p.sku} · ${p.name}: ${copied.length} ảnh từ "${variantLabel(src)}"`);
+                      notify(`Đã sao chép và lưu ${copied.length} ảnh từ "${variantLabel(src)}".`);
                     }}>
                     <option value="">— Chọn phiên bản để sao chép ảnh —</option>
                     {sibs.map((x) => <option key={x.id} value={x.id}>{variantLabel(x)} ({normalizeWeb(x.web).images.length} ảnh)</option>)}
