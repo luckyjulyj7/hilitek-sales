@@ -15441,14 +15441,14 @@ function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig
   return (
     <div>
       <TabBar tabs={subs} value={sub} onChange={setSub} />
-      {sub === "products" && <WebProducts products={products} setProducts={setProducts} categories={categories} brands={brands} currentUser={currentUser} addLog={addLog} webConfig={webConfig} focusProductId={navTarget?.type === "webproduct" ? navTarget.id : null} initialPublishedFrom={navTarget?.type === "webproducts-daterange" ? navTarget.from : null} initialPublishedTo={navTarget?.type === "webproducts-daterange" ? navTarget.to : null} onFocusHandled={onFocusHandled} goToInventoryProductEdit={goToInventoryProductEdit} />}
+      {sub === "products" && <WebProducts products={products} setProducts={setProducts} suppliers={suppliers} categories={categories} brands={brands} currentUser={currentUser} addLog={addLog} webConfig={webConfig} focusProductId={navTarget?.type === "webproduct" ? navTarget.id : null} initialPublishedFrom={navTarget?.type === "webproducts-daterange" ? navTarget.from : null} initialPublishedTo={navTarget?.type === "webproducts-daterange" ? navTarget.to : null} onFocusHandled={onFocusHandled} goToInventoryProductEdit={goToInventoryProductEdit} />}
       {sub === "orders" && <WebOrders orders={orders} onOpenOrder={onOpenOrder} />}
       {sub !== "products" && sub !== "orders" && <WebConfigForm section={sub} webConfig={webConfig} setWebConfig={setWebConfig} setProducts={setProducts} addLog={addLog} products={products} categories={categories} />}
     </div>
   );
 }
 
-function WebProducts({ products, setProducts, categories, brands, currentUser, addLog, webConfig, focusProductId, initialPublishedFrom, initialPublishedTo, onFocusHandled, goToInventoryProductEdit }) {
+function WebProducts({ products, setProducts, suppliers, categories, brands, currentUser, addLog, webConfig, focusProductId, initialPublishedFrom, initialPublishedTo, onFocusHandled, goToInventoryProductEdit }) {
   // Hết hàng vẫn hiện: tính cả nhóm, chỉ báo khi mọi phiên bản đang đăng đều hết hàng.
   const unitOutOfStock = useMemo(() => {
     const cache = new Map();
