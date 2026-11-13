@@ -1278,17 +1278,18 @@ function simpleMarkdownToHtml(md) {
 
 // Tách các dòng "Nhãn: Giá trị" thành gạch đầu dòng in đậm nhãn, còn lại giữ nguyên từng đoạn —
 // dùng cho nút "Làm đẹp mô tả". Nhận văn bản thô (Quill getText()), trả về HTML để nạp lại editor.
-function beautifyDescriptionHtml(raw) {
+function beautifyDescriptionHtml(raw, { boldFirstLine = true } = {}) {
   const lines = String(raw || "").split("\n");
   const parts = [];
   let listBuf = [];
-  let firstContentSeen = false;
+  let firstContentSeen = !boldFirstLine;
   const flushList = () => { if (listBuf.length) { parts.push("<ul>" + listBuf.map((li) => `<li>${li}</li>`).join("") + "</ul>"); listBuf = []; } };
   for (const rawLine of lines) {
     const line = rawLine.trim();
     if (!line) { flushList(); continue; }
     const m = line.match(/^([^:：]{3,40})[:：]\s+(.+)$/);
-    if (m) { listBuf.push(`<strong>${escapeHtml(m[1].trim())}:</strong> ${escapeHtml(m[2].trim())}`); firstContentSeen = true; continue; }
+    // Nhãn in đậm màu xanh Hili — theo chuẩn mô tả (K chốt 12/11/2026).
+    if (m) { listBuf.push(`<strong><span style="color: rgb(30, 42, 138);">${escapeHtml(m[1].trim())}:</span></strong> ${escapeHtml(m[2].trim())}`); firstContentSeen = true; continue; }
     flushList();
     parts.push(firstContentSeen ? `<p>${escapeHtml(line)}</p>` : `<p><strong>${escapeHtml(line)}</strong></p>`); // dòng mở đầu thường là tên SP
     firstContentSeen = true;
@@ -1366,18 +1367,34 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
 
   // Chèn 1 loạt ảnh (url) vào đúng vị trí con trỏ đã lưu (bấm nút ngoài toolbar làm mất focus/con trỏ
   // nên phải lưu lại TRƯỚC khi mở hộp thoại chọn file), mặc định chèn cuối bài nếu chưa có vị trí nào.
+  // Mỗi ảnh nằm trên 1 DÒNG RIÊNG (đoạn thường), không dính vào tiêu đề / gạch đầu dòng / chữ:
+  // đang đứng giữa một dòng có chữ thì chèn xuống ngay dưới dòng đó.
   const insertImagesAt = (urls) => {
     const quill = quillRef.current;
-    if (!quill) return;
+    if (!quill || !urls.length) return;
     const range = pendingRangeRef.current || quill.getSelection(true);
-    let idx = range ? range.index : quill.getLength();
-    urls.forEach((u) => { quill.insertEmbed(idx, "image", u, "user"); idx += 1; });
+    let idx = range ? range.index : Math.max(0, quill.getLength() - 1);
+    const plain = { header: false, list: false, align: false, blockquote: false };
+    const [line, offset] = quill.getLine(idx);
+    if (line && line.length() > 1) {
+      idx = idx - offset + line.length() - 1; // cuối dòng hiện tại
+      quill.insertText(idx, "\n", "user");
+      idx += 1;
+    }
+    urls.forEach((u, i) => {
+      if (i > 0) { quill.insertText(idx, "\n", "user"); idx += 1; }
+      quill.insertEmbed(idx, "image", u, "user");
+      quill.formatLine(idx, 1, plain, "user");
+      idx += 1;
+    });
     quill.setSelection(idx, 0, "user");
     pendingRangeRef.current = null;
   };
 
   const addFiles = async (files) => {
-    const imgs = [...files].filter((f) => f && f.type && f.type.startsWith("image/"));
+    // Sắp theo tên file (01, 02 ... 10) để chọn/kéo nhiều ảnh cùng lúc vẫn đúng thứ tự.
+    const imgs = [...files].filter((f) => f && f.type && f.type.startsWith("image/"))
+      .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), undefined, { numeric: true }));
     if (!imgs.length) return;
     setBusy(true); setMsg(`Đang tải ${imgs.length} ảnh…`);
     try {
@@ -1622,25 +1639,47 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
     quill.setSelection(idx + emo.length + 1, 0, "user");
   };
 
-  const doBeautify = async () => {
+  // "Làm đẹp mô tả": chỉ xử lý các ĐOẠN CHỮ TRƠN (tách "Nhãn: nội dung" thành gạch đầu dòng, in
+  // đậm nhãn). Mọi khối khác giữ nguyên đúng vị trí: ảnh, video, tiêu đề, danh sách sẵn có, link/âm
+  // thanh, chữ đã in đậm/tô màu. Trước đây nút này dựng lại cả bài từ chữ trơn nên mất ảnh và định dạng.
+  const doBeautify = () => {
     const quill = quillRef.current;
     if (!quill) return;
-    // "Làm đẹp" dựng lại bài từ CHỮ TRƠN (getText) nên mất ảnh, tiêu đề, link, màu, âm thanh đã chèn.
-    // Bài đã có những thứ đó thì cảnh báo rõ và mặc định là KHÔNG làm (chỉ dùng cho chữ vừa dán thô).
-    const root = quill.root;
-    const nImg = root.querySelectorAll("img, iframe").length;
-    const nHead = root.querySelectorAll("h1, h2, h3").length;
-    const nLink = root.querySelectorAll("a").length;
-    const nColor = root.querySelectorAll('[style*="color"]').length;
-    if (nImg || nHead || nLink || nColor) {
-      const lost = [nImg && `${nImg} ảnh/video`, nHead && `${nHead} tiêu đề`, nLink && `${nLink} link/âm thanh`, nColor && "màu chữ"].filter(Boolean).join(", ");
-      const ok = await askConfirm(`Bài đang có ${lost}. "Làm đẹp mô tả" chỉ giữ lại CHỮ TRƠN nên sẽ XOÁ hết những thứ này.\n\nNút này chỉ nên dùng cho chữ vừa dán thô, chưa định dạng. Vẫn làm?\n(Lỡ làm thì bấm Ctrl+Z ngay để hoàn tác, hoặc bấm Huỷ ở trên để bỏ thay đổi chưa lưu.)`);
-      if (!ok) { setMsg("Đã giữ nguyên bài (không làm đẹp)."); return; }
+    const blocks = [...quill.root.children];
+    const isPlain = (el) => el.tagName === "P" && el.textContent.trim() !== "" &&
+      !el.querySelector("img, iframe, a, strong, b, em, u, s, [style], [class]");
+    const out = [];
+    let run = [];
+    let seenContent = false;
+    let changed = 0;
+    const flush = () => {
+      if (!run.length) return;
+      const text = run.map((el) => el.innerText.replace(/ /g, " ")).join("\n");
+      out.push(beautifyDescriptionHtml(text, { boldFirstLine: !seenContent }));
+      changed += run.length;
+      seenContent = true;
+      run = [];
+    };
+    for (const el of blocks) {
+      if (isPlain(el)) { run.push(el); continue; }
+      flush();
+      const clone = el.cloneNode(true);
+      clone.querySelectorAll("span.ql-ui").forEach((x) => x.remove());
+      const hasMedia = !!clone.querySelector("img, iframe") || clone.tagName === "IFRAME";
+      if (clone.tagName === "P" && !clone.textContent.trim() && !hasMedia) continue; // bỏ dòng trống thừa
+      out.push(clone.outerHTML);
+      seenContent = true;
     }
-    const html = beautifyDescriptionHtml(quill.getText());
-    quill.setText("");
-    quill.clipboard.dangerouslyPasteHTML(0, html, "user");
-    setMsg("Đã làm đẹp — tách gạch đầu dòng + in đậm ý chính. Kiểm tra lại rồi sửa thêm nếu cần.");
+    flush();
+    if (!changed) { setMsg("Không có đoạn chữ trơn nào cần làm đẹp — bài giữ nguyên."); return; }
+    // Nạp lại khi bật loadingRef để bộ lọc "bỏ màu khi dán" KHÔNG xoá màu chữ đang có.
+    // Nguồn "user" nên bấm Ctrl+Z là hoàn tác được.
+    loadingRef.current = true;
+    try {
+      quill.setText("", "user");
+      quill.clipboard.dangerouslyPasteHTML(0, out.join(""), "user");
+    } finally { loadingRef.current = false; }
+    setMsg(`Đã làm đẹp ${changed} đoạn chữ trơn — ảnh, tiêu đề, màu chữ, link giữ nguyên. Không ưng thì bấm Ctrl+Z.`);
   };
 
   return (
@@ -16039,7 +16078,9 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
   const p = product;
   // Các phiên bản (màu sắc/kích cỡ...) cùng 1 sản phẩm dùng CHUNG mô tả/thông số/danh mục/trạng
   // thái/giá so sánh — KHÔNG đồng bộ "images": mỗi phiên bản có ảnh riêng, đây là điểm khác duy nhất.
-  const shareKeys = ["description", "specsText", "categories", "shortDesc", "promo", "published", "compareAtPrice", "game"];
+  // virtualStock (bật/tắt tồn kho ảo) cũng dùng chung cả nhóm; SỐ tồn ảo vẫn riêng từng phiên bản
+  // (phiên bản nào vừa được bật mà chưa có số thì tự sinh số ngẫu nhiên, xem doSave).
+  const shareKeys = ["description", "specsText", "categories", "shortDesc", "promo", "published", "compareAtPrice", "game", "virtualStock"];
   const [draft, setDraft] = useState(() => normalizeWeb(product.web));
   const [weightDraft, setWeightDraft] = useState(product.weight ?? 0);
   const [dirty, setDirty] = useState(false);
@@ -16093,6 +16134,8 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
       // Đồng bộ nội dung/thông số/danh mục/ảnh/mô tả ngắn/khuyến mãi sang các phiên bản cùng nhóm.
       if (p.variantGroupId && x.variantGroupId === p.variantGroupId) {
         const sh = {}; shareKeys.forEach((k) => { sh[k] = draft[k]; });
+        if (draft.virtualStock && !(x.web && x.web.virtualStockQty)) sh.virtualStockQty = randomVirtualStock();
+        if (!draft.virtualStock) sh.virtualStockQty = 0;
         // Chỉ điền SEO vào ô ĐANG TRỐNG của phiên bản khác (không đè SEO riêng đã có).
         if (seoFill) {
           if (draft.seoTitle && !(x.web && x.web.seoTitle)) sh.seoTitle = draft.seoTitle;
