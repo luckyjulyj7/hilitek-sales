@@ -961,11 +961,26 @@ function mergeChildList(base, local, remote) {
 // series cho đơn → trừ kho sản phẩm; máy B còn giữ sản phẩm bản cũ, lưu bất kỳ thứ gì là phiếu xuất
 // của A bị xoá, kho báo vẫn còn tồn). Giờ: mình không sửa → nhận bản của họ; họ không sửa → giữ của
 // mình; cả 2 cùng sửa → giữ của mình, riêng sản phẩm thì gộp thêm phiếu nhập/xuất + lịch sử giá của họ.
+// So 2 bản ghi theo dạng CHUẨN HOÁ + sắp khoá: bản trên máy đã qua normalizeProduct (thêm trường mặc
+// định, đổi thứ tự khoá) còn mốc gốc/bản server là dữ liệu thô. So JSON thẳng thì sản phẩm không hề sửa
+// vẫn bị coi là "đã sửa" -> khi gộp giữ bản CŨ của máy này, ghi đè mất thay đổi của máy khác (sự cố
+// 13-14/11: xoá/thêm ảnh gallery báo Đã lưu nhưng bị tab khác ghi ngược lại).
+const MERGE_NORM = { products: (x) => normalizeProduct(x), orders: (x) => normalizeOrder(x), customers: (x) => normalizeCustomer(x), purchaseOrders: (x) => normalizePO(x), suppliers: (x) => normalizeSupplier(x) };
+function stableJson(v) {
+  if (Array.isArray(v)) return "[" + v.map(stableJson).join(",") + "]";
+  if (v && typeof v === "object") return "{" + Object.keys(v).filter((k) => v[k] !== undefined).sort().map((k) => JSON.stringify(k) + ":" + stableJson(v[k])).join(",") + "}";
+  return JSON.stringify(v === undefined ? null : v);
+}
+function sameRecordK(key, a, b) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  try { const n = MERGE_NORM[key] || ((x) => x); return stableJson(n(a)) === stableJson(n(b)); } catch { return sameRecord(a, b); }
+}
 function mergeRecord(key, b, l, r) {
   if (r === undefined) return l;
   if (b !== undefined) {
-    if (sameRecord(l, b)) return r;
-    if (sameRecord(r, b)) return l;
+    if (sameRecordK(key, l, b)) return r;
+    if (sameRecordK(key, r, b)) return l;
   }
   if (key === "products") {
     return {
@@ -987,7 +1002,7 @@ function mergeById(base, local, remote, key) {
     if (l !== undefined) {
       // Có ở mốc gốc, server không còn, mình không sửa gì = máy khác đã xoá -> phải bỏ theo. Nếu giữ
       // lại thì lần lưu sau máy này ghi ngược lên, bản ghi đã xoá "sống lại". Mình có sửa thì vẫn giữ.
-      if (!rMap.has(id) && bMap.has(id) && sameRecord(l, bMap.get(id))) continue;
+      if (!rMap.has(id) && bMap.has(id) && sameRecordK(key, l, bMap.get(id))) continue;
       out.push(mergeRecord(key, bMap.get(id), l, rMap.get(id)));
       continue;
     }
