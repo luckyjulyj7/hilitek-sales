@@ -10,17 +10,19 @@ const escAttr = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").
 const WAVE = [3, 6, 4, 9, 5, 12, 7, 4, 10, 6, 3, 8, 5, 11, 4, 7, 3, 9, 6, 4, 8, 5, 3, 6];
 
 function soundCards(html) {
-  return html.replace(SOUND_P_RE, (_, src, inner) => {
+  const withCards = html.replace(SOUND_P_RE, (_, src, inner) => {
     const text = inner.replace(/<[^>]+>/g, "").replace(/^\s*🔊\s*/u, "").trim();
     const [title, ...rest] = text.split("|");
     const sub = rest.join("|").trim();
     const bars = WAVE.map((h) => `<i style="height:${h * 2}px"></i>`).join("");
-    return `<div class="hili-sound" data-src="${escAttr(src)}">` +
+    return `<div class="hili-sound" data-src="${escAttr(src)}" role="group" aria-label="Nghe thử ${escAttr(title.trim())}">` +
       `<button type="button" class="hili-sound__play" aria-label="Nghe thử ${escAttr(title.trim())}"><span class="hili-sound__icon"></span></button>` +
-      `<div class="hili-sound__body"><div class="hili-sound__title">${title.trim()}</div>` +
+      `<div class="hili-sound__body"><div class="hili-sound__tag">🔊 Nghe thử · bấm để nghe</div><div class="hili-sound__title">${title.trim()}</div>` +
       (sub ? `<div class="hili-sound__sub">${sub}</div>` : "") +
-      `<div class="hili-sound__wave" aria-hidden="true">${bars}</div></div></div>`;
+      `<div class="hili-sound__wave" aria-hidden="true">${bars}</div></div></div><!--/hs-->`;
   });
+  // Các thẻ đứng liền nhau gom thành 1 khối (xếp cạnh nhau trên máy tính) cho dễ thấy, dễ so sánh.
+  return withCards.replace(/((?:<div class="hili-sound"[\s\S]*?<!--\/hs-->\s*)+)/g, '<div class="hili-sound-group">$1</div>');
 }
 
 // Phát / dừng cho các thẻ âm thanh trong 1 khối nội dung (bắt sự kiện ở khối cha).
@@ -36,9 +38,9 @@ function useSoundCards(ref, deps) {
       playing = null;
     };
     const onClick = (e) => {
-      const btn = e.target.closest(".hili-sound__play");
-      if (!btn || !root.contains(btn)) return;
-      const card = btn.closest(".hili-sound");
+      // Bấm bất kỳ đâu trên thẻ cũng phát/dừng (không bắt buộc trúng nút ▶).
+      const card = e.target.closest(".hili-sound");
+      if (!card || !root.contains(card)) return;
       if (playing === card) { stop(); return; }
       stop();
       const src = card.getAttribute("data-src");

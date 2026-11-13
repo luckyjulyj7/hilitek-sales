@@ -53,37 +53,51 @@ body {
 .ql-content .ql-indent-2 { padding-left: 6em; }
 .ql-content .ql-indent-3 { padding-left: 9em; }
 
-/* Thẻ "nghe thử" âm thanh trong mô tả (RichText.jsx đổi dòng link .mp3 thành thẻ này). */
+/* Thẻ "nghe thử" âm thanh trong mô tả (RichText.jsx đổi dòng link .mp3 thành thẻ này).
+   Làm nổi bật giữa nhiều ảnh mô tả: nền xanh Hili đậm, nút vàng có vòng sáng mời bấm,
+   các thẻ liền nhau xếp cạnh nhau trong .hili-sound-group. Bấm cả thẻ đều phát. */
+.ql-content .hili-sound-group {
+  display: grid; gap: 12px; margin: 0.9em 0 1.4em;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
 .ql-content .hili-sound {
-  display: flex; align-items: center; gap: 14px;
-  max-width: 460px; margin: 0.75em 0; padding: 12px 16px;
-  border: 1px solid #E5E7EB; border-radius: 14px; background: #F6F7FB;
+  position: relative; display: flex; align-items: center; gap: 14px;
+  padding: 16px 18px; border-radius: 16px; cursor: pointer; color: #fff;
+  background: linear-gradient(135deg, #1E2A8A 0%, #2A3AAE 100%);
+  box-shadow: 0 8px 20px rgba(30, 42, 138, 0.28);
+  transition: transform .15s ease, box-shadow .15s ease;
 }
+.ql-content .hili-sound:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(30, 42, 138, 0.36); }
 .ql-content .hili-sound__play {
-  flex: none; width: 46px; height: 46px; border-radius: 999px;
-  display: grid; place-items: center; cursor: pointer;
-  background: #1E2A8A; color: #fff; border: none;
-  transition: transform .15s ease, background .15s ease;
+  position: relative; flex: none; width: 54px; height: 54px; border-radius: 999px;
+  display: grid; place-items: center; cursor: pointer; border: none;
+  background: #F7C600; color: #0B1230;
 }
-.ql-content .hili-sound__play:hover { transform: scale(1.05); }
-.ql-content .hili-sound__play:focus-visible { outline: 3px solid #F7C600; outline-offset: 2px; }
+.ql-content .hili-sound__play::after {
+  content: ""; position: absolute; inset: -6px; border-radius: 999px;
+  border: 2px solid rgba(247, 198, 0, 0.7); animation: hili-sound-ring 1.8s ease-out infinite;
+}
+.ql-content .hili-sound.is-playing .hili-sound__play::after { animation: none; opacity: 0; }
+.ql-content .hili-sound__play:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .ql-content .hili-sound__icon {
-  width: 0; height: 0; margin-left: 3px;
-  border-left: 13px solid currentColor; border-top: 8px solid transparent; border-bottom: 8px solid transparent;
+  width: 0; height: 0; margin-left: 4px;
+  border-left: 15px solid currentColor; border-top: 9px solid transparent; border-bottom: 9px solid transparent;
 }
 .ql-content .hili-sound.is-playing .hili-sound__icon {
-  margin-left: 0; width: 12px; height: 14px; border: none;
-  border-left: 4px solid currentColor; border-right: 4px solid currentColor;
+  margin-left: 0; width: 14px; height: 16px; border: none;
+  border-left: 5px solid currentColor; border-right: 5px solid currentColor;
 }
 .ql-content .hili-sound__body { min-width: 0; flex: 1; }
-.ql-content .hili-sound__title { font-weight: 700; color: #1E2A8A; line-height: 1.3; }
-.ql-content .hili-sound__sub { font-size: 13px; opacity: 0.8; line-height: 1.35; }
+.ql-content .hili-sound__tag { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: #F7C600; }
+.ql-content .hili-sound__title { font-size: 17px; font-weight: 700; color: #fff; line-height: 1.3; margin-top: 2px; }
+.ql-content .hili-sound__sub { font-size: 13px; color: rgba(255, 255, 255, 0.85); line-height: 1.35; }
 .ql-content .hili-sound__wave { display: flex; align-items: center; gap: 3px; height: 26px; margin-top: 6px; }
-.ql-content .hili-sound__wave i { display: block; width: 3px; border-radius: 2px; background: #9AA3C7; }
-.ql-content .hili-sound.is-playing .hili-sound__wave i { background: #1E2A8A; animation: hili-sound-bar .5s ease-in-out infinite alternate; }
+.ql-content .hili-sound__wave i { display: block; width: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.45); }
+.ql-content .hili-sound.is-playing .hili-sound__wave i { background: #F7C600; animation: hili-sound-bar .5s ease-in-out infinite alternate; }
 .ql-content .hili-sound.is-playing .hili-sound__wave i:nth-child(3n) { animation-delay: .12s; }
 .ql-content .hili-sound.is-playing .hili-sound__wave i:nth-child(3n+1) { animation-delay: .25s; }
 @keyframes hili-sound-bar { from { transform: scaleY(.45); } to { transform: scaleY(1.1); } }
+@keyframes hili-sound-ring { 0% { transform: scale(.9); opacity: 1; } 100% { transform: scale(1.35); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
-  .ql-content .hili-sound.is-playing .hili-sound__wave i { animation: none; }
+  .ql-content .hili-sound.is-playing .hili-sound__wave i, .ql-content .hili-sound__play::after { animation: none; }
 }
