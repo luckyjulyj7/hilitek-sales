@@ -1332,6 +1332,9 @@ const DESC_TOOLBAR = [
  *   • Nút video trên thanh công cụ: dán link YouTube... để nhúng khung phát.
  */
 export function WebDescEditor({ value, onChange, rows = 6, bg }) {
+  const lastSelRef = useRef(null); // vùng chữ đang chọn gần nhất (để tô màu sau khi bấm ra ngoài)
+  const applyColorRef = useRef(null);
+  const [hex, setHex] = useState("#1E2A8A");
   const rootRef = useRef(null);
   const containerRef = useRef(null);
   const quillRef = useRef(null);
@@ -1401,7 +1404,7 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
       const urls = [];
       for (const f of imgs) urls.push((await uploadProductImage(f)).url);
       insertImagesAt(urls);
-      setMsg(`Đã chèn ${imgs.length} ảnh.`);
+      setMsg(`Đã chèn ${imgs.length} ảnh. Bài đang có ${quillRef.current ? quillRef.current.root.querySelectorAll("img").length : imgs.length} ảnh.`);
     } catch (err) { setMsg("Lỗi: " + (err.message || err)); }
     finally { setBusy(false); }
   };
@@ -1463,16 +1466,27 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
     const editorEl = document.createElement("div");
     containerRef.current.appendChild(editorEl);
 
+    // Tô màu đúng đoạn đang chọn: dùng vùng chọn hiện tại, nếu khung soạn vừa mất focus thì dùng vùng
+    // chọn gần nhất đã nhớ (lastSelRef) — trước đây bấm ô màu xong không tô được đoạn đã bôi đen sẵn.
+    const applyColor = (q, fmt, v) => {
+      const cur = q.getSelection();
+      const r = cur && cur.length ? cur : lastSelRef.current;
+      if (r && r.length) { q.formatText(r.index, r.length, fmt, v || false, "user"); q.setSelection(r.index + r.length, 0, "silent"); }
+      else q.format(fmt, v || false, "user");
+    };
+    applyColorRef.current = applyColor;
+    function colorHandler(v) { applyColor(this.quill, "color", v); }
+    function backgroundHandler(v) { applyColor(this.quill, "background", v); }
     // Màu tự chọn (ngoài bảng màu): mở ô chọn màu của trình duyệt.
     function colorPickHandler() {
       const q = this.quill;
-      const range = q.getSelection(true);
+      const range = (q.getSelection() && q.getSelection().length) ? q.getSelection() : (lastSelRef.current || q.getSelection(true));
       const inp = document.createElement("input");
       inp.type = "color";
       inp.value = (q.getFormat(range).color || "#1e2a8a").slice(0, 7);
       inp.style.cssText = "position:fixed;left:-100px;top:0;opacity:0";
       document.body.appendChild(inp);
-      inp.addEventListener("input", () => { q.setSelection(range); q.format("color", inp.value, "user"); });
+      inp.addEventListener("input", () => { if (range && range.length) q.formatText(range.index, range.length, "color", inp.value, "user"); else q.format("color", inp.value, "user"); });
       inp.addEventListener("change", () => inp.remove());
       inp.addEventListener("blur", () => setTimeout(() => inp.remove(), 300));
       inp.click();
@@ -1486,8 +1500,9 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
     const quill = new Quill(editorEl, {
       theme: "snow",
       placeholder: "Nội dung mô tả…",
-      modules: { toolbar: { container: DESC_TOOLBAR, handlers: { image: imageHandler, colorpick: colorPickHandler } } },
+      modules: { toolbar: { container: DESC_TOOLBAR, handlers: { image: imageHandler, colorpick: colorPickHandler, color: colorHandler, background: backgroundHandler } } },
     });
+    quill.on("selection-change", (r) => { if (r && r.length) lastSelRef.current = r; });
 
     // Dán nội dung từ trang khác thường mang theo màu chữ/nền riêng của trang đó — bỏ 2 định dạng
     // này khi dán để chữ dán vào không bị lem màu lạ từ nguồn copy.
@@ -1600,7 +1615,8 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
     if (!u) { setMsg("Link phải bắt đầu bằng https://"); return; }
     insertImagesAt([u]);
     setLinkVal(""); setLinkOpen(false);
-    setMsg(/drive\.google\.com/.test(u) ? "Đã chèn link Google Drive (ảnh phải ở chế độ 'Bất kỳ ai có link')." : "Đã chèn link ảnh ngoài.");
+    const total = quillRef.current ? quillRef.current.root.querySelectorAll("img").length : 1;
+    setMsg((/drive\.google\.com/.test(u) ? "Đã chèn link Google Drive (ảnh phải ở chế độ 'Bất kỳ ai có link')." : "Đã chèn link ảnh.") + ` Bài đang có ${total} ảnh.`);
   };
 
   const addSound = async () => {
@@ -1719,6 +1735,21 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
             className="w-7 h-7 grid place-items-center rounded-md border text-[13px]" style={{ borderColor: LINE }}>{emo}</button>
         ))}
         <span className="text-xs opacity-60 ml-1">Chèn nhanh biểu tượng</span>
+        <span className="ml-auto inline-flex items-center gap-1">
+          <span className="w-5 h-5 rounded border" style={{ borderColor: LINE, background: /^#?[0-9a-f]{6}$/i.test(hex) ? (hex[0] === "#" ? hex : "#" + hex) : "#fff" }} />
+          <input value={hex} onChange={(e) => setHex(e.target.value.trim())} maxLength={7} placeholder="#1E2A8A" title="Mã màu hex"
+            className="w-[84px] rounded-md border px-1.5 py-1 text-xs font-mono" style={{ borderColor: LINE }} />
+          <button type="button" title="Bôi đen đoạn chữ rồi bấm để tô màu theo mã hex"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => {
+              const v = /^#?[0-9a-f]{6}$/i.test(hex) ? (hex[0] === "#" ? hex : "#" + hex) : null;
+              if (!v) { setMsg("Mã màu phải dạng #RRGGBB, ví dụ #1E2A8A."); return; }
+              if (!lastSelRef.current || !lastSelRef.current.length) { setMsg("Bôi đen đoạn chữ cần tô trước, rồi bấm Tô màu."); return; }
+              applyColorRef.current && applyColorRef.current(quillRef.current, "color", v);
+              setMsg(`Đã tô màu ${v.toUpperCase()}.`);
+            }}
+            className="rounded-md border px-2 py-1 text-xs font-medium" style={{ borderColor: LINE, color: TEXT }}>Tô màu</button>
+        </span>
       </div>
       {linkOpen && (
         <div className="mb-1">
@@ -1811,7 +1842,9 @@ function WebImageGrid({ images, onChange, max = 10 }) {
 
   const room = () => Math.max(0, max - list.length);
   const addFiles = async (files) => {
-    const imgs = [...files].filter((f) => f && f.type && f.type.startsWith("image/")).slice(0, room());
+    // Sắp theo tên file (01, 02 ... 10) để kéo/chọn nhiều ảnh cùng lúc vẫn đúng thứ tự.
+    const imgs = [...files].filter((f) => f && f.type && f.type.startsWith("image/"))
+      .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), undefined, { numeric: true })).slice(0, room());
     if (!imgs.length) return;
     setBusy(true); setMsg(`Đang tải ${imgs.length} ảnh…`);
     try {
@@ -4988,11 +5021,12 @@ function WebCategoryMultiSelect({ webCats, value, onChange }) {
   const boxRef = useClickAway(open, () => { setOpen(false); setQ(""); });
   const sel = value || [];
   const toggle = (name) => onChange(sel.includes(name) ? sel.filter((x) => x !== name) : [...sel, name]);
-  const kw = q.trim().toLowerCase();
+  const fold = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d");
+  const kw = fold(q.trim());
   const groups = useMemo(() => {
     const byGroup = new Map();
     (webCats || []).forEach((c) => {
-      if (kw && !c.name.toLowerCase().includes(kw)) return;
+      if (kw && !fold(c.name).includes(kw) && !fold(c.group).includes(kw)) return;
       if (!byGroup.has(c.group)) byGroup.set(c.group, []);
       byGroup.get(c.group).push(c);
     });
@@ -15391,7 +15425,7 @@ function CommandPalette({ orders, purchaseOrders, customers, products, suppliers
   );
 }
 
-function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig, categories, brands, currentUser, addLog, onOpenOrder, navTarget, onFocusHandled, goToInventoryProductEdit }) {
+function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig, categories, brands, currentUser, addLog, onOpenOrder, navTarget, onFocusHandled, goToInventoryProductEdit, suppliers }) {
   const [sub, setSub] = useState("products");
   useEffect(() => {
     if (navTarget?.type === "webproduct" || navTarget?.type === "webproducts-daterange") setSub("products");
@@ -15569,6 +15603,7 @@ function WebProducts({ products, setProducts, categories, brands, currentUser, a
         goToInventoryProductEdit={goToInventoryProductEdit}
         currentUser={currentUser}
         addLog={addLog}
+        suppliers={suppliers}
       />
     );
   }
@@ -16061,7 +16096,134 @@ function SeoCounter({ len, min, max, usingFallback }) {
   );
 }
 
-function WebProductPage({ product, products, setProducts, webCats, onBack, onSwitch, goToInventoryProductEdit, currentUser, addLog }) {
+
+/* ---------------- Áp dụng 1 lần cho mọi phiên bản cùng nhóm (NCC, giá sỉ, tồn kho ảo, SEO) ----------------
+ * Xem trước -> Xác nhận -> có Hoàn tác. Chỉ đụng đúng các trường đã tick; KHÔNG đổi slug, danh mục, tên.
+ * Lưu bản "trước khi áp dụng" vào localStorage theo nhóm để Hoàn tác được cả khi đã chuyển sang phiên bản khác. */
+const BULK_UNDO_KEY = (gid) => `hili-bulk-undo:${gid}`;
+const variantLabel = (x) => (x.variantAttrs && Object.values(x.variantAttrs).filter(Boolean).join(" / ")) || x.sku || x.name;
+function BulkApplyCard({ product, products, setProducts, suppliers, draft, dirty, onApplied, addLog }) {
+  const gid = product.variantGroupId;
+  const group = (products || []).filter((x) => gid && x.variantGroupId === gid);
+  const [open, setOpen] = useState(false);
+  const [step, setStep] = useState("edit");
+  const [on, setOn] = useState({ supplierId: false, wholesalePrice: false, virtualStock: false, seoTitle: false, seoDesc: false });
+  const [val, setVal] = useState({});
+  const [undo, setUndo] = useState(() => { try { return gid ? JSON.parse(localStorage.getItem(BULK_UNDO_KEY(gid)) || "null") : null; } catch { return null; } });
+  if (!gid || group.length < 2) return null;
+  const fill = (t, x) => String(t || "").replace(/\{phiên bản\}|\{phien ban\}/gi, variantLabel(x)).replace(/\{tên\}|\{ten\}/gi, x.name || "").replace(/\s{2,}/g, " ").trim();
+  const start = () => {
+    if (dirty) { notify("Đang có thay đổi chưa lưu ở phiên bản này. Bấm Lưu trước rồi mới áp dụng cho cả nhóm."); return; }
+    setVal({ supplierId: product.supplierId || "", wholesalePrice: product.wholesalePrice || 0, virtualStock: !!draft.virtualStock, seoTitle: draft.seoTitle || "", seoDesc: draft.seoDesc || "" });
+    setOn({ supplierId: false, wholesalePrice: false, virtualStock: false, seoTitle: false, seoDesc: false });
+    setStep("edit"); setOpen(true);
+  };
+  const supName = (id) => { const z = (suppliers || []).find((q) => q.id === id); return z ? `${z.code} - ${z.name}` : "— Chưa gán —"; };
+  const plan = group.map((x) => {
+    const w = normalizeWeb(x.web); const rows = []; const patch = {}; const wpatch = {};
+    if (on.supplierId && (x.supplierId || "") !== val.supplierId) { rows.push(["Nhà cung cấp", supName(x.supplierId), supName(val.supplierId)]); patch.supplierId = val.supplierId; }
+    if (on.wholesalePrice && Number(x.wholesalePrice || 0) !== Number(val.wholesalePrice || 0)) { rows.push(["Giá bán sỉ", vnd(x.wholesalePrice), vnd(val.wholesalePrice)]); patch.wholesalePrice = Number(val.wholesalePrice) || 0; }
+    if (on.virtualStock && !!w.virtualStock !== !!val.virtualStock) { rows.push(["Tồn kho ảo", w.virtualStock ? "Bật" : "Tắt", val.virtualStock ? "Bật" : "Tắt"]); wpatch.virtualStock = !!val.virtualStock; wpatch.virtualStockQty = val.virtualStock ? (w.virtualStockQty || randomVirtualStock()) : 0; }
+    if (on.seoTitle) { const t = fill(val.seoTitle, x); if (t !== (w.seoTitle || "")) { rows.push(["Tiêu đề SEO", w.seoTitle || "(trống)", t]); wpatch.seoTitle = t; } }
+    if (on.seoDesc) { const t = fill(val.seoDesc, x); if (t !== (w.seoDesc || "")) { rows.push(["Mô tả SEO", w.seoDesc || "(trống)", t]); wpatch.seoDesc = t; } }
+    return { x, rows, patch, wpatch };
+  }).filter((r) => r.rows.length);
+  const hasToken = (t) => /\{(phiên bản|phien ban|tên|ten)\}/i.test(t || "");
+  const dupTitle = on.seoTitle && !hasToken(val.seoTitle);
+  const dupDesc = on.seoDesc && !hasToken(val.seoDesc);
+  const apply = () => {
+    const before = plan.map(({ x }) => { const w = normalizeWeb(x.web); return { id: x.id, supplierId: x.supplierId || "", wholesalePrice: x.wholesalePrice || 0, web: { virtualStock: !!w.virtualStock, virtualStockQty: w.virtualStockQty || 0, seoTitle: w.seoTitle || "", seoDesc: w.seoDesc || "" } }; });
+    const byId = Object.fromEntries(plan.map((r) => [r.x.id, r]));
+    setProducts((prev) => prev.map((x) => { const r = byId[x.id]; if (!r) return x; return { ...x, ...r.patch, web: normalizeWeb({ ...normalizeWeb(x.web), ...r.wpatch }) }; }));
+    const u = { at: new Date().toISOString(), items: before };
+    try { localStorage.setItem(BULK_UNDO_KEY(gid), JSON.stringify(u)); } catch { /* bỏ qua */ }
+    setUndo(u);
+    const mine = byId[product.id]; if (mine && onApplied) onApplied(mine.wpatch);
+    if (addLog) addLog("Áp dụng cho cả nhóm phiên bản", `${product.name}: ${plan.length} phiên bản, ${[...new Set(plan.flatMap((r) => r.rows.map((z) => z[0])))].join(", ")}`);
+    setOpen(false);
+    notify(`Đã áp dụng cho ${plan.length} phiên bản. Bấm "Hoàn tác" nếu cần quay lại.`);
+  };
+  const doUndo = async () => {
+    if (!undo) return;
+    if (dirty) { notify("Đang có thay đổi chưa lưu ở phiên bản này. Bấm Lưu hoặc Huỷ trước rồi mới hoàn tác."); return; }
+    if (!await askConfirm(`Hoàn tác lần áp dụng lúc ${new Date(undo.at).toLocaleTimeString("vi-VN")} cho ${undo.items.length} phiên bản?`)) return;
+    const byId = Object.fromEntries(undo.items.map((b) => [b.id, b]));
+    setProducts((prev) => prev.map((x) => { const b = byId[x.id]; if (!b) return x; return { ...x, supplierId: b.supplierId, wholesalePrice: b.wholesalePrice, web: normalizeWeb({ ...normalizeWeb(x.web), ...b.web }) }; }));
+    const mine = byId[product.id]; if (mine && onApplied) onApplied(mine.web);
+    try { localStorage.removeItem(BULK_UNDO_KEY(gid)); } catch { /* bỏ qua */ }
+    setUndo(null);
+    if (addLog) addLog("Hoàn tác áp dụng cho cả nhóm", `${product.name}: ${undo.items.length} phiên bản`);
+    notify("Đã hoàn tác.");
+  };
+  const chk = (k, label, child) => (
+    <div className="rounded-md p-2.5" style={{ border: `1px solid ${on[k] ? BLUE : LINE}`, background: on[k] ? `${BLUE}08` : "#fff" }}>
+      <label className="flex items-center gap-2 text-sm font-medium cursor-pointer" style={{ color: TEXT }}>
+        <input type="checkbox" checked={on[k]} onChange={(e) => setOn((o) => ({ ...o, [k]: e.target.checked }))} /> {label}
+      </label>
+      {on[k] && <div className="mt-2">{child}</div>}
+    </div>
+  );
+  const ic = "w-full rounded-md border px-2.5 py-1.5 text-sm";
+  return (
+    <div className="rounded-xl p-4" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+      <p className="text-base font-semibold" style={{ color: TEXT }}>Áp dụng cho cả nhóm</p>
+      <p className="mt-0.5 text-xs" style={{ color: "#6B7280" }}>Nhập 1 lần cho {group.length} phiên bản: nhà cung cấp, giá sỉ, tồn kho ảo, SEO. Có xem trước và hoàn tác.</p>
+      <div className="mt-2.5 flex flex-wrap gap-2">
+        <button type="button" onClick={start} className="rounded-md px-3 py-1.5 text-sm font-medium text-white" style={{ background: INK }}>Áp dụng cho tất cả phiên bản</button>
+        {undo && <button type="button" onClick={doUndo} className="rounded-md border px-3 py-1.5 text-sm" style={{ borderColor: LINE, color: TEXT }} title={`Lần áp dụng lúc ${new Date(undo.at).toLocaleString("vi-VN")}`}>Hoàn tác ({new Date(undo.at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })})</button>}
+      </div>
+      {open && (
+        <Modal title={step === "edit" ? `Áp dụng cho ${group.length} phiên bản` : `Xem trước: ${plan.length} phiên bản sẽ thay đổi`} onClose={() => setOpen(false)} size="form">
+          {step === "edit" ? (
+            <div className="space-y-2.5">
+              <p className="text-xs" style={{ color: "#6B7280" }}>Tick mục cần áp dụng. Giá trị mới <b>ghi đè</b> cả ô đã có. Không đổi đường dẫn (slug), danh mục, tên sản phẩm.</p>
+              {chk("supplierId", "Nhà cung cấp", (
+                <select className={ic} style={{ borderColor: LINE }} value={val.supplierId} onChange={(e) => setVal((v) => ({ ...v, supplierId: e.target.value }))}>
+                  <option value="">— Chưa gán —</option>
+                  {(suppliers || []).map((z) => <option key={z.id} value={z.id}>{z.code} - {z.name}</option>)}
+                </select>))}
+              {chk("wholesalePrice", "Giá bán sỉ (đ)", (
+                <input type="number" min={0} className={ic} style={{ borderColor: LINE }} value={val.wholesalePrice} onChange={(e) => setVal((v) => ({ ...v, wholesalePrice: e.target.value }))} />))}
+              {chk("virtualStock", "Tồn kho ảo", (
+                <div className="flex gap-2">{[true, false].map((b) => (
+                  <button key={String(b)} type="button" onClick={() => setVal((v) => ({ ...v, virtualStock: b }))} className="rounded-md border px-3 py-1 text-sm" style={{ borderColor: val.virtualStock === b ? INK : LINE, background: val.virtualStock === b ? INK : "#fff", color: val.virtualStock === b ? "#fff" : TEXT }}>{b ? "Bật" : "Tắt"}</button>))}</div>))}
+              {chk("seoTitle", "Tiêu đề SEO", (<>
+                <input className={ic} style={{ borderColor: LINE }} value={val.seoTitle} onChange={(e) => setVal((v) => ({ ...v, seoTitle: e.target.value }))} />
+                <p className="mt-1 text-xs" style={{ color: "#6B7280" }}>Gõ <b>{"{phiên bản}"}</b> để chèn tên phiên bản (VD Sunset / Cloudy), tránh trùng tiêu đề giữa các phiên bản.</p></>))}
+              {chk("seoDesc", "Mô tả SEO", (<>
+                <textarea rows={3} className={ic} style={{ borderColor: LINE }} value={val.seoDesc} onChange={(e) => setVal((v) => ({ ...v, seoDesc: e.target.value }))} />
+                <p className="mt-1 text-xs" style={{ color: "#6B7280" }}>{(val.seoDesc || "").length} ký tự (chuẩn 140-160). Dùng được <b>{"{phiên bản}"}</b>.</p></>))}
+              <div className="flex justify-end gap-2 pt-1">
+                <button type="button" onClick={() => setOpen(false)} className="rounded-md border px-3 py-1.5 text-sm" style={{ borderColor: LINE, color: TEXT }}>Huỷ</button>
+                <button type="button" disabled={!Object.values(on).some(Boolean)} onClick={() => setStep("preview")} className="rounded-md px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40" style={{ background: INK }}>Xem trước</button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {(dupTitle || dupDesc) && <p className="text-xs p-2 rounded-md" style={{ background: "#FFF7ED", color: "#9A3412" }}>Lưu ý: {dupTitle ? "tiêu đề SEO" : ""}{dupTitle && dupDesc ? " và " : ""}{dupDesc ? "mô tả SEO" : ""} sẽ <b>giống hệt nhau</b> ở mọi phiên bản. Nên thêm <b>{"{phiên bản}"}</b> để Google không coi là trùng lặp.</p>}
+              {plan.length === 0 ? <p className="text-sm" style={{ color: "#6B7280" }}>Không có phiên bản nào thay đổi (giá trị đã giống hệt).</p> : (
+                <div className="max-h-[55vh] overflow-auto rounded-md" style={{ border: `1px solid ${LINE}` }}>
+                  <table className="w-full text-xs"><thead><tr style={{ background: PAPER }}><th className="text-left p-2">Phiên bản</th><th className="text-left p-2">Mục</th><th className="text-left p-2">Hiện tại</th><th className="text-left p-2">Sau khi áp dụng</th></tr></thead>
+                    <tbody>{plan.flatMap(({ x, rows }) => rows.map((r, i) => (
+                      <tr key={x.id + r[0]} style={{ borderTop: `1px solid ${LINE}` }}>
+                        <td className="p-2 align-top font-medium" style={{ color: TEXT }}>{i === 0 ? `${variantLabel(x)}${x.id === product.id ? " (đang mở)" : ""}` : ""}</td>
+                        <td className="p-2 align-top" style={{ color: "#4B5563" }}>{r[0]}</td>
+                        <td className="p-2 align-top" style={{ color: "#6B7280" }}>{r[1]}</td>
+                        <td className="p-2 align-top" style={{ color: TEXT }}>{r[2]}</td></tr>)))}</tbody></table>
+                </div>)}
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={() => setStep("edit")} className="rounded-md border px-3 py-1.5 text-sm" style={{ borderColor: LINE, color: TEXT }}>Quay lại sửa</button>
+                <button type="button" disabled={!plan.length} onClick={apply} className="rounded-md px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40" style={{ background: INK }}>Xác nhận áp dụng</button>
+              </div>
+            </div>
+          )}
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+function WebProductPage({ product, products, setProducts, webCats, onBack, onSwitch, goToInventoryProductEdit, currentUser, addLog, suppliers }) {
   // Thanh công cụ của ô Mô tả dính ngay DƯỚI thanh đầu trang (Lưu/Quay lại) khi cuộn: đo chiều cao thanh đầu.
   const stickyHeadRef = useRef(null);
   useEffect(() => {
@@ -16374,6 +16536,27 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
 
           <div hidden={editTab !== "images"} className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
             <p className="text-base font-semibold mb-2" style={{ color: TEXT }}>Ảnh sản phẩm trên web <span className="text-xs font-normal opacity-60">(tối đa 10, chất lượng cao — bỏ trống = dùng ảnh ở form sản phẩm chính)</span></p>
+            {(() => {
+              const sibs = p.variantGroupId ? (products || []).filter((x) => x.id !== p.id && x.variantGroupId === p.variantGroupId && (normalizeWeb(x.web).images || []).length) : [];
+              if (!sibs.length) return null;
+              return (
+                <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
+                  <span style={{ color: "#4B5563" }}>Dùng chung ảnh với phiên bản khác:</span>
+                  <select className="rounded-md border px-2 py-1 text-sm" style={{ borderColor: LINE }} value=""
+                    onChange={async (e) => {
+                      const src = sibs.find((x) => x.id === e.target.value); e.target.value = "";
+                      if (!src) return;
+                      const imgs = normalizeWeb(src.web).images || [];
+                      if ((w.images || []).length && !await askConfirm(`Thay ${(w.images || []).length} ảnh hiện tại bằng ${imgs.length} ảnh của phiên bản "${variantLabel(src)}"?`)) return;
+                      setWeb({ images: [...imgs] });
+                      notify(`Đã sao chép ${imgs.length} ảnh từ "${variantLabel(src)}". Bấm Lưu để giữ lại, hoặc Huỷ để bỏ.`);
+                    }}>
+                    <option value="">— Chọn phiên bản để sao chép ảnh —</option>
+                    {sibs.map((x) => <option key={x.id} value={x.id}>{variantLabel(x)} ({normalizeWeb(x.web).images.length} ảnh)</option>)}
+                  </select>
+                </div>
+              );
+            })()}
             <WebImageGrid images={w.images} onChange={(imgs) => setWeb({ images: imgs })} max={10} />
           </div>
 
@@ -16388,7 +16571,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
             <p className="text-xs mb-1.5" style={{ color: "#6B7280" }}>Mỗi dòng một thông số, dạng <b>Nhãn | Giá trị</b>. Dán từ trang khác rồi bấm Chuẩn hoá để tự thêm dấu |.</p>
             <textarea rows={8} className={inputCls} style={{ borderColor: LINE, background: "#fff", fontFamily: "'Inter', sans-serif" }}
               value={w.specsText} onChange={(e) => setWeb({ specsText: e.target.value })}
-              placeholder={"Chất liệu | Kính cường lực\nĐộ cứng | 9H\nĐặc điểm | Cảm ứng nhạy\n- Viền phủ keo\n- Chống dầu vân tay"} />
+              placeholder={"Mỗi dòng 1 thông số, dạng Nhãn | Giá trị. Ví dụ:\nKích thước | ...\nKết nối | ...\nBảo hành | ... tháng"} />
           </div>
 
           <div hidden={editTab !== "price"} className="p-4 rounded-md space-y-3" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
@@ -16446,6 +16629,9 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
               <Switch checked={!!w.published} onChange={(v) => setWeb({ published: v })} label="Đăng sản phẩm lên web" />
             </div>
           </div>
+
+          <BulkApplyCard product={p} products={products} setProducts={setProducts} suppliers={suppliers} draft={draft} dirty={dirty} addLog={addLog}
+            onApplied={(wp) => setDraft((d) => normalizeWeb({ ...d, ...Object.fromEntries(Object.entries(wp).filter(([k]) => ["seoTitle", "seoDesc", "virtualStock", "virtualStockQty"].includes(k))) }))} />
 
           {(() => {
             const health = webHealth(p, w);
@@ -18695,7 +18881,7 @@ export default function SalesManager() {
             {tab === "suppliers" && <Suppliers suppliers={suppliers} setSuppliers={setSuppliers} purchaseOrders={purchaseOrders} addLog={addLog} goToDoc={goToDoc} navTarget={tab === "suppliers" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} currentUser={currentUser} />}
             {tab === "plans" && roleTabIds.includes("plans") && <Plans plans={plans} setPlans={setPlans} orders={orders} purchaseOrders={purchaseOrders} products={products} employeeNames={employeeNames} />}
             {tab === "reports" && roleTabIds.includes("reports") && <Reports onOpen={peek} orders={orders} products={products} customers={customers} accounts={accounts} purchaseOrders={purchaseOrders} warrantyTickets={warrantyTickets} employeeNames={employeeNames} goToOrdersDateRange={goToOrdersDateRange} goToProductsDateRange={goToProductsDateRange} />}
-            {tab === "website" && currentUser.role === "admin" && <WebsiteSection products={products} setProducts={setProducts} orders={orders} webConfig={webConfig} setWebConfig={setWebConfig} categories={categories} brands={brands} currentUser={currentUser} addLog={addLog} onOpenOrder={(id) => { setTab("orders"); setNavTarget({ type: "order", id }); }} navTarget={tab === "website" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} goToInventoryProductEdit={goToInventoryProductEdit} />}
+            {tab === "website" && currentUser.role === "admin" && <WebsiteSection products={products} setProducts={setProducts} suppliers={suppliers} orders={orders} webConfig={webConfig} setWebConfig={setWebConfig} categories={categories} brands={brands} currentUser={currentUser} addLog={addLog} onOpenOrder={(id) => { setTab("orders"); setNavTarget({ type: "order", id }); }} navTarget={tab === "website" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} goToInventoryProductEdit={goToInventoryProductEdit} />}
             {tab === "activity" && (currentUser.isOwner || currentUser.perms?.viewActivityLog) && <ActivityLog log={activityLog} accounts={accounts} />}
             {tab === "accounts" && currentUser.isOwner && <Accounts accounts={accounts} setAccounts={setAccounts} currentUser={currentUser} addLog={addLog} onResetTestData={resetTestData} onDownloadBackup={downloadBackup} onRestoreBackup={restoreBackup} onKickAccount={kickAccount} />}
             {tab === "profile" && <MyProfile currentUser={currentUser} setAccounts={setAccounts} addLog={addLog} />}
