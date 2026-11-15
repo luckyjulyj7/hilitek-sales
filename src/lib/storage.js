@@ -127,6 +127,74 @@ function logical(key) {
   if (!k) throw new Error(`Khoá dữ liệu không được hỗ trợ: ${key}`);
   return k;
 }
+/*
+ * Bản sao dữ liệu chính trên máy (IndexedDB), để MỞ LẠI / TẢI LẠI trang không phải kéo cả bộ dữ liệu
+ * (~1,6 MB egress Supabase mỗi lần). Khi mở trang: gửi kèm mốc updatedAt của bản trên máy, máy chủ
+ * chỉ so mốc (vài byte) — chưa ai lưu gì thì dùng luôn bản trên máy. Sau mỗi lần lưu thành công, bản
+ * trên máy được thay bằng đúng bản vừa lưu + mốc máy chủ trả về. Đăng xuất thì xoá bản này.
+ * Không lưu mật khẩu/mã băm (xoá các trường bí mật của tài khoản trước khi ghi).
+ */
+const IDB_NAME = "hilitek-cache";
+const IDB_STORE = "kv";
+const IDB_MAIN = "main";
+const SECRET_FIELDS = ["passwordHash", "passwordSalt", "passwordAlgo", "passwordIter", "password", "_legacyPassword"];
+function idb() {
+  return new Promise((resolve, reject) => {
+    if (typeof indexedDB === "undefined") return reject(new Error("no idb"));
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbDo(mode, fn) {
+  const db = await idb();
+  try {
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, mode);
+      const r = fn(tx.objectStore(IDB_STORE));
+      tx.oncomplete = () => resolve(r && "result" in r ? r.result : undefined);
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+  } finally {
+    db.close();
+  }
+}
+async function cacheRead() {
+  try {
+    const v = await idbDo("readonly", (st) => st.get(IDB_MAIN));
+    return v && typeof v.value === "string" && v.updatedAt ? v : null;
+  } catch { return null; }
+}
+async function cacheWrite(value, updatedAt) {
+  try { await idbDo("readwrite", (st) => st.put({ value, updatedAt, at: Date.now() }, IDB_MAIN)); } catch { /* hết chỗ / chặn: bỏ qua */ }
+}
+export async function clearMainCache() {
+  try { await idbDo("readwrite", (st) => st.delete(IDB_MAIN)); } catch { /* bỏ qua */ }
+}
+function stripSecrets(value) {
+  try {
+    const st = JSON.parse(value);
+    if (st && Array.isArray(st.accounts)) st.accounts = st.accounts.map((a) => { const c = { ...a }; SECRET_FIELDS.forEach((k) => delete c[k]); return c; });
+    return JSON.stringify(st);
+  } catch { return null; }
+}
+// Lưu liên tục (tự lưu 400ms) -> chỉ ghi bản trên máy cho lần lưu MỚI NHẤT, lúc trình duyệt rảnh.
+let _pendingCache = null;
+function cacheAfterSave(value, updatedAt) {
+  const first = !_pendingCache;
+  _pendingCache = { value, updatedAt };
+  if (!first) return;
+  setTimeout(async () => {
+    const job = _pendingCache;
+    _pendingCache = null;
+    const clean = stripSecrets(job.value);
+    if (clean) await cacheWrite(clean, job.updatedAt);
+    else await clearMainCache();
+  }, 1500);
+}
+
 export function createApiStorage() {
   let lastPoll = null; // { at, updatedAt }
   return {
@@ -137,6 +205,14 @@ export function createApiStorage() {
         const r = await adminApi("poll");
         lastPoll = { at: Date.now(), updatedAt: r.updatedAt };
         return { value: JSON.stringify(r.kicks || {}) };
+      }
+      if (k === "main") {
+        const cached = await cacheRead();
+        const r = await adminApi("get", { query: cached ? { k, since: cached.updatedAt } : { k } });
+        if (r.notModified && cached) return { value: cached.value, updatedAt: cached.updatedAt };
+        if (r.value == null) return null;
+        cacheWrite(r.value, r.updatedAt || null);
+        return { value: r.value, updatedAt: r.updatedAt || null };
       }
       const r = await adminApi("get", { query: { k } });
       if (r.value == null) return null;
@@ -153,12 +229,18 @@ export function createApiStorage() {
       return { updatedAt: r.updatedAt || null };
     },
     async set(key, value /* , shared */) {
-      const r = await adminApi("set", { method: "POST", body: { k: logical(key), value: typeof value === "string" ? value : JSON.stringify(value) } });
+      const k = logical(key);
+      const v = typeof value === "string" ? value : JSON.stringify(value);
+      if (k === "main") await clearMainCache(); // đang ghi: bản trên máy không còn chắc đúng
+      const r = await adminApi("set", { method: "POST", body: { k, value: v } });
+      if (k === "main" && r.updatedAt) cacheAfterSave(v, r.updatedAt);
       return { ok: true, updatedAt: r.updatedAt || null };
     },
     async casSet(key, value, expectedUpdatedAt) {
-      const r = await adminApi("cas", { method: "POST", body: { k: logical(key), value, expected: expectedUpdatedAt } });
+      const k = logical(key);
+      const r = await adminApi("cas", { method: "POST", body: { k, value, expected: expectedUpdatedAt } });
       if (r.conflict) return { conflict: true };
+      if (k === "main" && r.updatedAt) cacheAfterSave(value, r.updatedAt);
       return { ok: true, updatedAt: r.updatedAt };
     },
     async delete(key /* , shared */) {

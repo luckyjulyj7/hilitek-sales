@@ -8,7 +8,7 @@
  *   type=warranty &serial=<số serial>                        — hạn bảo hành theo serial
  *   type=points   &phone=<số điện thoại>                     — điểm tích luỹ theo SĐT
  */
-import { handler, json, readState } from "./_supa.js";
+import { handler, json, readStateCached, readStateFresh, stateCacheAge } from "./_supa.js";
 import { pointsForPhone, normalizePhone, DEFAULT_LOYALTY } from "../../src/lib/loyalty.js";
 
 /* ---------------- type=order ---------------- */
@@ -28,9 +28,12 @@ async function lookupOrder(req, res) {
   if (!code || phone.length < 8)
     return json(res, 400, { error: "Nhập mã đơn hàng và số điện thoại đặt hàng." });
 
-  const state = await readState();
-  const orders = Array.isArray(state.orders) ? state.orders : [];
-  const order = orders.find((o) => o && String(o.code || "").trim().toUpperCase() === code);
+  // Dùng bản nhớ tạm (2 phút) trước; không thấy đơn (VD khách vừa đặt) mới đọc bản mới nhất — tối đa
+  // 1 lần/30 giây, để ai đó dò mã đơn liên tục cũng không kéo cả bộ dữ liệu mỗi lượt.
+  const findIn = (st) => (Array.isArray(st.orders) ? st.orders : []).find((o) => o && String(o.code || "").trim().toUpperCase() === code);
+  let state = await readStateCached();
+  let order = findIn(state);
+  if (!order && stateCacheAge() > 30000) { state = await readStateFresh(); order = findIn(state); }
 
   const okPhone =
     order &&
@@ -135,7 +138,7 @@ async function lookupWarranty(req, res) {
   const serial = String((req.query && req.query.serial) || "").trim();
   if (!serial) return json(res, 400, { error: "Nhập số serial cần tra cứu." });
 
-  const state = await readState();
+  const state = await readStateCached();
   const info = resolveOriginalSale(serial, state);
   if (!info) {
     return json(res, 200, {
@@ -163,7 +166,7 @@ async function lookupPoints(req, res) {
   const phone = normalizePhone((req.query && req.query.phone) || "");
   if (!/^0\d{8,10}$/.test(phone)) return json(res, 400, { error: "Nhập số điện thoại hợp lệ." });
 
-  const state = await readState();
+  const state = await readStateCached();
   const config = (state.webConfig && state.webConfig.LOYALTY) || DEFAULT_LOYALTY;
   if (!config.enabled) return json(res, 200, { enabled: false, points: 0 });
 
