@@ -31,6 +31,7 @@ function webCatsWithGroups(menu) {
 }
 import { uploadProductImage, uploadProductAudio, rehostExternalImage, toDirectImageUrl, trimLogo } from "./lib/mediaUpload.js";
 import { adminApi } from "./lib/adminApi.js";
+import { clearMainCache } from "./lib/storage.js";
 import { pointsForPhone, normalizePhone, DEFAULT_LOYALTY } from "./lib/loyalty.js";
 import { baseVariantName } from "./lib/variants.js";
 import { autoComparePrice } from "./lib/autoComparePrice.js";
@@ -17970,6 +17971,7 @@ function ServerLogout({ pendingRef }) {
         await new Promise((r) => setTimeout(r, 500));
       }
       try { await adminApi("logout", { method: "POST", retries: 1 }); } catch { /* cookie hết hạn sẵn */ }
+      try { await clearMainCache(); } catch { /* bỏ qua */ }
       try { localStorage.removeItem("hilitek:session-userId"); } catch { /* bỏ qua */ }
       if (!stopped) window.location.reload();
     })();
@@ -18146,6 +18148,8 @@ export default function SalesManager() {
   // chạy code cũ rồi âm thầm ghi đè lên dữ liệu mới hơn của người khác.
   const myScriptSrcRef = useRef(null);
   const [staleVersion, setStaleVersion] = useState(false);
+  const staleVersionRef = useRef(false);
+  staleVersionRef.current = staleVersion;
   useEffect(() => {
     const s = document.querySelector('script[type="module"]');
     myScriptSrcRef.current = s ? s.getAttribute("src") : null;
@@ -18358,8 +18362,27 @@ export default function SalesManager() {
   useEffect(() => {
     if (!loaded || !currentUserId || staleVersion) return;
     let stopped = false;
+    // Tiết kiệm egress Supabase (mỗi lần tải cả bộ dữ liệu ~1,6 MB): tab bỏ không (ẩn, hoặc không ai
+    // gõ/bấm 3 phút) vẫn kiểm tra nhẹ (đá phiên, mốc updated_at) nhưng KHÔNG tải bản mới; người dùng
+    // quay lại thao tác là kéo ngay 1 lần. Trước đây mỗi lần lưu, mọi tab đang mở đều tải lại cả bộ.
+    const IDLE_PULL_MS = 3 * 60 * 1000;
+    let lastActivity = Date.now();
+    let busy = false;
     const pull = async () => {
-      if (document.hidden || pendingSaveRef.current || !window.storage.getMeta) return;
+      if (busy || document.hidden || pendingSaveRef.current || !window.storage.getMeta) return;
+      busy = true;
+      try { await pullOnce(); } finally { busy = false; }
+    };
+    const onActive = () => {
+      const wasIdle = Date.now() - lastActivity > IDLE_PULL_MS;
+      lastActivity = Date.now();
+      if (wasIdle) pull();
+    };
+    const onVisible = () => { if (!document.hidden) onActive(); };
+    const actEvs = ["mousedown", "keydown", "wheel", "touchstart"];
+    actEvs.forEach((e) => window.addEventListener(e, onActive, { passive: true, capture: true }));
+    document.addEventListener("visibilitychange", onVisible);
+    const pullOnce = async () => {
       try {
         // Bị chủ sở hữu ép đăng xuất từ xa? (chỉ tính lệnh phát sinh SAU khi tab này đã mở)
         const kicks = await readKickList();
@@ -18370,6 +18393,7 @@ export default function SalesManager() {
         }
         const meta = await window.storage.getMeta(STORAGE_KEY, true);
         if (stopped || pendingSaveRef.current || !meta || !meta.updatedAt || sameInstant(meta.updatedAt, lastSyncedAtRef.current)) return;
+        if (Date.now() - lastActivity > IDLE_PULL_MS) return; // tab bỏ không: đợi người dùng quay lại
         const raw = await window.storage.get(STORAGE_KEY, true);
         if (stopped || pendingSaveRef.current || !raw || !raw.value) return;
         const remote = JSON.parse(raw.value);
@@ -18380,7 +18404,12 @@ export default function SalesManager() {
     };
     const iv = setInterval(pull, 20000);
     pull();
-    return () => { stopped = true; clearInterval(iv); };
+    return () => {
+      stopped = true;
+      clearInterval(iv);
+      actEvs.forEach((e) => window.removeEventListener(e, onActive, { capture: true }));
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [loaded, currentUserId, staleVersion]);
 
   // Tự phát hiện khi đã có bản triển khai MỚI hơn bản đang chạy trên tab này (so sánh file JS đang
@@ -18410,7 +18439,7 @@ export default function SalesManager() {
     return () => { stopped = true; clearInterval(iv); };
   }, [loaded]);
 
-  // Tự tải lại trang khi RẢNH 10 phút (không ai gõ/bấm/cuộn) để màn hình luôn là bản mới nhất. Chỉ tải
+  // Tự tải lại trang khi RẢNH 10 phút VÀ đã có bản triển khai mới (xem bên dưới). Chỉ tải
   // lại khi chắc chắn không mất gì: không mở cửa sổ (popup) nào, không đang gõ dở trong ô nhập/ô ghi
   // chú nào, và mọi thay đổi đã lưu xong lên server. Không thoả thì đợi lượt kiểm tra sau (mỗi phút).
   // Máy chủ báo phiên hết hạn / bị đá ra / tài khoản bị khoá -> đăng xuất ngay.
@@ -18456,6 +18485,10 @@ export default function SalesManager() {
     };
     const iv = setInterval(() => {
       if (Date.now() - lastActivity < IDLE_MS) return;
+      // Chỉ tải lại khi đã có BẢN TRIỂN KHAI MỚI (code mới). Dữ liệu mới đã có vòng đồng bộ ở trên lo,
+      // còn mỗi lần tải lại trang là tải cả bộ dữ liệu ~1,6 MB từ Supabase: tab bỏ quên trước đây tự
+      // tải lại 10 phút/lần (~230 MB/ngày/tab) — nguyên nhân chính làm vượt hạn mức egress gói Free.
+      if (!staleVersionRef.current) return;
       if (__modalStack.length > 0 || pendingSaveRef.current || typingSomewhere()) return;
       location.reload();
     }, 60 * 1000);

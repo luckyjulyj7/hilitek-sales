@@ -3,7 +3,7 @@
  * của trang. Giao diện vẫn do React dựng như cũ, hàm này chỉ đổi phần <head>.
  * Sản phẩm không tồn tại trả mã 404 thật để Google không lập chỉ mục trang rỗng.
  */
-import { readStateCached, publishedProducts, publicProduct, findPublished } from "./_supa.js";
+import { readWebCached, findDetail } from "./_catalog.js";
 import { applyHead, productHead, catalogHead, plainText, SITE_URL } from "./_seo.js";
 
 // Mỗi bản deploy có function mới, nên shop.html nhớ tạm ở đây luôn khớp tên file JS của bản đó.
@@ -35,14 +35,14 @@ export default async function handler(req, res) {
   const q = req.query || {};
   try {
     if (q.slug) {
-      const found = findPublished(publishedProducts(await readStateCached()), String(q.slug).toLowerCase());
+      const found = findDetail((await readWebCached()).details, String(q.slug).toLowerCase());
       if (!found) {
         return send(res, 404, applyHead(html, {
           title: "Không tìm thấy sản phẩm | Hilitek", desc: "Sản phẩm này không còn trên Hilitek.",
           url: `${SITE_URL}/danh-muc`, robots: "noindex,follow",
         }), "public, max-age=0, s-maxage=60");
       }
-      return send(res, 200, applyHead(html, productHead(publicProduct(found, { detail: true }))), cache);
+      return send(res, 200, applyHead(html, productHead(found)), cache);
     }
     if (q.landing === "handheld") {
       return send(res, 200, applyHead(html, {
@@ -62,9 +62,8 @@ export default async function handler(req, res) {
       }), cache);
     }
     if (q.trang) {
-      const state = await readStateCached();
-      const list = Array.isArray(state?.webConfig?.LANDINGS) ? state.webConfig.LANDINGS : [];
-      const page = list.find((l) => l && l.slug === String(q.trang) && l.published !== false);
+      const { landings } = await readWebCached();
+      const page = landings.find((l) => l.slug === String(q.trang));
       if (!page) return send(res, 200, html, cache);
       // Bỏ ảnh nhúng trong nội dung trước khi lấy mô tả, ảnh có thể là chuỗi base64 rất dài.
       const body = String(page.body || "").replace(/!\[[^\]]*\]\([^)]*\)/g, " ").replace(/https?:\/\/\S+/g, " ");

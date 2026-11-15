@@ -8,6 +8,7 @@
  *   POST ?op=verify  { password }            -> { ok }       (xác nhận lại mật khẩu của chính mình)
  *   GET  ?op=poll                            -> { updatedAt, kicks }  (đồng bộ 20s/lần, rất nhẹ)
  *   GET  ?op=get&k=main|locks|kicks|marker   -> { value, updatedAt }
+ *        &since=<updatedAt>                 -> { notModified: true, updatedAt } nếu dữ liệu chưa đổi
  *   GET  ?op=meta&k=...                      -> { updatedAt }
  *   POST ?op=set     { k, value }            -> { updatedAt }
  *   POST ?op=cas     { k, value, expected }  -> { updatedAt } | { conflict: true }
@@ -24,17 +25,35 @@ import {
   startSession, endSession, requireSession, kickedAfter,
   checkLock, recordFail, clearFails, upgradeIfLegacy,
 } from "./web/_auth.js";
+import zlib from "node:zlib";
 import fetchImage from "./web/_fetchImage.js";
+import { writeWebSnapshot } from "./web/_catalog.js";
 import mediaCleanup from "./web/_mediaCleanup.js";
 
 const TABLE = "app_state";
 const BUCKET = "product-media";
 
-function body(req) {
-  const b = req.body;
-  if (b && typeof b === "object") return b;
-  try { return JSON.parse(b || "{}"); } catch { return {}; }
+// Trình duyệt nén gzip thân request khi lưu (header "x-hili-gzip: 1", kiểu application/octet-stream)
+// — blob ~4 MB sát giới hạn 4,5 MB/request của Vercel, nén còn ~1/3. Đọc 1 lần rồi nhớ lại.
+async function readBody(req) {
+  if (req._hiliBody) return req._hiliBody;
+  let b = req.body;
+  if (req.headers["x-hili-gzip"] === "1") {
+    let buf = Buffer.isBuffer(b) ? b : null;
+    if (!buf) {
+      const chunks = [];
+      for await (const c of req) chunks.push(c);
+      buf = Buffer.concat(chunks);
+    }
+    try { b = zlib.gunzipSync(buf).toString("utf8"); } catch { b = "{}"; }
+  }
+  let out = {};
+  if (b && typeof b === "object" && !Buffer.isBuffer(b)) out = b;
+  else { try { out = JSON.parse(Buffer.isBuffer(b) ? b.toString("utf8") : b || "{}"); } catch { out = {}; } }
+  req._hiliBody = out;
+  return out;
 }
+function body(req) { return req._hiliBody || {}; }
 function keyOf(k) {
   return Object.prototype.hasOwnProperty.call(CLIENT_KEYS, k) ? CLIENT_KEYS[k] : null;
 }
@@ -121,6 +140,14 @@ const ops = {
     if (!key) return bad(res, "Khoá dữ liệu không hợp lệ.");
     const ss = await session(req, res, { checkAuth: key === MAIN_KEY });
     if (!ss) return;
+    // ?since=<updatedAt bản trình duyệt đang giữ>: chưa đổi thì chỉ trả mốc (vài byte thay vì ~1,6 MB).
+    const since = String(req.query.since || "");
+    if (since) {
+      const { data, error } = await client().from(TABLE).select("updated_at").eq("key", key).maybeSingle();
+      if (error) throw new Error("Supabase đọc lỗi: " + error.message);
+      // So đúng chuỗi (cùng định dạng PostgREST, đủ micro-giây); khác định dạng thì tải đủ cho chắc.
+      if (data && data.updated_at === since) return json(res, 200, { notModified: true, updatedAt: data.updated_at });
+    }
     const row = await readRow(key);
     if (!row || row.value == null) return json(res, 200, { value: null });
     let value = row.value;
@@ -179,9 +206,12 @@ async function write(req, res, conditional) {
   const ss = await session(req, res, { checkAuth: key === MAIN_KEY });
   if (!ss) return;
   let value = b.value;
+  let mainState = null;
   if (key === MAIN_KEY) {
     try {
-      value = (await splitSecrets(value, ss.auth, { allowRestore: ss.auth.accounts[ss.s.u]?.role === "admin" })).value;
+      const split = await splitSecrets(value, ss.auth, { allowRestore: ss.auth.accounts[ss.s.u]?.role === "admin" });
+      value = split.value;
+      mainState = split.state;
     } catch (e) {
       return bad(res, e.message, e.status || 400);
     }
@@ -192,9 +222,11 @@ async function write(req, res, conditional) {
       .eq("key", key).eq("updated_at", b.expected).select("updated_at");
     if (error) throw new Error("Supabase ghi lỗi: " + error.message);
     if (!data || !data.length) return json(res, 200, { conflict: true });
+    if (mainState) await writeWebSnapshot(mainState); // web khách đọc bản này, không đọc cả blob
     return json(res, 200, { updatedAt: data[0].updated_at });
   }
   const updatedAt = await writeRow(key, value);
+  if (mainState) await writeWebSnapshot(mainState);
   json(res, 200, { updatedAt });
 }
 
@@ -206,5 +238,6 @@ export default handler(async (req, res) => {
   if (!fn) return bad(res, "Thao tác không hợp lệ.", 404);
   if (POST_OPS.has(op) && req.method !== "POST") return bad(res, "Chỉ hỗ trợ POST.", 405);
   if (req.method === "POST" && req.headers["x-hili"] !== "1") return bad(res, "Thiếu header bảo vệ.", 403);
+  if (req.method === "POST") await readBody(req);
   return fn(req, res);
 });

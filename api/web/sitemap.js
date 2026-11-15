@@ -1,9 +1,9 @@
 /**
  * GET /sitemap.xml (rewrite từ vercel.json) → hàm này — liệt kê trang chủ, trang danh mục và
- * TỪNG sản phẩm đang "Đăng web" (đọc trực tiếp từ Supabase, luôn khớp dữ liệu thật) để Google
+ * TỪNG sản phẩm đang "Đăng web" (đọc bản danh mục `:web`, cập nhật mỗi lần lưu) để Google
  * crawl nhanh và đầy đủ hơn thay vì tự mò từng link. Nộp link này vào Google Search Console.
  */
-import { readState, publishedProducts, publicProduct, productSlug, slugify } from "./_supa.js";
+import { readWebCached } from "./_catalog.js";
 import { catalogUrl } from "./_seo.js";
 
 const SITE_URL = "https://hilipc.vn";
@@ -23,15 +23,13 @@ export default async function handler(req, res) {
     { loc: `${SITE_URL}/chinh-sach-giao-hang`, priority: "0.4" },
   ];
   try {
-    const state = await readState();
-    const products = publishedProducts(state);
-    const pages = Array.isArray(state?.webConfig?.LANDINGS) ? state.webConfig.LANDINGS : [];
-    for (const l of pages) if (l && l.slug && l.published !== false) urls.push({ loc: `${SITE_URL}/trang/${l.slug}`, priority: "0.6" });
-    const cats = new Set(products.map((p) => publicProduct(p).category).filter((c) => c && c !== "Flash Sale"));
+    const { details: products, landings } = await readWebCached();
+    for (const l of landings) urls.push({ loc: `${SITE_URL}/trang/${l.slug}`, priority: "0.6" });
+    const cats = new Set(products.map((p) => p.category).filter((c) => c && c !== "Flash Sale"));
     for (const cat of cats) urls.push({ loc: catalogUrl({ cat }), priority: "0.8" });
     const seen = new Set();
     for (const p of products) {
-      const slug = (p.web && p.web.slug ? slugify(p.web.slug) : productSlug(p)) || "";
+      const slug = p.slug || "";
       if (!slug || seen.has(slug)) continue;
       seen.add(slug);
       urls.push({ loc: `${SITE_URL}/san-pham/${slug}`, priority: "0.7" });

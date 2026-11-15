@@ -18,8 +18,8 @@ import { autoComparePrice } from "../../src/lib/autoComparePrice.js";
 const URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
 const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
 const TABLE = "app_state";
-// Phải trùng STORAGE_KEY trong SalesManager.jsx.
-const STORAGE_KEY = "solbh-data-v2";
+// Phải trùng STORAGE_KEY trong SalesManager.jsx. HILI_STORAGE_KEY chỉ dùng khi thử ở máy (như _auth.js).
+export const STORAGE_KEY = process.env.HILI_STORAGE_KEY || "solbh-data-v2";
 
 let _client = null;
 export function client() {
@@ -62,6 +62,17 @@ export async function readStateCached() {
     });
   _stateCache.pending = pending;
   return pending;
+}
+
+/** Bản nhớ tạm đã đọc cách đây bao lâu (ms); chưa có thì Infinity. */
+export function stateCacheAge() {
+  return _stateCache.state ? Date.now() - _stateCache.at : Infinity;
+}
+/** Đọc lại bản mới nhất và cập nhật bản nhớ tạm (dùng khi bản nhớ tạm có thể đã cũ). */
+export async function readStateFresh() {
+  const state = await readState();
+  _stateCache = { at: Date.now(), state, pending: null };
+  return state;
 }
 
 // Ghi có điều kiện: chỉ ghi nếu blob chưa đổi kể từ lúc readState() — nếu đã đổi thì ném CONFLICT để

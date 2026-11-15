@@ -4,6 +4,7 @@
  *         payment:'cod'|'bank', items:[{productId|sku, qty, price, name?, preorder?}], subtotal? }
  */
 import { handler, json, readState, writeState, webStockOf, upsertWebCustomer } from "./_supa.js";
+import { writeWebSnapshot } from "./_catalog.js";
 
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 
@@ -184,5 +185,6 @@ export default handler(async (req, res) => {
 
   state.orders.unshift(...orders);
   await writeState(state);
+  await writeWebSnapshot(state); // tồn kho trên web đổi theo đơn vừa đặt
   json(res, 200, { ok: true, code: baseCode, codes: allCodes });
 });

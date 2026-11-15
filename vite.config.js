@@ -54,9 +54,11 @@ const adminApiDev = {
       if (!routes[path]) return next();
       const chunks = [];
       for await (const c of req) chunks.push(c);
-      const raw = Buffer.concat(chunks).toString("utf8");
+      const buf = Buffer.concat(chunks);
+      const raw = buf.toString("utf8");
       req.query = Object.fromEntries(new URLSearchParams(qs));
-      try { req.body = raw && /json/.test(req.headers["content-type"] || "") ? JSON.parse(raw) : raw; } catch { req.body = raw; }
+      if (/octet-stream/.test(req.headers["content-type"] || "")) req.body = buf; // giống Vercel (thân gzip)
+      else { try { req.body = raw && /json/.test(req.headers["content-type"] || "") ? JSON.parse(raw) : raw; } catch { req.body = raw; } }
       res.status = (c) => { res.statusCode = c; return res; };
       res.json = (o) => { if (!res.getHeader("Content-Type")) res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify(o)); return res; };
       res.send = (b) => { res.end(typeof b === "string" || Buffer.isBuffer(b) ? b : JSON.stringify(b)); return res; };
