@@ -4,7 +4,11 @@
  *         payment:'cod'|'bank', items:[{productId|sku, qty, price, name?, preorder?}], subtotal? }
  */
 import { handler, json, readState, writeState, webStockOf, upsertWebCustomer } from "./_supa.js";
-import { writeWebSnapshot } from "./_catalog.js";
+import { recordsStatus, readPartialState, readProductsByIdOrSku, commitPartial } from "./_records.js";
+
+// Kho theo dòng: chỉ đọc khách hàng + cấu hình + đúng các sản phẩm trong giỏ, chỉ ghi đơn/khách mới.
+// Chưa chuyển (bảng app_records chưa có) thì đọc/ghi cả khối như cũ.
+const clone = (x) => JSON.parse(JSON.stringify(x || []));
 
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 
@@ -19,9 +23,12 @@ export default handler(async (req, res) => {
     const lc = body.customer || {};
     const leadPhone = String(lc.phone || "").replace(/\s/g, "");
     if (!lc.name || !/^0\d{8,10}$/.test(leadPhone)) return json(res, 400, { error: "Thiếu họ tên hoặc số điện thoại hợp lệ." });
-    const state = await readState();
+    const ready = (await recordsStatus()) === "ready";
+    const state = ready ? await readPartialState(["customers"]) : await readState();
+    const before = { customers: clone(state.customers) };
+    const pool = ready && body.stockAlert ? await readProductsByIdOrSku([body.stockAlert]) : state.products || [];
     // "Báo khi có hàng": tên sản phẩm lấy từ dữ liệu thật, không tin chuỗi trình duyệt gửi lên.
-    const wanted = body.stockAlert ? (state.products || []).find((p) => p && p.id === body.stockAlert && p.web && p.web.published) : null;
+    const wanted = body.stockAlert ? pool.find((p) => p && p.id === body.stockAlert && p.web && p.web.published) : null;
     if (body.stockAlert && !wanted) return json(res, 400, { error: "Không tìm thấy sản phẩm." });
     const day = new Date().toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
     const need = typeof body.need === "string" ? body.need.trim().slice(0, 300) : "";
@@ -34,7 +41,8 @@ export default handler(async (req, res) => {
       const c = state.customers.find((x) => x.id === customerId);
       if (c && !String(c.note || "").includes(leadNote)) c.note = [c.note, leadNote].filter(Boolean).join("\n");
     }
-    await writeState(state);
+    if (ready) await commitPartial(before, state, ["customers"]);
+    else await writeState(state);
     return json(res, 200, { ok: true, customerId });
   }
 
@@ -47,9 +55,13 @@ export default handler(async (req, res) => {
   if (!items.length) return json(res, 400, { error: "Đơn hàng không có sản phẩm hợp lệ." });
   if (!cust.name || !/^0\d{8,10}$/.test(phone)) return json(res, 400, { error: "Thiếu họ tên hoặc số điện thoại hợp lệ." });
 
-  const state = await readState();
-  state.orders = Array.isArray(state.orders) ? state.orders : [];
-  const products = Array.isArray(state.products) ? state.products : [];
+  const ready = (await recordsStatus()) === "ready";
+  const state = ready ? await readPartialState(["customers"], ["webConfig"]) : await readState();
+  const before = { customers: clone(state.customers), orders: [] };
+  state.orders = ready ? [] : Array.isArray(state.orders) ? state.orders : [];
+  const wantIds = items.map((it) => String(it.productId || "")).filter(Boolean);
+  const wantSkus = items.flatMap((it) => [it.sku, it.productId]).filter(Boolean).map(String);
+  const products = ready ? await readProductsByIdOrSku(wantIds, wantSkus) : Array.isArray(state.products) ? state.products : [];
 
   // Tự thêm/gắn khách hàng theo SĐT — trước đây đơn web không gắn customerId nên khách đặt hàng
   // trên web không hề xuất hiện trong danh sách "Khách hàng" ở app quản lý.
@@ -184,7 +196,7 @@ export default handler(async (req, res) => {
   });
 
   state.orders.unshift(...orders);
-  await writeState(state);
-  await writeWebSnapshot(state); // tồn kho trên web đổi theo đơn vừa đặt
+  if (ready) await commitPartial(before, state, ["customers", "orders"], { front: ["orders"] });
+  else await writeState(state);
   json(res, 200, { ok: true, code: baseCode, codes: allCodes });
 });

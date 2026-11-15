@@ -1,80 +1,33 @@
 /**
- * "Bản danh mục web" (snapshot) — hàng riêng `<STORAGE_KEY>:web` trong bảng app_state.
+ * "Bản danh mục web" mà mọi API công khai (products/product/config/page/sitemap) đọc — KHÔNG đọc kho.
  *
- * Vì sao có file này (15/11/2026, Supabase Free bị chặn vì egress 125%): trước đây mọi API công
- * khai (products/product/config/page/sitemap) đọc CẢ blob "main" (~3,9 MB: đơn hàng, khách hàng,
- * nhật ký, tồn kho...) chỉ để lấy vài chục sản phẩm đã đăng web. Mỗi lần Vercel bật 1 instance mới
- * hoặc ai đó gọi kèm cache-buster (&x=...) là ~1,6 MB egress Supabase.
- *
- * Giờ: mỗi lần trang quản lý LƯU (api/admin.js) hoặc web nhận đơn (orders.js), máy chủ dựng sẵn bản
- * danh mục công khai (chỉ sản phẩm đã đăng, đã lọc giá vốn/NCC) và ghi vào hàng `:web`. API công
- * khai chỉ đọc hàng nhỏ này. Thiếu hàng hoặc khác phiên bản code -> tự dựng lại từ blob 1 lần.
+ * Kho theo dòng (bảng app_records đã có): bản danh mục cũng chia dòng, ns = "<STORAGE_KEY>:web":
+ *   ("d", id sản phẩm) = chi tiết sản phẩm đã đăng · ("m", order|config|landings|v).
+ *   Trang quản lý tự dựng các dòng này (src/lib/webCatalog.js buildWebParts) và chỉ gửi dòng đổi khi
+ *   lưu (admin.js op=rput, trường webChanges). Sửa 1 sản phẩm = gửi 1 dòng vài KB.
+ * Chưa chuyển (bảng chưa có): như trước, 1 hàng `<STORAGE_KEY>:web` trong app_state, máy chủ dựng.
+ * Thiếu dữ liệu hoặc khác SNAPSHOT_VERSION -> tự dựng lại từ kho đầy đủ 1 lần.
  */
-import { client, readState, publishedProducts, publicProduct, baseVariantName, STORAGE_KEY } from "./_supa.js";
-import { autoComparePrice } from "../../src/lib/autoComparePrice.js";
+import { client, STORAGE_KEY } from "./_supa.js";
+import { readFullState, recordsStatus, pageRows, upsertRows, listKeys } from "./_records.js";
+import { buildWebSnapshot, buildWebParts, webPartsToMap, snapshotFromParts, SNAPSHOT_VERSION } from "../../src/lib/webCatalog.js";
+import { keyOf, parseKey } from "../../src/lib/records.js";
+
+export { buildWebSnapshot };
 
 const TABLE = "app_state";
-export const WEB_KEY = STORAGE_KEY + ":web";
-// Tăng số này khi đổi cách dựng (publicProduct, gộp phiên bản...) để bản cũ tự dựng lại sau deploy.
-const SNAPSHOT_VERSION = 1;
+export const WEB_KEY = STORAGE_KEY + ":web"; // hàng app_state (cách cũ) và cũng là ns của các dòng web
+const WEB_NS = WEB_KEY;
 
-/** Danh sách cho /api/web/products: gộp các phiên bản cùng nhóm thành 1 thẻ đại diện. */
-function buildList(raw) {
-  const mapped = raw.map((p) => publicProduct(p));
-  const groups = new Map(); // variantGroupId -> [{ pub, raw }...]
-  const singles = [];
-  mapped.forEach((p, i) => {
-    if (!p.variantGroupId) { singles.push(p); return; }
-    if (!groups.has(p.variantGroupId)) groups.set(p.variantGroupId, []);
-    groups.get(p.variantGroupId).push({ pub: p, raw: raw[i] });
-  });
-  const merged = [...groups.values()].map((entries) => {
-    const variants = entries.map((e) => e.pub);
-    if (variants.length === 1) return variants[0];
-    // Đại diện cả nhóm: ưu tiên phiên bản admin CHỌN TAY (isDefaultVariant), không có thì lấy phiên bản còn hàng.
-    const flagged = entries.find((e) => e.raw.web && e.raw.web.isDefaultVariant);
-    const rep = (flagged && flagged.pub) || variants.find((v) => v.stock > 0) || variants[0];
-    const prices = variants.map((v) => v.price);
-    const minPrice = Math.min(...prices);
-    const sameListPrice = variants.every((v) => v.listPrice === rep.listPrice);
-    return {
-      ...rep,
-      name: baseVariantName(rep),
-      price: minPrice,
-      listPrice: sameListPrice ? rep.listPrice : entries.some((e) => Number(e.raw.web?.compareAtPrice) > 0) ? 0 : autoComparePrice(minPrice, entries[0].raw.variantGroupId || entries[0].raw.id),
-      priceFrom: prices.some((v) => v !== minPrice),
-      stock: variants.reduce((s, v) => s + v.stock, 0),
-      variantCount: variants.length,
-      variantSkus: variants.map((v) => v.sku).filter(Boolean),
-    };
-  });
-  return [...singles, ...merged];
-}
+let _cache = { at: 0, snap: null, pending: null };
+const CACHE_MS = 120000;
 
-/** Dựng bản danh mục công khai từ blob đầy đủ. KHÔNG chứa giá vốn, NCC, movements, khách, đơn. */
-export function buildWebSnapshot(state) {
-  const raw = publishedProducts(state || {});
-  const cfg = state && typeof state.webConfig === "object" && state.webConfig ? state.webConfig : {};
-  const landings = Array.isArray(cfg.LANDINGS) ? cfg.LANDINGS.filter((l) => l && l.slug && l.published !== false) : [];
-  const config = { ...cfg };
-  if (Array.isArray(cfg.LANDINGS)) config.LANDINGS = landings.map(({ body, ...rest }) => rest);
-  return {
-    v: SNAPSHOT_VERSION,
-    builtAt: new Date().toISOString(),
-    list: buildList(raw),
-    // Giữ đúng thứ tự publishedProducts (ưu tiên) — findDetail lấy kết quả khớp đầu tiên như trước.
-    details: raw.map((p) => publicProduct(p, { detail: true })),
-    config,
-    landings,
-  };
-}
-
-// Ghi nhớ bản đã ghi gần nhất trong instance này: lưu liên tục (tự lưu 400ms) mà danh mục web không
-// đổi (VD chỉ sửa đơn hàng) thì khỏi ghi lại.
+/* ---------------- cách cũ: 1 hàng app_state ---------------- */
 let _lastWritten = "";
-/** Ghi bản danh mục; lỗi chỉ ghi log, KHÔNG làm hỏng thao tác lưu chính. */
+/** Cách cũ: dựng + ghi cả bản danh mục. Lỗi chỉ ghi log, không làm hỏng thao tác chính. */
 export async function writeWebSnapshot(state) {
   try {
+    if ((await recordsStatus()) === "ready") return; // kho theo dòng: trang quản lý tự gửi phần đổi
     const snap = buildWebSnapshot(state);
     const { builtAt, ...rest } = snap;
     const sig = JSON.stringify(rest);
@@ -89,7 +42,7 @@ export async function writeWebSnapshot(state) {
   }
 }
 
-async function loadSnapshot() {
+async function loadLegacy() {
   const { data, error } = await client().from(TABLE).select("value").eq("key", WEB_KEY).maybeSingle();
   if (error) throw new Error("Supabase đọc lỗi: " + error.message);
   if (data && data.value) {
@@ -98,16 +51,67 @@ async function loadSnapshot() {
       if (snap && snap.v === SNAPSHOT_VERSION && Array.isArray(snap.details)) return snap;
     } catch { /* hỏng -> dựng lại */ }
   }
-  // Chưa có (lần đầu sau deploy) hoặc khác phiên bản code: dựng từ blob đầy đủ 1 lần rồi ghi lại.
-  const state = await readState();
+  const state = await readFullState();
   await writeWebSnapshot(state);
   return buildWebSnapshot(state);
 }
 
-// Nhớ tạm trong instance: hàng nhỏ nên 2 phút là đủ nhẹ; CDN Vercel còn cache thêm (s-maxage).
-let _cache = { at: 0, snap: null, pending: null };
-const CACHE_MS = 120000;
-/** Đọc bản danh mục (có nhớ tạm). Nơi gọi KHÔNG được sửa object trả về. */
+/* ---------------- kho theo dòng ---------------- */
+const okWebKey = (c, i) => (c === "d" && typeof i === "string" && i.length > 0 && i.length <= 200) || (c === "m" && ["order", "config", "landings", "v"].includes(i));
+
+/**
+ * Ghi các dòng danh mục web do trang quản lý gửi: [{c,i,v}|{c,i,d:1}] (v là chuỗi JSON).
+ * replace=true: đây là bản đầy đủ -> dòng sản phẩm nào không có trong lần gửi thì đánh dấu xoá.
+ */
+export async function applyWebChanges(changes, { replace = false } = {}) {
+  if (!Array.isArray(changes) || !changes.length) return 0;
+  const rows = [];
+  for (const ch of changes) {
+    if (!ch || !okWebKey(ch.c, ch.i)) continue;
+    if (ch.d) { if (ch.c === "d") rows.push({ coll: "d", id: ch.i, deleted: true }); continue; }
+    if (typeof ch.v !== "string" || ch.v.length > 1024 * 1024) continue;
+    try { rows.push({ coll: ch.c, id: ch.i, value: JSON.parse(ch.v.replace(/\\u0000/g, "")) }); } catch { /* bỏ dòng hỏng */ }
+  }
+  if (replace) {
+    const keep = new Set(rows.filter((r) => !r.deleted).map((r) => keyOf(r.coll, r.id)));
+    for (const [c, i] of await listKeys(WEB_NS)) if (c === "d" && !keep.has(keyOf(c, i))) rows.push({ coll: c, id: i, deleted: true });
+  }
+  if (rows.length) await upsertRows(rows, "web", { ns: WEB_NS });
+  _cache = { at: 0, snap: null, pending: null };
+  return rows.length;
+}
+
+async function writeParts(parts) {
+  const changes = [...webPartsToMap(parts)].map(([k, v]) => { const [c, i] = parseKey(k); return { c, i, v: JSON.stringify(v) }; });
+  await applyWebChanges(changes, { replace: true });
+}
+
+async function loadFromRows() {
+  const parts = { v: null, details: [], order: [], config: {}, landings: [] };
+  let after = null;
+  for (;;) {
+    const rows = await pageRows({ ns: WEB_NS, afterColl: after && after[0], afterId: after && after[1] });
+    for (const r of rows) {
+      if (r.coll === "d") parts.details.push(r.value);
+      else if (r.coll === "m") parts[r.id] = r.value;
+    }
+    if (rows.length < 1000) break;
+    after = [rows[rows.length - 1].coll, rows[rows.length - 1].id];
+  }
+  if (parts.v !== SNAPSHOT_VERSION) {
+    // Chưa có hoặc code đổi cách dựng: dựng lại từ kho đầy đủ 1 lần (tốn cỡ cả kho, hiếm khi xảy ra).
+    const fresh = buildWebParts(await readFullState());
+    await writeParts(fresh);
+    return snapshotFromParts(fresh);
+  }
+  return snapshotFromParts(parts);
+}
+
+async function loadSnapshot() {
+  return (await recordsStatus()) === "ready" ? loadFromRows() : loadLegacy();
+}
+
+/** Đọc bản danh mục (nhớ tạm 2 phút; CDN Vercel còn cache thêm). Nơi gọi KHÔNG được sửa object trả về. */
 export async function readWebCached() {
   if (_cache.snap && Date.now() - _cache.at < CACHE_MS) return _cache.snap;
   if (_cache.pending) return _cache.pending;

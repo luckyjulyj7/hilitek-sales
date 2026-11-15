@@ -8,7 +8,19 @@
  *   type=warranty &serial=<số serial>                        — hạn bảo hành theo serial
  *   type=points   &phone=<số điện thoại>                     — điểm tích luỹ theo SĐT
  */
-import { handler, json, readStateCached, readStateFresh, stateCacheAge } from "./_supa.js";
+import { handler, json } from "./_supa.js";
+import { readPartialState, readProductsByIdOrSku } from "./_records.js";
+
+// Nhớ tạm từng bộ danh sách 2 phút (mỗi instance). Tra đơn không thấy thì đọc lại, tối đa 1 lần/30 giây.
+const _cache = new Map();
+async function partial(name, colls, docs = [], { maxAge = 120000 } = {}) {
+  const c = _cache.get(name);
+  if (c && Date.now() - c.at < maxAge) return c.st;
+  const st = await readPartialState(colls, docs);
+  _cache.set(name, { at: Date.now(), st });
+  return st;
+}
+const cacheAge = (name) => { const c = _cache.get(name); return c ? Date.now() - c.at : Infinity; };
 import { pointsForPhone, normalizePhone, DEFAULT_LOYALTY } from "../../src/lib/loyalty.js";
 
 /* ---------------- type=order ---------------- */
@@ -31,9 +43,9 @@ async function lookupOrder(req, res) {
   // Dùng bản nhớ tạm (2 phút) trước; không thấy đơn (VD khách vừa đặt) mới đọc bản mới nhất — tối đa
   // 1 lần/30 giây, để ai đó dò mã đơn liên tục cũng không kéo cả bộ dữ liệu mỗi lượt.
   const findIn = (st) => (Array.isArray(st.orders) ? st.orders : []).find((o) => o && String(o.code || "").trim().toUpperCase() === code);
-  let state = await readStateCached();
+  let state = await partial("order", ["orders", "shippingTickets"]);
   let order = findIn(state);
-  if (!order && stateCacheAge() > 30000) { state = await readStateFresh(); order = findIn(state); }
+  if (!order && cacheAge("order") > 30000) { state = await partial("order", ["orders", "shippingTickets"], [], { maxAge: 0 }); order = findIn(state); }
 
   const okPhone =
     order &&
@@ -138,8 +150,12 @@ async function lookupWarranty(req, res) {
   const serial = String((req.query && req.query.serial) || "").trim();
   if (!serial) return json(res, 400, { error: "Nhập số serial cần tra cứu." });
 
-  const state = await readStateCached();
-  const info = resolveOriginalSale(serial, state);
+  const base = await partial("warranty", ["orders", "warrantyTickets"]);
+  // Chỉ tải các sản phẩm có bán theo serial (thay vì cả nghìn sản phẩm).
+  const ids = new Set();
+  (base.orders || []).forEach((o) => (o.items || []).forEach((it) => { if ((it.series || []).length && it.productId) ids.add(String(it.productId)); }));
+  const products = base.__partial ? await readProductsByIdOrSku([...ids]) : base.products;
+  const info = resolveOriginalSale(serial, { ...base, products });
   if (!info) {
     return json(res, 200, {
       found: false,
@@ -166,7 +182,7 @@ async function lookupPoints(req, res) {
   const phone = normalizePhone((req.query && req.query.phone) || "");
   if (!/^0\d{8,10}$/.test(phone)) return json(res, 400, { error: "Nhập số điện thoại hợp lệ." });
 
-  const state = await readStateCached();
+  const state = await partial("points", ["orders", "customers", "pointAdjustments"], ["webConfig"]);
   const config = (state.webConfig && state.webConfig.LOYALTY) || DEFAULT_LOYALTY;
   if (!config.enabled) return json(res, 200, { enabled: false, points: 0 });
 

@@ -27,7 +27,9 @@ import {
 } from "./web/_auth.js";
 import zlib from "node:zlib";
 import fetchImage from "./web/_fetchImage.js";
-import { writeWebSnapshot } from "./web/_catalog.js";
+import { writeWebSnapshot, applyWebChanges } from "./web/_catalog.js";
+import { recordsStatus, migrateFromBlob, pageRows, rowsSince, changedSince, upsertRows } from "./web/_records.js";
+import { RECORD_COLLS, DOC, ORDER } from "../src/lib/records.js";
 import mediaCleanup from "./web/_mediaCleanup.js";
 
 const TABLE = "app_state";
@@ -130,14 +132,97 @@ const ops = {
   async poll(req, res) {
     const ss = await session(req, res);
     if (!ss) return;
+    // Kho theo dòng: ?rc=<mốc đã tải>&tab=<mã tab> -> chỉ báo có/không có dòng người khác vừa đổi.
+    const rc = String(req.query.rc || "");
+    if (rc) {
+      const changed = await changedSince(rc, String(req.query.tab || ""));
+      return json(res, 200, { rchanged: changed, kicks: ss.kicks });
+    }
     const { data, error } = await client().from(TABLE).select("updated_at").eq("key", MAIN_KEY).maybeSingle();
     if (error) throw new Error("Supabase đọc lỗi: " + error.message);
     json(res, 200, { updatedAt: data ? data.updated_at : null, kicks: ss.kicks });
   },
 
+  /* ---- Kho theo TỪNG DÒNG (xem src/lib/records.js) ---- */
+  // GET ?op=rget[&ac=<coll>&ai=<id>] -> { rows:[{c,i,v,t}], more } (500 dòng/trang). Bảng chưa có -> { legacy: true }.
+  async rget(req, res) {
+    if (!(await session(req, res, { checkAuth: true }))) return;
+    let st = await recordsStatus();
+    if (st === "missing") return json(res, 200, { legacy: true });
+    if (st === "empty") { await migrateFromBlob(); st = "ready"; }
+    const ac = req.query.ac, ai = req.query.ai;
+    const rows = await pageRows({ afterColl: ac != null ? String(ac) : null, afterId: ai != null ? String(ai) : null, limit: 500 });
+    json(res, 200, { rows: rows.map((r) => ({ c: r.coll, i: r.id, v: r.value, t: r.updated_at })), more: rows.length === 500 });
+  },
+
+  // GET ?op=rsince&since=<mốc>&tab=<mã tab>[&after=<mốc trang trước>] -> dòng người khác vừa đổi.
+  async rsince(req, res) {
+    if (!(await session(req, res, { checkAuth: true }))) return;
+    if ((await recordsStatus()) !== "ready") return json(res, 200, { legacy: true });
+    const since = String(req.query.since || "");
+    if (!since || isNaN(Date.parse(since))) return bad(res, "Thiếu mốc thời gian.");
+    const after = req.query.after ? String(req.query.after) : null;
+    const rows = await rowsSince(since, String(req.query.tab || ""), { after });
+    json(res, 200, { rows: rows.map((r) => ({ c: r.coll, i: r.id, v: r.deleted ? null : r.value, d: r.deleted ? 1 : 0, t: r.updated_at })), more: rows.length === 500 });
+  },
+
+  // POST ?op=rput { tab, changes:[{c,i,v}|{c,i,d:1}], restore?, webChanges?, webReplace? } — chỉ ghi các dòng đổi.
+  async rput(req, res) {
+    const ss = await session(req, res, { checkAuth: true });
+    if (!ss) return;
+    if ((await recordsStatus()) !== "ready") return bad(res, "Kho theo dòng chưa sẵn sàng, tải lại trang.", 409);
+    const b = body(req);
+    const changes = Array.isArray(b.changes) ? b.changes : [];
+    if (changes.length > 5000) return bad(res, "Quá nhiều thay đổi trong 1 lần gửi.");
+    const isAdmin = ss.auth.accounts[ss.s.u]?.role === "admin";
+    const restore = b.restore === true && isAdmin;
+    const okName = (x) => typeof x === "string" && x.length > 0 && x.length <= 200;
+    const rows = [];
+    const delCount = {};
+    for (const ch of changes) {
+      if (!ch || !okName(ch.c) || !okName(ch.i)) return bad(res, "Dòng dữ liệu không hợp lệ.");
+      if (!(RECORD_COLLS.includes(ch.c) || ch.c === DOC || ch.c === ORDER || /^[A-Za-z]\w{0,40}$/.test(ch.c))) return bad(res, "Danh sách không hợp lệ: " + ch.c);
+      if (ch.d) {
+        if (ch.c === DOC || ch.c === ORDER) return bad(res, "Không được xoá mục này.");
+        rows.push({ coll: ch.c, id: ch.i, deleted: true });
+        delCount[ch.c] = (delCount[ch.c] || 0) + 1;
+        continue;
+      }
+      if (typeof ch.v !== "string") return bad(res, "Thiếu dữ liệu dòng.");
+      let value;
+      // Postgres jsonb không nhận ký tự \u0000 -> bỏ đi.
+      try { value = JSON.parse(ch.v.replace(/\\u0000/g, "")); } catch { return bad(res, "Dữ liệu dòng hỏng."); }
+      if (ch.c === DOC && ch.i === "accounts") {
+        // Mật khẩu: tách mã băm sang hàng riêng, chặn dữ liệu mẫu/mất tài khoản (giống lưu cả khối).
+        try {
+          const split = await splitSecrets(JSON.stringify({ accounts: value, __restore: restore }), ss.auth, { allowRestore: isAdmin });
+          value = split.state.accounts;
+        } catch (e) {
+          return bad(res, e.message, e.status || 400);
+        }
+      }
+      rows.push({ coll: ch.c, id: ch.i, value });
+    }
+    // Chặn lỡ xoá hàng loạt (VD trang tải lỗi rồi lưu dữ liệu trống): >20 dòng và >30% danh sách.
+    if (!restore) {
+      for (const c of Object.keys(delCount)) {
+        if (c === "activityLog" || c === "notifications" || delCount[c] <= 20) continue;
+        const { count, error } = await client().from("app_records").select("id", { count: "exact", head: true })
+          .eq("ns", MAIN_KEY).eq("coll", c).eq("deleted", false);
+        if (error) throw new Error("Supabase đọc lỗi: " + error.message);
+        if (delCount[c] > (count || 0) * 0.3) return bad(res, `Đã chặn: lần lưu này xoá ${delCount[c]}/${count} dòng của ${c}. Tải lại trang rồi thử lại.`, 409);
+      }
+    }
+    if (rows.length) await upsertRows(rows, String(b.tab || "").slice(0, 60));
+    // Các dòng danh mục web đổi theo (trang quản lý tự dựng) — web khách đọc các dòng này.
+    if (Array.isArray(b.webChanges) && b.webChanges.length) await applyWebChanges(b.webChanges.slice(0, 5000), { replace: b.webReplace === true });
+    json(res, 200, { ok: true, n: rows.length });
+  },
+
   async get(req, res) {
     const key = keyOf(req.query.k);
     if (!key) return bad(res, "Khoá dữ liệu không hợp lệ.");
+    if (key === MAIN_KEY && (await recordsStatus()) === "ready") return bad(res, LEGACY_MSG, 409);
     const ss = await session(req, res, { checkAuth: key === MAIN_KEY });
     if (!ss) return;
     // ?since=<updatedAt bản trình duyệt đang giữ>: chưa đổi thì chỉ trả mốc (vài byte thay vì ~1,6 MB).
@@ -198,10 +283,14 @@ const ops = {
   },
 };
 
+// Đã chuyển sang kho theo dòng: khối cũ chỉ còn là bản dự phòng, tab chạy code cũ không được đọc/ghi.
+const LEGACY_MSG = "Trang quản lý đã có bản mới. Tải lại trang (F5) để tiếp tục.";
+
 async function write(req, res, conditional) {
   const b = body(req);
   const key = keyOf(b.k);
   if (!key) return bad(res, "Khoá dữ liệu không hợp lệ.");
+  if (key === MAIN_KEY && (await recordsStatus()) === "ready") return bad(res, LEGACY_MSG, 409);
   if (typeof b.value !== "string") return bad(res, "Thiếu dữ liệu.");
   const ss = await session(req, res, { checkAuth: key === MAIN_KEY });
   if (!ss) return;
@@ -230,7 +319,7 @@ async function write(req, res, conditional) {
   json(res, 200, { updatedAt });
 }
 
-const POST_OPS = new Set(["login", "logout", "verify", "set", "cas", "del", "upload"]);
+const POST_OPS = new Set(["login", "logout", "verify", "set", "cas", "del", "upload", "rput"]);
 
 export default handler(async (req, res) => {
   const op = String((req.query && req.query.op) || "");

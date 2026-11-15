@@ -11,6 +11,7 @@
  *   BACKUP_KEEP                 (tuỳ chọn) số bản giữ lại, mặc định 60.
  */
 import { json, client, snapshotBackup, pruneBackups, STORAGE_KEY } from "../web/_supa.js";
+import { recordsStatus } from "../web/_records.js";
 
 // Dữ liệu chưa đổi kể từ bản sao lưu gần nhất -> bỏ qua (mỗi bản là đọc cả bộ ~1,6 MB egress Supabase).
 async function unchangedSinceLastBackup() {
@@ -32,9 +33,16 @@ export default async function handler(req, res) {
   }
   try {
     const force = req.query && req.query.force === "1";
-    if (!force && (await unchangedSinceLastBackup())) return json(res, 200, { ok: true, skipped: "Dữ liệu chưa đổi kể từ bản sao lưu gần nhất." });
-    const snap = await snapshotBackup(req.query && req.query.reason ? String(req.query.reason) : "cron");
     const keep = Number(process.env.BACKUP_KEEP) > 0 ? Number(process.env.BACKUP_KEEP) : 60;
+    const reason = req.query && req.query.reason ? String(req.query.reason) : "cron";
+    // Kho theo dòng: chụp + dọn ngay trong Postgres (hàm app_records_backup) -> không tốn egress.
+    if ((await recordsStatus()) === "ready") {
+      const { data, error } = await client().rpc("app_records_backup", { p_ns: STORAGE_KEY, p_reason: reason, p_keep: keep, p_force: force });
+      if (error) throw new Error("Sao lưu lỗi: " + error.message + " (đã chạy supabase/records.sql chưa?)");
+      return json(res, 200, { at: new Date().toISOString(), ...(data || {}), secretConfigured: Boolean(SECRET) });
+    }
+    if (!force && (await unchangedSinceLastBackup())) return json(res, 200, { ok: true, skipped: "Dữ liệu chưa đổi kể từ bản sao lưu gần nhất." });
+    const snap = await snapshotBackup(reason);
     const prune = await pruneBackups(keep);
     json(res, 200, { ok: true, at: new Date().toISOString(), ...snap, ...prune, secretConfigured: Boolean(SECRET) });
   } catch (e) {

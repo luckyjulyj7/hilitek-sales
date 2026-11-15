@@ -24,6 +24,7 @@
 
 import { isSupabaseConfigured } from "./supabaseStorage.js";
 import { adminApi } from "./adminApi.js";
+import { createRecordStore } from "./recordStore.js";
 
 const PREFIX = "hilitek:";
 const mem = new Map(); // dự phòng khi localStorage bị chặn
@@ -170,8 +171,10 @@ async function cacheRead() {
 async function cacheWrite(value, updatedAt) {
   try { await idbDo("readwrite", (st) => st.put({ value, updatedAt, at: Date.now() }, IDB_MAIN)); } catch { /* hết chỗ / chặn: bỏ qua */ }
 }
+let _rec = null; // kho theo dòng của trang đang mở
 export async function clearMainCache() {
   try { await idbDo("readwrite", (st) => st.delete(IDB_MAIN)); } catch { /* bỏ qua */ }
+  if (_rec) await _rec.clear();
 }
 function stripSecrets(value) {
   try {
@@ -197,16 +200,23 @@ function cacheAfterSave(value, updatedAt) {
 
 export function createApiStorage() {
   let lastPoll = null; // { at, updatedAt }
+  // Kho theo TỪNG DÒNG (src/lib/recordStore.js). Máy chủ chưa có bảng app_records -> rec.mode
+  // "legacy" và mọi thứ dưới đây chạy như cũ (cả khối + bản trên máy).
+  const rec = createRecordStore(adminApi, STORAGE_KEY);
+  _rec = rec;
   return {
     api: true,
     async get(key /* , shared */) {
       const k = logical(key);
       if (k === "kicks") {
-        const r = await adminApi("poll");
+        const r = await adminApi("poll", { query: rec.pollQuery() || {} });
         lastPoll = { at: Date.now(), updatedAt: r.updatedAt };
+        rec.onPoll(r);
         return { value: JSON.stringify(r.kicks || {}) };
       }
       if (k === "main") {
+        const got = await rec.load();
+        if (got) return got;
         const cached = await cacheRead();
         const r = await adminApi("get", { query: cached ? { k, since: cached.updatedAt } : { k } });
         if (r.notModified && cached) return { value: cached.value, updatedAt: cached.updatedAt };
@@ -220,6 +230,11 @@ export function createApiStorage() {
     },
     async getMeta(key /* , shared */) {
       const k = logical(key);
+      if (k === "main" && rec.mode === "records") {
+        if (!(lastPoll && Date.now() - lastPoll.at < 5000)) rec.onPoll(await adminApi("poll", { query: rec.pollQuery() || {} }));
+        lastPoll = null;
+        return rec.meta();
+      }
       if (k === "main" && lastPoll && Date.now() - lastPoll.at < 5000) {
         const p = lastPoll;
         lastPoll = null;
@@ -231,6 +246,7 @@ export function createApiStorage() {
     async set(key, value /* , shared */) {
       const k = logical(key);
       const v = typeof value === "string" ? value : JSON.stringify(value);
+      if (k === "main" && rec.mode === "records") return rec.put(v);
       if (k === "main") await clearMainCache(); // đang ghi: bản trên máy không còn chắc đúng
       const r = await adminApi("set", { method: "POST", body: { k, value: v } });
       if (k === "main" && r.updatedAt) cacheAfterSave(v, r.updatedAt);
@@ -238,6 +254,8 @@ export function createApiStorage() {
     },
     async casSet(key, value, expectedUpdatedAt) {
       const k = logical(key);
+      // Kho theo dòng: mỗi dòng ghi đè riêng, không còn xung đột cả khối -> không cần so phiên bản.
+      if (k === "main" && rec.mode === "records") return rec.put(value);
       const r = await adminApi("cas", { method: "POST", body: { k, value, expected: expectedUpdatedAt } });
       if (r.conflict) return { conflict: true };
       if (k === "main" && r.updatedAt) cacheAfterSave(value, r.updatedAt);

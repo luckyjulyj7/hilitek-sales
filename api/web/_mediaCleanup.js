@@ -7,7 +7,8 @@
  * Gọi qua /api/admin?op=media-cleanup — chỉ người đã đăng nhập trang quản lý.
  */
 import { createClient } from "@supabase/supabase-js";
-import { handler, json, readState } from "./_supa.js";
+import { handler, json } from "./_supa.js";
+import { readFullState } from "./_records.js";
 
 const SB_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
 const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
@@ -55,7 +56,7 @@ async function listAllFiles(sb) {
 }
 
 async function computeOrphans(sb) {
-  const [state, files] = await Promise.all([readState(), listAllFiles(sb)]);
+  const [state, files] = await Promise.all([readFullState(), listAllFiles(sb)]);
   const referenced = collectReferencedPaths(state);
   const all = files.map((f) => ({ path: `${FOLDER}/${f.name}`, size: (f.metadata && f.metadata.size) || 0 }));
   const orphans = all.filter((f) => !referenced.has(f.path));

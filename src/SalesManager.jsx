@@ -18351,7 +18351,10 @@ export default function SalesManager() {
     // Đánh dấu "đang có thay đổi chưa lưu xong" ngay từ lúc này (chưa đợi hết debounce) — effect đồng
     // bộ định kỳ ở trên sẽ thấy cờ này và tạm hoãn 1 nhịp, tránh áp bản từ xa đè mất đúng lúc đang lưu.
     pendingSaveRef.current = true;
-    const t = setTimeout(runSave, 400);
+    // 2 giây (trước là 400ms): mỗi lần lưu gửi CẢ bộ dữ liệu lên máy chủ. Ngày 14/11 tự lưu sau mỗi
+    // thao tác nhỏ đã đẩy ~9 GB lên Vercel (Fast Origin Transfer, gói Free 10 GB/tháng). Gom thao
+    // tác liên tiếp thành 1 lần lưu; đóng tab khi chưa lưu xong thì trình duyệt vẫn hỏi lại (beforeunload).
+    const t = setTimeout(runSave, 2000);
     return () => clearTimeout(t);
   }, [products, orders, customers, purchaseOrders, suppliers, categories, brands, stocktakes, warrantyTickets, repairTickets, helpdeskTickets, shippingTickets, parcelLabels, plans, accounts, activityLog, notifications, printSettings, quotations, pointAdjustments, webConfig, currentUserId, loaded, staleVersion]);
 
