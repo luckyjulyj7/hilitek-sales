@@ -1,0 +1,50 @@
+// Cấu hình Cloudflare Worker cho hilipc.vn (thay vercel.json). Hướng dẫn: ../HUONG-DAN-CLOUDFLARE.md
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "hilitek",
+  "main": "worker/index.js",
+  "routes": [
+    { "pattern": "hilipc.vn", "custom_domain": true },
+    { "pattern": "www.hilipc.vn", "custom_domain": true }
+  ],
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Web tĩnh (npm run build -> dist/). File có thật được trả thẳng, không tốn lượt Worker.
+  "build": { "command": "npm run build" },
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "html_handling": "none",
+    "not_found_handling": "none"
+  },
+
+  // Code api/ viết cho Supabase: chuyển sang D1/R2 (worker/supa-d1.js). sharp không chạy trên Worker.
+  "alias": {
+    "@supabase/supabase-js": "./worker/supa-d1.js",
+    "sharp": "./worker/stubs/sharp.js"
+  },
+
+  // database_id: K dán mã D1 sau khi tạo (npx wrangler d1 create hilitek).
+  "d1_databases": [
+    { "binding": "DB", "database_name": "hilitek", "database_id": "e4c41035-40bd-4acf-8ff9-40e21e04944d" }
+  ],
+  "r2_buckets": [
+    { "binding": "MEDIA", "bucket_name": "hilitek-media" }
+  ],
+
+  "vars": {
+    // Code api/ kiểm 2 biến này có giá trị; dữ liệu thật đi qua D1, không gọi Supabase.
+    "SUPABASE_URL": "d1",
+    "SUPABASE_SERVICE_ROLE_KEY": "d1",
+    "CANONICAL_HOST": "hilipc.vn",
+    // Ảnh chưa chép sang R2 sẽ được lấy từ Supabase Storage 1 lần rồi lưu vào R2.
+    "OLD_SUPABASE_URL": "https://wddfjbcrkwkzshibghdi.supabase.co"
+  },
+  // Bí mật đặt bằng lệnh (KHÔNG ghi vào file): npx wrangler secret put ADMIN_SESSION_SECRET
+  //   ADMIN_SESSION_SECRET, CRON_SECRET, GEMINI_API_KEY
+
+  // 00:00 giờ Việt Nam mỗi ngày: sao lưu (chạy ngay trong D1).
+  "triggers": { "crons": ["0 17 * * *"] },
+  "observability": { "enabled": true }
+}

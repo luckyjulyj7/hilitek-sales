@@ -29,6 +29,14 @@ export function isSupabaseConfigured() {
   return Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 }
 
+/**
+ * Trang quản lý đọc/ghi qua máy chủ /api/admin? Bản build thật (Vercel hoặc Cloudflare) luôn có; khi
+ * chạy "npm run dev" chỉ khi có cấu hình Supabase trong .env (không thì lưu tạm ở trình duyệt).
+ */
+export function isServerMode() {
+  return isSupabaseConfigured() || Boolean(import.meta.env.PROD);
+}
+
 let _client = null;
 export function getClient() {
   if (!_client) {

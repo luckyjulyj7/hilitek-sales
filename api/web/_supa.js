@@ -16,14 +16,16 @@ import { createClient } from "@supabase/supabase-js";
 // Hàm sản phẩm/danh mục web dùng chung với trình duyệt (trang quản lý tự dựng bản danh mục web).
 export { slugify, productSlug, stockOf, webStockOf, publicProduct, baseVariantName, findPublished, publishedProducts } from "../../src/lib/webCatalog.js";
 
-const URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
-const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
+// Đọc lúc gọi (không đọc lúc nạp file): trên Cloudflare Worker biến môi trường chỉ có khi đang chạy lượt.
+const envUrl = () => process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
+const envKey = () => process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
 const TABLE = "app_state";
 // Phải trùng STORAGE_KEY trong SalesManager.jsx. HILI_STORAGE_KEY chỉ dùng khi thử ở máy (như _auth.js).
 export const STORAGE_KEY = process.env.HILI_STORAGE_KEY || "solbh-data-v2";
 
 let _client = null;
 export function client() {
+  const URL = envUrl(), KEY = envKey();
   if (!URL || !KEY) {
     const e = new Error("Thiếu SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY trong Environment Variables của Vercel.");
     e.code = "NO_CONFIG";

@@ -6,12 +6,9 @@
  *      xoá, không tin danh sách từ client, tránh xoá nhầm ảnh vừa được gán thêm).
  * Gọi qua /api/admin?op=media-cleanup — chỉ người đã đăng nhập trang quản lý.
  */
-import { createClient } from "@supabase/supabase-js";
-import { handler, json } from "./_supa.js";
+import { handler, json, client } from "./_supa.js";
 import { readFullState } from "./_records.js";
 
-const SB_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
-const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
 const BUCKET = "product-media";
 // Mọi ảnh do uploadProductImage()/fetch-image.js tạo đều nằm trong "desc/" (xem mediaUpload.js).
 const FOLDER = "desc";
@@ -64,8 +61,7 @@ async function computeOrphans(sb) {
 }
 
 export default handler(async (req, res) => {
-  if (!SB_URL || !SB_KEY) return json(res, 503, { error: "Thiếu cấu hình Supabase trên máy chủ." });
-  const sb = createClient(SB_URL, SB_KEY, { auth: { persistSession: false } });
+  const sb = client();
 
   if (req.method === "GET") {
     const { totalFiles, referencedCount, orphans } = await computeOrphans(sb);

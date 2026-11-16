@@ -21,7 +21,7 @@
 import { client, json, handler } from "./web/_supa.js";
 import {
   CLIENT_KEYS, MAIN_KEY, KICK_KEY,
-  readRow, readJsonRow, writeRow, loadAuth, splitSecrets, stripAccounts, verifyHash,
+  readRow, readJsonRow, writeRow, loadAuth, splitSecrets, stripAccounts, verifyHash, verifyProof, passwordParams,
   startSession, endSession, requireSession, kickedAfter,
   checkLock, recordFail, clearFails, upgradeIfLegacy,
 } from "./web/_auth.js";
@@ -31,6 +31,7 @@ import { writeWebSnapshot, applyWebChanges } from "./web/_catalog.js";
 import { recordsStatus, migrateFromBlob, pageRows, rowsSince, changedSince, upsertRows } from "./web/_records.js";
 import { RECORD_COLLS, DOC, ORDER } from "../src/lib/records.js";
 import mediaCleanup from "./web/_mediaCleanup.js";
+import crypto from "node:crypto";
 
 const TABLE = "app_state";
 const BUCKET = "product-media";
@@ -83,23 +84,43 @@ async function session(req, res, { checkAuth = false } = {}) {
   return { s, kicks, auth };
 }
 
+// Gửi danh sách dòng mà không parse lại giá trị (chuỗi JSON lấy thẳng từ D1) — đỡ CPU trên Worker.
+function sendRows(res, rows, more, withDel) {
+  const parts = rows.map((r) => {
+    const del = withDel && r.deleted;
+    const v = del ? "null" : r.value_raw != null ? r.value_raw : JSON.stringify(r.value === undefined ? null : r.value);
+    return '{"c":' + JSON.stringify(r.coll) + ',"i":' + JSON.stringify(r.id) + ',"v":' + v + (withDel ? ',"d":' + (del ? 1 : 0) : "") + ',"t":' + JSON.stringify(r.updated_at) + "}";
+  });
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.setHeader("Cache-Control", "no-store");
+  res.status(200).send('{"rows":[' + parts.join(",") + '],"more":' + (more ? "true" : "false") + "}");
+}
+
+const mediaSig = (path) => crypto.createHmac("sha256", process.env.ADMIN_SESSION_SECRET || "").update("media:" + path).digest("base64url");
+
 const ops = {
+  // POST { username } -> { algo, salt, iter }: thông số để trình duyệt tự băm mật khẩu (xem _auth.js verifyProof).
+  async pwsalt(req, res) {
+    const auth = await loadAuth();
+    json(res, 200, passwordParams(auth, body(req).username));
+  },
+
   async login(req, res) {
-    const { username, password } = body(req);
+    const { username, password, proof } = body(req);
     const name = String(username || "").trim().toLowerCase();
-    if (!name || !password) return bad(res, "Nhập tên đăng nhập và mật khẩu.");
+    if (!name || (!password && !proof)) return bad(res, "Nhập tên đăng nhập và mật khẩu.");
     const lockedMin = await checkLock(name);
     if (lockedMin) return bad(res, `Sai mật khẩu quá nhiều lần. Thử lại sau ${lockedMin} phút.`, 429);
     const auth = await loadAuth();
     const id = Object.keys(auth.accounts).find((k) => auth.accounts[k].username === name);
     const entry = id && auth.accounts[id];
     if (!entry || !entry.active) return bad(res, "Tài khoản không tồn tại hoặc đã bị khoá.", 401);
-    if (!verifyHash(entry, password)) {
+    if (!(proof ? verifyProof(entry, proof) : verifyHash(entry, password))) {
       const r = await recordFail(name);
       return bad(res, r.locked ? `Sai mật khẩu 5 lần. Tạm khoá đăng nhập ${r.locked} phút.` : `Sai mật khẩu (còn ${r.left} lần thử).`, 401);
     }
     await clearFails(name);
-    if (auth.migratedAt) await upgradeIfLegacy(auth, id, password);
+    if (auth.migratedAt && password) await upgradeIfLegacy(auth, id, password);
     startSession(req, res, id, entry.role);
     json(res, 200, { userId: id });
   },
@@ -117,11 +138,12 @@ const ops = {
   async verify(req, res) {
     const ss = await session(req, res, { checkAuth: true });
     if (!ss) return;
-    const { password } = body(req);
+    const { password, proof } = body(req);
     const key = "verify:" + ss.s.u;
     const lockedMin = await checkLock(key);
     if (lockedMin) return json(res, 200, { ok: false, locked: lockedMin });
-    if (!verifyHash(ss.auth.accounts[ss.s.u], String(password || ""))) {
+    const entry = ss.auth.accounts[ss.s.u];
+    if (!(proof ? verifyProof(entry, proof) : verifyHash(entry, String(password || "")))) {
       const r = await recordFail(key);
       return json(res, 200, { ok: false, ...r });
     }
@@ -151,8 +173,8 @@ const ops = {
     if (st === "missing") return json(res, 200, { legacy: true });
     if (st === "empty") { await migrateFromBlob(); st = "ready"; }
     const ac = req.query.ac, ai = req.query.ai;
-    const rows = await pageRows({ afterColl: ac != null ? String(ac) : null, afterId: ai != null ? String(ai) : null, limit: 500 });
-    json(res, 200, { rows: rows.map((r) => ({ c: r.coll, i: r.id, v: r.value, t: r.updated_at })), more: rows.length === 500 });
+    const rows = await pageRows({ afterColl: ac != null ? String(ac) : null, afterId: ai != null ? String(ai) : null, limit: 500, raw: true });
+    sendRows(res, rows, rows.length === 500, false);
   },
 
   // GET ?op=rsince&since=<mốc>&tab=<mã tab>[&after=<mốc trang trước>] -> dòng người khác vừa đổi.
@@ -162,8 +184,8 @@ const ops = {
     const since = String(req.query.since || "");
     if (!since || isNaN(Date.parse(since))) return bad(res, "Thiếu mốc thời gian.");
     const after = req.query.after ? String(req.query.after) : null;
-    const rows = await rowsSince(since, String(req.query.tab || ""), { after });
-    json(res, 200, { rows: rows.map((r) => ({ c: r.coll, i: r.id, v: r.deleted ? null : r.value, d: r.deleted ? 1 : 0, t: r.updated_at })), more: rows.length === 500 });
+    const rows = await rowsSince(since, String(req.query.tab || ""), { after, raw: true });
+    sendRows(res, rows, rows.length === 500, true);
   },
 
   // POST ?op=rput { tab, changes:[{c,i,v}|{c,i,d:1}], restore?, webChanges?, webReplace? } — chỉ ghi các dòng đổi.
@@ -269,7 +291,25 @@ const ops = {
     const path = `desc/${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
     const { data, error } = await client().storage.from(BUCKET).createSignedUploadUrl(path);
     if (error) throw new Error("Không tạo được link tải ảnh: " + error.message);
-    json(res, 200, { path: data.path || path, token: data.token });
+    // put: kho ảnh không cho trình duyệt ghi thẳng (Cloudflare R2) -> gửi file qua op=put-media.
+    json(res, 200, { path: data.path || path, token: data.token, ...(data.put ? { put: true, sig: mediaSig(data.path || path) } : {}) });
+  },
+
+  // POST ?op=put-media&path=desc/...&sig=... (thân = file ảnh/âm thanh) — chỉ path do op=upload vừa cấp.
+  async "put-media"(req, res) {
+    if (!(await session(req, res))) return;
+    const path = String(req.query.path || "");
+    if (!/^desc\/[A-Za-z0-9-]+\.[a-z0-9]{1,5}$/.test(path)) return bad(res, "Đường dẫn không hợp lệ.");
+    const want = mediaSig(path), got = String(req.query.sig || "");
+    if (want.length !== got.length || !crypto.timingSafeEqual(Buffer.from(want), Buffer.from(got))) return bad(res, "Mã tải lên không hợp lệ.", 403);
+    const buf = Buffer.isBuffer(req.body) ? req.body : null;
+    if (!buf || !buf.length) return bad(res, "Thiếu file.");
+    if (buf.length > 10 * 1024 * 1024) return bad(res, "File lớn hơn 10MB.", 413);
+    const ct = String(req.headers["content-type"] || "application/octet-stream").split(";")[0];
+    if (!/^(image|audio)\//.test(ct)) return bad(res, "Chỉ nhận ảnh hoặc âm thanh.", 415);
+    const { error } = await client().storage.from(BUCKET).upload(path, buf, { contentType: ct, upsert: false, cacheControl: "31536000" });
+    if (error) throw new Error("Lưu file lỗi: " + error.message);
+    json(res, 200, { path, url: "/media/" + path });
   },
 
   async "fetch-image"(req, res) {
@@ -319,7 +359,7 @@ async function write(req, res, conditional) {
   json(res, 200, { updatedAt });
 }
 
-const POST_OPS = new Set(["login", "logout", "verify", "set", "cas", "del", "upload", "rput"]);
+const POST_OPS = new Set(["pwsalt", "login", "logout", "verify", "set", "cas", "del", "upload", "rput", "put-media"]);
 
 export default handler(async (req, res) => {
   const op = String((req.query && req.query.op) || "");
@@ -327,6 +367,6 @@ export default handler(async (req, res) => {
   if (!fn) return bad(res, "Thao tác không hợp lệ.", 404);
   if (POST_OPS.has(op) && req.method !== "POST") return bad(res, "Chỉ hỗ trợ POST.", 405);
   if (req.method === "POST" && req.headers["x-hili"] !== "1") return bad(res, "Thiếu header bảo vệ.", 403);
-  if (req.method === "POST") await readBody(req);
+  if (req.method === "POST" && op !== "put-media") await readBody(req);
   return fn(req, res);
 });

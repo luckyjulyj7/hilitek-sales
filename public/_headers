@@ -1,0 +1,19 @@
+# Cloudflare: Cache-Control cho file tĩnh (thay phần "headers" trong vercel.json).
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+/home/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=2592000
+/posters/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/logo-sm.png
+  Cache-Control: public, max-age=86400
+/zalo-sm.png
+  Cache-Control: public, max-age=86400
+/bo-cong-thuong.png
+  Cache-Control: public, max-age=86400
+/logo1.png
+  Cache-Control: public, max-age=86400
+/Logo2.png
+  Cache-Control: public, max-age=86400
+/og-image.jpg
+  Cache-Control: public, max-age=86400

@@ -11,7 +11,8 @@ let shell = "";
 async function loadShell(req) {
   if (shell) return shell;
   const host = req.headers["x-forwarded-host"] || req.headers.host;
-  const r = await fetch(`https://${host}/shop.html`);
+  // Cloudflare Worker: đọc thẳng file tĩnh (worker/index.js gắn __hiliAsset).
+  const r = globalThis.__hiliAsset ? await globalThis.__hiliAsset("/shop.html") : await fetch(`https://${host}/shop.html`);
   if (!r.ok) throw new Error("Không đọc được shop.html: " + r.status);
   shell = await r.text();
   return shell;

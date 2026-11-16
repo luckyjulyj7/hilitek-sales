@@ -6,8 +6,35 @@
  * Tải lên bằng link dùng 1 lần do /api/admin?op=upload cấp (chỉ người đã đăng nhập mới xin được),
  * khoá anon không có quyền ghi vào kho ảnh.
  */
-import { getClient, isSupabaseConfigured } from "./supabaseStorage.js";
+import { getClient, isServerMode } from "./supabaseStorage.js";
 import { adminApi } from "./adminApi.js";
+
+/**
+ * Xin link tải lên rồi gửi file. Máy chủ Cloudflare (kho R2) trả { put, sig }: gửi file qua
+ * /api/admin?op=put-media. Máy chủ Supabase: tải thẳng vào Storage bằng token dùng 1 lần.
+ */
+async function putFile(ext, file, type) {
+  const r = await adminApi("upload", { method: "POST", body: { ext } });
+  if (r.put) {
+    const res = await fetch(`/api/admin?op=put-media&path=${encodeURIComponent(r.path)}&sig=${encodeURIComponent(r.sig)}`, {
+      method: "POST", credentials: "same-origin", headers: { "x-hili": "1", "Content-Type": type }, body: file,
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(j.error || `mã ${res.status}`);
+    return r.path;
+  }
+  const { error } = await getClient()
+    .storage.from(BUCKET)
+    .uploadToSignedUrl(r.path, r.token, file, { contentType: type, upsert: false, cacheControl: "31536000" });
+  if (error) {
+    const m = error.message || String(error);
+    const hint = /bucket|not found|row-level|policy|unauthorized/i.test(m)
+      ? " — kiểm tra bucket 'product-media' đã tạo + đã chạy supabase/storage.sql."
+      : "";
+    throw new Error(m + hint);
+  }
+  return r.path;
+}
 
 const BUCKET = "product-media";
 
@@ -56,21 +83,13 @@ async function compressImage(fileOrBlob) {
 
 /** Upload 1 File/Blob ảnh (tự nén trước). Trả { path, url } với url = "/media/desc/xxx.webp". */
 export async function uploadProductImage(fileOrBlob) {
-  if (!isSupabaseConfigured())
-    throw new Error("Chưa cấu hình Supabase (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY).");
+  if (!isServerMode())
+    throw new Error("Chưa cấu hình máy chủ (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY).");
   const compressed = await compressImage(fileOrBlob);
   const type = compressed.type || fileOrBlob.type || "image/png";
-  const { path, token } = await adminApi("upload", { method: "POST", body: { ext: extFromType(type) } });
-  const { error } = await getClient()
-    .storage.from(BUCKET)
-    .uploadToSignedUrl(path, token, compressed, { contentType: type, upsert: false, cacheControl: "31536000" });
-  if (error) {
-    const m = error.message || String(error);
-    const hint = /bucket|not found|row-level|policy|unauthorized/i.test(m)
-      ? " — kiểm tra bucket 'product-media' đã tạo + đã chạy supabase/storage.sql."
-      : "";
-    throw new Error("Tải ảnh lên thất bại: " + m + hint);
-  }
+  let path;
+  try { path = await putFile(extFromType(type), compressed, type); }
+  catch (e) { throw new Error("Tải ảnh lên thất bại: " + (e.message || e)); }
   return { path, url: "/media/" + path };
 }
 
@@ -80,17 +99,15 @@ const AUDIO_MAX = 2 * 1024 * 1024;
 
 /** Upload 1 file âm thanh (mp3/m4a/wav/ogg, tối đa 2MB). Trả { path, url } với url = "/media/desc/xxx.mp3". */
 export async function uploadProductAudio(file) {
-  if (!isSupabaseConfigured())
-    throw new Error("Chưa cấu hình Supabase (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY).");
+  if (!isServerMode())
+    throw new Error("Chưa cấu hình máy chủ (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY).");
   const ext = String((file.name || "").split(".").pop() || "").toLowerCase();
   if (!AUDIO_EXTS.includes(ext)) throw new Error("Chỉ nhận file âm thanh .mp3, .m4a, .wav, .ogg.");
   if (file.size > AUDIO_MAX) throw new Error("File âm thanh quá lớn (tối đa 2MB).");
   const type = file.type || (ext === "mp3" ? "audio/mpeg" : "audio/" + ext);
-  const { path, token } = await adminApi("upload", { method: "POST", body: { ext } });
-  const { error } = await getClient()
-    .storage.from(BUCKET)
-    .uploadToSignedUrl(path, token, file, { contentType: type, upsert: false, cacheControl: "31536000" });
-  if (error) throw new Error("Tải âm thanh lên thất bại: " + (error.message || String(error)));
+  let path;
+  try { path = await putFile(ext, file, type); }
+  catch (e) { throw new Error("Tải âm thanh lên thất bại: " + (e.message || e)); }
   return { path, url: "/media/" + path };
 }
 
@@ -166,11 +183,16 @@ export async function rehostExternalImage(src) {
   } catch {
     /* CORS chặn / quá lâu -> thử proxy */
   }
+  // raw=1: máy chủ chỉ tải hộ rồi trả nguyên ảnh, trình duyệt tự nén + tải lên (máy chủ Cloudflare
+  // không nén được ảnh). Máy chủ cũ bỏ qua raw và tự nén, trả { url }.
   const r = await fetchWithTimeout(
-    `/api/admin?op=fetch-image&url=${encodeURIComponent(src)}`,
+    `/api/admin?op=fetch-image&raw=1&url=${encodeURIComponent(src)}`,
     { credentials: "same-origin" },
     30000
   );
+  if (r.ok && /^image\//i.test(r.headers.get("content-type") || "")) {
+    return (await uploadProductImage(await r.blob())).url;
+  }
   const j = await r.json().catch(() => ({}));
   if (!r.ok || !j.url) throw new Error(j.error || `Không tải được ảnh (mã ${r.status})`);
   return j.url;

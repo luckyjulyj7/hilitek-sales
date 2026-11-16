@@ -13,14 +13,16 @@ import * as cheerio from "cheerio";
 import { handler, json, slugify } from "./_supa.js";
 import { requireSession } from "./_auth.js";
 
-const GEMINI_KEY = process.env.GEMINI_API_KEY || "";
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
+// Đọc lúc gọi (Cloudflare Worker chỉ có biến môi trường khi đang chạy lượt).
+let GEMINI_KEY = "", GEMINI_MODEL = "";
 const SKIP_IMG_RE = /logo|icon|favicon|sprite|avatar|payment|thanh-toan|zalo\.(png|svg)|facebook\.(png|svg)|qr-?code|dmca|banner|\/advs?\//i;
 const MAX_URLS = 3;
 
 export default handler(async (req, res) => {
   if (req.method !== "POST") return json(res, 405, { error: "Chỉ hỗ trợ POST." });
   if (!requireSession(req, res)) return;
+  GEMINI_KEY = process.env.GEMINI_API_KEY || "";
+  GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
   if (!GEMINI_KEY) return json(res, 503, { error: "Server chưa cấu hình GEMINI_API_KEY." });
 
   const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};

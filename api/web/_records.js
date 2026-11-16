@@ -61,8 +61,9 @@ const q = (s) => '"' + String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '
  * 1 trang dòng (không gồm dòng đã xoá), sắp theo (coll, id), sau khoá (afterColl, afterId).
  * colls: chỉ lấy các danh sách này (tuỳ chọn).
  */
-export async function pageRows({ afterColl, afterId, limit = PAGE, colls, ns = NS } = {}) {
-  let qb = client().from(T).select("coll,id,value,updated_at").eq("ns", ns).eq("deleted", false);
+export async function pageRows({ afterColl, afterId, limit = PAGE, colls, ns = NS, raw = false } = {}) {
+  // raw: Cloudflare D1 trả value dạng chuỗi (value_raw), không parse (Supabase bỏ qua tuỳ chọn này).
+  let qb = client().from(T).select("coll,id,value,updated_at", raw ? { hiliRaw: true } : undefined).eq("ns", ns).eq("deleted", false);
   if (colls) qb = qb.in("coll", colls);
   if (afterColl != null) qb = qb.or(`coll.gt.${q(afterColl)},and(coll.eq.${q(afterColl)},id.gt.${q(afterId)})`);
   const { data, error } = await qb.order("coll").order("id").limit(limit);
@@ -87,9 +88,9 @@ export async function listKeys(ns = NS) {
 }
 
 /** Các dòng NGƯỜI KHÁC (writer khác tab) đổi sau mốc `since` (lùi 5 giây: dòng của lần ghi khác đang dở có thể mang mốc sớm hơn). */
-export async function rowsSince(since, tab, { after, limit = 500 } = {}) {
+export async function rowsSince(since, tab, { after, limit = 500, raw = false } = {}) {
   const from = after || new Date(Date.parse(since) - 5000).toISOString();
-  let qb = client().from(T).select("coll,id,value,deleted,updated_at").eq("ns", NS).gt("updated_at", from);
+  let qb = client().from(T).select("coll,id,value,deleted,updated_at", raw ? { hiliRaw: true } : undefined).eq("ns", NS).gt("updated_at", from);
   if (tab) qb = qb.neq("writer", tab);
   const { data, error } = await qb.order("updated_at").limit(limit);
   if (error) throw new Error("Supabase đọc lỗi: " + error.message);

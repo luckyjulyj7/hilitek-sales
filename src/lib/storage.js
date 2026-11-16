@@ -22,7 +22,7 @@
  *   ghép `session` từ localStorage máy này vào. `SalesManager.jsx` không phải sửa.
  */
 
-import { isSupabaseConfigured } from "./supabaseStorage.js";
+import { isServerMode } from "./supabaseStorage.js";
 import { adminApi } from "./adminApi.js";
 import { createRecordStore } from "./recordStore.js";
 
@@ -301,7 +301,7 @@ export const localStorageShim = {
 export async function initStorage() {
   if (typeof window === "undefined") return { backend: "local" };
 
-  if (!isSupabaseConfigured()) {
+  if (!isServerMode()) {
     window.storage = withDeviceSession(localStorageShim);
     return { backend: "local" };
   }

@@ -77,16 +77,47 @@ function safeEqHex(a, b) {
 function pbkdf2Hex(password, saltHex, iter) {
   return crypto.pbkdf2Sync(String(password), Buffer.from(String(saltHex), "hex"), iter, 32, "sha256").toString("hex");
 }
+const sha256Hex = (s) => crypto.createHash("sha256").update(String(s)).digest("hex");
+
+/*
+ * Mã băm lưu ở máy chủ: h2 = SHA-256(mã băm PBKDF2 của mật khẩu). Trình duyệt tự tính PBKDF2 (210.000
+ * vòng, chậm có chủ đích) rồi gửi kết quả ("proof"); máy chủ chỉ băm SHA-256 1 lần để so -> nhẹ, chạy
+ * được trên Cloudflare Worker gói Free (giới hạn ~10 ms CPU, không chạy nổi PBKDF2).
+ * Lộ dữ liệu máy chủ cũng không đăng nhập được: h2 không dùng làm proof được, phải dò lại PBKDF2.
+ * Hàng cũ còn `hash` (chưa có h2) vẫn dùng được, tự đổi sang h2 ở lần ghi hàng auth kế tiếp.
+ */
+function checkDerived(entry, derived) {
+  if (!entry || !entry.salt || !/^[0-9a-f]{64}$/.test(String(derived || ""))) return false;
+  if (entry.h2) return safeEqHex(sha256Hex(derived), entry.h2);
+  return Boolean(entry.hash) && safeEqHex(derived, entry.hash);
+}
+/** Đăng nhập kiểu cũ: máy chủ tự băm mật khẩu (nặng — chỉ còn cho trình duyệt chạy bản cũ). */
 export function verifyHash(entry, password) {
-  if (!entry || !entry.hash || !entry.salt) return false;
+  if (!entry || !entry.salt) return false;
   const h = entry.algo === "pbkdf2"
     ? pbkdf2Hex(password, entry.salt, Number(entry.iter) || PBKDF2_ITERATIONS)
     : crypto.createHash("sha256").update(`${entry.salt}:${password}`).digest("hex");
-  return safeEqHex(h, entry.hash);
+  return checkDerived(entry, h);
+}
+/** Đăng nhập kiểu mới: trình duyệt gửi mã băm đã tính (xem src/lib/passwordProof.js). */
+export function verifyProof(entry, proof) {
+  return checkDerived(entry, String(proof || "").toLowerCase());
+}
+/**
+ * Thông số để trình duyệt tự băm mật khẩu. Tên đăng nhập không tồn tại vẫn trả 1 salt cố định (tính từ
+ * khoá bí mật) để không dò được tên nào có thật.
+ */
+export function passwordParams(auth, username) {
+  const name = String(username || "").trim().toLowerCase();
+  const id = Object.keys((auth && auth.accounts) || {}).find((k) => auth.accounts[k].username === name);
+  const e = id && auth.accounts[id];
+  if (e && e.salt) return { algo: e.algo === "pbkdf2" ? "pbkdf2" : "sha256", salt: e.salt, iter: Number(e.iter) || PBKDF2_ITERATIONS };
+  const fake = crypto.createHmac("sha256", secret()).update("salt:" + name).digest("hex").slice(0, 32);
+  return { algo: "pbkdf2", salt: fake, iter: PBKDF2_ITERATIONS };
 }
 function makeHash(password) {
   const salt = crypto.randomBytes(16).toString("hex");
-  return { hash: pbkdf2Hex(password, salt, PBKDF2_ITERATIONS), salt, algo: "pbkdf2", iter: PBKDF2_ITERATIONS };
+  return { h2: sha256Hex(pbkdf2Hex(password, salt, PBKDF2_ITERATIONS)), hash: "", salt, algo: "pbkdf2", iter: PBKDF2_ITERATIONS };
 }
 
 /* ---------------- hàng auth: { accounts: { id: {username, active, hash, salt, algo, iter} } } ---------------- */
@@ -95,10 +126,10 @@ function entryFromAccount(a, prev = {}) {
     username: String(a.username || "").trim().toLowerCase(),
     active: a.active !== false,
     role: a.role === "admin" ? "admin" : String(a.role || "staff"),
-    hash: prev.hash || "", salt: prev.salt || "", algo: prev.algo || "sha256", iter: prev.iter || PBKDF2_ITERATIONS,
+    h2: prev.h2 || (prev.hash ? sha256Hex(prev.hash) : ""), salt: prev.salt || "", algo: prev.algo || "sha256", iter: prev.iter || PBKDF2_ITERATIONS,
   };
   if (a.passwordHash && a.passwordSalt) {
-    e.hash = a.passwordHash; e.salt = a.passwordSalt;
+    e.h2 = sha256Hex(String(a.passwordHash).toLowerCase()); e.salt = a.passwordSalt;
     e.algo = a.passwordAlgo === "pbkdf2" ? "pbkdf2" : "sha256";
     e.iter = Number(a.passwordIter) > 0 ? Number(a.passwordIter) : PBKDF2_ITERATIONS;
   }

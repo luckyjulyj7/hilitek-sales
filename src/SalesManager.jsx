@@ -31,6 +31,7 @@ function webCatsWithGroups(menu) {
 }
 import { uploadProductImage, uploadProductAudio, rehostExternalImage, toDirectImageUrl, trimLogo } from "./lib/mediaUpload.js";
 import { adminApi } from "./lib/adminApi.js";
+import { passwordProof } from "./lib/passwordProof.js";
 import { clearMainCache } from "./lib/storage.js";
 import { pointsForPhone, normalizePhone, DEFAULT_LOYALTY } from "./lib/loyalty.js";
 import { baseVariantName } from "./lib/variants.js";
@@ -282,7 +283,9 @@ async function verifyAccountPassword(acc, password) {
   if (!acc) return { ok: false };
   // Chế độ máy chủ: trình duyệt không có mã băm — máy chủ kiểm mật khẩu của CHÍNH người đang đăng nhập.
   if (typeof window !== "undefined" && window.storage && window.storage.api) {
-    const r = await adminApi("verify", { method: "POST", body: { password } });
+    // Trình duyệt tự băm (máy chủ Cloudflare không băm PBKDF2), chỉ gửi mã băm.
+    const proof = await passwordProof(adminApi, String(acc.username || "").trim().toLowerCase(), password);
+    const r = await adminApi("verify", { method: "POST", body: { proof } });
     return { ok: Boolean(r && r.ok) };
   }
   const ok = await verifyPassword(password, acc.passwordSalt, acc.passwordHash, acc.passwordAlgo, acc.passwordIter);
@@ -14597,7 +14600,9 @@ export function LoginScreen({ accounts, onLogin, onUpgradeHash }) {
       if (!uname || !password) { setError("Nhập tên đăng nhập và mật khẩu."); return; }
       setBusy(true);
       try {
-        const r = await adminApi("login", { method: "POST", body: { username: uname, password }, retries: 1 });
+        // Trình duyệt tự băm mật khẩu rồi chỉ gửi mã băm (xem src/lib/passwordProof.js).
+        const proof = await passwordProof(adminApi, uname, password);
+        const r = await adminApi("login", { method: "POST", body: { username: uname, proof }, retries: 1 });
         try { localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now())); } catch { /* bỏ qua */ }
         setError("");
         onLogin(r.userId);

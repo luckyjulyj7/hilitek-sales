@@ -4,12 +4,9 @@
  * nén tốt hơn) rồi lưu vào Supabase Storage bucket "product-media", trả { url: "/media/desc/xxx" }.
  * Gọi qua /api/admin?op=fetch-image — chỉ người đã đăng nhập trang quản lý.
  */
-import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
-import { handler, json } from "./_supa.js";
+import { handler, json, client } from "./_supa.js";
 
-const SB_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
-const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
 const BUCKET = "product-media";
 const MAX = 8 * 1024 * 1024;
 // Giới hạn cạnh dài nhất + chất lượng nén — đủ nét để xem trên web, giảm hẳn dung lượng so
@@ -40,8 +37,6 @@ async function compress(buf, ct) {
 
 export default handler(async (req, res) => {
   if (req.method !== "GET") return json(res, 405, { error: "Chỉ hỗ trợ GET." });
-  if (!SB_URL || !SB_KEY) return json(res, 503, { error: "Thiếu cấu hình Supabase trên máy chủ." });
-
   const src = req.query && req.query.url;
   if (!src || !/^https?:\/\//i.test(src)) return json(res, 400, { error: "URL ảnh không hợp lệ." });
 
@@ -66,13 +61,19 @@ export default handler(async (req, res) => {
   let buf = Buffer.from(await up.arrayBuffer());
   if (buf.length > MAX) return json(res, 413, { error: "Ảnh lớn hơn 8MB." });
 
+  // ?raw=1: chỉ tải hộ, trả nguyên ảnh cho trình duyệt tự nén rồi tải lên (Cloudflare Worker không có sharp).
+  if (req.query && req.query.raw === "1") {
+    res.setHeader("Content-Type", ct);
+    res.setHeader("Cache-Control", "no-store");
+    return res.status(200).send(buf);
+  }
+
   let outCt = ct;
   ({ buf, ct: outCt } = await compress(buf, ct));
 
   const ext = (outCt.split("/")[1] || "png").replace("jpeg", "jpg").split("+")[0].toLowerCase();
   const path = `desc/${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-  const sb = createClient(SB_URL, SB_KEY, { auth: { persistSession: false } });
-  const { error } = await sb.storage.from(BUCKET).upload(path, buf, { contentType: outCt, upsert: false, cacheControl: "31536000" });
+  const { error } = await client().storage.from(BUCKET).upload(path, buf, { contentType: outCt, upsert: false, cacheControl: "31536000" });
   if (error) return json(res, 500, { error: "Lưu vào kho lỗi: " + error.message });
 
   json(res, 200, { url: "/media/" + path });
