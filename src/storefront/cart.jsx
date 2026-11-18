@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { trackAct } from "./lib/track.js";
 import { playAddToCart } from "./lib/sound.js";
 import { evalCoupon } from "./config.js";
 
@@ -59,6 +60,7 @@ export function CartProvider({ children }) {
   const api = useMemo(() => {
     const add = (product, qty = 1, opts = {}) => {
       const preorder = !!opts.preorder;
+      if (!opts.silent) trackAct("cart");
       if (!opts.silent) {
         setBump((n) => n + 1);
         playAddToCart();

@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
+import { trackSearch } from "../lib/track.js";
 import { SlidersHorizontal, X, ChevronRight } from "lucide-react";
 import ProductCard from "../components/ProductCard.jsx";
 import { discountPercent, formatVND } from "../lib/format.js";
@@ -67,6 +68,9 @@ export default function Catalog({ catalog, route, navigate }) {
   const activeGroup = group || catGroup;
 
   // Nhãn hiệu có trong phạm vi đang xem (nhóm / danh mục phụ) — cột lọc tự sinh.
+  // Thống kê: từ khoá khách tìm (kèm số kết quả, 0 = web chưa có thứ khách cần).
+  useEffect(() => { if (q) trackSearch(q, list.length); }, [q]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const brandsHere = useMemo(() => {
     const set = new Set(
       products

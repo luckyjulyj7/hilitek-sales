@@ -71,6 +71,24 @@ function commitPending() {
   pending = null;
 }
 
+const curPath = () => (location.pathname || "/").slice(0, 160);
+
+/** Hành động của khách: "cart" (thêm giỏ), "zalo", "phone", "messenger". Tính theo trang đang xem. */
+export function trackAct(k) {
+  if (off()) return;
+  if (!started) init();
+  queue.push({ t: "x", k, p: curPath() });
+  if (k === "cart") schedule(); else flush();
+}
+
+/** Khách tìm kiếm (từ khoá, số kết quả). Server bỏ từ khoá có vẻ là số điện thoại/email. */
+export function trackSearch(q, results) {
+  if (off() || !q) return;
+  if (!started) init();
+  queue.push({ t: "s", q: String(q).slice(0, 60), r: results });
+  schedule();
+}
+
 /** Gọi mỗi khi đổi trang (path + query đã lọc, xem App.jsx). */
 export function trackPage(path) {
   if (off()) return;
@@ -89,11 +107,16 @@ function init() {
   document.addEventListener("click", (ev) => {
     const a = ev.target && ev.target.closest ? ev.target.closest("a[href]") : null;
     if (!a) return;
+    // Liên hệ: gọi điện, Zalo, Messenger (mọi nơi trên web, kể cả nút nổi).
+    const href = a.getAttribute("href") || "";
+    if (/^tel:/i.test(href)) { trackAct("phone"); return; }
     let host = "";
     try { host = new URL(a.href, location.href).hostname.toLowerCase(); } catch { return; }
+    if (/(^|\.)zalo\.me$/.test(host)) { trackAct("zalo"); return; }
+    if (/(^|\.)(m\.me|messenger\.com)$/.test(host)) { trackAct("messenger"); return; }
     if (!host || host === location.hostname) return;
     for (const [re, k] of MARKETS) {
-      if (re.test(host)) { queue.push({ t: "c", k }); flush(); return; }
+      if (re.test(host)) { queue.push({ t: "c", k, p: curPath() }); flush(); return; }
     }
   }, true);
 }

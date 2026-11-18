@@ -185,7 +185,7 @@ export function upsertWebCustomer(state, { name, phone, email, note, province, w
     id, code: nextCustomerCode(state.customers), name: (name || "").trim() || "Khách website", phone: cleanPhone,
     contactPerson: "", email: (email || "").trim(), taxCode: "", province: province || "", ward: ward || "", addressDetail: addressDetail || "",
     group: "retail", representativeName: "", representativeTitle: "", assignedTo: "",
-    note: note || "", addresses: [],
+    note: note || "", addresses: [], createdAt: new Date().toISOString(),
   });
   return id;
 }

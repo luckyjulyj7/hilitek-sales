@@ -61,9 +61,30 @@ create table if not exists stats_ref (
   n integer not null default 0,
   primary key (day, src)
 ) without rowid;
-create table if not exists stats_click (
+-- (stats_click: bản đầu tiên, không còn dùng; số bấm sàn nằm trong stats_event.)
+create table if not exists stats_hour (  -- lượt xem theo giờ Việt Nam
   day text not null,
-  target text not null,            -- shopee | lazada | tiktok | tiki | other
+  h integer not null,
   n integer not null default 0,
-  primary key (day, target)
+  primary key (day, h)
+) without rowid;
+create table if not exists stats_land (  -- trang khách mở đầu tiên của lượt truy cập mới
+  day text not null,
+  path text not null,
+  n integer not null default 0,
+  primary key (day, path)
+) without rowid;
+create table if not exists stats_event (  -- hành động theo trang: click:shopee|lazada|tiktok|tiki|other, act:cart|zalo|phone|messenger
+  day text not null,
+  ev text not null,
+  path text not null,
+  n integer not null default 0,
+  primary key (day, ev, path)
+) without rowid;
+create table if not exists stats_search (  -- từ khoá khách gõ vào ô tìm kiếm của web; zero = số lần không có kết quả
+  day text not null,
+  q text not null,
+  n integer not null default 0,
+  zero integer not null default 0,
+  primary key (day, q)
 ) without rowid;

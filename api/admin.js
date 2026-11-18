@@ -331,15 +331,19 @@ const ops = {
     try {
       out = await db.batch([
         db.prepare("select day,views,visits,mobile,clicks from stats_day where day>=? order by day").bind(from),
-        db.prepare("select path,kind,title,sum(views) v,max(day) last from stats_page where day>=? group by path order by v desc limit 300").bind(from),
+        db.prepare("select path,kind,max(title) title,sum(views) v from stats_page where day>=? group by path order by v desc limit 300").bind(from),
         db.prepare("select src,sum(n) n from stats_ref where day>=? group by src order by n desc limit 30").bind(from),
-        db.prepare("select target,sum(n) n from stats_click where day>=? group by target order by n desc").bind(from),
+        db.prepare("select h,sum(n) n from stats_hour where day>=? group by h").bind(from),
+        db.prepare("select path,sum(n) n from stats_land where day>=? group by path order by n desc limit 12").bind(from),
+        db.prepare("select ev,path,sum(n) n from stats_event where day>=? group by ev,path order by n desc limit 600").bind(from),
+        db.prepare("select q,sum(n) n,sum(zero) zero from stats_search where day>=? group by q order by n desc limit 60").bind(from),
       ]);
     } catch (e) {
       if (/no such table/i.test(String(e && e.message))) return json(res, 200, { missing: true, today });
       throw e;
     }
-    json(res, 200, { today, from, days: out[0].results, pages: out[1].results, refs: out[2].results, clicks: out[3].results });
+    const [days, pages, refs, hours, land, events, search] = out.map((r) => r.results);
+    json(res, 200, { today, from, days, pages, refs, hours, land, events, search });
   },
 
   async "fetch-image"(req, res) {
