@@ -856,6 +856,9 @@ function RelatedCard({ p, onOpen }) {
 /** Thanh mua dính đáy màn hình, chỉ hiện khi đã cuộn qua nút mua chính. Trên điện thoại nằm trên thanh menu dưới. */
 function StickyBuy({ anchor, p, price, out, img, onBuy, onAdd }) {
   const [show, setShow] = useState(false);
+  // Khách bấm X: thu thanh lại thành 1 nút tròn nhỏ (giỏ hàng) ở góc, bấm để mở lại. Nhớ trong phiên.
+  const [closed, setClosed] = useState(() => { try { return sessionStorage.getItem("hili-stickybuy-off") === "1"; } catch { return false; } });
+  const setOff = (v) => { setClosed(v); try { sessionStorage.setItem("hili-stickybuy-off", v ? "1" : "0"); } catch { /* bỏ qua */ } };
   // Đặt sát ngay trên thanh menu dưới (điện thoại): đo đúng chiều cao thanh menu (gồm vùng an toàn).
   const [navH, setNavH] = useState(56);
   useEffect(() => {
@@ -869,7 +872,13 @@ function StickyBuy({ anchor, p, price, out, img, onBuy, onAdd }) {
     return () => window.removeEventListener("scroll", check);
   }, [anchor]);
   return (
-    <div className={"xl:hidden fixed left-0 right-0 lg:bottom-0 z-[55] bg-ink text-white transition-transform duration-500 " + (show ? "translate-y-0" : "translate-y-[calc(100%+80px)]")}
+    <>
+    <button type="button" onClick={() => setOff(false)} aria-label="Mở thanh mua hàng"
+      className={"xl:hidden fixed left-3 z-[55] inline-flex items-center gap-1.5 rounded-full bg-ink px-3 py-2 text-[13px] font-bold text-yellow shadow-lg transition-opacity " + (show && closed ? "opacity-100" : "pointer-events-none opacity-0")}
+      style={{ bottom: navH + 10 }}>
+      <ShoppingCart size={15} /> {formatVND(price)}
+    </button>
+    <div className={"xl:hidden fixed left-0 right-0 lg:bottom-0 z-[55] bg-ink text-white transition-transform duration-500 " + (show && !closed ? "translate-y-0" : "translate-y-[calc(100%+80px)]")}
       style={{ bottom: navH }}>
       <div className="mx-auto flex max-w-[1500px] items-center gap-3 px-3 sm:px-4 py-1.5">
         {img && <img src={img} alt="" className="hidden sm:block h-11 w-11 object-cover bg-white" />}
@@ -884,8 +893,10 @@ function StickyBuy({ anchor, p, price, out, img, onBuy, onAdd }) {
           ) : (
             <button onClick={onAdd} className="min-h-[38px] px-4 bg-yellow text-[13px] font-semibold text-ink">Thêm vào giỏ</button>
           )}
+          <button type="button" onClick={() => setOff(true)} aria-label="Ẩn thanh mua hàng" className="grid min-h-[38px] w-9 place-items-center text-white/70 hover:text-white"><X size={18} /></button>
         </div>
       </div>
     </div>
+    </>
   );
 }
