@@ -856,6 +856,12 @@ function RelatedCard({ p, onOpen }) {
 /** Thanh mua dính đáy màn hình, chỉ hiện khi đã cuộn qua nút mua chính. Trên điện thoại nằm trên thanh menu dưới. */
 function StickyBuy({ anchor, p, price, out, img, onBuy, onAdd }) {
   const [show, setShow] = useState(false);
+  // Đặt sát ngay trên thanh menu dưới (điện thoại): đo đúng chiều cao thanh menu (gồm vùng an toàn).
+  const [navH, setNavH] = useState(56);
+  useEffect(() => {
+    const m = () => { const n = document.querySelector(".fixed.bottom-0.grid-cols-5"); setNavH(n && window.innerWidth < 1024 && getComputedStyle(n).display !== "none" ? n.getBoundingClientRect().height : 0); };
+    m(); window.addEventListener("resize", m); return () => window.removeEventListener("resize", m);
+  }, []);
   useEffect(() => {
     const check = () => { const el = anchor.current; setShow(!!el && el.getBoundingClientRect().top < -120); };
     check();
@@ -863,19 +869,20 @@ function StickyBuy({ anchor, p, price, out, img, onBuy, onAdd }) {
     return () => window.removeEventListener("scroll", check);
   }, [anchor]);
   return (
-    <div className={"xl:hidden fixed left-0 right-0 bottom-[60px] lg:bottom-0 z-[55] bg-ink text-white transition-transform duration-500 " + (show ? "translate-y-0" : "translate-y-[calc(100%+60px)]")}>
-      <div className="mx-auto flex max-w-[1500px] items-center gap-3 px-3 sm:px-4 py-2">
+    <div className={"xl:hidden fixed left-0 right-0 lg:bottom-0 z-[55] bg-ink text-white transition-transform duration-500 " + (show ? "translate-y-0" : "translate-y-[calc(100%+80px)]")}
+      style={{ bottom: navH }}>
+      <div className="mx-auto flex max-w-[1500px] items-center gap-3 px-3 sm:px-4 py-1.5">
         {img && <img src={img} alt="" className="hidden sm:block h-11 w-11 object-cover bg-white" />}
         <div className="hidden sm:block min-w-0 flex-1 truncate font-display text-[20px] font-bold">{p.name}</div>
-        <div className="font-display text-[22px] font-bold text-yellow whitespace-nowrap">{formatVND(price)}</div>
+        <div className="font-display text-[18px] sm:text-[22px] font-bold text-yellow whitespace-nowrap">{formatVND(price)}</div>
         <div className="ml-auto flex shrink-0 gap-2 sm:ml-0">
           {out ? (
             <>
-              <button onClick={() => askStockAlert(p)} className="min-h-[44px] px-3 border-[1.5px] border-white text-[14px] font-semibold">Báo khi có hàng</button>
-              <button onClick={onBuy} className="min-h-[44px] px-3 bg-yellow text-[14px] font-semibold text-ink">Đặt trước</button>
+              <button onClick={() => askStockAlert(p)} className="min-h-[38px] px-3 border-[1.5px] border-white text-[13px] font-semibold">Báo khi có hàng</button>
+              <button onClick={onBuy} className="min-h-[38px] px-3 bg-yellow text-[13px] font-semibold text-ink">Đặt trước</button>
             </>
           ) : (
-            <button onClick={onAdd} className="min-h-[44px] px-4 bg-yellow text-[14px] font-semibold text-ink">Thêm vào giỏ</button>
+            <button onClick={onAdd} className="min-h-[38px] px-4 bg-yellow text-[13px] font-semibold text-ink">Thêm vào giỏ</button>
           )}
         </div>
       </div>
