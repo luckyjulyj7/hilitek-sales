@@ -28,10 +28,12 @@ import {
 import zlib from "node:zlib";
 import fetchImage from "./web/_fetchImage.js";
 import { writeWebSnapshot, applyWebChanges } from "./web/_catalog.js";
-import { recordsStatus, migrateFromBlob, pageRows, rowsSince, changedSince, upsertRows } from "./web/_records.js";
+import { recordsStatus, migrateFromBlob, pageRows, rowsSince, changedSince, upsertRows, latestUpdate } from "./web/_records.js";
 import { RECORD_COLLS, DOC, ORDER } from "../src/lib/records.js";
 import mediaCleanup from "./web/_mediaCleanup.js";
 import crypto from "node:crypto";
+import { rawDb } from "../worker/supa-d1.js";
+import { vnDay } from "../worker/track.js";
 
 const TABLE = "app_state";
 const BUCKET = "product-media";
@@ -270,7 +272,10 @@ const ops = {
     if (!(await session(req, res))) return;
     const { data, error } = await client().from(TABLE).select("updated_at").eq("key", key).maybeSingle();
     if (error) throw new Error("Supabase đọc lỗi: " + error.message);
-    json(res, 200, { updatedAt: data ? data.updated_at : null });
+    let updatedAt = data ? data.updated_at : null;
+    // Kho theo dòng: lưu sản phẩm không đổi hàng app_state chính -> lấy mốc dòng mới nhất (công cụ chờ lưu).
+    if (key === MAIN_KEY) { const r = await latestUpdate(); if (r && (!updatedAt || r > updatedAt)) updatedAt = r; }
+    json(res, 200, { updatedAt });
   },
 
   async set(req, res) { return write(req, res, false); },
@@ -310,6 +315,31 @@ const ops = {
     const { error } = await client().storage.from(BUCKET).upload(path, buf, { contentType: ct, upsert: false, cacheControl: "31536000" });
     if (error) throw new Error("Lưu file lỗi: " + error.message);
     json(res, 200, { path, url: "/media/" + path });
+  },
+
+
+  // GET ?op=stats -> số liệu lượt truy cập web khách (đã cộng dồn theo ngày, xem worker/track.js). Chỉ quản trị viên.
+  // Đọc ~vài trăm dòng nhỏ trong 1 lần D1.batch; không đụng kho dữ liệu chính.
+  async stats(req, res) {
+    const ss = await session(req, res, { checkAuth: true });
+    if (!ss) return;
+    if (ss.auth.accounts[ss.s.u]?.role !== "admin") return bad(res, "Chỉ quản trị viên xem được thống kê.", 403);
+    const db = rawDb();
+    const today = vnDay();
+    const from = vnDay(Date.now() - 29 * 86400000);
+    let out;
+    try {
+      out = await db.batch([
+        db.prepare("select day,views,visits,mobile,clicks from stats_day where day>=? order by day").bind(from),
+        db.prepare("select path,kind,title,sum(views) v,max(day) last from stats_page where day>=? group by path order by v desc limit 300").bind(from),
+        db.prepare("select src,sum(n) n from stats_ref where day>=? group by src order by n desc limit 30").bind(from),
+        db.prepare("select target,sum(n) n from stats_click where day>=? group by target order by n desc").bind(from),
+      ]);
+    } catch (e) {
+      if (/no such table/i.test(String(e && e.message))) return json(res, 200, { missing: true, today });
+      throw e;
+    }
+    json(res, 200, { today, from, days: out[0].results, pages: out[1].results, refs: out[2].results, clicks: out[3].results });
   },
 
   async "fetch-image"(req, res) {

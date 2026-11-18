@@ -2,8 +2,9 @@
  * Cloudflare Worker của hilipc.vn — thay cho Vercel (vercel.json) + Supabase.
  *
  * - File tĩnh trong dist/ (ảnh, JS, CSS) do Cloudflare trả thẳng, KHÔNG chạy Worker, không tính lượt.
- * - Worker chỉ chạy cho: /api/*, /media/*, các trang SEO (/san-pham/...), và đường dẫn không phải file
- *   (trả shop.html hoặc admin.html) — giống rewrites trong vercel.json.
+ * - Worker chỉ chạy cho các đường dẫn trong assets.run_worker_first (wrangler.jsonc): /api/*, /media/*,
+ *   trang SEO (/san-pham/...), /quanlybanhang. Các trang khác của web khách (/, /shop...) Cloudflare tự trả
+ *   index.html (= shop.html, chép lúc build) mà không chạy Worker -> không tốn lượt.
  * - Dữ liệu: D1 (binding DB), ảnh: R2 (binding MEDIA). Code api/ dùng lại nguyên, qua worker/supa-d1.js.
  */
 import process from "node:process";
@@ -19,6 +20,7 @@ import page from "../api/web/page.js";
 import sitemap from "../api/web/sitemap.js";
 import aiProductInfo from "../api/web/ai-product-info.js";
 import backup from "../api/cron/backup.js";
+import { handleTrack, pruneStats } from "./track.js";
 
 const API = {
   "/api/admin": admin,
@@ -41,12 +43,37 @@ function setup(env, origin) {
   globalThis.__hiliAsset = (p) => env.ASSETS.fetch(new Request(origin + p));
 }
 
-async function withEdgeCache(request, ctx, make) {
+/**
+ * Ảnh của web khách lấy thẳng từ tên miền công khai của R2 (env.MEDIA_HOST, VD media.hilipc.vn):
+ * Cloudflare trả ảnh từ cache, KHÔNG chạy Worker -> không tốn lượt 100.000/ngày của gói Free
+ * (1 lần xem danh mục có thể tải cả trăm ảnh). Đổi "/media/..." trong JSON/HTML trả cho web khách.
+ * Trang quản lý vẫn dùng /media/ qua Worker (ít người, trình duyệt cache 1 năm).
+ */
+function mediaHostRewriter(env) {
+  const host = env.MEDIA_HOST;
+  if (!host) return null;
+  const base = `https://${host}/`;
+  const abs = env.CANONICAL_HOST ? new RegExp(`https?://(?:www\\.)?${env.CANONICAL_HOST.replace(/\./g, "\\.")}/media/`, "g") : null;
+  return async (res) => {
+    const ct = res.headers.get("content-type") || "";
+    if (res.status !== 200 || !/json|html|xml/.test(ct)) return res;
+    let text = await res.text();
+    if (abs) text = text.replace(abs, base);
+    text = text.replace(/(^|[^\w.\-/])\/media\//g, `$1${base}`);
+    const h = new Headers(res.headers);
+    h.delete("content-length");
+    return new Response(text, { status: res.status, headers: h });
+  };
+}
+
+async function withEdgeCache(request, ctx, make, env) {
   if (request.method !== "GET") return make();
   const cache = caches.default;
   const hit = await cache.match(request);
   if (hit) return hit;
-  const res = await make();
+  let res = await make();
+  const rw = env && mediaHostRewriter(env);
+  if (rw) res = await rw(res);
   const cc = res.headers.get("cache-control") || "";
   const m = /s-maxage=(\d+)/.exec(cc);
   if (m && Number(m[1]) > 0 && (res.status === 200 || res.status === 404) && !res.headers.has("set-cookie")) {
@@ -97,6 +124,8 @@ export default {
     const url = new URL(request.url);
     const origin = url.origin;
     const p = url.pathname;
+    // Đếm lượt truy cập: đường nhẹ riêng, không qua setup/node-adapter (tiết kiệm CPU gói Free).
+    if (p === "/api/web/track") return handleTrack(request, env, ctx);
     setup(env, origin);
 
     // Tên miền phụ www -> tên miền chính.
@@ -109,17 +138,17 @@ export default {
     try {
       if (API[p]) {
         const go = () => run(API[p]);
-        return CACHEABLE.has(p) ? withEdgeCache(request, ctx, go) : go();
+        return CACHEABLE.has(p) ? withEdgeCache(request, ctx, go, env) : go();
       }
       if (p.startsWith("/api/")) return Response.json({ error: "Không có API này." }, { status: 404 });
       if (p.startsWith("/media/")) return media(request, env, ctx, decodeURIComponent(p.slice(7)));
-      if (p === "/sitemap.xml") return withEdgeCache(request, ctx, () => run(sitemap));
+      if (p === "/sitemap.xml") return withEdgeCache(request, ctx, () => run(sitemap), env);
       let m;
-      if ((m = /^\/san-pham\/([^/]+)\/?$/.exec(p))) return withEdgeCache(request, ctx, () => run(page, { slug: decodeURIComponent(m[1]) }));
-      if (p === "/danh-muc") return withEdgeCache(request, ctx, () => run(page));
-      if (p === "/may-choi-game-cam-tay") return withEdgeCache(request, ctx, () => run(page, { landing: "handheld" }));
-      if (p === "/tin-tuc") return withEdgeCache(request, ctx, () => run(page, { landing: "news" }));
-      if ((m = /^\/trang\/([^/]+)\/?$/.exec(p))) return withEdgeCache(request, ctx, () => run(page, { trang: decodeURIComponent(m[1]) }));
+      if ((m = /^\/san-pham\/([^/]+)\/?$/.exec(p))) return withEdgeCache(request, ctx, () => run(page, { slug: decodeURIComponent(m[1]) }), env);
+      if (p === "/danh-muc") return withEdgeCache(request, ctx, () => run(page), env);
+      if (p === "/may-choi-game-cam-tay") return withEdgeCache(request, ctx, () => run(page, { landing: "handheld" }), env);
+      if (p === "/tin-tuc") return withEdgeCache(request, ctx, () => run(page, { landing: "news" }), env);
+      if ((m = /^\/trang\/([^/]+)\/?$/.exec(p))) return withEdgeCache(request, ctx, () => run(page, { trang: decodeURIComponent(m[1]) }), env);
       if (p === "/quanlybanhang" || p.startsWith("/quanlybanhang/")) return asset(env, origin, "/admin.html", request);
       // Còn lại (/, /shop, đường dẫn của web khách): shop.html — React tự dựng trang.
       return asset(env, origin, "/shop.html", request);
@@ -134,5 +163,6 @@ export default {
     const headers = env.CRON_SECRET ? { authorization: "Bearer " + env.CRON_SECRET } : {};
     const res = await runNode(backup, new Request("https://localhost/api/cron/backup?reason=cron", { headers }));
     console.log("[backup]", res.status, await res.text());
+    try { await pruneStats(env.DB); } catch (e) { console.log("[stats-prune]", String((e && e.message) || e)); }
   },
 };

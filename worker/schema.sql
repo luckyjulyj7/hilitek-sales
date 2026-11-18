@@ -37,3 +37,33 @@ create table if not exists backup_rows (
   value text,
   primary key (bid, coll, id)
 ) without rowid;
+
+-- Thống kê lượt truy cập web khách (worker/track.js). CỘNG DỒN theo ngày (giờ Việt Nam), KHÔNG lưu từng lượt,
+-- không lưu IP, không mã người dùng. Chạy lại file này an toàn (create ... if not exists).
+create table if not exists stats_day (
+  day text primary key,            -- YYYY-MM-DD
+  views integer not null default 0,   -- lượt xem trang
+  visits integer not null default 0,  -- lượt truy cập (phiên khách)
+  mobile integer not null default 0,  -- lượt truy cập từ điện thoại
+  clicks integer not null default 0   -- lượt bấm sang sàn (Shopee, Lazada, TikTok Shop...)
+) without rowid;
+create table if not exists stats_page (
+  day text not null,
+  path text not null,
+  kind text not null,              -- product | category | article | other
+  title text,
+  views integer not null default 0,
+  primary key (day, path)
+) without rowid;
+create table if not exists stats_ref (
+  day text not null,
+  src text not null,               -- google | facebook | zalo | tiktok | youtube | direct | other:<tên miền>
+  n integer not null default 0,
+  primary key (day, src)
+) without rowid;
+create table if not exists stats_click (
+  day text not null,
+  target text not null,            -- shopee | lazada | tiktok | tiki | other
+  n integer not null default 0,
+  primary key (day, target)
+) without rowid;

@@ -39,6 +39,7 @@ import { autoComparePrice } from "./lib/autoComparePrice.js";
 import HomeTilesEditor from "./HomeTilesEditor.jsx";
 import { HomeHeroEditor, HomeTabsEditor } from "./HomePanels.jsx";
 import HandheldEditor from "./HandheldEditor.jsx";
+import WebStats from "./WebStats.jsx";
 import GameProductEditor from "./GameProductEditor.jsx";
 
 // Xuất 1 hoặc nhiều bảng dữ liệu ra 1 file Excel (.xlsx), mỗi bảng là 1 sheet riêng.
@@ -16281,10 +16282,21 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
   useEffect(() => {
     let alive = true;
     const myName = currentUser.fullName || currentUser.username;
-    const check = async () => {
+    // Gói Free Cloudflare tính từng lượt gọi: mỗi nhịp chỉ ĐỌC 1 lần (dùng chung cho kiểm tra + làm mới),
+    // chỉ GHI mốc của mình khi đã cũ hơn 60 giây, và bỏ qua khi tab đang ẩn. Trước đây 3 lượt/20 giây.
+    let lastTouch = 0;
+    const check = async (forceTouch) => {
+      if (!forceTouch && typeof document !== "undefined" && document.hidden) return;
       const locks = await readEditLocks();
       const lock = locks[p.id];
       if (!alive) return;
+      if (forceTouch || Date.now() - lastTouch > 60000) {
+        lastTouch = Date.now();
+        try {
+          await window.storage.set(EDIT_LOCKS_KEY, JSON.stringify({ ...locks, [p.id]: { userId: currentUser.id, by: myName, at: new Date().toISOString() } }), true);
+        } catch (e) { console.error("touchEditLock:", e); }
+        if (!alive) return;
+      }
       const isFresh = lock && Date.now() - new Date(lock.at).getTime() < EDIT_LOCK_STALE_MS;
       // So "chính mình hay không" bằng ID TÀI KHOẢN (luôn duy nhất) — KHÔNG so bằng tên hiển thị,
       // vì "Họ tên" có thể để trống hoặc trùng giữa 2 tài khoản khác nhau, làm sai lệch nhận diện.
@@ -16294,9 +16306,8 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
         (lock ? `bản ghi: ${lock.userId?.slice(0, 6)} (${lock.by}) lúc ${new Date(lock.at).toLocaleTimeString("vi-VN")}${isFresh ? "" : " [ĐÃ CŨ >3 phút]"}${lock.userId === currentUser.id ? " [LÀ CHÍNH MÌNH]" : ""}` : "không có bản ghi nào")
       );
     };
-    check();
-    touchEditLock(p.id, currentUser.id, myName);
-    const iv = setInterval(() => { check(); touchEditLock(p.id, currentUser.id, myName); }, 20000);
+    check(true);
+    const iv = setInterval(() => { check(false); }, 30000);
     return () => { alive = false; clearInterval(iv); clearEditLock(p.id); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.id]);
@@ -17946,7 +17957,7 @@ const NAV_GROUPS = [
   { label: "", ids: ["dashboard"] },
   { label: "Bán hàng", ids: ["quotes", "orders", "shipping", "customers"] },
   { label: "Kho", ids: ["products", "purchase", "suppliers"] },
-  { label: "Website", ids: ["website"] },
+  { label: "Website", ids: ["website", "webstats"] },
   { label: "Quản trị", ids: ["plans", "reports", "activity", "accounts", "profile"] },
 ];
 
@@ -18696,7 +18707,7 @@ export default function SalesManager() {
     : ["dashboard", "products", "quotes", "orders", "shipping", "customers"]; // ctv — chỉ xem sản phẩm, không tạo/sửa/xoá
   const visibleTabs = [
     ...TABS.filter((t) => roleTabIds.includes(t.id)),
-    ...(currentUser.role === "admin" ? [{ id: "website", label: "Website", icon: Globe }] : []),
+    ...(currentUser.role === "admin" ? [{ id: "website", label: "Website", icon: Globe }, { id: "webstats", label: "Thống kê", icon: BarChart3 }] : []),
     ...(currentUser.isOwner || currentUser.perms?.viewActivityLog ? [{ id: "activity", label: "Nhật ký", icon: History }] : []),
     ...(currentUser.isOwner ? [{ id: "accounts", label: "Tài khoản", icon: KeyRound }] : []), // chỉ tài khoản chủ
     { id: "profile", label: "Tài khoản cá nhân", icon: UserCircle }, // mọi vai trò
@@ -18944,6 +18955,7 @@ export default function SalesManager() {
             {tab === "plans" && roleTabIds.includes("plans") && <Plans plans={plans} setPlans={setPlans} orders={orders} purchaseOrders={purchaseOrders} products={products} employeeNames={employeeNames} />}
             {tab === "reports" && roleTabIds.includes("reports") && <Reports onOpen={peek} orders={orders} products={products} customers={customers} accounts={accounts} purchaseOrders={purchaseOrders} warrantyTickets={warrantyTickets} employeeNames={employeeNames} goToOrdersDateRange={goToOrdersDateRange} goToProductsDateRange={goToProductsDateRange} />}
             {tab === "website" && currentUser.role === "admin" && <WebsiteSection products={products} setProducts={setProducts} suppliers={suppliers} orders={orders} webConfig={webConfig} setWebConfig={setWebConfig} categories={categories} brands={brands} currentUser={currentUser} addLog={addLog} onOpenOrder={(id) => { setTab("orders"); setNavTarget({ type: "order", id }); }} navTarget={tab === "website" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} goToInventoryProductEdit={goToInventoryProductEdit} />}
+            {tab === "webstats" && currentUser.role === "admin" && <WebStats />}
             {tab === "activity" && (currentUser.isOwner || currentUser.perms?.viewActivityLog) && <ActivityLog log={activityLog} accounts={accounts} />}
             {tab === "accounts" && currentUser.isOwner && <Accounts accounts={accounts} setAccounts={setAccounts} currentUser={currentUser} addLog={addLog} onResetTestData={resetTestData} onDownloadBackup={downloadBackup} onRestoreBackup={restoreBackup} onKickAccount={kickAccount} />}
             {tab === "profile" && <MyProfile currentUser={currentUser} setAccounts={setAccounts} addLog={addLog} />}

@@ -4,6 +4,7 @@ import News from "./pages/News.jsx";
 import { fetchCatalog, fetchWebConfig, takePrefetchedCatalog } from "./lib/api.js";
 import { applyWebConfig } from "./lib/applyWebConfig.js";
 import { PAGES, NEWS_PATH } from "./config.js";
+import { trackPage, trackPath } from "./lib/track.js";
 import { CatalogCtx } from "./catalogContext.js";
 import Header from "./components/Header.jsx";
 import Footer from "./components/Footer.jsx";
@@ -88,6 +89,10 @@ export default function App() {
     }, REFRESH_MS);
     return () => { stopped = true; clearInterval(iv); };
   }, []);
+
+  // Đếm lượt xem trang (gộp lô, không cookie; xem lib/track.js).
+  const trackedPath = trackPath(route.path, route.query);
+  useEffect(() => { trackPage(trackedPath); }, [trackedPath]);
 
   useEffect(() => {
     if (!route.path.startsWith("/san-pham/")) window.scrollTo(0, 0);

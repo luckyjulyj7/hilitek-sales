@@ -19,6 +19,8 @@ const db = () => {
   return ENV.DB;
 };
 
+/** D1 thô (cho thống kê, truy vấn tổng hợp mà lớp giả Supabase không hỗ trợ). */
+export const rawDb = db;
 export const NOW_SQL = "strftime('%Y-%m-%dT%H:%M:%fZ','now')";
 const JSON_COLS = { app_records: new Set(["value"]) };
 const BOOL_COLS = { app_records: new Set(["deleted"]) };
