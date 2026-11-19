@@ -98,6 +98,13 @@ export async function rowsSince(since, tab, { after, limit = 500, raw = false } 
 }
 
 /** Có dòng nào người khác ghi sau mốc `since` không (chỉ trả 1 mốc thời gian, vài byte). */
+/** Mốc lưu gần nhất của kho theo dòng (null nếu chưa có). Dùng cho op=meta&k=main (công cụ của Muse chờ lưu). */
+export async function latestUpdate() {
+  const { data, error } = await client().from(T).select("updated_at").eq("ns", NS).order("updated_at", { ascending: false }).limit(1);
+  if (error) throw new Error("Supabase đọc lỗi: " + error.message);
+  return data && data[0] ? data[0].updated_at : null;
+}
+
 export async function changedSince(since, tab) {
   let qb = client().from(T).select("updated_at").eq("ns", NS).gt("updated_at", since);
   if (tab) qb = qb.neq("writer", tab);

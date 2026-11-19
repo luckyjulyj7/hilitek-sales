@@ -10,13 +10,22 @@
   "compatibility_date": "2026-11-01",
   "compatibility_flags": ["nodejs_compat"],
 
-  // Web tĩnh (npm run build -> dist/). File có thật được trả thẳng, không tốn lượt Worker.
+  "workers_dev": false,
+
+  // Web tĩnh (npm run build -> dist/). File có thật được trả thẳng, KHÔNG chạy Worker, không tốn lượt.
+  // Trang web khách (/, /shop, /gio-hang...) cũng vậy: Cloudflare trả index.html (= shop.html) luôn.
+  // Worker chỉ chạy cho các đường dẫn trong run_worker_first.
   "build": { "command": "npm run build" },
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
     "html_handling": "none",
-    "not_found_handling": "none"
+    "not_found_handling": "single-page-application",
+    "run_worker_first": [
+      "/api/*", "/media/*", "/sitemap.xml",
+      "/san-pham/*", "/danh-muc", "/may-choi-game-cam-tay", "/tin-tuc", "/trang/*",
+      "/quanlybanhang", "/quanlybanhang/*"
+    ]
   },
 
   // Code api/ viết cho Supabase: chuyển sang D1/R2 (worker/supa-d1.js). sharp không chạy trên Worker.
@@ -38,6 +47,9 @@
     "SUPABASE_URL": "d1",
     "SUPABASE_SERVICE_ROLE_KEY": "d1",
     "CANONICAL_HOST": "hilipc.vn",
+    // Tên miền công khai của R2 (R2 -> hilitek-media -> Settings -> Custom Domains). Web khách lấy ảnh
+    // thẳng từ đây: không chạy Worker, không tốn lượt. Để "" thì ảnh đi qua /media/ của Worker như cũ.
+    "MEDIA_HOST": "media.hilipc.vn",
     // Ảnh chưa chép sang R2 sẽ được lấy từ Supabase Storage 1 lần rồi lưu vào R2.
     "OLD_SUPABASE_URL": "https://wddfjbcrkwkzshibghdi.supabase.co"
   },

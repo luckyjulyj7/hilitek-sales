@@ -66,10 +66,24 @@ function mediaHostRewriter(env) {
   };
 }
 
+// Khoá cache chỉ giữ tham số handler thật sự dùng: link có thêm "&x=123", "?utm_..." hay "?fbclid=..."
+// vẫn trúng cache, không chạy lại handler + đọc D1 (khách chia sẻ link Facebook luôn có fbclid).
+const CACHE_PARAMS = { "/api/web/product": ["slug"], "/api/web/config": ["landing"] };
+function edgeCacheKey(request) {
+  const u = new URL(request.url);
+  const keepList = CACHE_PARAMS[u.pathname] || [];
+  const keep = new URLSearchParams();
+  for (const k of keepList) if (u.searchParams.has(k)) keep.set(k, u.searchParams.get(k));
+  u.search = keep.toString();
+  u.hash = "";
+  return new Request(u.toString(), { method: "GET" });
+}
+
 async function withEdgeCache(request, ctx, make, env) {
   if (request.method !== "GET") return make();
   const cache = caches.default;
-  const hit = await cache.match(request);
+  const key = edgeCacheKey(request);
+  const hit = await cache.match(key);
   if (hit) return hit;
   let res = await make();
   const rw = env && mediaHostRewriter(env);
@@ -79,7 +93,7 @@ async function withEdgeCache(request, ctx, make, env) {
   if (m && Number(m[1]) > 0 && (res.status === 200 || res.status === 404) && !res.headers.has("set-cookie")) {
     const copy = new Response(res.clone().body, res);
     copy.headers.set("cache-control", `public, max-age=${m[1]}`); // bản trong cache: giữ đúng s-maxage
-    ctx.waitUntil(cache.put(request, copy));
+    ctx.waitUntil(cache.put(key, copy));
   }
   return res;
 }

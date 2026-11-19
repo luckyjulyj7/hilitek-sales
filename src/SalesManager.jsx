@@ -18387,8 +18387,15 @@ export default function SalesManager() {
     const IDLE_PULL_MS = 3 * 60 * 1000;
     let lastActivity = Date.now();
     let busy = false;
+    // Cloudflare Free tính từng lượt gọi: tab để mở mà không ai thao tác quá 3 phút thì chỉ hỏi máy chủ
+    // 3 phút/lần (vẫn bắt được lệnh đá phiên), thay vì 20 giây/lần. Người dùng quay lại là kéo ngay.
+    let lastIdlePoll = 0;
     const pull = async () => {
       if (busy || document.hidden || pendingSaveRef.current || !window.storage.getMeta) return;
+      if (Date.now() - lastActivity > IDLE_PULL_MS) {
+        if (Date.now() - lastIdlePoll < IDLE_PULL_MS) return;
+        lastIdlePoll = Date.now();
+      }
       busy = true;
       try { await pullOnce(); } finally { busy = false; }
     };
