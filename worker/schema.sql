@@ -88,3 +88,17 @@ create table if not exists stats_search (  -- từ khoá khách gõ vào ô tìm
   zero integer not null default 0,
   primary key (day, q)
 ) without rowid;
+
+-- Chat nội bộ (phòng chung) trong /quanlybanhang. Mỗi dòng là 1 sự kiện: kind 'm' = tin nhắn,
+-- kind 'd' = xoá tin (ref = id tin bị xoá). Tab chỉ cần tải các dòng có id > id đã có.
+-- Cron 0:00 xoá dòng quá 90 ngày.
+create table if not exists chat_msgs (
+  id integer primary key autoincrement,
+  at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  uid text not null,
+  name text not null default '',
+  kind text not null default 'm',
+  text text not null default '',
+  img text not null default '',
+  ref integer
+);

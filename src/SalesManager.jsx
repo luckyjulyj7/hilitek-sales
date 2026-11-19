@@ -40,6 +40,7 @@ import HomeTilesEditor from "./HomeTilesEditor.jsx";
 import { HomeHeroEditor, HomeTabsEditor } from "./HomePanels.jsx";
 import HandheldEditor from "./HandheldEditor.jsx";
 import WebStats from "./WebStats.jsx";
+import StaffChat from "./StaffChat.jsx";
 import GameProductEditor from "./GameProductEditor.jsx";
 
 // Xuất 1 hoặc nhiều bảng dữ liệu ra 1 file Excel (.xlsx), mỗi bảng là 1 sheet riêng.
@@ -18979,6 +18980,7 @@ export default function SalesManager() {
         </div>
       </div>
       <ScrollTopButton />
+      <AppErrorBoundary><StaffChat currentUser={currentUser} accounts={accounts} /></AppErrorBoundary>
     </div>
   );
 }

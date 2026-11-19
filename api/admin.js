@@ -86,6 +86,14 @@ async function session(req, res, { checkAuth = false } = {}) {
   return { s, kicks, auth };
 }
 
+// Id dòng chat mới nhất (đọc 1 dòng theo khoá chính). Bảng chưa tạo -> 0. Đi kèm op=poll để tab biết có tin mới.
+async function chatLastId() {
+  try {
+    const r = await rawDb().prepare("select id from chat_msgs order by id desc limit 1").first();
+    return r ? r.id : 0;
+  } catch { return 0; }
+}
+
 // Gửi danh sách dòng mà không parse lại giá trị (chuỗi JSON lấy thẳng từ D1) — đỡ CPU trên Worker.
 function sendRows(res, rows, more, withDel) {
   const parts = rows.map((r) => {
@@ -159,12 +167,12 @@ const ops = {
     // Kho theo dòng: ?rc=<mốc đã tải>&tab=<mã tab> -> chỉ báo có/không có dòng người khác vừa đổi.
     const rc = String(req.query.rc || "");
     if (rc) {
-      const changed = await changedSince(rc, String(req.query.tab || ""));
-      return json(res, 200, { rchanged: changed, kicks: ss.kicks });
+      const [changed, chat] = await Promise.all([changedSince(rc, String(req.query.tab || "")), chatLastId()]);
+      return json(res, 200, { rchanged: changed, kicks: ss.kicks, chat });
     }
     const { data, error } = await client().from(TABLE).select("updated_at").eq("key", MAIN_KEY).maybeSingle();
     if (error) throw new Error("Supabase đọc lỗi: " + error.message);
-    json(res, 200, { updatedAt: data ? data.updated_at : null, kicks: ss.kicks });
+    json(res, 200, { updatedAt: data ? data.updated_at : null, kicks: ss.kicks, chat: await chatLastId() });
   },
 
   /* ---- Kho theo TỪNG DÒNG (xem src/lib/records.js) ---- */
@@ -318,6 +326,59 @@ const ops = {
   },
 
 
+  /* ---- Chat nội bộ, phòng chung (bảng chat_msgs, xem worker/schema.sql) ---- */
+  // GET ?op=chat[&after=<id>] -> { msgs:[{id,at,uid,name,kind,text,img,ref}], last }. Không có after: 60 dòng mới nhất.
+  async chat(req, res) {
+    if (!(await session(req, res))) return;
+    const db = rawDb();
+    const after = Math.max(0, Number(req.query.after) || 0);
+    const cols = "id,at,uid,name,kind,text,img,ref";
+    let rows;
+    try {
+      rows = after > 0
+        ? (await db.prepare(`select ${cols} from chat_msgs where id>? order by id limit 200`).bind(after).all()).results
+        : (await db.prepare(`select ${cols} from chat_msgs order by id desc limit 60`).all()).results.reverse();
+    } catch (e) {
+      if (/no such table/i.test(String(e && e.message))) return json(res, 200, { msgs: [], last: 0, noTable: true });
+      throw e;
+    }
+    res.setHeader("Cache-Control", "no-store");
+    json(res, 200, { msgs: rows, last: rows.length ? rows[rows.length - 1].id : after });
+  },
+
+  // POST ?op=chat-send { text, img, name } -> { msg }. Người gửi lấy từ phiên đăng nhập (uid), tên chỉ để hiển thị.
+  async "chat-send"(req, res) {
+    const ss = await session(req, res);
+    if (!ss) return;
+    const b = body(req);
+    const text = String(b.text || "").replace(/\r\n/g, "\n").trim().slice(0, 2000);
+    const img = String(b.img || "");
+    if (img && !/^\/media\/[\w\-./]+\.(webp|jpe?g|png|gif)$/i.test(img)) return bad(res, "Ảnh không hợp lệ.");
+    if (!text && !img) return bad(res, "Tin nhắn trống.");
+    const name = String(b.name || "").slice(0, 60);
+    const msg = await rawDb().prepare("insert into chat_msgs (uid,name,kind,text,img) values (?,?,'m',?,?) returning id,at,uid,name,kind,text,img,ref")
+      .bind(String(ss.s.u), name, text, img).first();
+    json(res, 200, { msg });
+  },
+
+  // POST ?op=chat-del { id } -> người gửi xoá tin của mình trong 5 phút; quản trị viên xoá mọi tin.
+  async "chat-del"(req, res) {
+    const ss = await session(req, res, { checkAuth: true });
+    if (!ss) return;
+    const id = Number(body(req).id) || 0;
+    const db = rawDb();
+    const row = await db.prepare("select id,uid,at,kind from chat_msgs where id=?").bind(id).first();
+    if (!row || row.kind !== "m") return bad(res, "Không tìm thấy tin nhắn.", 404);
+    const isAdmin = ss.auth.accounts[ss.s.u]?.role === "admin";
+    const mine = row.uid === String(ss.s.u) && Date.now() - Date.parse(row.at) < 5 * 60 * 1000;
+    if (!isAdmin && !mine) return bad(res, "Chỉ xoá được tin của mình trong 5 phút.", 403);
+    await db.batch([
+      db.prepare("update chat_msgs set text='',img='',kind='x' where id=?").bind(id),
+      db.prepare("insert into chat_msgs (uid,kind,ref) values (?,'d',?)").bind(String(ss.s.u), id),
+    ]);
+    json(res, 200, { ok: true });
+  },
+
   // GET ?op=stats -> số liệu lượt truy cập web khách (đã cộng dồn theo ngày, xem worker/track.js). Chỉ quản trị viên.
   // Đọc ~vài trăm dòng nhỏ trong 1 lần D1.batch; không đụng kho dữ liệu chính.
   async stats(req, res) {
@@ -393,7 +454,7 @@ async function write(req, res, conditional) {
   json(res, 200, { updatedAt });
 }
 
-const POST_OPS = new Set(["pwsalt", "login", "logout", "verify", "set", "cas", "del", "upload", "rput", "put-media"]);
+const POST_OPS = new Set(["pwsalt", "login", "logout", "verify", "set", "cas", "del", "upload", "rput", "put-media", "chat-send", "chat-del"]);
 
 export default handler(async (req, res) => {
   const op = String((req.query && req.query.op) || "");

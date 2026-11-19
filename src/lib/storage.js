@@ -117,6 +117,10 @@ function withDeviceSession(backend) {
  * get(kicks) đi chung 1 request "poll" với mốc updated_at, getMeta(main) ngay sau đó dùng lại kết
  * quả (vòng đồng bộ 20s chỉ tốn 1 lượt gọi function thay vì 2).
  */
+// Báo kết quả op=poll cho các phần khác của trang (VD chat nội bộ: poll kèm id tin mới nhất), không tốn thêm lượt gọi.
+function emitPoll(r) {
+  try { window.dispatchEvent(new CustomEvent("hili-poll", { detail: r })); } catch { /* bỏ qua */ }
+}
 const LOGICAL = {
   [STORAGE_KEY]: "main",
   [STORAGE_KEY + ":edit-locks"]: "locks",
@@ -212,6 +216,7 @@ export function createApiStorage() {
         const r = await adminApi("poll", { query: rec.pollQuery() || {} });
         lastPoll = { at: Date.now(), updatedAt: r.updatedAt };
         rec.onPoll(r);
+        emitPoll(r);
         return { value: JSON.stringify(r.kicks || {}) };
       }
       if (k === "main") {
@@ -231,7 +236,7 @@ export function createApiStorage() {
     async getMeta(key /* , shared */) {
       const k = logical(key);
       if (k === "main" && rec.mode === "records") {
-        if (!(lastPoll && Date.now() - lastPoll.at < 5000)) rec.onPoll(await adminApi("poll", { query: rec.pollQuery() || {} }));
+        if (!(lastPoll && Date.now() - lastPoll.at < 5000)) { const r = await adminApi("poll", { query: rec.pollQuery() || {} }); rec.onPoll(r); emitPoll(r); }
         lastPoll = null;
         return rec.meta();
       }

@@ -178,5 +178,8 @@ export default {
     const res = await runNode(backup, new Request("https://localhost/api/cron/backup?reason=cron", { headers }));
     console.log("[backup]", res.status, await res.text());
     try { await pruneStats(env.DB); } catch (e) { console.log("[stats-prune]", String((e && e.message) || e)); }
+    // Chat nội bộ: xoá tin quá 90 ngày.
+    try { await env.DB.prepare("delete from chat_msgs where at < ?").bind(new Date(Date.now() - 90 * 86400000).toISOString()).run(); }
+    catch (e) { if (!/no such table/i.test(String(e && e.message))) console.log("[chat-prune]", String((e && e.message) || e)); }
   },
 };
