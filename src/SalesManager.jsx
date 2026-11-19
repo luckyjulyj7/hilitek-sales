@@ -595,6 +595,11 @@ function duplicateCheckKey(name) {
   const tokens = (ascii.match(/[A-Z0-9]+/g) || []).filter((t) => !DUPLICATE_CHECK_STOPWORDS.has(t));
   return tokens.join(" ");
 }
+// Phần "biến thể" của tên (các từ màu/hạng đã bỏ khi so): "BLACK", "WHITE", "PRO MAX"... Rỗng nếu tên không có.
+function duplicateVariantSig(name) {
+  const ascii = stripDiacriticsVN(String(name || "")).toUpperCase();
+  return (ascii.match(/[A-Z0-9]+/g) || []).filter((t) => DUPLICATE_CHECK_STOPWORDS.has(t)).sort().join(" ");
+}
 
 // flatten every product's movements into a series list: {serial, code, name, importDoc, importDate, exportDoc, exportDate, status}
 function seriesList(p) {
@@ -2981,13 +2986,22 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
       if (!groups.has(key)) groups.set(key, new Map());
       const unitKey = p.variantGroupId || `_solo_${p.id}`;
       const units = groups.get(key);
-      if (!units.has(unitKey)) units.set(unitKey, []);
-      units.get(unitKey).push(p.id);
+      if (!units.has(unitKey)) units.set(unitKey, { ids: [], sigs: new Set() });
+      const u = units.get(unitKey);
+      u.ids.push(p.id);
+      u.sigs.add(duplicateVariantSig(p.name));
     }
+    // 2 đơn vị cùng khoá chỉ bị coi là trùng khi phần biến thể cũng trùng (cùng "BLACK"...) hoặc 1 bên
+    // không ghi biến thể. Khác màu/hạng (Black vs White, Pro vs Max) = phiên bản khác nhau, không báo.
+    const clash = (u, v) => [...u.sigs].some((x) => x === "" || v.sigs.has(x)) || [...v.sigs].some((x) => x === "");
     const ids = new Set();
     for (const units of groups.values()) {
-      if (units.size >= 2) {
-        for (const idList of units.values()) idList.forEach((id) => ids.add(id));
+      if (units.size < 2) continue;
+      const list = [...units.values()];
+      for (let i = 0; i < list.length; i++) {
+        for (let j = i + 1; j < list.length; j++) {
+          if (clash(list[i], list[j])) { list[i].ids.forEach((id) => ids.add(id)); list[j].ids.forEach((id) => ids.add(id)); }
+        }
       }
     }
     return ids;
