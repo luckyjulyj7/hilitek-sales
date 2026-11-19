@@ -13100,6 +13100,45 @@ function DebtOverviewReport({ orders, customers, onOpen }) {
   const totalDebt = debtByCustomer.reduce((s, c) => s + c.debt, 0);
   const top10Debt = debtByCustomer.slice(0, 10);
 
+  // Nợ quá hạn: hạn thanh toán = ngày tạo đơn + số ngày công nợ của đơn (đơn không khai báo số ngày công nợ
+  // thì đến hạn ngay ngày tạo). Số ngày quá hạn = hôm nay - hạn. Chỉ tính đơn chưa huỷ, còn nợ > 0.
+  const AGING = [
+    { key: "notdue", label: "Chưa đến hạn", test: (d) => d <= 0, color: FOREST },
+    { key: "d30", label: "Quá hạn 1–30 ngày", test: (d) => d >= 1 && d <= 30, color: BRASS },
+    { key: "d60", label: "31–60 ngày", test: (d) => d >= 31 && d <= 60, color: "#EA580C" },
+    { key: "d90", label: "61–90 ngày", test: (d) => d >= 61 && d <= 90, color: RUST },
+    { key: "d90p", label: "Trên 90 ngày", test: (d) => d > 90, color: "#7F1D1D" },
+  ];
+  const agingColor = (d) => (AGING.find((b) => b.test(d)) || AGING[0]).color;
+  const overdue = useMemo(() => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const custName = new Map(customers.map((c) => [c.id, c.name]));
+    const buckets = Object.fromEntries(AGING.map((b) => [b.key, { amount: 0, orders: 0 }]));
+    const byCust = new Map();
+    for (const o of orders) {
+      if (o.status === "cancelled" || !o.customerId || !custName.has(o.customerId)) continue;
+      const remaining = Math.max(0, orderCalc(o).remaining);
+      if (remaining <= 0) continue;
+      const due = new Date(o.createdAt); due.setHours(0, 0, 0, 0);
+      due.setDate(due.getDate() + (Number(o.creditDays) || 0));
+      const days = Math.round((today.getTime() - due.getTime()) / 86400000);
+      const b = AGING.find((x) => x.test(days)) || AGING[0];
+      buckets[b.key].amount += remaining; buckets[b.key].orders += 1;
+      if (days <= 0) continue;
+      const c = byCust.get(o.customerId) || { id: o.customerId, name: custName.get(o.customerId), amount: 0, maxDays: 0, list: [] };
+      c.amount += remaining; c.maxDays = Math.max(c.maxDays, days);
+      c.list.push({ id: o.id, code: o.code, createdAt: o.createdAt, due, days, remaining, creditDays: Number(o.creditDays) || 0 });
+      byCust.set(o.customerId, c);
+    }
+    const rows = [...byCust.values()].map((c) => ({ ...c, list: c.list.sort((a, b) => b.days - a.days) }))
+      .sort((a, b) => b.maxDays - a.maxDays || b.amount - a.amount);
+    return { buckets, rows, total: rows.reduce((s, c) => s + c.amount, 0) };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orders, customers]);
+  const [openOverdue, setOpenOverdue] = useState(null);
+  const [showAllOverdue, setShowAllOverdue] = useState(false);
+  const fmtD = (d) => new Date(d).toLocaleDateString("vi-VN");
+
   // Công nợ theo ngày phát sinh đơn (30 ngày gần nhất) — số dư còn lại tính tại thời điểm hiện tại, gộp theo ngày đơn được tạo.
   // Dùng ngày ĐỊA PHƯƠNG (không dùng toISOString(), quy về UTC) — múi giờ VN là UTC+7 nên
   // toISOString() lùi ngày lại gần hết cả ngày, khiến đơn phát sinh trong giờ hành chính hôm nay
@@ -13139,6 +13178,67 @@ function DebtOverviewReport({ orders, customers, onOpen }) {
       {top10Debt.length === 0 ? <p className="text-sm opacity-60 text-center py-10">Không có khách hàng nào đang nợ.</p> : (
         <RankBars rows={top10Debt.map((c) => ({ ...c, key: c.id, value: c.debt, label: vnd(c.debt) }))} color={RUST} onPick={onOpen ? (r) => onOpen("customer", r.id) : undefined} />
       )}
+
+      <div className="mt-7">
+        <div className="flex items-baseline justify-between gap-3 mb-3 flex-wrap">
+          <p className="text-xs opacity-60 font-medium">Nợ quá hạn theo số ngày</p>
+          <p className="text-xs" style={{ color: RUST }}>Tổng quá hạn: <b>{vnd(overdue.total)}</b> · {overdue.rows.length} khách</p>
+        </div>
+        <div className="grid gap-2 mb-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))" }}>
+          {AGING.map((b) => (
+            <div key={b.key} className="rounded-md px-3 py-2" style={{ border: `1px solid ${LINE}`, borderLeft: `3px solid ${b.color}` }}>
+              <p className="text-[11px] opacity-70 leading-tight">{b.label}</p>
+              <p className="text-sm font-semibold mt-0.5" style={{ fontFamily: "'Inter', sans-serif", color: b.color }}>{vnd(overdue.buckets[b.key].amount)}</p>
+              <p className="text-[11px] opacity-60">{overdue.buckets[b.key].orders} đơn</p>
+            </div>
+          ))}
+        </div>
+        {overdue.rows.length === 0 ? <p className="text-sm opacity-60 text-center py-6">Không có khách nào nợ quá hạn.</p> : (
+          <div className="rounded-md overflow-hidden" style={{ border: `1px solid ${LINE}` }}>
+            <div className="flex gap-2 px-3 py-2 text-[11px] font-medium opacity-60" style={{ background: PAPER }}>
+              <span className="flex-1 min-w-0">Khách hàng</span><span className="w-[78px] shrink-0 text-right">Quá hạn lâu nhất</span><span className="w-[104px] shrink-0 text-right">Tiền quá hạn</span>
+            </div>
+            {(showAllOverdue ? overdue.rows : overdue.rows.slice(0, 10)).map((c) => (
+              <div key={c.id} style={{ borderTop: `1px solid ${LINE}` }}>
+                <button type="button" onClick={() => setOpenOverdue(openOverdue === c.id ? null : c.id)}
+                  className="w-full flex gap-2 px-3 py-2.5 text-sm text-left hover:bg-gray-50 items-center">
+                  <span className="flex-1 min-w-0" style={{ color: TEXT }}><span className="block truncate">{openOverdue === c.id ? "▾ " : "▸ "}{c.name}</span><span className="block text-[11px] opacity-60">{c.list.length} đơn quá hạn</span></span>
+                  <span className="w-[78px] shrink-0 text-right font-semibold whitespace-nowrap" style={{ color: agingColor(c.maxDays) }}>{c.maxDays} ngày</span>
+                  <span className="w-[104px] shrink-0 text-right font-semibold whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>{vnd(c.amount)}</span>
+                </button>
+                {openOverdue === c.id && (
+                  <div className="px-3 pb-3">
+                    <table className="w-full text-xs">
+                      <thead><tr className="opacity-60 text-left">
+                        <th className="py-1 font-medium">Đơn</th><th className="py-1 font-medium">Ngày tạo</th><th className="py-1 font-medium hidden sm:table-cell">Hạn TT</th>
+                        <th className="py-1 font-medium text-right">Quá hạn</th><th className="py-1 font-medium text-right">Còn nợ</th>
+                      </tr></thead>
+                      <tbody>
+                        {c.list.map((o) => (
+                          <tr key={o.id} style={{ borderTop: `1px dashed ${LINE}` }}>
+                            <td className="py-1.5">{onOpen ? <button type="button" className="underline" style={{ color: INK }} onClick={() => onOpen("order", o.id)}>{o.code || "Xem đơn"}</button> : (o.code || "—")}</td>
+                            <td className="py-1.5">{fmtD(o.createdAt)}</td>
+                            <td className="py-1.5 hidden sm:table-cell" title={o.creditDays ? `Công nợ ${o.creditDays} ngày` : "Đơn không khai báo số ngày công nợ"}>{fmtD(o.due)}{o.creditDays ? ` (${o.creditDays} ngày)` : ""}</td>
+                            <td className="py-1.5 text-right font-semibold" style={{ color: agingColor(o.days) }}>{o.days} ngày</td>
+                            <td className="py-1.5 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(o.remaining)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {onOpen && <button type="button" className="mt-2 text-xs underline" style={{ color: INK }} onClick={() => onOpen("customer", c.id)}>Mở hồ sơ khách hàng</button>}
+                  </div>
+                )}
+              </div>
+            ))}
+            {overdue.rows.length > 10 && (
+              <button type="button" onClick={() => setShowAllOverdue((v) => !v)} className="w-full py-2 text-xs font-medium hover:bg-gray-50" style={{ color: INK, borderTop: `1px solid ${LINE}` }}>
+                {showAllOverdue ? "Thu gọn" : `Xem tất cả ${overdue.rows.length} khách`}
+              </button>
+            )}
+          </div>
+        )}
+        <p className="text-[11px] opacity-50 mt-2">Hạn thanh toán = ngày tạo đơn + số ngày công nợ khai báo trên đơn; đơn không khai báo thì tính đến hạn ngay ngày tạo.</p>
+      </div>
 
       <div className="mt-7">
         <p className="text-xs mb-3 opacity-60 font-medium">Công nợ theo ngày phát sinh đơn (30 ngày gần nhất)</p>
