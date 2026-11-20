@@ -214,7 +214,7 @@ function tabProducts(s, units, menu) {
     return null;
   };
   const g = s.group && menu.find((x) => x.group === s.group);
-  const groupNames = g ? new Set((g.subs || []).flatMap(names)) : null;
+  const groupNames = g ? new Set([g.group, ...(g.subs || []).flatMap(names)]) : null; // nhóm chưa có danh mục con: sản phẩm gắn thẳng tên nhóm
   const c = s.cat && menu.map((x) => find(x.subs, s.cat)).find(Boolean);
   const catNames = s.cat ? new Set(c ? names(c) : [s.cat]) : null;
   const price = (p) => Number(p.retailPrice) || 0;
