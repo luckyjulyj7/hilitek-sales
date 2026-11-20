@@ -73,7 +73,7 @@ function Label({ children, hint }) {
   );
 }
 
-export default function HomeTilesEditor({ webConfig, setWebConfig, menu, landings, notify }) {
+export default function HomeTilesEditor({ webConfig, setWebConfig, menu, landings, notify, collections }) {
   const saved = Array.isArray(webConfig.HOME_TILES) && webConfig.HOME_TILES.length === DEFAULT_TILES.length ? webConfig.HOME_TILES : null;
   const tiles = useMemo(() => DEFAULT_TILES.map((d, i) => ({ ...d, ...((saved && saved[i]) || {}) })), [saved]);
   const titles = { ...DEFAULT_TITLES, ...(webConfig.HOME_TITLES || {}) };
@@ -127,13 +127,14 @@ export default function HomeTilesEditor({ webConfig, setWebConfig, menu, landing
       o.push([`/danh-muc?group=${encodeURIComponent(g.group)}`, `Danh mục: ${g.group}`]);
       addSubs(g.subs, 1);
     });
+    (collections || []).forEach((c) => c && c.name && o.push([`/danh-muc?cat=${encodeURIComponent(c.name)}`, `Danh mục riêng: ${c.name}`]));
     o.push(["/danh-muc?sort=discount", "Danh mục: đang giảm giá"]);
     o.push(["/may-choi-game-cam-tay", "Trang Máy chơi game cầm tay"]);
     o.push(["/tin-tuc", "Trang Tin tức"]);
     (landings || []).forEach((l) => l.slug && o.push([`/trang/${l.slug}`, `Trang nội dung: ${l.title || l.slug}`]));
     o.push(["zalo", "Chat Zalo của shop"]);
     return o;
-  }, [menu, landings]);
+  }, [menu, landings, collections]);
   const known = linkOpts.some(([v]) => v === t.href);
   const [custom, setCustom] = useState(false);
   const linkMode = custom || !known ? "custom" : t.href;

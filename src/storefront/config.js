@@ -406,6 +406,13 @@ export const HOME_SECTIONS = MENU.map((g) => ({
   enabled: true,
 }));
 
+/**
+ * DANH MỤC RIÊNG (bộ sưu tập) do chủ shop tạo: [{ name, showInMenu }].
+ * Sản phẩm gắn vào bằng chính tên đó trong web.categories. Không nằm trong MENU; riêng khối nào
+ * bật showInMenu thì applyWebConfig thêm thành 1 nhóm (không có danh mục con) ở cuối menu.
+ */
+export const COLLECTIONS = [];
+
 export const HOME_SECTION_SORTS = [
   { id: "discount", label: "Giảm giá nhiều nhất" },
   { id: "newest", label: "Mới nhất" },

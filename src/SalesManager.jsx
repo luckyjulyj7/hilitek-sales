@@ -20,12 +20,16 @@ import { GROUP_ICON_NAMES, groupIcon as webGroupIcon } from "./storefront/compon
 // Danh mục web để chọn cho sản phẩm: thêm cả NHÓM CHÍNH (cấp cao nhất, VD "Gia dụng", "Tai nghe")
 // vào trước các danh mục con của nó. Nhóm chưa có danh mục con thì đây là cách duy nhất gán được sản phẩm.
 // Bỏ nhóm "Thương hiệu" (menu nhãn hiệu, không phải loại hàng).
-function webCatsWithGroups(menu) {
+function webCatsWithGroups(menu, collections) {
   const out = [];
   (menu || []).forEach((g) => {
     if (!g || !g.group) return;
     if (g.group !== "Thương hiệu") out.push({ name: g.group, slug: "", depth: 0, parent: "", group: g.group, hasChildren: !!(g.subs || []).length, isGroup: true });
     out.push(...webFlattenMenuTree([g]));
+  });
+  // Danh mục riêng (bộ sưu tập) do chủ shop tạo ở Website → Trang chủ → Danh mục riêng.
+  (collections || []).forEach((c) => {
+    if (c && c.name && !out.some((x) => x.name === c.name)) out.push({ name: c.name, slug: "", depth: 1, parent: "", group: "Danh mục riêng", hasChildren: false, isCollection: true });
   });
   return out;
 }
@@ -37,6 +41,7 @@ import { pointsForPhone, normalizePhone, DEFAULT_LOYALTY } from "./lib/loyalty.j
 import { baseVariantName } from "./lib/variants.js";
 import { autoComparePrice } from "./lib/autoComparePrice.js";
 import HomeTilesEditor from "./HomeTilesEditor.jsx";
+import CollectionsEditor from "./CollectionsEditor.jsx";
 import { HomeHeroEditor, HomeTabsEditor } from "./HomePanels.jsx";
 import HandheldEditor from "./HandheldEditor.jsx";
 import WebStats from "./WebStats.jsx";
@@ -2895,7 +2900,7 @@ function displayImage(p) { return p?.image || (Array.isArray(p?.web?.images) && 
 function ProductsInventory({ products, setProducts, purchaseOrders, orders, addLog, currentUser, focusProductId, focusEdit, initialCreatedFrom, initialCreatedTo, onFocusHandled, goToDoc, suppliers, goToSupplier, goToWebProduct, categories, setCategories, brands, setBrands, webConfig }) {
   // Cây danh mục web đầy đủ (mọi cấp), dạng phẳng — cho ô chọn "Danh mục phụ trên web".
   const webCatsFlat = useMemo(() => {
-    return webCatsWithGroups(webConfig && Array.isArray(webConfig.MENU) && webConfig.MENU.length ? webConfig.MENU : WEB_DEFAULT_MENU);
+    return webCatsWithGroups(webConfig && Array.isArray(webConfig.MENU) && webConfig.MENU.length ? webConfig.MENU : WEB_DEFAULT_MENU, webConfig && webConfig.COLLECTIONS);
   }, [webConfig]);
   const isAdmin = currentUser.role === "admin";
   const isCtv = currentUser.role === "ctv";
@@ -15603,7 +15608,7 @@ function WebProducts({ products, setProducts, suppliers, categories, brands, cur
   // kèm cấp (depth) để hiện thụt lề đúng thứ bậc khi chọn cho sản phẩm.
   const webCats = useMemo(() => {
     const src = webConfig && Array.isArray(webConfig.MENU) && webConfig.MENU.length ? webConfig.MENU : WEB_DEFAULT_MENU;
-    return webCatsWithGroups(src);
+    return webCatsWithGroups(src, webConfig && webConfig.COLLECTIONS);
   }, [webConfig]);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("all"); // all | on | off
@@ -17351,7 +17356,7 @@ function HomeSectionsEditor({ webConfig, setWebConfig, products }) {
     return { ...x, HOME_SECTIONS: fn(cur.map((s) => ({ ...s }))) };
   });
   const reset = () => setWebConfig((x) => { const y = { ...x }; delete y.HOME_SECTIONS; return y; });
-  return <HomeTabsEditor sections={sections} products={products} menu={menu} mut={mut} reset={reset} displayImage={displayImage} askConfirm={askConfirm} />;
+  return <HomeTabsEditor collections={webConfig.COLLECTIONS} sections={sections} products={products} menu={menu} mut={mut} reset={reset} displayImage={displayImage} askConfirm={askConfirm} />;
 }
 
 // Nội dung cũ dạng "## tiêu đề, - gạch đầu dòng" đổi sang HTML để khung soạn thảo hiện đúng định dạng.
@@ -17629,7 +17634,7 @@ function CouponsEditor({ webConfig, setWebConfig }) {
 }
 
 const WEB_CONFIG_PANES = {
-  home: [["hero", "Màn trình chiếu"], ["tiles", "Khối danh mục"], ["posters", "Banner trang chủ"], ["homeblocks", "Khối sản phẩm"], ["menu", "Menu danh mục"]],
+  home: [["hero", "Màn trình chiếu"], ["tiles", "Khối danh mục"], ["posters", "Banner trang chủ"], ["homeblocks", "Khối sản phẩm"], ["collections", "Danh mục riêng"], ["menu", "Menu danh mục"]],
   promo: [["flash", "Flash Sale"], ["coupons", "Mã giảm giá"], ["loyalty", "Điểm tích luỹ"]],
   content: [["landing", "Trang nội dung"], ["handheld", "Máy chơi game cầm tay"], ["policy", "Trang chính sách"], ["media", "Kho ảnh"]],
   settings: [["contact", "Liên hệ"], ["bank", "Tài khoản ngân hàng"]],
@@ -17851,7 +17856,11 @@ function WebConfigForm({ section, webConfig, setWebConfig, setProducts, addLog, 
       <section hidden={pane !== "tiles"} className="p-5 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
         <h3 className="text-base font-semibold mb-1" style={{ color: TEXT }}>Khối danh mục trang chủ</h3>
         <p className="text-xs mb-4" style={{ color: "#6B7280" }}>Đổi tên, ảnh, màu, link và vị trí của 8 ô “Hôm nay bạn cần gì?” ngay tại đây.</p>
-        <HomeTilesEditor webConfig={webConfig} setWebConfig={setWebConfig} menu={Array.isArray(c.MENU) && c.MENU.length ? c.MENU : WEB_DEFAULT_MENU} landings={landings} notify={notify} />
+        <HomeTilesEditor collections={c.COLLECTIONS} webConfig={webConfig} setWebConfig={setWebConfig} menu={Array.isArray(c.MENU) && c.MENU.length ? c.MENU : WEB_DEFAULT_MENU} landings={landings} notify={notify} />
+      </section>
+
+      <section hidden={pane !== "collections"} className="p-5 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+        <CollectionsEditor webConfig={webConfig} setWebConfig={setWebConfig} products={products} setProducts={setProducts} menu={Array.isArray(c.MENU) && c.MENU.length ? c.MENU : WEB_DEFAULT_MENU} displayImage={displayImage} askConfirm={askConfirm} notify={notify} />
       </section>
 
       <section hidden={pane !== "homeblocks"} className="p-5 rounded-lg" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>

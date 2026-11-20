@@ -239,7 +239,7 @@ function tabProducts(s, units, menu) {
 }
 
 /** Khối sản phẩm: mỗi khối là một tab ở mục sản phẩm trang chủ, sửa và xem kết quả ngay. */
-export function HomeTabsEditor({ sections, products, menu, mut, reset, displayImage, askConfirm }) {
+export function HomeTabsEditor({ sections, products, menu, mut, reset, displayImage, askConfirm, collections }) {
   const [sel, setSel] = useState(0);
   const [manual, setManual] = useState(false);
   const [more, setMore] = useState(false);
@@ -284,6 +284,9 @@ export function HomeTabsEditor({ sections, products, menu, mut, reset, displayIm
     const g = s?.group && menu.find((x) => x.group === s.group);
     return g ? flat(g.subs) : menu.flatMap((x) => flat(x.subs));
   })();
+  const cols = (Array.isArray(collections) ? collections : []).filter((c) => c && c.name);
+  // Số sản phẩm từng tab sẽ có ngoài web; 0 thì web tự ẩn tab đó.
+  const tabCounts = useMemo(() => sections.map((x) => (((x.skus || []).length || x.cat || x.group || x.brand || x.onSale || x.pmin != null || x.pmax != null) ? tabProducts(x, units, menu).length : units.length)), [sections, units, menu]);
   const pill = (on, off) => ({ background: on ? "#060A2A" : "#fff", color: on ? GOLD : TEXT, border: `1px solid ${on ? "#060A2A" : LINE}`, opacity: off ? 0.5 : 1 });
 
   return (
@@ -298,6 +301,7 @@ export function HomeTabsEditor({ sections, products, menu, mut, reset, displayIm
         {sections.map((x, k) => (
           <button key={k} type="button" onClick={() => go(k)} className="rounded-lg px-3.5 py-2 text-sm font-semibold transition" style={pill(k === i, x.enabled === false)}>
             {x.title || x.group || "Chưa đặt tên"}
+            {x.enabled !== false && tabCounts[k] === 0 && <span className="ml-1.5 rounded px-1 text-[11px] font-medium" style={{ background: "#FDE8E8", color: RUST }} title="Tab không có sản phẩm nào nên web khách tự ẩn">trống</span>}
           </button>
         ))}
         <button type="button" onClick={addTab} className="inline-flex items-center gap-1 rounded-lg border border-dashed px-3 py-2 text-sm font-medium" style={{ borderColor: "#9CA3AF", color: INK }}><Plus size={15} /> Thêm tab</button>
@@ -334,9 +338,10 @@ export function HomeTabsEditor({ sections, products, menu, mut, reset, displayIm
                   </select>
                 </label>
                 <label className="block"><Label>Danh mục</Label>
-                  <select value={s.cat || ""} onChange={(e) => set({ cat: e.target.value })} className={field} style={{ borderColor: LINE }}>
+                  <select value={s.cat || ""} onChange={(e) => { const v = e.target.value; set(cols.some((c) => c.name === v) ? { cat: v, group: "" } : { cat: v }); }} className={field} style={{ borderColor: LINE }}>
                     <option value="">Tất cả danh mục</option>
                     {subs.map((n) => <option key={n.name} value={n.name}>{"  ".repeat(n.d)}{n.name}</option>)}
+                    {cols.length > 0 && <optgroup label="Danh mục riêng">{cols.map((c) => <option key={"c:" + c.name} value={c.name}>{c.name}</option>)}</optgroup>}
                   </select>
                 </label>
                 <label className="block"><Label>Thương hiệu</Label>

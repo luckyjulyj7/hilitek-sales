@@ -2,7 +2,7 @@
 import { handler, json } from "./_supa.js";
 import { readWebCached } from "./_catalog.js";
 
-const CACHE = "public, max-age=60, s-maxage=300, stale-while-revalidate=86400";
+const CACHE = "public, max-age=30, s-maxage=60, stale-while-revalidate=120";
 
 export default handler(async (req, res) => {
   if (req.method !== "GET") return json(res, 405, { error: "Chỉ hỗ trợ GET." });

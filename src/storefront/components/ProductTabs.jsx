@@ -59,7 +59,7 @@ export default function ProductTabs({ products, navigate }) {
           </span>
         </a>
       </div>
-      <div role="tablist" aria-label="Nhóm sản phẩm" className="mt-3 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
+      <div role="tablist" aria-label="Nhóm sản phẩm" className="mt-3 flex gap-2 overflow-x-auto pb-2 [scrollbar-width:thin]">
         {tabs.map((t) => (
           <button key={t.key} type="button" role="tab" aria-selected={t.key === tab.key} onClick={() => setCur(t.key)}
             className={"min-h-[44px] shrink-0 rounded-lg px-4 text-[15px] font-semibold transition " + (t.key === tab.key ? "bg-ink text-yellow" : "bg-white text-ink hover:bg-yellow")}>

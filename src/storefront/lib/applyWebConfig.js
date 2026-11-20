@@ -1,4 +1,4 @@
-import { HOME_HERO, HOME_TILES, HOME_TITLES, SITE, FLASH_SALE, HOME_POSTERS, HOME_SECTIONS, PRODUCT_SIDEBAR, CHECKOUT, PAGES, MENU, LANDINGS, COUPONS, LOYALTY, rebuildCatToGroup } from "../config.js";
+import { HOME_HERO, HOME_TILES, HOME_TITLES, SITE, FLASH_SALE, HOME_POSTERS, HOME_SECTIONS, COLLECTIONS, PRODUCT_SIDEBAR, CHECKOUT, PAGES, MENU, LANDINGS, COUPONS, LOYALTY, rebuildCatToGroup } from "../config.js";
 
 import { applyHandheld } from "../data/handhelds.js";
 
@@ -41,6 +41,20 @@ export function applyWebConfig(cfg) {
     cfg.MENU.forEach((g) => MENU.push(g));
     rebuildCatToGroup();
   }
+
+  // COLLECTIONS (danh mục riêng) — thay nguyên mảng; cái nào bật showInMenu thì thêm vào cuối menu
+  // làm 1 nhóm không có danh mục con (bỏ các nhóm thêm lần trước, tránh lặp khi nạp lại cấu hình).
+  if (Array.isArray(cfg.COLLECTIONS)) {
+    COLLECTIONS.length = 0;
+    cfg.COLLECTIONS.forEach((c) => c && c.name && COLLECTIONS.push(c));
+  }
+  for (let k = MENU.length - 1; k >= 0; k--) if (MENU[k]._collection) MENU.splice(k, 1);
+  COLLECTIONS.forEach((c) => {
+    if (c.showInMenu && !MENU.some((g) => g.group === c.name)) {
+      MENU.push({ group: c.name, slug: String(c.name).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""), icon: "Tag", subs: [], _collection: true });
+    }
+  });
+  rebuildCatToGroup();
 
   // HOME_SECTIONS (khối sản phẩm trang chủ) — thay nguyên mảng. Mảng rỗng = ẩn hết khối.
   if (Array.isArray(cfg.HOME_SECTIONS)) {
