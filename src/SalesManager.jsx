@@ -1320,9 +1320,11 @@ function beautifyDescriptionHtml(raw, { boldFirstLine = true } = {}) {
     if (!line) { flushList(); continue; }
     const m = line.match(/^([^:：]{3,40})[:：]\s+(.+)$/);
     // Nhãn in đậm màu xanh Hili — theo chuẩn mô tả (K chốt 12/11/2026).
-    if (m) { listBuf.push(`<strong><span style="color: rgb(30, 42, 138);">${escapeHtml(m[1].trim())}:</span></strong> ${escapeHtml(m[2].trim())}`); firstContentSeen = true; continue; }
+    // Không thêm gạch đầu dòng (K chốt 20/11/2026): "Nhãn: nội dung" giữ thành 1 đoạn, nhãn đậm xanh.
+    if (m) { parts.push(`<p><strong><span style="color: rgb(30, 42, 138);">${escapeHtml(m[1].trim())}:</span></strong> ${escapeHtml(m[2].trim())}</p>`); firstContentSeen = true; continue; }
     flushList();
-    parts.push(firstContentSeen ? `<p>${escapeHtml(line)}</p>` : `<p><strong>${escapeHtml(line)}</strong></p>`); // dòng mở đầu thường là tên SP
+    // Dòng mở đầu (tên SP) thành tiêu đề H2 đậm xanh Hili.
+    parts.push(firstContentSeen ? `<p>${escapeHtml(line)}</p>` : `<h2><strong><span style="color: rgb(30, 42, 138);">${escapeHtml(line)}</span></strong></h2>`);
     firstContentSeen = true;
   }
   flushList();
@@ -1712,6 +1714,19 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
       flush();
       const clone = el.cloneNode(true);
       clone.querySelectorAll("span.ql-ui").forEach((x) => x.remove());
+      // Đúng font: bỏ font-family lạ ghi trong style (dùng font mặc định Archivo của bài).
+      [clone, ...clone.querySelectorAll("[style]")].forEach((x) => {
+        if (!x.style || !x.style.fontFamily) return;
+        x.style.removeProperty("font-family");
+        if (!x.getAttribute("style")) x.removeAttribute("style");
+      });
+      // Tiêu đề H1-H3 (không chứa ảnh): đậm + xanh Hili rgb(30,42,138), giữ nguyên chữ.
+      if (/^H[1-3]$/.test(clone.tagName) && !clone.querySelector("img, iframe") && clone.textContent.trim()) {
+        const plain = clone.textContent.trim();
+        const next = `<strong><span style="color: rgb(30, 42, 138);">${escapeHtml(plain)}</span></strong>`;
+        if (clone.innerHTML.replace(/\s+/g, "") !== next.replace(/\s+/g, "")) changed++;
+        clone.innerHTML = next;
+      }
       const hasMedia = !!clone.querySelector("img, iframe") || clone.tagName === "IFRAME";
       if (clone.tagName === "P" && !clone.textContent.trim() && !hasMedia) continue; // bỏ dòng trống thừa
       out.push(clone.outerHTML);
@@ -2895,7 +2910,8 @@ function StatCard({ label, value, icon: Icon, accent }) {
 
 // Chưa có "Ảnh chính" riêng (p.image) thì lấy tạm ảnh đầu tiên đã đăng ở "Sản phẩm web" (p.web.images[0])
 // để hiện thumbnail — dùng chung giữa "Sản phẩm & Tồn kho" và "Sản phẩm web" cho nhất quán.
-function displayImage(p) { return p?.image || (Array.isArray(p?.web?.images) && p.web.images[0]) || null; }
+// Ưu tiên ảnh web (đã chép sang media.hilipc.vn); ảnh form cũ `image` có thể còn trỏ Supabase (đã 404) nên chỉ dùng khi web chưa có ảnh.
+function displayImage(p) { return (Array.isArray(p?.web?.images) && p.web.images[0]) || p?.image || null; }
 
 function ProductsInventory({ products, setProducts, purchaseOrders, orders, addLog, currentUser, focusProductId, focusEdit, initialCreatedFrom, initialCreatedTo, onFocusHandled, goToDoc, suppliers, goToSupplier, goToWebProduct, categories, setCategories, brands, setBrands, webConfig }) {
   // Cây danh mục web đầy đủ (mọi cấp), dạng phẳng — cho ô chọn "Danh mục phụ trên web".
