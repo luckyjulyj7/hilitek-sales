@@ -79,7 +79,7 @@ export default function Header({ route, navigate, drawer, setDrawer }) {
     <header className="lg:sticky lg:top-0 z-50 font-sans">
       {/* Thanh trên cùng */}
       <div className="bg-ink text-white/75 text-[13px]">
-        <div className="mx-auto max-w-[1500px] px-4 h-9 flex items-center justify-between gap-4">
+        <div className="mx-auto max-w-[1500px] px-4 h-10 flex items-center justify-between gap-4">
           <span className="inline-flex items-center gap-1.5 truncate">
             <MapPin size={13} className="shrink-0 text-yellow" /> {SITE.address}
           </span>
@@ -99,7 +99,7 @@ export default function Header({ route, navigate, drawer, setDrawer }) {
       {/* Hàng chính: [LOGO góc trái + tên] [tìm kiếm] ... [hotline] [giỏ] */}
       <div className="hx-main">
         <div className="mx-auto max-w-[1500px] px-4 min-h-[76px] flex items-center gap-3 sm:gap-5 py-2">
-          <button className="lg:hidden -ml-1 p-1 shrink-0" onClick={() => setDrawer(true)} aria-label="Menu">
+          <button className="lg:hidden -ml-2 shrink-0 grid place-items-center w-11 h-11" onClick={() => setDrawer(true)} aria-label="Menu">
             <Menu size={26} />
           </button>
 
@@ -141,7 +141,7 @@ export default function Header({ route, navigate, drawer, setDrawer }) {
           )}
 
           <button
-            onClick={() => go("/gio-hang")}
+            onClick={() => go("/gio-hang")} aria-label="Giỏ hàng"
             className={
               "hx-key y hx-cart shrink-0 " + (cartBump ? "animate-cartbump" : "")
             }
@@ -285,7 +285,7 @@ export default function Header({ route, navigate, drawer, setDrawer }) {
 
 function TopLink({ onClick, icon: Icon, children }) {
   return (
-    <button onClick={onClick} className="inline-flex items-center gap-1.5 hover:text-white">
+    <button onClick={onClick} className="inline-flex items-center gap-1.5 h-10 hover:text-white">
       <Icon size={13} /> {children}
     </button>
   );

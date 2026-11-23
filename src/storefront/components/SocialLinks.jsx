@@ -31,7 +31,7 @@ export default function SocialLinks({ title = "Kênh chính thức", titleClass 
               rel="noreferrer"
               title={s.label}
               className={
-                "inline-flex items-center gap-1.5 rounded-full pl-2 pr-3 py-1.5 text-[13px] font-medium text-white hover:brightness-110 " +
+                "inline-flex items-center gap-1.5 rounded-full pl-2.5 pr-3.5 min-h-[40px] text-[13px] font-medium text-white hover:brightness-110 " +
                 style.bg
               }
             >

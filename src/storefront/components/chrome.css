@@ -37,6 +37,12 @@
 
 .hx-cart { height: 46px; padding: 0 16px; }
 .hx-cart.bump { animation: cartbump .75s; }
+/* Điện thoại/máy tính bảng đã có Giỏ hàng ở thanh dưới (BottomNav, < lg) -> ẩn nút trùng ở đầu trang. */
+@media (max-width: 1023.98px) { .hx-cart { display: none; } }
+/* Ô tìm kiếm: cả ô bấm được, chữ nhập cao tối thiểu 40px. */
+.hx-search input { align-self: stretch; min-height: 40px; }
+/* Chân trang trên điện thoại: link cao 40px cho dễ bấm. */
+@media (max-width: 1023.98px) { .hx-cols ul { gap: 2px; } .hx-cols ul a { display: inline-flex; align-items: center; min-height: 40px; } }
 
 .hx-nav { background: rgba(7,11,34,.92); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,.06); }
 .hx-cat { height: 38px; margin: 6px 0; padding: 0 16px; font-size: 14px; text-transform: uppercase; letter-spacing: .03em; }

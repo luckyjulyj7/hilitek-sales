@@ -47,6 +47,7 @@ import HandheldEditor from "./HandheldEditor.jsx";
 import WebStats from "./WebStats.jsx";
 import StaffChat from "./StaffChat.jsx";
 import GameProductEditor from "./GameProductEditor.jsx";
+import { StartGuide, ProductScreensNote, DueNotice, ViewModeToggle, SimpleStockList, RowAction, usePref } from "./admin/AdminHelpers.jsx";
 
 // Xuất 1 hoặc nhiều bảng dữ liệu ra 1 file Excel (.xlsx), mỗi bảng là 1 sheet riêng.
 // Thư viện Excel (xlsx) nặng ~400KB — chỉ tải khi thật sự bấm xuất/nhập file, không nằm trong lần tải đầu.
@@ -2694,7 +2695,7 @@ function Dashboard({ products, orders, goToOrdersFilter, purchaseOrders, isAdmin
   const stockUnits = products.reduce((s, p) => s + productStats(p).closingQty, 0);
   const totalIn = products.reduce((s, p) => s + productStats(p).importedValue, 0);
   const totalOut = products.reduce((s, p) => s + productStats(p).exportedValue, 0);
-  const lowStock = products.filter((p) => !p.isService && p.minStockLevel > 0 && productStats(p).closingQty <= p.minStockLevel && productStats(p).closingQty >= 0);
+  const lowStock = []; // đã tắt cảnh báo dưới định mức tồn (K yêu cầu 23/11/2026)
 
   // ---- Kết quả kinh doanh trong ngày ----
   const todayOrders = orders.filter((o) => isToday(o.createdAt));
@@ -2868,12 +2869,6 @@ function Dashboard({ products, orders, goToOrdersFilter, purchaseOrders, isAdmin
           <h4 className="text-base mb-4 font-semibold" style={{ color: TEXT }}>Thông tin kho</h4>
           <div className="space-y-1">
             <div className="flex items-center justify-between py-3" style={{ borderBottom: `1px solid ${LINE}` }}>
-              <span className="text-sm flex items-center gap-1.5" style={{ color: lowStock.length > 0 ? RUST : INK }}>
-                {lowStock.length > 0 && <AlertTriangle size={14} />} Sản phẩm dưới định mức (≤5)
-              </span>
-              <span className="text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: lowStock.length > 0 ? RUST : INK }}>{lowStock.length}</span>
-            </div>
-            <div className="flex items-center justify-between py-3" style={{ borderBottom: `1px solid ${LINE}` }}>
               <span className="text-sm opacity-70">Số tồn kho (tổng SL)</span>
               <span className="text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{stockUnits}</span>
             </div>
@@ -2926,6 +2921,7 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
   const [ioModal, setIoModal] = useState(null); // { product, type: 'in'|'out' }
   const [ioForm, setIoForm] = useState({});
   const [viewingId, setViewingId] = useState(null); // id sản phẩm đang xem chi tiết
+  const [stockView, setStockView] = usePref("stock_view", "simple"); // "simple" (ảnh, tên, giá, tồn) | "full" (đủ cột kế toán)
   const [showProductInfo, setShowProductInfo] = useState(false);
   const [historyPage, setHistoryPage] = useState(1);
   const [historySearch, setHistorySearch] = useState("");
@@ -3618,6 +3614,7 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
           </p>
         </div>
       )}
+      <ProductScreensNote where="inventory" />
       <div className="flex items-center gap-1.5 mb-3 flex-wrap">
         <div className="relative flex-1 min-w-[220px] max-w-md">
           <Search size={15} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-60" />
@@ -3638,6 +3635,7 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
             <button onClick={() => { setFilterCreatedFrom(""); setFilterCreatedTo(""); }} title="Xoá lọc ngày"><X size={12} /></button>
           </span>
         )}
+        <ViewModeToggle value={stockView} onChange={setStockView} />
         <div className="flex-1" />
         {selectedIds.size > 0 && (
           <button onClick={() => setSelectedIds(new Set())} className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs border whitespace-nowrap" style={{ borderColor: LINE, color: TEXT }}>
@@ -3740,6 +3738,10 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
         </div>
       )}
 
+      {stockView === "simple" ? (
+        <SimpleStockList groups={pagedProductGroups} productStats={productStats} displayImage={displayImage} isAdmin={isAdmin} isCtv={isCtv}
+          onOpen={openProductDetail} onIO={openIO} onEdit={openEdit} onWeb={goToWebProduct} selectedIds={selectedIds} toggleSelect={isAdmin ? toggleSelect : null} />
+      ) : (
       <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 220px)" }}>
         <table className="hili-rt hili-products w-full text-sm" style={{ minWidth: 940 }}>
           <thead className="sticky top-0" style={{ zIndex: 2 }}>
@@ -3761,7 +3763,7 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
                   <tr key={p.id} style={{ borderBottom: `1px solid ${LINE}` }} className={`hover:bg-black/[0.02]${inGroup ? " hili-child" : ""}`}>
                       <td className="px-3 py-3"><input type="checkbox" checked={selectedIds.has(p.id)} onChange={() => toggleSelect(p.id)} /></td>
                       <td className="px-2 py-3">
-                        <button onClick={() => openProductDetail(p.id)} className="opacity-60 hover:opacity-100" title="Xem chi tiết"><ChevronRight size={15} /></button>
+                        <button onClick={() => openProductDetail(p.id)} className="opacity-60 hover:opacity-100" title="Xem chi tiết" aria-label="Xem chi tiết"><ChevronRight size={15} /></button>
                       </td>
                       <td className="px-2 py-3">
                         {displayImage(p) ? (
@@ -3794,19 +3796,17 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
                         <td className="px-2 py-3 text-right" style={{ fontFamily: "'Inter', sans-serif", color: FOREST }}>+{stats.importedQty}</td>
                         <td className="px-2 py-3 text-right" style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>-{stats.exportedQty}</td>
                       </>)}
-                      <td className="px-2 py-3 text-right font-medium whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: stats.closingQty < 0 ? "#fff" : (p.minStockLevel > 0 && stats.closingQty <= p.minStockLevel ? RUST : INK) }}>
+                      <td className="px-2 py-3 text-right font-medium whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif", color: stats.closingQty < 0 ? "#fff" : INK }}>
                         {p.isService ? "—" : stats.closingQty < 0 ? (
                           <span className="px-1.5 py-0.5 rounded-md" style={{ background: RUST }}>{stats.closingQty}</span>
                         ) : stats.closingQty}
                       </td>
                       {isAdmin && <td className="px-2 py-3 text-right whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>{p.isService ? "—" : vnd(stats.avgCost)}</td>}
                       <td className="px-2 py-3">
-                        <div style={{ display: "grid", gridTemplateColumns: "auto auto", gap: 2, justifyContent: "end", marginLeft: "auto", width: "fit-content" }}>
-                          {isAdmin && !p.isService && <button onClick={() => openIO(p, "in")} title="Nhập kho" className="rounded-md hover:bg-black/5" style={{ color: FOREST, padding: 4 }}><ArrowDownToLine size={13} /></button>}
-                          {!isCtv && !p.isService && <button onClick={() => openIO(p, "out")} title="Xuất kho" className="rounded-md hover:bg-black/5" style={{ color: RUST, padding: 4 }}><ArrowUpFromLine size={13} /></button>}
-                          {isAdmin && (
-                            <button onClick={() => openEdit(p)} title="Sửa" className="rounded-md hover:bg-black/5" style={{ opacity: 0.6, padding: 4 }}><Pencil size={13} /></button>
-                          )}
+                        <div className="flex flex-wrap gap-1 justify-end ml-auto" style={{ width: "fit-content", maxWidth: 140 }}>
+                          {isAdmin && !p.isService && <RowAction icon={ArrowDownToLine} label="Nhập" title="Nhập kho" color={FOREST} onClick={() => openIO(p, "in")} />}
+                          {!isCtv && !p.isService && <RowAction icon={ArrowUpFromLine} label="Xuất" title="Xuất kho" color={RUST} onClick={() => openIO(p, "out")} />}
+                          {isAdmin && <RowAction icon={Pencil} label="Sửa" title="Sửa sản phẩm" color={TEXT} onClick={() => openEdit(p)} />}
                         </div>
                       </td>
                   </tr>
@@ -3900,15 +3900,11 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
                       </td>
                       {isAdmin && <td className="px-2 py-3 text-right whitespace-nowrap opacity-70" style={{ fontFamily: "'Inter', sans-serif" }}>{isService ? "—" : (sameCost ? vnd(rep.costPrice) : "Nhiều giá")}</td>}
                       <td className="px-2 py-3">
-                        <div style={{ display: "grid", gridTemplateColumns: "auto auto", gap: 2, justifyContent: "end", marginLeft: "auto", width: "fit-content" }}>
-                          {isAdmin && !isService && <button onClick={() => openIO(rep, "in")} title="Nhập kho (phiên bản đại diện — mở rộng nhóm để chọn đúng phiên bản khác)" className="rounded-md hover:bg-black/5" style={{ color: FOREST, padding: 4 }}><ArrowDownToLine size={13} /></button>}
-                          {!isCtv && !isService && <button onClick={() => openIO(rep, "out")} title="Xuất kho (phiên bản đại diện — mở rộng nhóm để chọn đúng phiên bản khác)" className="rounded-md hover:bg-black/5" style={{ color: RUST, padding: 4 }}><ArrowUpFromLine size={13} /></button>}
-                          {isAdmin && (
-                            <button onClick={() => openEdit(rep)} title="Sửa" className="rounded-md hover:bg-black/5" style={{ opacity: 0.6, padding: 4 }}><Pencil size={13} /></button>
-                          )}
-                          {isAdmin && (
-                            <button onClick={() => openAddVariant(rep, baseCode, baseSku)} title="Thêm phiên bản vào nhóm này" className="rounded-md hover:bg-black/5" style={{ color: PURPLE, padding: 4 }}><Plus size={13} /></button>
-                          )}
+                        <div className="flex flex-wrap gap-1 justify-end ml-auto" style={{ width: "fit-content", maxWidth: 140 }}>
+                          {isAdmin && !isService && <RowAction icon={ArrowDownToLine} label="Nhập" title="Nhập kho (phiên bản đại diện — mở rộng nhóm để chọn đúng phiên bản khác)" color={FOREST} onClick={() => openIO(rep, "in")} />}
+                          {!isCtv && !isService && <RowAction icon={ArrowUpFromLine} label="Xuất" title="Xuất kho (phiên bản đại diện — mở rộng nhóm để chọn đúng phiên bản khác)" color={RUST} onClick={() => openIO(rep, "out")} />}
+                          {isAdmin && <RowAction icon={Pencil} label="Sửa" title="Sửa sản phẩm" color={TEXT} onClick={() => openEdit(rep)} />}
+                          {isAdmin && <RowAction icon={Plus} label="Phiên bản" title="Thêm phiên bản vào nhóm này" color={PURPLE} onClick={() => openAddVariant(rep, baseCode, baseSku)} />}
                         </div>
                       </td>
                     </tr>
@@ -3921,6 +3917,7 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
           </tbody>
         </table>
       </div>
+      )}
 
       {productGroups.length > 0 && (
         <div className="flex items-center justify-between mt-2.5 text-xs" style={{ color: TEXT, opacity: 0.7 }}>
@@ -3982,7 +3979,7 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
           ...(viewingProduct.image ? [{ src: viewingProduct.image, alt: viewingProduct.name }] : []),
           ...(viewingProduct.images || []).map((im, i) => ({ src: im, alt: `${viewingProduct.name} — ảnh phụ ${i + 1}` })),
         ];
-        const lowStock = viewingProduct.minStockLevel > 0 && stats.closingQty <= viewingProduct.minStockLevel;
+        const lowStock = false; // đã tắt cảnh báo "Sắp hết"
         const stockLabel = stats.closingQty <= 0 ? "Hết hàng" : lowStock ? "Sắp hết" : "Còn hàng";
         const stockTone = stats.closingQty <= 0 || lowStock ? RUST : FOREST;
         return (
@@ -5650,15 +5647,10 @@ function PurchaseOrders({ goToProduct, goToSupplier, purchaseOrders, setPurchase
 
   return (
     <div>
-      {dueSoonPOs.length > 0 && (
-        <div className="mb-4 p-3 rounded-md flex items-start gap-2.5" style={{ background: `${RUST}10`, border: `1px solid ${RUST}44` }}>
-          <AlertTriangle size={16} style={{ color: RUST }} className="mt-0.5 shrink-0" />
-          <div className="text-sm" style={{ color: TEXT }}>
-            <span className="font-medium" style={{ color: RUST }}>Công nợ NCC sắp/đã đến hạn: </span>
-            {dueSoonPOs.map(({ po, due }) => `${po.code} (${po.supplier || "NCC"}) — ${due.overdue ? `quá hạn ${-due.daysLeft} ngày` : due.daysLeft === 0 ? "đến hạn hôm nay" : `còn ${due.daysLeft} ngày`}`).join(", ")}
-          </div>
-        </div>
-      )}
+      <StartGuide id="purchase" title="Nhập hàng"
+        steps={[["Bấm \"Tạo đơn nhập hàng\"", "ở góc phải."], ["Chọn nhà cung cấp.", "Chưa có thì bấm \"Thêm nhà cung cấp\"."], ["Thêm sản phẩm, số lượng, giá nhập.", "Gõ tên hoặc mã để tìm."], ["Bấm nhận hàng.", "Tồn kho tự cộng; mua nợ thì công nợ tự tính."]]}
+        actions={<button type="button" onClick={openNew} className="inline-flex items-center gap-1.5 min-h-[32px] px-3 rounded-md text-xs font-medium text-white" style={{ background: INK }}><Plus size={13} /> Tạo đơn nhập hàng</button>} />
+      <DueNotice label="công nợ nhà cung cấp" items={dueSoonPOs.map(({ po, due }) => ({ key: po.id, code: po.code, who: po.supplier || "NCC", overdue: !!due.overdue, text: due.overdue ? `quá hạn ${-due.daysLeft} ngày` : due.daysLeft === 0 ? "đến hạn hôm nay" : `còn ${due.daysLeft} ngày`, onOpen: () => openView(po) }))} />
       <div className="flex items-center justify-between mb-5">
         <p className="hidden md:block text-sm opacity-60">{purchaseOrders.length} đơn nhập hàng</p>
         <div className="flex gap-2 ml-auto">
@@ -10798,6 +10790,9 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
 
   return (
     <div>
+      <StartGuide id="quote" title="Báo giá"
+        steps={[["Bấm \"Tạo báo giá\".", ""], ["Chọn khách hàng.", "Khách mới thì gõ tên, số điện thoại để tạo."], ["Thêm sản phẩm và số lượng.", "Giá bán tự điền, sửa được."], ["Lưu rồi In / gửi cho khách.", "Khách đồng ý thì chuyển thành đơn hàng."]]}
+        actions={<button type="button" onClick={openNew} className="inline-flex items-center gap-1.5 min-h-[32px] px-3 rounded-md text-xs font-medium text-white" style={{ background: INK }}><Plus size={13} /> Tạo báo giá</button>} />
       <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
         <div className="relative flex-1 max-w-xs">
           <Search size={15} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-60" />
@@ -15768,6 +15763,9 @@ function WebProducts({ products, setProducts, suppliers, categories, brands, cur
 
   return (
     <div>
+      <StartGuide id="webpost" title="Đăng sản phẩm lên web"
+        steps={[["Tạo sản phẩm trong \"Sản phẩm & Tồn kho\".", "Có tên, giá bán, nhóm hàng."], ["Vào đây, lọc \"Chưa đăng\".", "Bấm vào sản phẩm cần đăng."], ["Thêm ảnh, mô tả, danh mục web.", "Ô nào thiếu sẽ có nhắc."], ["Bật công tắc đăng web (\"Đang bán trên web\") rồi Lưu.", "Khoảng 1 đến 5 phút sau web khách cập nhật."]]} />
+      <ProductScreensNote where="web" />
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
         {[["all", "Tất cả", TEXT], ["on", "Đang bán", TEXT], ["off", "Chưa đăng", TEXT], ["missing", "Đang bán, thiếu nội dung", BRASS], ["oos", "Hết hàng vẫn hiện", RUST]].map(([id, label, color]) => (
           <button key={id} type="button" onClick={() => setFilter(id)} className="text-left px-4 py-3 rounded-lg" style={{ background: "#fff", border: `1px solid ${filter === id ? INK : LINE}`, boxShadow: filter === id ? `inset 0 0 0 1px ${INK}` : "none" }}>
@@ -16633,7 +16631,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
             title="Sửa mã VT, giá nhập/bán, tồn kho... của sản phẩm này"
             className="text-xs inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT, background: "#fff" }}
           >
-            <Package size={13} /> Tồn kho
+            <Package size={13} /> Sửa trong kho
           </button>
         )}
         <CopyWebInfoButton product={p} products={products} setWeb={setWeb} />
@@ -18675,7 +18673,7 @@ export default function SalesManager() {
       if (p.isService) return; // sản phẩm dịch vụ không quản lý tồn kho, không cảnh báo tồn
       const s = productStats(p);
       if (s.closingQty < 0) push(`neg:${p.id}`, "neg_stock", `${p.name} (${s.closingQty})`);
-      else if (p.minStockLevel > 0 && s.closingQty <= p.minStockLevel) push(`low:${p.id}`, "low_stock", `${p.name} (còn ${s.closingQty}, định mức ${p.minStockLevel})`);
+      // Đã tắt cảnh báo "dưới định mức tồn" (K yêu cầu 23/11/2026) — chỉ còn cảnh báo tồn âm.
       if (isIncompleteProduct(p)) {
         const missing = [];
         if (!p.category) missing.push("nhóm hàng");

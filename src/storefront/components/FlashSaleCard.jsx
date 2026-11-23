@@ -37,10 +37,10 @@ export default function FlashSaleCard({ product, onOpen, navigate }) {
           </span>
         )}
         {saving > 0 && (
-          <span className="absolute left-0 bottom-1 bg-[#00A8E8] text-white text-[9px] sm:text-[10px] font-medium leading-tight px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-r-md">
+          <span className="absolute left-0 bottom-1 bg-[#00A8E8] text-white text-[12px] font-medium leading-tight px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-r-md">
             Tiết kiệm
             <br />
-            <b className="text-[11px] sm:text-[12px] font-bold">{formatVND(saving)}</b>
+            <b className="text-[12px] font-bold">{formatVND(saving)}</b>
           </span>
         )}
       </a>
@@ -49,19 +49,19 @@ export default function FlashSaleCard({ product, onOpen, navigate }) {
         <a
           href={`/san-pham/${p.slug}`}
           onClick={open}
-          className="text-[11px] sm:text-[13px] leading-snug text-ink line-clamp-2 min-h-[30px] sm:min-h-[36px] hover:text-navy"
+          className="text-[12px] sm:text-[13px] leading-snug text-ink line-clamp-2 min-h-[32px] sm:min-h-[36px] hover:text-navy"
         >
           {p.name}
         </a>
 
         <div className="mt-auto pt-1.5 sm:pt-2">
           {off > 0 && (
-            <div className="font-mono text-[10px] sm:text-[11px] text-mute/80 line-through">{formatVND(p.listPrice)}</div>
+            <div className="font-mono text-[12px] text-mute line-through">{formatVND(p.listPrice)}</div>
           )}
           <div className="font-mono font-extrabold text-[15px] sm:text-[19px] text-sale leading-none whitespace-nowrap tabular-nums">{formatVND(p.price)}</div>
 
           {p.promo && (
-            <div className="mt-1 flex items-start gap-1 text-[10px] sm:text-[11px] leading-snug text-[#E8730C]">
+            <div className="mt-1 flex items-start gap-1 text-[12px] leading-snug text-[#B85A00]">
               <Gift size={11} className="mt-[1px] shrink-0" />
               <span className="line-clamp-1">{String(p.promo).split("\n")[0].replace(/^[-+•*]\s*/, "")}</span>
             </div>
@@ -69,7 +69,7 @@ export default function FlashSaleCard({ product, onOpen, navigate }) {
 
           <button
             onClick={order}
-            className="mt-1.5 sm:mt-2 inline-flex items-center justify-center bg-sale text-white text-[11px] sm:text-[13px] font-semibold rounded-md px-3 sm:px-5 py-1 sm:py-1.5 hover:brightness-110 transition"
+            className="mt-1.5 sm:mt-2 inline-flex items-center justify-center bg-sale text-white text-[13px] font-semibold rounded-md px-3 sm:px-5 min-h-[40px] hover:brightness-110 transition"
           >
             Đặt hàng
           </button>

@@ -7,7 +7,7 @@
 
 export const SITE = {
   name: "HILITEK",
-  tagline: "Linh kiện & phụ kiện máy tính chính hãng",
+  tagline: "Máy chơi game cầm tay, phím chuột & linh kiện PC chính hãng",
 
   // ┌───────────────────────────────────────────────────────────────────────┐
   // │  CHỖ ĐỂ THÊM LOGO:  hilitek-app/public/logo.png                        │

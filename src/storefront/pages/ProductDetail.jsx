@@ -280,7 +280,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
               <span className="text-[14px] text-mute">Số lượng</span>
               <div className="inline-flex items-center rounded-lg border border-line">
                 <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="grid h-10 w-10 place-items-center text-mute hover:text-navy" aria-label="Giảm số lượng"><Minus size={15} /></button>
-                <input value={qty} onChange={(e) => setQty(Math.max(1, Math.min(99, parseInt(e.target.value.replace(/\D/g, "")) || 1)))} className="w-10 text-center text-[15px] font-semibold outline-none" inputMode="numeric" aria-label="Số lượng" />
+                <input value={qty} onChange={(e) => setQty(Math.max(1, Math.min(99, parseInt(e.target.value.replace(/\D/g, "")) || 1)))} className="w-10 h-10 text-center text-[15px] font-semibold outline-none" inputMode="numeric" aria-label="Số lượng" />
                 <button onClick={() => setQty((q) => Math.min(99, q + 1))} className="grid h-10 w-10 place-items-center text-mute hover:text-navy" aria-label="Tăng số lượng"><Plus size={15} /></button>
               </div>
               {low && !out && <span className="text-[13px] font-medium text-[#B4540A]">Chỉ còn ít hàng</span>}
@@ -591,7 +591,7 @@ function SectionNav({ sections, onGo }) {
       <div className="flex gap-1 overflow-x-auto px-2 py-1.5 [scrollbar-width:none]">
         {sections.map(([id, label]) => (
           <button key={id} onClick={() => onGo(id)}
-            className={"shrink-0 rounded-lg px-3.5 py-2 text-[14px] font-semibold transition " + (active === id ? "bg-navy text-white" : "text-ink/75 hover:bg-navy-050 hover:text-navy")}>
+            className={"shrink-0 rounded-lg px-3.5 min-h-[40px] text-[14px] font-semibold transition " + (active === id ? "bg-navy text-white" : "text-ink/75 hover:bg-navy-050 hover:text-navy")}>
             {label}
           </button>
         ))}
@@ -893,7 +893,7 @@ function StickyBuy({ anchor, p, price, out, img, onBuy, onAdd }) {
           ) : (
             <button onClick={onAdd} className="min-h-[38px] px-4 bg-yellow text-[13px] font-semibold text-ink">Thêm vào giỏ</button>
           )}
-          <button type="button" onClick={() => setOff(true)} aria-label="Ẩn thanh mua hàng" className="grid min-h-[38px] w-9 place-items-center text-white/70 hover:text-white"><X size={18} /></button>
+          <button type="button" onClick={() => setOff(true)} aria-label="Ẩn thanh mua hàng" className="grid min-h-[44px] w-11 place-items-center text-white/70 hover:text-white"><X size={18} /></button>
         </div>
       </div>
     </div>

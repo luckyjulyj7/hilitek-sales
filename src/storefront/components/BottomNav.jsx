@@ -23,18 +23,18 @@ export default function BottomNav({ route, navigate, onOpenCategories }) {
   const Item = ({ icon: Icon, label, active, onClick, badge }) => (
     <button
       type="button" onClick={onClick}
-      className="relative flex flex-col items-center justify-center gap-0.5 py-1.5"
+      className="relative flex flex-col items-center justify-center gap-1 min-h-[56px] py-1.5"
       style={{ color: active ? "#1E2A8A" : "#5A6484" }}
     >
       <span className="relative">
         <Icon size={21} strokeWidth={active ? 2.4 : 2} />
         {badge > 0 && (
-          <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-0.5 rounded-full bg-sale text-white text-[10px] font-bold grid place-items-center">
+          <span className="absolute -top-1.5 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-sale text-white text-[12px] font-bold grid place-items-center">
             {badge > 99 ? "99+" : badge}
           </span>
         )}
       </span>
-      <span className="text-[10.5px] leading-none">{label}</span>
+      <span className="text-[12px] leading-none">{label}</span>
     </button>
   );
 
@@ -69,11 +69,11 @@ export default function BottomNav({ route, navigate, onOpenCategories }) {
         <Item icon={LayoutGrid} label="Danh mục" onClick={onOpenCategories} />
         <a
           href={"tel:" + (SITE.phoneRaw || "")}
-          className="flex flex-col items-center justify-center gap-0.5 py-1.5"
+          className="flex flex-col items-center justify-center gap-1 min-h-[56px] py-1.5"
           style={{ color: "#5A6484" }}
         >
           <Phone size={21} />
-          <span className="text-[10.5px] leading-none">Tư vấn</span>
+          <span className="text-[12px] leading-none">Tư vấn</span>
         </a>
         <Item icon={ShoppingCart} label="Giỏ hàng" active={path === "/gio-hang"} onClick={() => navigate("/gio-hang")} badge={count} />
       </nav>

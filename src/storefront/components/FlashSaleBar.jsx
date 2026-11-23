@@ -34,9 +34,9 @@ export default function FlashSaleBar({ navigate }) {
   };
 
   const cell = (v, label) => (
-    <div className="flex flex-col items-center justify-center bg-sale text-white rounded-md sm:rounded-lg w-[38px] h-[38px] sm:w-[62px] sm:h-[56px] shadow-[0_2px_8px_rgba(237,28,36,0.35)]">
+    <div className="flex flex-col items-center justify-center bg-sale text-white rounded-md sm:rounded-lg w-[44px] h-[44px] sm:w-[62px] sm:h-[56px] shadow-[0_2px_8px_rgba(237,28,36,0.35)]">
       <span className="font-mono font-extrabold text-[13px] sm:text-lg leading-none tabular-nums">{String(v).padStart(2, "0")}</span>
-      <span className="text-[8px] sm:text-[10px] uppercase tracking-wide mt-0.5 sm:mt-1 text-white/85">{label}</span>
+      <span className="text-[12px] sm:text-[12px] leading-none mt-0.5 sm:mt-1 text-white/85">{label}</span>
     </div>
   );
 

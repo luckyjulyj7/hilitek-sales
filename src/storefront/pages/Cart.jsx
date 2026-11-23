@@ -69,20 +69,20 @@ export default function Cart({ navigate }) {
               </div>
 
               <div className="inline-flex items-center border border-line rounded-md">
-                <button onClick={() => setQty(it.id, it.qty - 1)} className="px-2.5 py-1.5 text-mute hover:text-navy">−</button>
+                <button onClick={() => setQty(it.id, it.qty - 1)} aria-label="Giảm số lượng" className="w-10 h-10 grid place-items-center text-mute hover:text-navy">−</button>
                 <input
                   value={it.qty}
                   onChange={(e) => setQty(it.id, parseInt(e.target.value.replace(/\D/g, "")) || 0)}
-                  className="w-10 text-center text-[15px] font-mono outline-none"
+                  aria-label="Số lượng" className="w-10 h-10 text-center text-[15px] font-mono outline-none"
                   inputMode="numeric"
                 />
-                <button onClick={() => setQty(it.id, it.qty + 1)} className="px-2.5 py-1.5 text-mute hover:text-navy">+</button>
+                <button onClick={() => setQty(it.id, it.qty + 1)} aria-label="Tăng số lượng" className="w-10 h-10 grid place-items-center text-mute hover:text-navy">+</button>
               </div>
 
               <div className="text-right min-w-[120px]">
                 <div className="font-mono font-bold text-sale">{formatVND(it.qty * it.price)}</div>
                 <div className="font-mono text-[12px] text-mute">{formatVND(it.price)} / cái</div>
-                <button onClick={() => remove(it.id)} className="mt-1 inline-flex items-center gap-1 text-[13px] text-mute hover:text-navy">
+                <button onClick={() => remove(it.id)} className="mt-1 inline-flex items-center gap-1 min-h-[40px] px-2 -mr-2 text-[13px] text-mute hover:text-navy">
                   <Trash2 size={13} /> Xoá
                 </button>
               </div>

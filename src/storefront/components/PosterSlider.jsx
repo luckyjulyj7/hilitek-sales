@@ -74,22 +74,24 @@ export default function PosterSlider({ slot, navigate, interval = 5000, classNam
         <>
           <button
             type="button" onClick={prev} aria-label="Ảnh trước"
-            className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/85 hover:bg-white text-ink rounded-full p-1.5 shadow-card opacity-0 group-hover:opacity-100 transition"
+            className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/85 hover:bg-white text-ink rounded-full w-10 h-10 grid place-items-center shadow-card opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition"
           >
             <ChevronLeft size={18} />
           </button>
           <button
             type="button" onClick={next} aria-label="Ảnh sau"
-            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/85 hover:bg-white text-ink rounded-full p-1.5 shadow-card opacity-0 group-hover:opacity-100 transition"
+            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/85 hover:bg-white text-ink rounded-full w-10 h-10 grid place-items-center shadow-card opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition"
           >
             <ChevronRight size={18} />
           </button>
-          <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex gap-1.5">
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-0.5">
             {list.map((_, i) => (
               <button
                 key={i} type="button" onClick={() => setIdx(i)} aria-label={"Tới ảnh " + (i + 1)}
-                className={"h-2 rounded-full transition-all " + (i === idx ? "w-5 bg-yellow" : "w-2 bg-white/70 hover:bg-white")}
-              />
+                className="h-10 min-w-[24px] grid place-items-center"
+              >
+                <span className={"block h-2 rounded-full transition-all " + (i === idx ? "w-5 bg-yellow" : "w-2 bg-white/70 hover:bg-white")} />
+              </button>
             ))}
           </div>
         </>

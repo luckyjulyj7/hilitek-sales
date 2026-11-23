@@ -66,12 +66,12 @@ export default function ProductCard({ product, onOpen }) {
             {formatVND(p.price)}
           </div>
           {off > 0 && (
-            <div className="mt-0.5 h-[15px] font-mono text-[11px] text-mute/80 line-through whitespace-nowrap">{formatVND(p.listPrice)}</div>
+            <div className="mt-0.5 h-[16px] font-mono text-[12px] text-mute line-through whitespace-nowrap">{formatVND(p.listPrice)}</div>
           )}
         </div>
 
         {p.promo && (
-          <div className="mt-1 flex items-start gap-1 text-[12px] leading-snug text-[#E8730C]">
+          <div className="mt-1 flex items-start gap-1 text-[12px] leading-snug text-[#B85A00]">
             <Gift size={13} className="mt-[1px] shrink-0" />
             <span className="line-clamp-1">{String(p.promo).split("\n")[0].replace(/^[-+•*]\s*/, "")}</span>
           </div>

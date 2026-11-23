@@ -143,7 +143,7 @@ export default function App() {
     page = (
       <div className="mx-auto max-w-3xl px-4 py-24 text-center font-sans">
         <h1 className="font-display text-3xl font-bold text-ink">Không tìm thấy trang</h1>
-        <button onClick={() => route.navigate("/")} className="mt-4 text-navy font-semibold">Về trang chủ</button>
+        <button onClick={() => route.navigate("/")} className="mt-4 inline-flex items-center min-h-[44px] px-4 rounded-md border border-line text-navy font-semibold">Về trang chủ</button>
       </div>
     );
   }

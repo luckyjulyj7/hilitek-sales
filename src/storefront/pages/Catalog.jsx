@@ -59,7 +59,8 @@ export default function Catalog({ catalog, route, navigate }) {
       "price-asc": (a, b) => a.price - b.price,
       "price-desc": (a, b) => b.price - a.price,
       name: (a, b) => a.name.localeCompare(b.name, "vi"),
-      popular: () => 0,
+      // "Phổ biến": hàng còn trước, hết hàng xuống cuối (giữ nguyên thứ tự còn lại).
+      popular: (a, b) => (b.stock ? 1 : 0) - (a.stock ? 1 : 0),
     };
     return [...r].sort(by[sort] || by.popular);
   }, [products, group, cat, brand, pmin, pmax, q, sort, inStock, onSale]);
@@ -274,11 +275,11 @@ export default function Catalog({ catalog, route, navigate }) {
       {/* Nút mở bộ lọc — chỉ hiện trên điện thoại */}
       <button
         onClick={() => setSheetOpen(true)}
-        className="lg:hidden mb-4 inline-flex items-center gap-2 border border-line rounded-md px-3 py-2 text-[14px] font-medium text-ink"
+        className="lg:hidden mb-4 inline-flex items-center gap-2 border border-line rounded-md px-3 min-h-[44px] text-[14px] font-medium text-ink"
       >
         <SlidersHorizontal size={16} /> Bộ lọc
         {activeCount > 0 && (
-          <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-navy text-white text-[11px] font-bold grid place-items-center">{activeCount}</span>
+          <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-navy text-white text-[12px] font-bold grid place-items-center">{activeCount}</span>
         )}
       </button>
 
@@ -292,7 +293,7 @@ export default function Catalog({ catalog, route, navigate }) {
             <span className="text-mute">{list.length} sản phẩm</span>
             <label className="flex items-center gap-2">
               <span className="text-mute">Sắp xếp</span>
-              <select value={sort} onChange={(e) => setParam({ sort: e.target.value })} className="border border-line bg-white rounded-md px-2 py-1.5">
+              <select value={sort} onChange={(e) => setParam({ sort: e.target.value })} className="border border-line bg-white rounded-md px-2 min-h-[44px]">
                 {SORTS.map((s) => (<option key={s.id} value={s.id}>{s.label}</option>))}
               </select>
             </label>
