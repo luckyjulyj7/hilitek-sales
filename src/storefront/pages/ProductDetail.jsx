@@ -440,7 +440,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
       {pairs.length > 0 && (
         <section className="mt-10">
           <h2 className="font-display text-[22px] sm:text-[26px] font-bold text-ink mb-4 flex items-center gap-2.5"><HiliMark className="h-5 w-auto text-yellow" />Thường mua kèm</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
+          <div className="pd-rel grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
             {pairs.map((r) => <RelatedCard key={r.id} p={r} onOpen={() => navigate(`/san-pham/${r.slug}`)} />)}
           </div>
         </section>
@@ -449,7 +449,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
       {related.length > 0 && (
         <section className="mt-10">
           <h2 className="font-display text-[22px] sm:text-[26px] font-bold text-ink mb-4 flex items-center gap-2.5"><HiliMark className="h-5 w-auto text-yellow" />Sản phẩm tương tự</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
+          <div className="pd-rel grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
             {related.map((r) => <RelatedCard key={r.id} p={r} onOpen={() => navigate(`/san-pham/${r.slug}`)} />)}
           </div>
         </section>
@@ -617,20 +617,20 @@ function HowToBuy() {
   return (
     <section id="pd-mua-hang" className="rounded-xl border border-line bg-white p-5 sm:p-7">
       <SectionTitle>Đặt hàng & thanh toán</SectionTitle>
-      <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <ol className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
         {steps.map(([Icon, t, s], i) => (
-          <li key={t} className="relative rounded-lg bg-paper p-4">
+          <li key={t} className="relative rounded-lg bg-paper p-3 sm:p-4">
             <span className="absolute right-3 top-3 font-display text-[22px] font-bold text-navy/15">0{i + 1}</span>
             <Icon size={22} className="text-navy" />
-            <b className="mt-2 block text-[15px] text-ink">{t}</b>
-            <span className="mt-1 block text-[14px] leading-snug text-mute">{s}</span>
+            <b className="mt-2 block text-[14px] sm:text-[15px] leading-snug text-ink">{t}</b>
+            <span className="mt-1 hidden sm:block text-[14px] leading-snug text-mute">{s}</span>
           </li>
         ))}
       </ol>
-      <h3 className="mt-6 mb-3 text-[16px] font-bold text-ink">Cách thanh toán</h3>
-      <ul className="grid gap-3 sm:grid-cols-2">
+      <h3 className="mt-5 sm:mt-6 mb-3 text-[16px] font-bold text-ink">Cách thanh toán</h3>
+      <ul className="grid gap-2 sm:gap-3 sm:grid-cols-2">
         {pays.map(([Icon, t, s]) => (
-          <li key={t} className="flex gap-3 rounded-lg border border-line p-3.5">
+          <li key={t} className="flex gap-3 rounded-lg border border-line p-3 sm:p-3.5">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-navy-050"><Icon size={19} className="text-navy" /></span>
             <span className="min-w-0 text-[14px] leading-snug"><b className="block text-ink">{t}</b><span className="text-mute break-words">{s}</span></span>
           </li>
@@ -655,12 +655,12 @@ function WarrantyReturn({ warranty, navigate }) {
   return (
     <section id="pd-bao-hanh" className="rounded-xl border border-line bg-white p-5 sm:p-7">
       <SectionTitle>Bảo hành & đổi trả</SectionTitle>
-      <ul className="grid gap-3 md:grid-cols-3">
+      <ul className="grid gap-2 sm:gap-3 md:grid-cols-3">
         {items.map(([Icon, t, s]) => (
-          <li key={t} className="rounded-lg bg-paper p-4">
-            <Icon size={22} className="text-navy" />
-            <b className="mt-2 block text-[15px] text-ink">{t}</b>
-            <span className="mt-1 block text-[14px] leading-snug text-mute">{s}</span>
+          <li key={t} className="flex gap-3 md:block rounded-lg bg-paper p-3 sm:p-4">
+            <Icon size={22} className="text-navy shrink-0" />
+            <span className="min-w-0"><b className="md:mt-2 block text-[15px] text-ink">{t}</b>
+            <span className="mt-1 block text-[13px] sm:text-[14px] leading-snug text-mute">{s}</span></span>
           </li>
         ))}
       </ul>

@@ -47,7 +47,7 @@ import HandheldEditor from "./HandheldEditor.jsx";
 import WebStats from "./WebStats.jsx";
 import StaffChat from "./StaffChat.jsx";
 import GameProductEditor from "./GameProductEditor.jsx";
-import { StartGuide, ProductScreensNote, DueNotice, ViewModeToggle, SimpleStockList, RowAction, usePref } from "./admin/AdminHelpers.jsx";
+import { StartGuide, ProductScreensNote, DueNotice, ViewModeToggle, SimpleStockList, RowAction, usePref, MoreFields, ReadyChecklist } from "./admin/AdminHelpers.jsx";
 
 // Xuất 1 hoặc nhiều bảng dữ liệu ra 1 file Excel (.xlsx), mỗi bảng là 1 sheet riêng.
 // Thư viện Excel (xlsx) nặng ~400KB — chỉ tải khi thật sự bấm xuất/nhập file, không nằm trong lần tải đầu.
@@ -3384,8 +3384,14 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
     const next = editingSiblings[(editingSiblingIndex + dir + editingSiblings.length) % editingSiblings.length];
     openEdit(next);
   };
+  const withKhoImages = (w) => {
+    if (w.images.length) return w;
+    const imgs = [form.image, ...(Array.isArray(form.images) ? form.images : [])].filter((x) => typeof x === "string" && x && !x.startsWith("data:"));
+    return imgs.length ? { ...w, images: imgs.slice(0, 10) } : w;
+  };
   const submitInfo = () => {
-    if (!form.code || !form.name) return;
+    if (imgBusy > 0) { notify("Ảnh đang tải lên, đợi vài giây rồi bấm lại."); return; }
+    if (!form.code || !form.name) { notify("Cần nhập Mã VT và Tên sản phẩm."); return; }
     if (editing.id) {
       const dup = products.find((p) => p.id !== editing.id && p.code.toLowerCase() === form.code.trim().toLowerCase());
       if (dup) { notify(`Mã VT "${form.code}" đã dùng cho sản phẩm "${dup.name}" — vui lòng chọn mã khác.`); return; }
@@ -3422,7 +3428,7 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
         if (newCost !== p.costPrice) changes.push({ field: "Giá nhập", oldValue: p.costPrice, newValue: newCost });
         const now = new Date().toISOString();
         const newHistoryEntries = changes.map((c) => ({ id: uid(), date: now, changedBy: currentUser.fullName, field: c.field, oldValue: c.oldValue, newValue: c.newValue }));
-        const newWeb = normalizeWeb(form.web);
+        const newWeb = withKhoImages(normalizeWeb(form.web));
         if (newWeb.published && !p.web?.publishedAt) { newWeb.publishedAt = now; newWeb.publishedBy = currentUser.fullName; }
         return {
           ...p, code: form.code.trim(), name: form.name, unit: form.unit, category: form.category || "", brand: form.brand || "", hasSeries: !!form.hasSeries, isService: !!form.isService,
@@ -3464,7 +3470,7 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
         const label = combo.join(", ");
         const variantAttrs = { [attr1Name]: combo[0] };
         if (combo[1] !== undefined) variantAttrs[attr2Name] = combo[1];
-        const newWeb = normalizeWeb({ ...form.web, slug: "" });
+        const newWeb = withKhoImages(normalizeWeb({ ...form.web, slug: "" }));
         if (newWeb.published) { newWeb.publishedAt = now; newWeb.publishedBy = currentUser.fullName; }
         return {
           id: uid(), code: `${form.code}_${suffix}`, name: `${form.name} - ${label}`, unit: form.unit, category: form.category || "", brand: form.brand || "",
@@ -3489,7 +3495,7 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
       const dupSku = products.find((p) => p.sku.toLowerCase() === newSku.toLowerCase());
       if (dupSku) { notify(`SKU "${newSku}" đã dùng cho sản phẩm "${dupSku.name}" (${dupSku.code}) — vui lòng chọn SKU khác.`); return; }
       const now = new Date().toISOString();
-      const newWeb = normalizeWeb(form.web);
+      const newWeb = withKhoImages(normalizeWeb(form.web));
       if (newWeb.published) { newWeb.publishedAt = now; newWeb.publishedBy = currentUser.fullName; }
       setProducts((prev) => [...prev, {
         id: uid(), code: form.code, name: form.name, unit: form.unit, category: form.category || "", brand: form.brand || "",
@@ -3504,24 +3510,51 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
     }
     setEditing(null);
   };
+  // Ảnh: tự nén (WebP, tối đa 1600px) rồi tải lên kho ảnh R2 như mục Website -> lưu link /media/...
+  // (không nhét base64 vào dữ liệu, không giới hạn 1.5MB). Máy chủ không sẵn sàng thì mới lưu tạm base64.
+  const [imgBusy, setImgBusy] = useState(0);
+  const fileToStoredUrl = async (file) => {
+    setImgBusy((n) => n + 1);
+    try { return (await uploadProductImage(file)).url; }
+    catch (err) {
+      if (file.size > 1.5 * 1024 * 1024) { notify("Không tải được ảnh lên máy chủ (" + (err.message || err) + ") và ảnh lớn hơn 1.5MB."); return null; }
+      return await fileToDataUrl(file);
+    } finally { setImgBusy((n) => n - 1); }
+  };
   const onImagePick = async (e) => {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
-    if (file.size > 1.5 * 1024 * 1024) { notify("Ảnh quá lớn — vui lòng chọn ảnh dưới 1.5MB."); return; }
-    const dataUrl = await fileToDataUrl(file);
-    setForm((f) => ({ ...f, image: dataUrl }));
+    const url = await fileToStoredUrl(file);
+    if (url) setForm((f) => ({ ...f, image: url }));
   };
   // Ảnh phụ (tối đa 3 ảnh) — idx từ 0 đến 2
   const onGalleryImagePick = async (idx, e) => {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
-    if (file.size > 1.5 * 1024 * 1024) { notify("Ảnh quá lớn — vui lòng chọn ảnh dưới 1.5MB."); return; }
-    const dataUrl = await fileToDataUrl(file);
+    const url = await fileToStoredUrl(file);
+    if (!url) return;
     setForm((f) => {
       const imgs = Array.isArray(f.images) ? [...f.images] : [];
-      imgs[idx] = dataUrl;
+      imgs[idx] = url;
       return { ...f, images: imgs.slice(0, 3) };
     });
+  };
+  // Chọn / kéo thả nhiều ảnh 1 lần: ô trống đầu tiên là ảnh chính, còn lại vào ảnh phụ.
+  const onManyImages = async (fileList) => {
+    const files = [...(fileList || [])].filter((f) => /^image\//.test(f.type));
+    const free = (form.image ? 0 : 1) + Math.max(0, 3 - (Array.isArray(form.images) ? form.images.filter(Boolean).length : 0));
+    if (files.length > free) notify(`Ô này nhận tối đa 1 ảnh chính + 3 ảnh phụ, chỉ lấy ${free} ảnh đầu. Thêm ảnh nữa ở Website → Sản phẩm (tối đa 10 ảnh).`);
+    for (const file of files.slice(0, free)) {
+      const url = await fileToStoredUrl(file);
+      if (!url) continue;
+      setForm((f) => {
+        if (!f.image) return { ...f, image: url };
+        const imgs = (Array.isArray(f.images) ? f.images : []).filter(Boolean);
+        return imgs.length >= 3 ? f : { ...f, images: [...imgs, url] };
+      });
+    }
   };
   const removeGalleryImage = (idx) => setForm((f) => ({ ...f, images: (Array.isArray(f.images) ? f.images : []).filter((_, i) => i !== idx) }));
   const removeProduct = (id) => setProducts((prev) => prev.filter((p) => p.id !== id));
@@ -4263,6 +4296,19 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
               </button>
             </div>
           )}
+          {!form.isService && (
+            <ReadyChecklist
+              published={!!form.web?.published}
+              onTogglePublish={isAdmin ? (v) => setForm({ ...form, web: { ...normalizeWeb(form.web), published: v } }) : null}
+              items={[
+                { label: "Tên", ok: !!(form.name || "").trim(), target: "pf-name" },
+                { label: "Nhóm hàng", ok: !!form.category, target: "pf-cat" },
+                { label: "Giá bán", ok: Number(form.retailPrice) > 0, target: "pf-price" },
+                { label: "Ảnh", ok: !!form.image || (form.images || []).some(Boolean) || (form.web?.images || []).length > 0, target: "pf-images" },
+                ...(form.web?.published ? [{ label: "Mô tả web", ok: (form.web?.description || "").replace(/<[^>]*>/g, "").trim().length >= 30, target: "pf-desc" }] : []),
+              ]}
+            />
+          )}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <Field label="Mã VT" hint={editing.id && !isAdmin ? "Chỉ admin được đổi Mã VT của sản phẩm đã tạo." : (editing.id ? "Đổi Mã VT không ảnh hưởng đơn hàng/phiếu cũ (đã ghi lại mã lúc đó) — chỉ áp dụng từ giờ về sau." : undefined)}>
               <input className={inputCls} style={{ borderColor: LINE }} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} disabled={!!editing.id && !isAdmin} />
@@ -4279,7 +4325,7 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
             )}
           </div>
 
-          <Field label="Tên vật tư"><input className={inputCls} style={{ borderColor: LINE }} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
+          <div id="pf-name"><Field label="Tên sản phẩm (tên trên hoá đơn)"><input className={inputCls} style={{ borderColor: LINE }} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field></div>
 
           {editing.id && editing.variantGroupId && (
             <Field label="Tên chung hiện ở dòng đại diện của nhóm phiên bản" hint={`Áp dụng cho tất cả ${editingSiblings.length} phiên bản cùng nhóm. Để trống thì hiện nguyên tên của 1 phiên bản đại diện.`}>
@@ -4288,7 +4334,7 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
           )}
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            <Field label="Nhóm hàng" hint={isAdmin ? "Chọn “+ Tạo nhóm hàng mới…” để thêm nhanh ngay tại đây" : "Chỉ chọn được nhóm hàng do quản trị viên tạo sẵn"}>
+            <div id="pf-cat"><Field label="Nhóm hàng" hint={isAdmin ? "Chọn “+ Tạo nhóm hàng mới…” để thêm nhanh ngay tại đây" : "Chỉ chọn được nhóm hàng do quản trị viên tạo sẵn"}>
               <select className={inputCls} style={{ borderColor: LINE }} value={form.category || ""}
                 onChange={async (e) => {
                   const v = e.target.value;
@@ -4305,7 +4351,7 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
                 {isAdmin && <option value="__new__">+ Tạo nhóm hàng mới…</option>}
                 {categoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
-            </Field>
+            </Field></div>
             <Field label="Nhãn hiệu" hint={!form.category ? "Chọn nhóm hàng trước" : isAdmin ? "Chọn “+ Tạo nhãn hiệu mới…” để thêm nhanh ngay tại đây" : "Chỉ chọn được nhãn hiệu do quản trị viên tạo sẵn"}>
               <select className={inputCls} style={{ borderColor: LINE }} value={form.brand || ""} disabled={!form.category}
                 onChange={async (e) => {
@@ -4324,15 +4370,11 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
                 {brandOptionsOf(form.category).map((b) => <option key={b} value={b}>{b}</option>)}
               </select>
             </Field>
-            <Field label="Barcode" hint="Bỏ trống nếu không có">
-              <input className={inputCls} style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} placeholder="893xxxxxxxxxx" />
-            </Field>
           </div>
 
-          <div className={`grid grid-cols-2 ${isAdmin ? "sm:grid-cols-3" : ""} gap-4`}>
+          <div id="pf-price" className="grid grid-cols-2 gap-4">
             {isAdmin && <Field label="Giá nhập (đ)"><MoneyInput className={inputCls} style={{ borderColor: LINE }} value={form.costPrice} onChange={(v) => setForm({ ...form, costPrice: v })} /></Field>}
             <Field label="Giá bán lẻ (đ)"><MoneyInput className={inputCls} style={{ borderColor: LINE }} value={form.retailPrice} onChange={(v) => setForm({ ...form, retailPrice: v })} /></Field>
-            <Field label="Giá bán sỉ (đ)"><MoneyInput className={inputCls} style={{ borderColor: LINE }} value={form.wholesalePrice} onChange={(v) => setForm({ ...form, wholesalePrice: v })} /></Field>
           </div>
 
           <label className="flex items-center gap-2 mb-1 text-sm p-2.5 rounded-md" style={{ color: TEXT, background: form.isService ? `${BLUE}0D` : "transparent", border: `1px solid ${form.isService ? BLUE : LINE}` }}>
@@ -4350,6 +4392,13 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
             </div>
           )}
 
+          <MoreFields id="product" title="Thông tin thêm" note="giá sỉ, mã vạch, khối lượng, kích thước, nhà cung cấp, định mức tồn — không bắt buộc">
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Giá bán sỉ (đ)"><MoneyInput className={inputCls} style={{ borderColor: LINE }} value={form.wholesalePrice} onChange={(v) => setForm({ ...form, wholesalePrice: v })} /></Field>
+            <Field label="Barcode" hint="Bỏ trống nếu không có">
+              <input className={inputCls} style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} placeholder="893xxxxxxxxxx" />
+            </Field>
+          </div>
           <Field label="Khối lượng (gram)" hint="Dùng để tính phí ship (GHN) và hiển thị trên web">
             <input type="number" min={0} className={inputCls} style={{ borderColor: LINE }} value={form.weight ?? ""} onChange={(e) => setForm({ ...form, weight: e.target.value })} placeholder="VD: 450" />
           </Field>
@@ -4385,6 +4434,7 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
               </div>
             </Field>
           )}
+          </MoreFields>
 
           <div className="my-3" style={{ borderTop: `1px solid ${LINE}` }} />
 
@@ -4418,7 +4468,16 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
               </div>
             </Field>
 
-            <Field label="Hình ảnh sản phẩm" hint="Ảnh chính + tối đa 3 ảnh phụ — mỗi ảnh dưới 1.5MB">
+            <Field label="Hình ảnh sản phẩm" hint="Ảnh tự nén và dùng luôn cho website nếu sản phẩm chưa có ảnh web riêng.">
+              <label id="pf-images"
+                onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = INK; }}
+                onDragLeave={(e) => { e.currentTarget.style.borderColor = LINE; }}
+                onDrop={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = LINE; onManyImages(e.dataTransfer.files); }}
+                className="mb-2 flex items-center justify-center gap-2 min-h-[44px] px-3 rounded-md text-sm cursor-pointer"
+                style={{ border: `1.5px dashed ${LINE}`, background: PAPER, color: INK }}>
+                <ImagePlus size={16} /> {imgBusy > 0 ? `Đang tải ${imgBusy} ảnh lên…` : "Kéo thả ảnh vào đây hoặc bấm để chọn nhiều ảnh"}
+                <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => { onManyImages(e.target.files); e.target.value = ""; }} />
+              </label>
               <div className="flex flex-wrap items-start gap-3">
                 <div>
                   <p className="text-xs opacity-60 mb-1 font-medium">Ảnh chính</p>
@@ -4461,7 +4520,7 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
                   </div>
                 ))}
               </div>
-              <span className="text-xs opacity-60 block mt-1.5">Bấm vào ảnh để phóng to, bấm ✕ để xoá / đổi ảnh khác.</span>
+              <span className="text-xs opacity-60 block mt-1.5">Bấm vào ảnh để phóng to, bấm ✕ để xoá / đổi ảnh khác. Ảnh đầu tiên là ảnh chính.</span>
             </Field>
           </div>
 
@@ -4500,6 +4559,7 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
                     onChange={(e) => setForm({ ...form, web: { ...form.web, promo: e.target.value } })}
                     placeholder={"Tặng balo laptop chính hãng\nTặng chuột không dây trị giá 150.000đ\nGiảm thêm 500.000đ khi mua kèm màn hình"} />
                 </Field>
+                <div id="pf-desc" />
                 <Field label="Mô tả sản phẩm (web)" hint="Xuống dòng đôi = đoạn mới · dòng '- ' = gạch đầu dòng · dán link YouTube (dòng riêng) = nhúng video">
                   <WebDescEditor rows={7}
                     value={form.web?.description || ""}
@@ -4562,9 +4622,11 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
             </>
           )}
 
-          <button onClick={submitInfo} className="w-full py-2.5 rounded-md text-white text-sm mt-2" style={{ background: INK }}>
-            {editing.id ? "Lưu thay đổi" : form.hasVariants ? "Tạo các phiên bản sản phẩm" : "Thêm sản phẩm"}
-          </button>
+          <div className="sticky bottom-0 -mx-1 px-1 pt-3 pb-1 mt-2" style={{ background: "linear-gradient(180deg, rgba(255,255,255,0), #fff 35%)" }}>
+            <button onClick={submitInfo} disabled={imgBusy > 0} className="w-full min-h-[44px] rounded-md text-white text-sm font-semibold disabled:opacity-60" style={{ background: INK, boxShadow: "0 6px 16px -8px rgba(30,42,138,.6)" }}>
+              {imgBusy > 0 ? "Đang tải ảnh lên…" : editing.id ? "Lưu thay đổi" : form.hasVariants ? "Tạo các phiên bản sản phẩm" : form.web?.published ? "Thêm sản phẩm và đăng lên web" : "Thêm sản phẩm"}
+            </button>
+          </div>
         </Modal>
       )}
 
@@ -15582,6 +15644,7 @@ function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig
   const [sub, setSub] = useState("products");
   useEffect(() => {
     if (navTarget?.type === "webproduct" || navTarget?.type === "webproducts-daterange") setSub("products");
+    if (navTarget?.type === "websub" && ["products", "orders", "home", "promo", "content", "settings"].includes(navTarget.sub)) setSub(navTarget.sub);
   }, [navTarget]);
   const subs = [
     { id: "products", label: "Sản phẩm", icon: Package, hint: "Đăng sản phẩm lên web, sửa ảnh, mô tả, giá và SEO." },
@@ -18427,12 +18490,16 @@ export default function SalesManager() {
     const params = new URLSearchParams(window.location.search);
     const wpId = params.get("webproduct");
     const poId = params.get("po"); // "?po=<id>": mở đơn nhập ở tab mới từ bảng công nợ NCC
-    if (!wpId && !poId) return;
+    const webSub = params.get("web"); // "?web=home|promo|content|settings|products": nút "Sửa trang này" trên web khách
+    if (!wpId && !poId && !webSub) return;
     const cu = accounts.find((a) => a.id === currentUserId);
     if (!cu || cu.role !== "admin") return;
     if (poId) {
       setTab("purchase");
       setNavTarget({ type: "po", id: poId });
+    } else if (!wpId && webSub) {
+      setTab("website");
+      setNavTarget({ type: "websub", sub: webSub });
     } else {
       setTab("website");
       setNavTarget({ type: "webproduct", id: wpId });
@@ -18440,6 +18507,7 @@ export default function SalesManager() {
     const url = new URL(window.location.href);
     url.searchParams.delete("webproduct");
     url.searchParams.delete("po");
+    url.searchParams.delete("web");
     window.history.replaceState({}, "", url);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded, currentUserId]);
@@ -18791,6 +18859,8 @@ export default function SalesManager() {
   }
 
   const currentUser = accounts.find((a) => a.id === currentUserId) || null;
+  // Cờ cho web khách (cùng tên miền) hiện nút "Sửa trang này". Chỉ quản trị viên; không gọi máy chủ.
+  try { if (currentUser?.role === "admin") localStorage.setItem("hili_staff", "1"); else if (currentUser) localStorage.removeItem("hili_staff"); } catch { /* bỏ qua */ }
   if (!currentUser && window.storage && window.storage.api) {
     return <ServerLogout pendingRef={pendingSaveRef} />;
   }

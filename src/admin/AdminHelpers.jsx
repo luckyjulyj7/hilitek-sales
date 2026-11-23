@@ -124,6 +124,52 @@ export function DueNotice({ items, label = "công nợ nhà cung cấp" }) {
   );
 }
 
+/* ---------- Mục thu gọn "Thông tin thêm" trong form ---------- */
+export function MoreFields({ id = "more", title = "Thông tin thêm", note, children }) {
+  const [open, setOpen] = usePref("more_" + id, false);
+  return (
+    <div className="my-3 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
+      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="w-full flex items-center gap-2 min-h-[44px] px-3 text-left text-sm">
+        <ChevronDown size={16} style={{ color: MUTE, transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }} />
+        <b className="font-semibold whitespace-nowrap shrink-0" style={{ color: TEXT }}>{title}</b>
+        {note && <span className="min-w-0 text-xs truncate" style={{ color: MUTE }}>{note}</span>}
+      </button>
+      {open && <div className="px-3 pb-3">{children}</div>}
+    </div>
+  );
+}
+
+/* ---------- Thanh "Sẵn sàng đăng web" ở đầu form sản phẩm ---------- */
+// items: [{ label, ok, target }] — target là id phần tử để cuộn tới khi bấm vào mục còn thiếu.
+export function ReadyChecklist({ items, published, onTogglePublish }) {
+  const done = items.filter((x) => x.ok).length;
+  const all = done === items.length;
+  const go = (id) => { const el = id && document.getElementById(id); if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); const f = el.querySelector?.("input,select,textarea") || el; f.focus?.({ preventScroll: true }); } };
+  return (
+    <div className="mb-4 rounded-lg p-3" style={{ background: all ? `${FOREST}0D` : `${INK}08`, border: `1px solid ${all ? FOREST + "55" : INK + "26"}` }}>
+      <div className="flex items-center gap-2 flex-wrap">
+        <b className="text-sm" style={{ color: all ? FOREST : INK }}>{all ? "Đủ thông tin để bán" : `Còn thiếu ${items.length - done} mục`}</b>
+        <span className="text-xs" style={{ color: MUTE }}>{done}/{items.length}</span>
+        {onTogglePublish && (
+          <label className="ml-auto inline-flex items-center gap-2 min-h-[32px] px-2.5 rounded-md text-xs font-semibold cursor-pointer" style={{ background: published ? FOREST : "#fff", color: published ? "#fff" : TEXT, border: `1px solid ${published ? FOREST : LINE}` }}>
+            <input type="checkbox" checked={!!published} onChange={(e) => onTogglePublish(e.target.checked)} className="w-4 h-4" />
+            {published ? "Đang đăng lên web" : "Đăng lên web"}
+          </label>
+        )}
+      </div>
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {items.map((x) => (
+          <button key={x.label} type="button" onClick={() => !x.ok && go(x.target)}
+            className="inline-flex items-center gap-1 min-h-[28px] px-2 rounded-full text-xs font-medium"
+            style={x.ok ? { background: `${FOREST}14`, color: FOREST, cursor: "default" } : { background: "#fff", color: RUST, border: `1px solid ${RUST}55` }}>
+            {x.ok ? "✓" : "+"} {x.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ---------- Nút chuyển chế độ xem kho ---------- */
 export function ViewModeToggle({ value, onChange }) {
   const opt = (id, Icon, label, title) => (

@@ -47,15 +47,16 @@ function useReveal(ref) {
   }, [ref]);
 }
 
+// Điện thoại/máy tính bảng: mọi ô bằng nhau, 2 cột (đỡ cuộn). Máy tính: lưới 12 cột như cũ.
 const SLOTS = [
-  "col-span-2 max-lg:min-h-[285px] lg:[grid-area:1/1/3/6]",
-  "col-span-2 max-lg:min-h-[215px] lg:[grid-area:1/6/2/13]",
-  "max-lg:min-h-[255px] lg:[grid-area:2/6/4/9]",
-  "lg:[grid-area:2/9/3/13] [&_h3]:max-w-[58%] [&_p]:max-w-[52%]",
-  "col-span-2 max-lg:min-h-[320px] lg:col-span-1 lg:[grid-area:3/9/5/13]",
-  "col-span-2 [&_h3]:max-w-[62%] [&_p]:max-w-[56%] lg:[grid-area:3/1/4/6]",
-  "col-span-2 [&_h3]:max-w-[56%] [&_p]:max-w-[52%] lg:[grid-area:4/1/5/5]",
-  "col-span-2 [&_h3]:max-w-[52%] [&_p]:max-w-[50%] lg:[grid-area:4/5/5/9]",
+  "lg:[grid-area:1/1/3/6]",
+  "lg:[grid-area:1/6/2/13]",
+  "lg:[grid-area:2/6/4/9]",
+  "lg:[grid-area:2/9/3/13] lg:[&_h3]:max-w-[58%] lg:[&_p]:max-w-[52%]",
+  "lg:col-span-1 lg:[grid-area:3/9/5/13]",
+  "lg:[grid-area:3/1/4/6] lg:[&_h3]:max-w-[62%] lg:[&_p]:max-w-[56%]",
+  "lg:[grid-area:4/1/5/5] lg:[&_h3]:max-w-[56%] lg:[&_p]:max-w-[52%]",
+  "lg:[grid-area:4/5/5/9] lg:[&_h3]:max-w-[52%] lg:[&_p]:max-w-[50%]",
 ];
 const TONES = { light: "bg-white text-ink", dark: "bg-ink text-white", navy: "bg-navy text-white", yellow: "bg-yellow text-ink" };
 // Vị trí ảnh tách nền theo từng ô của lưới.
@@ -73,6 +74,8 @@ const FAN = [["-rotate-6 z-10", "-mr-[7%]"], ["-rotate-2 z-20", "-mr-[7%]"], ["r
 
 /** Một ô danh mục. Nội dung lấy từ HOME_TILES nên chủ shop tự đổi tên, ảnh, link, giá. */
 function Tile({ t, slot, products, navigate }) {
+  // 4 ô đầu nằm ngay dưới banner: tải sớm, không đợi cuộn tới.
+  const ld = slot < 4 ? { loading: "eager", decoding: "async" } : { loading: "lazy", decoding: "async" };
   const tone = TONES[t.tone] ? t.tone : "light";
   const dark = tone === "dark" || tone === "navy";
   const style = ["cut", "photo", "side", "fan"].includes(t.style) ? t.style : "cut";
@@ -89,33 +92,35 @@ function Tile({ t, slot, products, navigate }) {
     <a
       {...link}
       data-tile={slot}
-      className={"group relative block min-h-[190px] lg:min-h-0 overflow-hidden rounded-2xl ring-1 transition duration-300 hover:-translate-y-0.5 hover:shadow-card " + (dark ? "ring-white/10 " : "ring-[#D9DFEE] ") + TONES[tone] + " " + SLOTS[slot]}
+      className={"hc-tile group relative block min-h-[178px] sm:min-h-[220px] lg:min-h-0 overflow-hidden rounded-2xl ring-1 transition duration-300 hover:-translate-y-0.5 hover:shadow-card " + (dark ? "ring-white/10 " : "ring-[#D9DFEE] ") + TONES[tone] + " " + SLOTS[slot]}
     >
       {style === "photo" && img && (
         <>
-          <img src={img} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]" style={t.pos ? { objectPosition: t.pos } : undefined} />
+          <img src={img} alt="" {...ld} className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]" style={t.pos ? { objectPosition: t.pos } : undefined} />
           <div className="absolute inset-0" style={{ background: "linear-gradient(90deg,rgba(6,10,42,.9),rgba(6,10,42,.5) 50%,transparent 85%)" }} />
         </>
       )}
-      {style === "side" && img && <img src={img} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover object-right transition duration-700 group-hover:scale-[1.03]" />}
+      {style === "side" && img && <img src={img} alt="" {...ld} className="absolute inset-0 h-full w-full object-cover object-right transition duration-700 group-hover:scale-[1.03]" />}
+      {/* Ô nhỏ trên điện thoại: phủ nền nhạt phía trên để chữ không đè lên ảnh */}
+      {style === "side" && img && <div className="absolute inset-0 lg:hidden" style={{ background: dark ? "linear-gradient(180deg,rgba(6,10,42,.9),rgba(6,10,42,.55) 45%,transparent 75%)" : "linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,.7) 45%,transparent 75%)" }} />}
       {style === "cut" && img && (
         <>
           {tone === "yellow" && <div className="absolute bottom-[-8%] left-[8%] h-[92%] w-[46%] -skew-x-[20deg] rounded-2xl bg-white/35 transition duration-700 group-hover:translate-x-3" />}
-          <img src={img} alt="" loading="lazy" className={CUT[slot] + (auto && !dark ? " mix-blend-multiply" : "") + " transition duration-700 group-hover:scale-[1.04]"} />
+          <img src={img} alt="" {...ld} className={"hc-img " + CUT[slot] + (auto && !dark ? " mix-blend-multiply" : "") + " transition duration-700 group-hover:scale-[1.04]"} />
         </>
       )}
       {style === "fan" && fan.length > 0 && (
-        <div className="absolute inset-y-0 right-[2%] flex w-[50%] items-center justify-end">
+        <div className="hc-fan absolute inset-y-0 right-[2%] flex w-[50%] items-center justify-end">
           {fan.map((f, i) => (
-            <img key={i} src={f} alt="" loading="lazy" className={"relative max-h-[78%] w-[31%] object-contain drop-shadow-[0_8px_8px_rgba(6,10,42,.22)] transition duration-500 group-hover:-translate-y-1 " + FAN[i][0] + " " + FAN[i][1]} />
+            <img key={i} src={f} alt="" {...ld} className={"relative max-h-[78%] w-[31%] object-contain drop-shadow-[0_8px_8px_rgba(6,10,42,.22)] transition duration-500 group-hover:-translate-y-1 " + FAN[i][0] + " " + FAN[i][1]} />
           ))}
         </div>
       )}
       <span className={"hc-key hc-num" + (tone === "yellow" ? "" : " y")} aria-hidden="true">{slot + 1}</span>
-      <div className="relative z-10 p-4 sm:p-5">
-        <h3 className="font-display text-[22px] sm:text-[26px] font-bold leading-tight">{t.title}</h3>
-        {t.sub && <p className={"mt-1 text-[14px] " + (dark ? "text-white/80" : "text-ink/70")}>{t.sub}</p>}
-        {price.from > 0 && <p className={"mt-2 font-display text-[20px] font-bold " + (dark ? "text-yellow" : "text-navy")}>Từ {formatVND(price.from)}</p>}
+      <div className="relative z-10 p-3.5 sm:p-5">
+        <h3 className="font-display text-[18px] sm:text-[24px] lg:text-[26px] font-bold leading-tight">{t.title}</h3>
+        {t.sub && <p className={"mt-1 hidden sm:block text-[14px] " + (dark ? "text-white/80" : "text-ink/70")}>{t.sub}</p>}
+        {price.from > 0 && <p className={"mt-1 sm:mt-2 font-display text-[15px] sm:text-[20px] font-bold " + (dark ? "text-yellow" : "text-navy")}>Từ {formatVND(price.from)}</p>}
       </div>
     </a>
   );
@@ -163,7 +168,7 @@ export default function Home({ catalog, navigate }) {
       {/* Danh mục */}
       <section className={WRAP + " hc-cats hc-rv pt-10"}>
         <H sub="Bấm phím số 1 đến 8 để nhảy nhanh tới danh mục">{HOME_TITLES.cats}</H>
-        <div className="grid grid-cols-2 gap-3 lg:auto-rows-[176px] lg:grid-cols-12">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:auto-rows-[176px] lg:grid-cols-12">
           {HOME_TILES.map((t, i) => <Tile key={t.id || i} t={t} slot={i} products={products} navigate={navigate} />)}
         </div>
       </section>

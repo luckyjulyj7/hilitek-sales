@@ -3,13 +3,12 @@ import {
   MapPin, Search, Phone, ShoppingCart, ChevronDown, Menu, X, Truck, PackageSearch,
   ShieldCheck, CreditCard, Wallet, Wrench, LayoutGrid, Gift,
 } from "lucide-react";
-import { SITE, MENU, FEATURES, LOYALTY, SUPPORT_LINKS, categoryBreadcrumb } from "../config.js";
+import { SITE, FEATURES, LOYALTY, SUPPORT_LINKS } from "../config.js";
 import { href } from "../router.js";
 import { useCart } from "../cart.jsx";
 import { LabLogo } from "./Logo.jsx";
-import CategoryRail from "./CategoryRail.jsx";
-import CategoryTree from "./CategoryTree.jsx";
-import { groupIcon } from "./groupIcons.js";
+import MegaMenu from "./MegaMenu.jsx";
+import MobileMenu from "./MobileMenu.jsx";
 import "./chrome.css";
 
 const ICONS = { CreditCard, Wallet, Truck, ShieldCheck, Wrench };
@@ -18,7 +17,6 @@ export default function Header({ route, navigate, drawer, setDrawer }) {
   const { count, bump } = useCart();
   const [term, setTerm] = useState(route.query.q || "");
   const [catOpen, setCatOpen] = useState(false);
-  const [mobileGroup, setMobileGroup] = useState(null);
   const [cartBump, setCartBump] = useState(false);
   const closeTimer = useRef(null);
   const searchRef = useRef(null);
@@ -181,7 +179,7 @@ export default function Header({ route, navigate, drawer, setDrawer }) {
           <div className="mx-auto max-w-[1500px] px-4 flex items-stretch">
             <div onMouseEnter={openCat} onMouseLeave={closeCat} className="relative">
               <button
-                onClick={() => setCatOpen((v) => !v)}
+                onClick={openCat} aria-expanded={catOpen} aria-haspopup="menu"
                 className={"hx-key hx-cat " + (catOpen ? "y" : "")}
               >
                 <LayoutGrid size={17} /> Danh mục sản phẩm
@@ -190,8 +188,8 @@ export default function Header({ route, navigate, drawer, setDrawer }) {
 
               {/* Menu sổ xuống — danh sách dọc, rê vào từng nhóm sẽ xổ ngang ra danh mục con */}
               {catOpen && (
-                <div className="absolute left-0 top-full z-50 w-[264px] pt-1">
-                  <CategoryRail navigate={go} hideHeading className="shadow-menu" />
+                <div className="absolute left-0 top-full z-50 pt-2">
+                  <MegaMenu navigate={go} onClose={() => setCatOpen(false)} />
                 </div>
               )}
             </div>
@@ -224,49 +222,18 @@ export default function Header({ route, navigate, drawer, setDrawer }) {
               <span className="font-display font-bold tracking-wide">DANH MỤC SẢN PHẨM</span>
               <button onClick={() => setDrawer(false)} aria-label="Đóng"><X size={22} /></button>
             </div>
-            <ul className="py-2">
-              {MENU.map((g) => {
-                const GIcon = groupIcon(g.icon);
-                return (
-                <li key={g.slug} className="border-b border-line">
-                  <button
-                    className="w-full flex items-center justify-between px-4 py-3 text-[15px] font-medium"
-                    onClick={() => setMobileGroup(mobileGroup === g.slug ? null : g.slug)}
-                  >
-                    <span className="flex items-center gap-2"><GIcon size={17} className="text-navy" /> {g.group}</span>
-                    <ChevronDown size={16} className={mobileGroup === g.slug ? "rotate-180" : ""} />
-                  </button>
-                  {mobileGroup === g.slug && (
-                    <div className="pb-2 px-6">
-                      <button
-                        onClick={() => go(href("/danh-muc", { group: g.group }).slice(1))}
-                        className="block py-1.5 text-[15px] text-navy font-medium"
-                      >
-                        Tất cả {g.group}
-                      </button>
-                      {(g.subs || []).length > 0 && (
-                        <CategoryTree
-                          nodes={g.subs}
-                          activeCat={route.query.cat || ""}
-                          activePath={route.query.cat ? categoryBreadcrumb(route.query.cat) : []}
-                          onSelect={(name) => go(href("/danh-muc", { group: g.group, cat: name }).slice(1))}
-                        />
-                      )}
-                    </div>
-                  )}
-                </li>
-                );
-              })}
+            <MobileMenu go={go} />
+            <ul className="py-2 border-t border-line">
               {SUPPORT_LINKS.map((l) => (
                 <li key={l.label} className="border-b border-line">
-                  <button onClick={() => go(l.to)} className="w-full text-left px-4 py-3 text-[15px]">{l.label}</button>
+                  <button onClick={() => go(l.to)} className="w-full text-left px-4 min-h-[48px] text-[15px]">{l.label}</button>
                 </li>
               ))}
               <li className="border-b border-line">
-                <button onClick={() => go("/tra-cuu-don-hang")} className="w-full text-left px-4 py-3 text-[15px]">Tra cứu đơn hàng</button>
+                <button onClick={() => go("/tra-cuu-don-hang")} className="w-full text-left px-4 min-h-[48px] text-[15px]">Tra cứu đơn hàng</button>
               </li>
               <li>
-                <button onClick={() => go("/lien-he")} className="w-full text-left px-4 py-3 text-[15px]">Liên hệ</button>
+                <button onClick={() => go("/lien-he")} className="w-full text-left px-4 min-h-[48px] text-[15px]">Liên hệ</button>
               </li>
             </ul>
             <div className="px-4 py-3 space-y-1.5">

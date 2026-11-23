@@ -137,3 +137,26 @@ html.hili-dark .nl-band button { background: #F7C600; color: #060A2A; }
 /* Khối phím HILITEK cuối trang chủ: nhỏ gọn hơn (K 11/11/2026). */
 .hc .hk { font-size: clamp(4px, .9vw, 9px); padding: clamp(14px, 2vw, 26px) 12px clamp(18px, 2.4vw, 30px); }
 .hc .hk-plate { max-width: 620px; }
+
+/* ===== Điện thoại & máy tính bảng: gọn, ít cuộn ===== */
+@media (max-width: 1023.98px) {
+  /* Ô danh mục: ảnh nằm góc phải dưới, cùng một kiểu cho mọi ô */
+  .hc-tile .hc-img { position: absolute !important; inset: auto 6px 6px auto !important; width: 64% !important; height: 54% !important; max-height: none !important; transform: none !important; object-fit: contain; object-position: right bottom; }
+  .hc-tile .hc-fan { inset: auto 4px 6px auto !important; width: 78% !important; height: 52% !important; }
+  /* Khối máy chơi game: 3 dòng máy nằm 1 hàng */
+  .hc-hh { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .hc-hh-in { grid-column: 1 / -1; }
+}
+@media (max-width: 639.98px) {
+  /* Hàng sản phẩm: vuốt ngang thay vì 4 dòng */
+  .pt-grid { grid-template-columns: none !important; grid-auto-flow: column; grid-auto-columns: 46%; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; scrollbar-width: none; }
+  .pt-grid::-webkit-scrollbar { display: none; }
+  .pt-grid > * { scroll-snap-align: start; }
+  .pt-grid > :nth-child(n+9) { display: flex; }
+  .pt-grid > :nth-child(n+13) { display: none; }
+  /* Máy chơi game: vuốt ngang */
+  .hc-hh { grid-template-columns: repeat(3, 74%); overflow-x: auto; scroll-snap-type: x mandatory; padding: 18px; scrollbar-width: none; }
+  .hc-hh::-webkit-scrollbar { display: none; }
+  .hc-tier { scroll-snap-align: start; }
+  .hc-tier img { aspect-ratio: 16/10; }
+}

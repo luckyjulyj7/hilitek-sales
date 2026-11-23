@@ -5,6 +5,7 @@ import { fetchCatalog, fetchWebConfig, takePrefetchedCatalog } from "./lib/api.j
 import { applyWebConfig } from "./lib/applyWebConfig.js";
 import { PAGES, NEWS_PATH } from "./config.js";
 import { trackPage, trackPath } from "./lib/track.js";
+import AdminEditBar from "./components/AdminEditBar.jsx";
 import { CatalogCtx } from "./catalogContext.js";
 import Header from "./components/Header.jsx";
 import Footer from "./components/Footer.jsx";
@@ -165,6 +166,7 @@ export default function App() {
       </main>
       <Footer navigate={route.navigate} />
       <FloatingContact />
+      <AdminEditBar path={route.path} />
       <BottomNav route={route} navigate={route.navigate} onOpenCategories={() => setDrawer(true)} />
       <OrderConfirmModal navigate={route.navigate} />
       <StockNotify />

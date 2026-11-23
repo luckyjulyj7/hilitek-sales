@@ -113,3 +113,28 @@
   -webkit-text-stroke: 1.5px rgba(255,255,255,.11); background: linear-gradient(180deg, rgba(255,255,255,.08), transparent 80%); -webkit-background-clip: text; background-clip: text; }
 .hx-bars { flex: none; width: clamp(64px, 12vw, 190px); height: auto; color: #F7C600; filter: drop-shadow(0 0 30px rgba(247,198,0,.25)); }
 .hx-legal { border-top: 1px solid rgba(255,255,255,.08); }
+
+/* Chân trang: nút tiêu đề cột (chỉ bấm được trên điện thoại/máy tính bảng) */
+.hx-colt { all: unset; display: flex; align-items: center; gap: 10px; width: 100%; cursor: default; }
+.hx-colchev { display: none; margin-left: auto; color: #F7C600; transition: transform .2s; }
+@media (max-width: 1023.98px) {
+  .hx-cols { gap: 0 32px; padding: 28px 0 16px; }
+  .hx-cols > div:first-child { padding-bottom: 16px; }
+  .hx-colc { border-top: 1px solid rgba(255,255,255,.08); }
+  .hx-colc h4 { margin: 0; }
+  .hx-colt { cursor: pointer; min-height: 52px; }
+  .hx-colchev { display: block; }
+  .hx-colc.open .hx-colchev { transform: rotate(180deg); }
+  .hx-colc:not(.open) ul { display: none; }
+  .hx-colc.open ul { padding-bottom: 14px; }
+  .hx-map { display: none; }
+  .hx-contact { gap: 10px; }
+  .hx-cc { padding: 14px 16px; }
+}
+
+/* Trang sản phẩm, điện thoại: "Mua kèm" / "Tương tự" vuốt ngang thay vì 4-5 dòng */
+@media (max-width: 639.98px) {
+  .pd-rel { display: flex !important; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding-bottom: 4px; }
+  .pd-rel::-webkit-scrollbar { display: none; }
+  .pd-rel > * { flex: 0 0 46%; scroll-snap-align: start; }
+}

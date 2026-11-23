@@ -1,5 +1,5 @@
 import React from "react";
-import { MapPin, MessageCircle, Phone } from "lucide-react";
+import { MapPin, MessageCircle, Phone, ChevronDown } from "lucide-react";
 import { SITE, MENU, NEWS_PATH, POLICY_LINKS } from "../config.js";
 import { href } from "../router.js";
 import { LabLogo } from "./Logo.jsx";
@@ -26,10 +26,16 @@ function Card({ icon: Icon, label, title, note, go, ...link }) {
   );
 }
 
+/** Cột link. Điện thoại/máy tính bảng: thu gọn, bấm tiêu đề để mở (đỡ cuộn). Máy tính: luôn mở. */
 function Column({ title, children }) {
+  const [open, setOpen] = React.useState(false);
   return (
-    <div>
-      <h4>{title}</h4>
+    <div className={"hx-colc" + (open ? " open" : "")}>
+      <h4>
+        <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="hx-colt">
+          {title}<ChevronDown size={18} className="hx-colchev" />
+        </button>
+      </h4>
       <ul>{children}</ul>
     </div>
   );
