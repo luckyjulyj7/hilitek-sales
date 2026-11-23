@@ -45,7 +45,7 @@
 @media (max-width: 1023.98px) { .hx-cols ul { gap: 2px; } .hx-cols ul a { display: inline-flex; align-items: center; min-height: 40px; } }
 
 .hx-nav { background: rgba(7,11,34,.92); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,.06); }
-.hx-cat { height: 38px; margin: 6px 0; padding: 0 16px; font-size: 14px; text-transform: uppercase; letter-spacing: .03em; }
+.hx-cat { height: 38px; margin: 6px 0; padding: 0 16px; font-size: 14px; white-space: nowrap; text-transform: uppercase; letter-spacing: .03em; }
 .hx-link { position: relative; display: inline-flex; align-items: center; gap: 7px; height: 50px; padding: 0 12px; font-size: 14px; color: rgba(255,255,255,.82); transition: color .2s; }
 .hx-link::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 10px; height: 2px; background: #F7C600; transform: scaleX(0); transform-origin: left; transition: transform .3s cubic-bezier(.2,.7,.2,1); }
 .hx-link:hover { color: #fff; }
@@ -138,3 +138,16 @@
   .pd-rel::-webkit-scrollbar { display: none; }
   .pd-rel > * { flex: 0 0 46%; scroll-snap-align: start; }
 }
+
+/* ===== Dùng bàn phím: viền vàng rõ ở nút/link đang chọn (chuột bấm thì không hiện) ===== */
+.hx-foot :focus-visible, header :focus-visible, main :focus-visible, nav :focus-visible { outline: 2px solid #F7C600; outline-offset: 2px; border-radius: 6px; }
+main a:focus-visible img { outline: none; }
+
+/* ===== Khách đã bật "giảm chuyển động" trên máy: tắt hiệu ứng chạy, trượt, phóng to ===== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+  .hc-rv { opacity: 1 !important; transform: none !important; }
+}
+
+/* Laptop nhỏ (1024–1279px): thanh menu chỉ giữ 3 link đầu để không xuống dòng. */
+@media (max-width: 1279.98px) { .hx-link.xl-only { display: none; } .hx-link { padding: 0 9px; font-size: 13.5px; } }

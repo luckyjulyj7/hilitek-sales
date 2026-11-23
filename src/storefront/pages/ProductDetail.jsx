@@ -376,7 +376,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
               <>
                 <div ref={descRef} className="relative overflow-hidden transition-[max-height] duration-300"
                   style={{ maxHeight: descExpanded ? 20000 : descOverflows ? DESC_MAX : "none" }}>
-                  <div className="pd-desc"><RichText text={descText} /></div>
+                  <div className="pd-desc"><RichText text={descText} imgAlt={p.name} /></div>
                   {!descExpanded && descOverflows && <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-white to-transparent" />}
                 </div>
                 {descOverflows && (
@@ -725,7 +725,7 @@ function VariantPicker({ product, onPick, attrsOverride }) {
                   >
                     {swatch(key, val) && <img src={swatch(key, val)} alt="" loading="lazy" className="mx-auto mb-1 h-11 w-11 rounded object-contain bg-white" />}
                     {val}
-                    {!anyInStock && <span className="block text-[11px] font-normal text-mute">Tạm hết</span>}
+                    {!anyInStock && <span className="block text-[12px] font-normal text-mute">Tạm hết</span>}
                   </button>
                 );
               })}

@@ -130,7 +130,7 @@ export default function OrderLookup() {
                           <span className={"w-7 h-7 grid place-items-center rounded-full text-[13px] font-bold " + (done ? "bg-navy text-white" : "bg-navy-050 text-mute")}>
                             {done ? <CheckCircle2 size={15} /> : i + 1}
                           </span>
-                          <span className={"mt-1 text-[11px] leading-tight max-w-[72px] " + (done ? "text-ink font-medium" : "text-mute")}>{s.label}</span>
+                          <span className={"mt-1 text-[12px] leading-tight max-w-[72px] " + (done ? "text-ink font-medium" : "text-mute")}>{s.label}</span>
                         </div>
                         {i < SHIP_STEPS.length - 1 && (
                           <span className={"flex-1 h-[2px] mx-1 " + (i < activeIdx ? "bg-navy" : "bg-line")} />

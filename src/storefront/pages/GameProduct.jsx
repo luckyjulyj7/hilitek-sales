@@ -461,7 +461,7 @@ export default function GameProduct({ p, navigate, catalog }) {
       {descText && (
         <section className="sec wrap">
           <h2 className="rise">Giới thiệu sản phẩm</h2>
-          <div className="rise"><div className={"rich" + (more ? " open" : "")}><RichText text={descText} /></div></div>
+          <div className="rise"><div className={"rich" + (more ? " open" : "")}><RichText text={descText} imgAlt={p.name} /></div></div>
           {!more && <button className="btn o moreb" type="button" onClick={() => setMore(true)}>Xem thêm</button>}
         </section>
       )}

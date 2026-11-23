@@ -32,7 +32,7 @@ export default function FlashSaleCard({ product, onOpen, navigate }) {
           <img src={img} alt={p.name} loading="lazy" className="w-full h-full object-contain" />
         </div>
         {off > 0 && (
-          <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 inline-flex items-center gap-0.5 bg-gradient-to-br from-[#ff4b2b] to-[#c40812] text-white text-[11px] sm:text-[12px] font-extrabold px-1.5 sm:px-2 py-0.5 rounded-full animate-emberglow">
+          <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 inline-flex items-center gap-0.5 bg-gradient-to-br from-[#ff4b2b] to-[#c40812] text-white text-[12px] font-extrabold px-1.5 sm:px-2 py-0.5 rounded-full animate-emberglow">
             <ArrowDown size={10} strokeWidth={3} /> {off}%
           </span>
         )}

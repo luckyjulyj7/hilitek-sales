@@ -230,6 +230,38 @@ export default function Catalog({ catalog, route, navigate }) {
         <p className="mt-3 text-[16px] text-white/80">
           {(() => { const ready = list.filter((x) => x.stock > 0).length; return ready === list.length ? `${list.length} mẫu, tất cả có sẵn giao ngay.` : `${list.length} mẫu, ${ready} mẫu có sẵn giao ngay. Mẫu tạm hết vẫn đặt trước được.`; })()}
         </p>
+        {/* Danh mục con kèm số mẫu: khách bấm 1 lần vào đúng loại; thêm liên kết nội bộ cho Google. */}
+        {!q && (cat || group) && (() => {
+          const find = (nodes, name) => { for (const n of nodes || []) { if (n.name === name || n.group === name) return n; const f = find(n.subs, name); if (f) return f; } return null; };
+          const node = cat ? find(MENU, cat) : MENU.find((g) => g.group === group);
+          const subs = (node?.subs || []).map((n) => ({ n, c: products.filter((p) => productInCategory(p, n.name)).length })).filter((x) => x.c > 0);
+          if (!subs.length) return null;
+          return (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {subs.map(({ n, c }) => {
+                const to = href("/danh-muc", { cat: n.name }); // khớp canonical (chỉ ?cat=)
+                return (
+                  <a key={n.slug || n.name} href={to} onClick={(e) => { e.preventDefault(); navigate(to.slice(1)); }}
+                    className="inline-flex items-center gap-2 min-h-[40px] px-3.5 rounded-full bg-white/10 hover:bg-yellow hover:text-ink text-white text-[14px] font-medium ring-1 ring-white/15 transition">
+                    {n.name} <span className="text-[12px] opacity-70">{c}</span>
+                  </a>
+                );
+              })}
+            </div>
+          );
+        })()}
+        {/* Giới thiệu ngắn dựng từ dữ liệu thật: thương hiệu, khoảng giá, cam kết. Vừa giúp khách nắm nhanh, vừa có chữ cho Google. */}
+        {(cat || group) && !q && list.length > 0 && (() => {
+          const brands = [...new Set(list.map((x) => x.brand).filter(Boolean))].sort((a, b) => a.localeCompare(b, "vi"));
+          const prices = list.map((x) => Number(x.price)).filter((x) => x > 0);
+          const lo = prices.length ? Math.min(...prices) : 0, hi = prices.length ? Math.max(...prices) : 0;
+          return (
+            <p className="mt-2 max-w-[760px] text-[15px] leading-relaxed text-white/75">
+              {title} chính hãng tại Hilitek{brands.length ? <> từ {brands.slice(0, 6).join(", ")}{brands.length > 6 ? " và hãng khác" : ""}</> : null}
+              {lo > 0 ? <>, giá từ <b className="text-yellow">{lo.toLocaleString("vi-VN")}đ</b>{hi > lo ? ` đến ${hi.toLocaleString("vi-VN")}đ` : ""}</> : null}. Đủ hoá đơn VAT, bảo hành theo số serial, giao nhanh toàn quốc.
+            </p>
+          );
+        })()}
       </div>
     </section>
     <div className="mx-auto max-w-[1500px] px-4 py-6 font-sans">

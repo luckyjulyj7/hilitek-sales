@@ -105,6 +105,23 @@ function useSoundCards(ref, deps) {
         note(card, "Âm thanh đang được cập nhật, bạn thử lại sau");
       });
     };
+    // File âm thanh không còn (404) thì ẩn thẻ, khách khỏi bấm vào nút không kêu. Chỉ đọc vài byte đầu
+    // từ media.hilipc.vn (không qua Worker). iPhone không tải trước nên thẻ vẫn hiện, bấm sẽ báo "đang cập nhật".
+    root.querySelectorAll(".hili-sound").forEach((card) => {
+      const probe = new Audio();
+      probe.preload = "metadata";
+      probe.addEventListener("error", () => {
+        card.style.display = "none";
+        const group = card.closest(".hili-sound-group");
+        if (group && ![...group.querySelectorAll(".hili-sound")].some((c) => c.style.display !== "none")) {
+          group.style.display = "none";
+          // Tiêu đề "Nghe thử..." ngay trên khối cũng ẩn theo.
+          const h = group.previousElementSibling;
+          if (h && /^H[1-4]$/.test(h.tagName) && /nghe/i.test(h.textContent)) h.style.display = "none";
+        }
+      }, { once: true });
+      probe.src = card.getAttribute("data-src");
+    });
     root.addEventListener("click", onClick);
     return () => { root.removeEventListener("click", onClick); stop(); };
   }, deps); // eslint-disable-line react-hooks/exhaustive-deps
@@ -140,7 +157,7 @@ function parseInline(text) {
  *  - dòng là video YouTube: dán link youtube.com/watch?v=... hoặc youtu.be/... -> nhúng khung phát
  * Dùng chung cho mô tả sản phẩm + trang nội dung / landing.
  */
-export default function RichText({ text, className = "" }) {
+export default function RichText({ text, className = "", imgAlt = "" }) {
   const raw = String(text || "");
   const htmlRef = useRef(null);
   useSoundCards(htmlRef, [raw]); // nút phát cho thẻ âm thanh (chỉ có tác dụng với mô tả HTML)
@@ -149,7 +166,11 @@ export default function RichText({ text, className = "" }) {
   if (/^\s*</.test(raw)) {
     // Ảnh trong mô tả chỉ tải khi khách cuộn tới (mô tả nhiều ảnh không làm chậm lúc mở trang).
     // Dòng link tới file .mp3 đứng riêng -> thẻ nghe thử (xem soundCards ở trên).
-    const html = soundCards(raw.replace(/<img(?![^>]*\bloading=)/gi, '<img loading="lazy" decoding="async"'));
+    // Ảnh không có chữ thay thế: gắn tên sản phẩm (Google Hình ảnh đọc được, trình đọc màn hình hiểu).
+    const altAttr = String(imgAlt || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    let html = raw.replace(/<img(?![^>]*\bloading=)/gi, '<img loading="lazy" decoding="async"');
+    if (altAttr) { let n = 0; html = html.replace(/<img\b(?![^>]*\balt=)/gi, () => `<img alt="${altAttr} - ảnh ${++n}"`); }
+    html = soundCards(html);
     loadDescFonts(fontsInHtml(raw)); // mô tả có dùng font riêng thì mới tải font đó
     return <div ref={htmlRef} className={"ql-content space-y-3 text-[15px] text-ink/80 leading-relaxed " + className} dangerouslySetInnerHTML={{ __html: html }} />;
   }

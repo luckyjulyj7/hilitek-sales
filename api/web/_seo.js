@@ -100,15 +100,21 @@ export function catalogUrl({ group, cat, brand } = {}) {
 }
 
 /** Đầu trang danh mục. Trang tìm kiếm không cho lập chỉ mục để tránh hàng loạt trang rác. */
-export function catalogHead({ group, cat, brand, q } = {}) {
+export function catalogHead({ group, cat, brand, q } = {}, stats = null) {
   const name = cat || group || "";
   const full = name ? (brand ? `${name} ${brand}` : name) : (brand || "");
+  // stats = { count, brands, min } từ dữ liệu thật (nếu có) -> mô tả cụ thể hơn, Google hay hiện nguyên câu.
+  const extra = stats && stats.count
+    ? ` ${stats.count} mẫu${stats.brands && stats.brands.length && !brand ? ` từ ${stats.brands.slice(0, 4).join(", ")}` : ""}${stats.min ? `, giá từ ${Number(stats.min).toLocaleString("vi-VN")}đ` : ""}.`
+    : "";
   return {
     title: full ? `${full} chính hãng, giá tốt | ${BRAND}` : `Tất cả sản phẩm | ${BRAND}`,
     desc: full
-      ? `Mua ${full} chính hãng tại ${BRAND}. Đủ hoá đơn VAT, giao nhanh toàn quốc, bảo hành theo serial.`
+      ? plainText(`Mua ${full} chính hãng tại ${BRAND}.${extra} Đủ hoá đơn VAT, giao nhanh toàn quốc, bảo hành theo serial.`, 200)
       : `Linh kiện PC, gaming gear, màn hình và phần mềm bản quyền chính hãng tại ${BRAND}.`,
     url: catalogUrl({ group, cat, brand }),
+    // Ảnh chia sẻ Facebook/Zalo: mẫu nổi bật của danh mục thay vì ảnh chung của shop.
+    ...(stats && stats.image ? { image: stats.image } : {}),
     robots: q ? "noindex,follow" : "",
     noscript: `<h1>${esc(full || "Tất cả sản phẩm")}</h1>`,
   };

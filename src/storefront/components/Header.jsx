@@ -200,13 +200,13 @@ export default function Header({ route, navigate, drawer, setDrawer }) {
             </div>
 
             <div className="flex items-center gap-1 pl-3">
-              {SUPPORT_LINKS.map((l) => {
+              {SUPPORT_LINKS.map((l, i) => {
                 const Icon = ICONS[l.icon] || Wrench;
                 return (
                   <button
                     key={l.label}
                     onClick={() => go(l.to)}
-                    className="hx-link"
+                    className={"hx-link whitespace-nowrap" + (i >= 3 ? " xl-only" : "")}
                   >
                     <Icon size={15} /> {l.label}
                   </button>

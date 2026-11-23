@@ -34,7 +34,10 @@ export default async function handler(req, res) {
       const slug = p.slug || "";
       if (!slug || seen.has(slug)) continue;
       seen.add(slug);
-      urls.push({ loc: `${SITE_URL}/san-pham/${slug}`, priority: "0.7" });
+      // Ảnh sản phẩm (tối đa 3) để lên Google Hình ảnh — nguồn khách miễn phí.
+      const imgs = (p.images || []).map((i) => (i && (i.src || i)) || "").filter(Boolean).slice(0, 3)
+        .map((u) => (/^https?:/i.test(u) ? u : `${SITE_URL}${u.startsWith("/") ? "" : "/"}${u}`).replace(`${SITE_URL}/media/`, "https://media.hilipc.vn/"));
+      urls.push({ loc: `${SITE_URL}/san-pham/${slug}`, priority: "0.7", images: imgs });
     }
   } catch (e) {
     // Đọc dữ liệu lỗi (VD chưa cấu hình Supabase) vẫn trả sitemap tối thiểu thay vì lỗi trắng trang.
@@ -42,8 +45,10 @@ export default async function handler(req, res) {
 
   const body =
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
-    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    urls.map((u) => `  <url><loc>${escapeXml(u.loc)}</loc><priority>${u.priority}</priority></url>`).join("\n") +
+    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n` +
+    urls.map((u) => `  <url><loc>${escapeXml(u.loc)}</loc><priority>${u.priority}</priority>` +
+      (u.images || []).map((i) => `<image:image><image:loc>${escapeXml(i)}</image:loc></image:image>`).join("") +
+      `</url>`).join("\n") +
     `\n</urlset>\n`;
 
   res.setHeader("Content-Type", "application/xml; charset=utf-8");

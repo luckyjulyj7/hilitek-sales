@@ -96,7 +96,21 @@ export default async function handler(req, res) {
         type: page.news ? "article" : "website",
       }), cache);
     }
-    return send(res, 200, applyHead(html, catalogHead(q)), cache);
+    // Số liệu thật cho mô tả danh mục (chỉ trang theo danh mục, không phải trang tìm kiếm).
+    let stats = null;
+    if (q.cat && !q.q) {
+      try {
+        const cat = String(q.cat), brand = q.brand ? String(q.brand) : "";
+        const list = ((await readWebCached()).details || []).filter((p) => (p.category === cat || (p.categories || []).includes(cat)) && (!brand || p.brand === brand));
+        const prices = list.map((p) => Number(p.price)).filter((x) => x > 0);
+        const top = list.filter((p) => Number(p.stock) > 0 && (p.images || []).length).sort((a, b) => Number(b.price) - Number(a.price))[0];
+        const img = top ? (top.images[0].src || top.images[0]) : "";
+        // Đếm theo MẪU (gộp các màu/phiên bản cùng nhóm), khớp số mẫu khách thấy trên trang.
+        const models = new Set(list.map((p) => p.variantGroupId || p.slug || p.id)).size;
+        stats = { count: models, brands: [...new Set(list.map((p) => p.brand).filter(Boolean))].sort(), min: prices.length ? Math.min(...prices) : 0, image: img };
+      } catch { stats = null; }
+    }
+    return send(res, 200, applyHead(html, catalogHead(q, stats)), cache);
   } catch (e) {
     // Lỗi đọc dữ liệu: vẫn trả trang để khách mua được, chỉ thiếu SEO riêng trong lượt này.
     return send(res, 200, html, "no-store");
