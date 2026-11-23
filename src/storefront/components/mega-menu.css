@@ -27,8 +27,8 @@
 .mm-card { display: flex; flex-direction: column; border-radius: 14px; background: #fff; border: 1px solid #E6E9F2; transition: border-color .15s, box-shadow .2s, transform .2s; }
 .mm-card:hover { border-color: #1E2A8A; box-shadow: 0 12px 26px -16px rgba(30,42,138,.45); transform: translateY(-2px); }
 .mm-card-main { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px 14px 12px; }
-.mm-thumb { display: grid; place-items: center; width: 100%; height: 96px; margin-bottom: 8px; border-radius: 10px; background: #F6F7FB; color: #1E2A8A; overflow: hidden; }
-.mm-thumb img { width: 100%; height: 100%; padding: 6px; object-fit: contain; mix-blend-mode: multiply; transition: transform .3s; }
+.mm-thumb { position: relative; display: grid; place-items: center; width: 100%; height: 96px; margin-bottom: 8px; border-radius: 10px; background: #F6F7FB; color: #1E2A8A; overflow: hidden; }
+.mm-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; padding: 6px; object-fit: contain; mix-blend-mode: multiply; transition: transform .3s; }
 .mm-card:hover .mm-thumb img { transform: scale(1.06); }
 .mm-card-t { font-weight: 600; font-size: 14px; line-height: 1.3; color: #0B1230; }
 .mm-card-n { font-size: 12.5px; color: #5A6484; }
@@ -60,7 +60,7 @@
 .mx-subs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 14px 14px; }
 .mx-sub { display: flex; flex-direction: column; gap: 2px; padding: 10px; border-radius: 14px; background: #fff; border: 1px solid #E6E9F2; text-align: left; }
 .mx-sub .mm-thumb { height: 72px; margin-bottom: 6px; }
-.mx-sub .mm-thumb img { width: 100%; height: 100%; }
+
 .mm-card.empty { opacity: .62; } .mm-card.empty:hover { opacity: 1; }
 .mx-sec { padding: 4px 14px 14px; }
 .mx-sec h4 { margin: 6px 0 8px; font: 700 12px "Chakra Petch", system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #5A6484; }

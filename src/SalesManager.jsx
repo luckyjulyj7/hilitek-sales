@@ -15921,7 +15921,10 @@ function WebProducts({ products, setProducts, suppliers, categories, brands, cur
                             className="font-medium leading-tight hover:underline" style={{ color: TEXT }}>
                             {indent ? (vLabel || p.name) : p.name}{!indent && vLabel && <span className="opacity-60"> — {vLabel}</span>}
                           </a>
-                          <div className="text-xs opacity-60" style={{ fontFamily: "'Inter', sans-serif" }}>{p.sku}</div>
+                          <div className="text-xs" style={{ fontFamily: "'Inter', sans-serif" }}>
+                            <span className="opacity-60">{p.sku}</span>
+                            {p.web?.published && <a href={`/san-pham/${p.web?.slug || webSlugify(p.name) || webSlugify(p.sku || "")}`} target="_blank" rel="noopener" className="ml-2 font-medium hover:underline" style={{ color: BLUE }} title="Mở sản phẩm này trên hilipc.vn">Xem trên web ↗</a>}
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -19124,6 +19127,9 @@ export default function SalesManager() {
               );
             })}
           </nav>
+          <a href="/" target="_blank" rel="noopener" className="mt-3 flex items-center gap-2.5 px-3 py-2 rounded-md text-sm w-full" style={{ color: "#E4E7F7", border: "1px solid rgba(255,255,255,0.18)" }} title="Mở trang web khách hilipc.vn ở tab mới">
+            <Globe size={17} className="shrink-0" /> Mở trang hilipc.vn <span className="ml-auto opacity-70">↗</span>
+          </a>
           {currentUser.role === "admin" && (
             <div className="mt-3 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.12)" }}>
               <NotificationBell

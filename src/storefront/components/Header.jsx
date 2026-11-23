@@ -102,7 +102,12 @@ export default function Header({ route, navigate, drawer, setDrawer }) {
           </button>
 
           {/* LOGO — góc trên bên trái, kèm tên Hilitek */}
-          <a href="/" onClick={(e) => { e.preventDefault(); go("/"); }} className="shrink-0">
+          <a href="/" aria-label="Hilitek — về trang chủ" onClick={(e) => {
+            e.preventDefault();
+            // Đang ở trang chủ: cuộn lên đầu trang. Trang khác: về trang chủ.
+            if (route.path === "/") { setDrawer(false); setCatOpen(false); const y0 = window.scrollY; window.scrollTo({ top: 0, behavior: "smooth" }); setTimeout(() => { if (window.scrollY === y0) window.scrollTo(0, 0); }, 250); }
+            else go("/");
+          }} className="shrink-0">
             <LabLogo size={46} textClass="text-xl sm:text-[23px] text-white" />
           </a>
 
