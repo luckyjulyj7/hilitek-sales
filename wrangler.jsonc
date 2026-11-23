@@ -24,6 +24,8 @@
     "run_worker_first": [
       "/api/*", "/media/*", "/sitemap.xml",
       "/san-pham/*", "/danh-muc", "/may-choi-game-cam-tay", "/tin-tuc", "/trang/*",
+      "/lien-he", "/bao-hanh", "/xay-dung-cau-hinh", "/huong-dan-thanh-toan", "/chinh-sach-bao-hanh", "/chinh-sach-giao-hang",
+      "/chinh-sach-bao-mat", "/chinh-sach-doi-tra", "/quyen-nghia-vu", "/dieu-khoan-website", "/chinh-sach-kiem-hang", "/chinh-sach-van-chuyen",
       "/quanlybanhang", "/quanlybanhang/*"
     ]
   },

@@ -68,7 +68,10 @@ function mediaHostRewriter(env) {
 
 // Khoá cache chỉ giữ tham số handler thật sự dùng: link có thêm "&x=123", "?utm_..." hay "?fbclid=..."
 // vẫn trúng cache, không chạy lại handler + đọc D1 (khách chia sẻ link Facebook luôn có fbclid).
-const CACHE_PARAMS = { "/api/web/product": ["slug"], "/api/web/config": ["landing"] };
+// Tham số được giữ trong khoá cache. /danh-muc PHẢI giữ cat/group/brand/q, nếu không mọi trang danh mục
+// dùng chung 1 bản HTML (tiêu đề + canonical sai, lỗi SEO 23/11/2026).
+const CACHE_PARAMS = { "/api/web/product": ["slug"], "/api/web/config": ["landing"], "/danh-muc": ["cat", "group", "brand", "q"] };
+const INFO_PATHS = new Set(["/lien-he", "/bao-hanh", "/xay-dung-cau-hinh", "/huong-dan-thanh-toan", "/chinh-sach-bao-hanh", "/chinh-sach-giao-hang", "/chinh-sach-bao-mat", "/chinh-sach-doi-tra", "/quyen-nghia-vu", "/dieu-khoan-website", "/chinh-sach-kiem-hang", "/chinh-sach-van-chuyen"]);
 function edgeCacheKey(request) {
   const u = new URL(request.url);
   const keepList = CACHE_PARAMS[u.pathname] || [];
@@ -163,6 +166,8 @@ export default {
       if (p === "/may-choi-game-cam-tay") return withEdgeCache(request, ctx, () => run(page, { landing: "handheld" }), env);
       if (p === "/tin-tuc") return withEdgeCache(request, ctx, () => run(page, { landing: "news" }), env);
       if ((m = /^\/trang\/([^/]+)\/?$/.exec(p))) return withEdgeCache(request, ctx, () => run(page, { trang: decodeURIComponent(m[1]) }), env);
+      // Trang thông tin (chính sách, liên hệ...): gắn tiêu đề + canonical riêng, không để trùng trang chủ.
+      if (INFO_PATHS.has(p)) return withEdgeCache(request, ctx, () => run(page, { info: p }), env);
       if (p === "/quanlybanhang" || p.startsWith("/quanlybanhang/")) return asset(env, origin, "/admin.html", request);
       // Còn lại (/, /shop, đường dẫn của web khách): shop.html — React tự dựng trang.
       return asset(env, origin, "/shop.html", request);

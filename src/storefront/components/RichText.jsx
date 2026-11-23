@@ -26,16 +26,52 @@ function soundCards(html) {
 }
 
 // Phát / dừng cho các thẻ âm thanh trong 1 khối nội dung (bắt sự kiện ở khối cha).
+// Dùng Web Audio: mở khoá ngay trong cú bấm (iPhone/Android mới cho phát), hẹn giờ chính xác cho
+// nhịp gõ, to hơn qua bộ khuếch đại + nén, và vẫn kêu khi iPhone gạt im lặng (audioSession = playback).
+// File lấy qua /media/ cùng tên miền (media.hilipc.vn không mở CORS). Chỉ tốn lượt Worker khi khách bấm nghe.
+let actx = null, outNode = null;
+const bufCache = new Map();
+function audioCtx() {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  if (!actx) {
+    actx = new AC();
+    const gain = actx.createGain(); gain.gain.value = 2.2;
+    const comp = actx.createDynamicsCompressor();
+    comp.threshold.value = -10; comp.knee.value = 6; comp.ratio.value = 8;
+    gain.connect(comp).connect(actx.destination);
+    outNode = gain;
+  }
+  return actx;
+}
+const sameOrigin = (src) => src.replace(/^https?:\/\/media\.hilipc\.vn\//, "/media/");
+function loadBuffer(ctx, src) {
+  const url = sameOrigin(src);
+  if (!bufCache.has(url)) {
+    bufCache.set(url, fetch(url).then((r) => {
+      if (!r.ok || /text\/html/.test(r.headers.get("content-type") || "")) throw new Error("missing");
+      return r.arrayBuffer();
+    }).then((ab) => new Promise((ok, bad) => ctx.decodeAudioData(ab, ok, bad))).catch((e) => { bufCache.delete(url); throw e; }));
+  }
+  return bufCache.get(url);
+}
+
 function useSoundCards(ref, deps) {
   useEffect(() => {
     const root = ref.current;
     if (!root) return undefined;
-    let timers = [];
+    let sources = [];
+    let timer = null;
     let playing = null;
     const stop = () => {
-      timers.forEach(clearTimeout); timers = [];
+      sources.forEach((s) => { try { s.stop(); } catch { /* đã dừng */ } }); sources = [];
+      clearTimeout(timer);
       if (playing) playing.classList.remove("is-playing");
       playing = null;
+    };
+    const note = (card, text) => {
+      const tag = card.querySelector(".hili-sound__tag");
+      if (tag) { const old = tag.textContent; tag.textContent = text; setTimeout(() => { tag.textContent = old; }, 4000); }
     };
     const onClick = (e) => {
       // Bấm bất kỳ đâu trên thẻ cũng phát/dừng (không bắt buộc trúng nút ▶).
@@ -43,29 +79,31 @@ function useSoundCards(ref, deps) {
       if (!card || !root.contains(card)) return;
       if (playing === card) { stop(); return; }
       stop();
-      const src = card.getAttribute("data-src");
-      const base = new Audio(src);
-      base.preload = "auto";
+      const ctx = audioCtx();
+      if (!ctx) { note(card, "Trình duyệt này không phát được âm thanh"); return; }
+      try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch { /* trình duyệt cũ */ }
+      // Mở khoá âm thanh NGAY trong cú bấm (bắt buộc trên iPhone): phát 1 mẫu im lặng.
+      if (ctx.state !== "running") ctx.resume();
+      const unlock = ctx.createBufferSource(); unlock.buffer = ctx.createBuffer(1, 1, 22050); unlock.connect(ctx.destination); unlock.start(0);
       playing = card;
       card.classList.add("is-playing");
-      const startPattern = () => {
-        const dur = base.duration;
-        if (!isFinite(dur) || dur > 1) {
-          base.currentTime = 0;
-          base.play().catch(stop);
-          base.onended = stop;
+      loadBuffer(ctx, card.getAttribute("data-src")).then((buf) => {
+        if (playing !== card) return;
+        const play = (at) => { const s = ctx.createBufferSource(); s.buffer = buf; s.connect(outNode); s.start(at); sources.push(s); };
+        const t0 = ctx.currentTime + 0.05;
+        if (buf.duration > 1) {
+          play(t0);
+          timer = setTimeout(stop, buf.duration * 1000 + 200);
           return;
         }
-        // Nhịp gõ: 14 tiếng, khoảng cách 110-200ms (giống người gõ thật, không đều tăm tắp).
+        // File chỉ 1 tiếng gõ: phát 14 tiếng theo nhịp người gõ thật (110-200ms, không đều).
         let t = 0;
-        for (let i = 0; i < 14; i++) {
-          timers.push(setTimeout(() => { const a = base.cloneNode(); a.volume = 0.9; a.play().catch(() => {}); }, t));
-          t += 110 + Math.round(Math.random() * 90);
-        }
-        timers.push(setTimeout(stop, t + 300));
-      };
-      if (base.readyState >= 1) startPattern();
-      else { base.addEventListener("loadedmetadata", startPattern, { once: true }); base.addEventListener("error", stop, { once: true }); base.load(); }
+        for (let i = 0; i < 14; i++) { play(t0 + t / 1000); t += 110 + Math.round(Math.random() * 90); }
+        timer = setTimeout(stop, t + 400);
+      }).catch(() => {
+        if (playing === card) stop();
+        note(card, "Âm thanh đang được cập nhật, bạn thử lại sau");
+      });
     };
     root.addEventListener("click", onClick);
     return () => { root.removeEventListener("click", onClick); stop(); };

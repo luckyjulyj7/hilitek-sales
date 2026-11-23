@@ -21,6 +21,8 @@ export default async function handler(req, res) {
     { loc: `${SITE_URL}/lien-he`, priority: "0.4" },
     { loc: `${SITE_URL}/chinh-sach-bao-hanh`, priority: "0.4" },
     { loc: `${SITE_URL}/chinh-sach-giao-hang`, priority: "0.4" },
+    ...["/chinh-sach-doi-tra", "/huong-dan-thanh-toan", "/chinh-sach-bao-mat", "/chinh-sach-kiem-hang", "/chinh-sach-van-chuyen", "/quyen-nghia-vu", "/dieu-khoan-website", "/bao-hanh", "/xay-dung-cau-hinh"]
+      .map((x) => ({ loc: `${SITE_URL}${x}`, priority: "0.3" })),
   ];
   try {
     const { details: products, landings } = await readWebCached();

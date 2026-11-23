@@ -17920,8 +17920,18 @@ function WebConfigForm({ section, webConfig, setWebConfig, setProducts, addLog, 
           <input type="checkbox" checked={FS.enabled !== false} onChange={(e) => setFlash("enabled", e.target.checked)} /> Bật khối Flash Sale trên trang chủ
         </label>
         <div className="p-3 rounded-md text-xs mb-3" style={{ background: `${BLUE}0D`, border: `1px solid ${BLUE}` }}>
-          Sản phẩm trong khối này <b>chọn tay từng cái</b>: mở <b>Website → Sản phẩm web</b>, sửa 1 sản phẩm rồi tick
-          <b> “⚡ Đưa vào khối Flash Sale”</b>. Không lọc theo nhóm / thương hiệu / % giảm nữa.
+          Sản phẩm <b>chọn tay</b> luôn đứng đầu: mở <b>Website → Sản phẩm web</b>, sửa 1 sản phẩm rồi tick
+          <b> “⚡ Đưa vào khối Flash Sale”</b>. Chọn tay chưa đủ thì web <b>tự bù</b> hàng còn, có ảnh, giảm nhiều nhất (mỗi danh mục tối đa 2 món).
+        </div>
+        <div className="flex flex-wrap items-center gap-3 mb-3 text-sm">
+          <label className="flex items-center gap-2">
+            <input type="checkbox" checked={FS.autoFill !== false} onChange={(e) => setFlash("autoFill", e.target.checked)} /> Tự bù sản phẩm giảm giá nhiều cho đủ
+          </label>
+          <label className="flex items-center gap-2">
+            <input type="number" min={2} max={40} value={FS.minCount ?? 10} disabled={FS.autoFill === false}
+              onChange={(e) => setFlash("minCount", Math.max(2, Math.min(40, Number(e.target.value) || 10)))} className="w-20 border rounded-md py-1.5 px-2 text-sm disabled:opacity-50" style={{ borderColor: LINE }} />
+            sản phẩm
+          </label>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="Tiêu đề">{ip(FS.title, (v) => setFlash("title", v), "Flash Sale")}</Field>

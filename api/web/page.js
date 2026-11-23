@@ -24,6 +24,22 @@ function send(res, status, html, cache) {
   res.status(status).send(html);
 }
 
+// Tiêu đề + mô tả cho các trang thông tin (khớp nội dung PAGES trên web khách).
+const INFO = {
+  "/lien-he": ["Liên hệ và bản đồ cửa hàng", "Địa chỉ cửa hàng Hilitek tại Phường Phú Thọ, TP.HCM, hotline, Zalo và giờ làm việc. Ghé xem hàng trực tiếp hoặc nhắn để được tư vấn."],
+  "/bao-hanh": ["Tra cứu bảo hành theo số serial", "Nhập số serial hoặc số điện thoại để tra thời hạn bảo hành sản phẩm mua tại Hilitek, không cần hoá đơn giấy."],
+  "/xay-dung-cau-hinh": ["Xây dựng cấu hình PC", "Tự chọn CPU, mainboard, RAM, VGA, nguồn, vỏ máy; web tự cộng tổng tiền và gửi cấu hình cho Hilitek báo giá."],
+  "/huong-dan-thanh-toan": ["Hướng dẫn thanh toán và trả góp", "Các cách thanh toán tại Hilitek: tiền mặt khi nhận hàng, chuyển khoản, quẹt thẻ tại cửa hàng và trả góp."],
+  "/chinh-sach-bao-hanh": ["Chính sách bảo hành", "Điều kiện, thời hạn và cách gửi bảo hành sản phẩm mua tại Hilitek, bảo hành theo số serial."],
+  "/chinh-sach-giao-hang": ["Chính sách giao hàng và kiểm hàng", "Phí và thời gian giao hàng, giao nội thành TP.HCM trong ngày, kiểm hàng trước khi thanh toán."],
+  "/chinh-sach-bao-mat": ["Chính sách bảo mật thông tin", "Cách Hilitek thu thập, sử dụng và bảo vệ thông tin cá nhân của khách hàng."],
+  "/chinh-sach-doi-tra": ["Chính sách đổi trả và hoàn tiền", "Điều kiện đổi mới, đổi trả và hoàn tiền khi mua hàng tại Hilitek."],
+  "/quyen-nghia-vu": ["Quyền và nghĩa vụ của người mua và người bán", "Quyền lợi và trách nhiệm của khách hàng và Hilitek khi mua bán trên hilipc.vn."],
+  "/dieu-khoan-website": ["Điều khoản và điều kiện sử dụng website", "Điều khoản sử dụng website hilipc.vn của Hilitek."],
+  "/chinh-sach-kiem-hang": ["Chính sách kiểm hàng", "Khách được mở hộp, kiểm tra hàng trước khi thanh toán khi mua tại Hilitek."],
+  "/chinh-sach-van-chuyen": ["Chính sách vận chuyển và giao nhận", "Phạm vi, phí và thời gian vận chuyển, giao nhận hàng của Hilitek."],
+};
+
 export default async function handler(req, res) {
   let html;
   try {
@@ -61,6 +77,10 @@ export default async function handler(req, res) {
         url: `${SITE_URL}/tin-tuc`,
         noscript: "<h1>Tin tức và video</h1>",
       }), cache);
+    }
+    if (q.info && INFO[q.info]) {
+      const [t, d] = INFO[q.info];
+      return send(res, 200, applyHead(html, { title: `${t} | Hilitek`, desc: d, url: `${SITE_URL}${q.info}`, noscript: `<h1>${t}</h1><p>${d}</p>` }), cache);
     }
     if (q.trang) {
       const { landings } = await readWebCached();

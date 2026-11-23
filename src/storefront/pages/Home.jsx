@@ -133,7 +133,27 @@ export default function Home({ catalog, navigate }) {
     group: "", brand: "", cat: FLASH_SALE_CATEGORY,
     onSale: false, minDiscount: 0, pmin: null, pmax: null, skus: [],
   };
+  // Flash Sale: sản phẩm chủ shop gắn tay đứng trước; chưa đủ thì tự bù hàng còn, có ảnh, giảm nhiều nhất
+  // (mỗi danh mục tối đa 2, không lặp 1 nhóm phiên bản). Tắt được ở trang quản lý (FLASH_SALE.autoFill).
   const flashItems = FLASH_SALE.enabled ? homeSectionProducts(products, flashSection) : [];
+  if (FLASH_SALE.enabled && FLASH_SALE.autoFill !== false) {
+    const want = Math.max(2, Number(FLASH_SALE.minCount) || 10);
+    const disc = (p) => (Number(p.listPrice) > Number(p.price) && Number(p.price) > 0 ? 1 - Number(p.price) / Number(p.listPrice) : 0);
+    const seen = new Set(flashItems.flatMap((p) => [p.id, p.variantGroupId].filter(Boolean)));
+    const perCat = {};
+    flashItems.forEach((p) => { perCat[p.category || ""] = (perCat[p.category || ""] || 0) + 1; });
+    const pool = (products || []).filter((p) => Number(p.stock) > 0 && disc(p) >= 0.05 && (p.images || []).length).sort((a, b) => disc(b) - disc(a));
+    for (const p of pool) {
+      if (flashItems.length >= want) break;
+      if (seen.has(p.id) || (p.variantGroupId && seen.has(p.variantGroupId))) continue;
+      const c = p.category || "";
+      if ((perCat[c] || 0) >= 2) continue;
+      perCat[c] = (perCat[c] || 0) + 1;
+      seen.add(p.id); if (p.variantGroupId) seen.add(p.variantGroupId);
+      flashItems.push(p);
+    }
+  }
+  const flashSkus = flashItems.map((p) => p.sku).filter(Boolean);
   // Cột phải chỉ có 2 khối: nếu dữ liệu cũ còn 3 banner thì bỏ banner đầu.
   const strip = HOME_POSTERS.strip || [];
   const stripShown = strip.slice(Math.max(0, strip.length - 2));
@@ -193,7 +213,7 @@ export default function Home({ catalog, navigate }) {
           <div className="rounded-2xl bg-white p-2.5 sm:p-6">
             <FlashSaleBar navigate={navigate} />
             <div className="mt-3 sm:mt-5">
-              <HomeSectionRow section={{ ...flashSection, title: "", seeAllText: "", seeAllHref: "" }} products={products} navigate={navigate} bare noHeader />
+              <HomeSectionRow section={{ ...flashSection, skus: flashSkus, limit: flashSkus.length || flashSection.limit, title: "", seeAllText: "", seeAllHref: "" }} products={products} navigate={navigate} bare noHeader />
             </div>
           </div>
         </section>
