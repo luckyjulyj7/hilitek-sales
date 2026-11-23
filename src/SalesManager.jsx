@@ -15642,12 +15642,15 @@ function CommandPalette({ orders, purchaseOrders, customers, products, suppliers
 
 function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig, categories, brands, currentUser, addLog, onOpenOrder, navTarget, onFocusHandled, goToInventoryProductEdit, suppliers }) {
   const [sub, setSub] = useState("products");
+  const [listKey, setListKey] = useState(0);
+  const pickSub = (id) => { if (id === "products") setListKey((k) => k + 1); setSub(id); };
   useEffect(() => {
+    if (navTarget?.type === "weblist") { setSub("products"); setListKey((k) => k + 1); }
     if (navTarget?.type === "webproduct" || navTarget?.type === "webproducts-daterange") setSub("products");
     if (navTarget?.type === "websub" && ["products", "orders", "home", "promo", "content", "settings"].includes(navTarget.sub)) setSub(navTarget.sub);
   }, [navTarget]);
   const subs = [
-    { id: "products", label: "Sản phẩm", icon: Package, hint: "Đăng sản phẩm lên web, sửa ảnh, mô tả, giá và SEO." },
+    { id: "products", label: "Sản phẩm", icon: Package, hint: "" },
     { id: "orders", label: "Đơn hàng web", icon: ShoppingCart, hint: "Xem các đơn khách đặt trên hilipc.vn." },
     { id: "home", label: "Trang chủ", icon: Home, hint: "Đổi banner, khối sản phẩm và menu danh mục trên trang chủ." },
     { id: "promo", label: "Khuyến mãi", icon: Tag, hint: "Cài Flash Sale, mã giảm giá và điểm tích luỹ." },
@@ -15656,15 +15659,15 @@ function WebsiteSection({ products, setProducts, orders, webConfig, setWebConfig
   ];
   return (
     <div>
-      <TabBar tabs={subs} value={sub} onChange={setSub} />
-      {sub === "products" && <WebProducts products={products} setProducts={setProducts} suppliers={suppliers} categories={categories} brands={brands} currentUser={currentUser} addLog={addLog} webConfig={webConfig} focusProductId={navTarget?.type === "webproduct" ? navTarget.id : null} initialPublishedFrom={navTarget?.type === "webproducts-daterange" ? navTarget.from : null} initialPublishedTo={navTarget?.type === "webproducts-daterange" ? navTarget.to : null} onFocusHandled={onFocusHandled} goToInventoryProductEdit={goToInventoryProductEdit} />}
+      <TabBar tabs={subs} value={sub} onChange={pickSub} />
+      {sub === "products" && <WebProducts backSignal={listKey} products={products} setProducts={setProducts} suppliers={suppliers} categories={categories} brands={brands} currentUser={currentUser} addLog={addLog} webConfig={webConfig} focusProductId={navTarget?.type === "webproduct" ? navTarget.id : null} initialPublishedFrom={navTarget?.type === "webproducts-daterange" ? navTarget.from : null} initialPublishedTo={navTarget?.type === "webproducts-daterange" ? navTarget.to : null} onFocusHandled={onFocusHandled} goToInventoryProductEdit={goToInventoryProductEdit} />}
       {sub === "orders" && <WebOrders orders={orders} onOpenOrder={onOpenOrder} />}
       {sub !== "products" && sub !== "orders" && <WebConfigForm section={sub} webConfig={webConfig} setWebConfig={setWebConfig} setProducts={setProducts} addLog={addLog} products={products} categories={categories} />}
     </div>
   );
 }
 
-function WebProducts({ products, setProducts, suppliers, categories, brands, currentUser, addLog, webConfig, focusProductId, initialPublishedFrom, initialPublishedTo, onFocusHandled, goToInventoryProductEdit }) {
+function WebProducts({ products, setProducts, suppliers, categories, brands, currentUser, addLog, webConfig, focusProductId, initialPublishedFrom, initialPublishedTo, onFocusHandled, goToInventoryProductEdit, backSignal }) {
   // Hết hàng vẫn hiện: tính cả nhóm, chỉ báo khi mọi phiên bản đang đăng đều hết hàng.
   const unitOutOfStock = useMemo(() => {
     const cache = new Map();
@@ -15820,6 +15823,7 @@ function WebProducts({ products, setProducts, suppliers, categories, brands, cur
         currentUser={currentUser}
         addLog={addLog}
         suppliers={suppliers}
+        backSignal={backSignal}
       />
     );
   }
@@ -16446,7 +16450,7 @@ function BulkApplyCard({ product, products, setProducts, suppliers, draft, dirty
   );
 }
 
-function WebProductPage({ product, products, setProducts, webCats, onBack, onSwitch, goToInventoryProductEdit, currentUser, addLog, suppliers }) {
+function WebProductPage({ product, products, setProducts, webCats, onBack, onSwitch, goToInventoryProductEdit, currentUser, addLog, suppliers, backSignal }) {
   // Thanh công cụ của ô Mô tả dính ngay DƯỚI thanh đầu trang (Lưu/Quay lại) khi cuộn: đo chiều cao thanh đầu.
   const stickyHeadRef = useRef(null);
   useEffect(() => {
@@ -16576,6 +16580,9 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
     if (dirty && !await askConfirm("Có thay đổi chưa lưu. Rời khỏi trang sẽ mất các thay đổi này — tiếp tục?")) return;
     onBack();
   };
+  // Bấm lại tab "Sản phẩm" / menu "Website" -> quay về danh sách.
+  const backSigRef = useRef(backSignal);
+  useEffect(() => { if (backSignal !== backSigRef.current) { backSigRef.current = backSignal; handleBack(); } }, [backSignal]);
 
   // Backspace quay lại danh sách sản phẩm web — chỉ khi KHÔNG đang gõ trong 1 ô nhập (input/
   // textarea/select), tránh nuốt mất backspace bình thường khi đang sửa chữ trong form.
@@ -16626,19 +16633,38 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
   return (
     <div>
       <div data-web-editor ref={stickyHeadRef} className="sticky top-0 z-10 pt-1 pb-3 mb-3 -mt-1" style={{ background: PAPER, borderBottom: `1px solid ${LINE}` }}>
+      <button onClick={handleBack} title="Quay lại danh sách (phím Backspace)" className="mb-2 inline-flex items-center gap-1 min-h-[32px] pl-1.5 pr-3 rounded-md text-sm font-medium hover:bg-black/5" style={{ color: INK }}>
+        <ChevronLeft size={18} /> Danh sách sản phẩm web
+      </button>
       <div className="flex items-center gap-3 flex-wrap">
-        <button onClick={handleBack} title="Danh sách sản phẩm web" className="w-8 h-8 rounded-md border inline-flex items-center justify-center shrink-0" style={{ borderColor: LINE, color: TEXT, background: "#fff" }}>
-          <ChevronLeft size={16} />
-        </button>
+        {(w.images?.[0] || displayImage(p)) ? (
+          <img src={w.images?.[0] || displayImage(p)} alt="" className="w-14 h-14 rounded-lg object-contain bg-white shrink-0" style={{ border: `1px solid ${LINE}` }} />
+        ) : (
+          <div className="w-14 h-14 rounded-lg grid place-items-center shrink-0" style={{ background: "#fff", border: `1px dashed ${LINE}` }}><ImageOff size={18} className="opacity-30" /></div>
+        )}
         <div className="min-w-0 flex-1">
-          <h3 className="text-base font-semibold truncate" style={{ color: TEXT }} title={p.name}>{p.name}</h3>
-          <div className="flex items-center gap-2 text-xs">
-            <span className="shrink-0 rounded-full px-2 py-0.5 font-medium" style={{ background: w.published ? "#DCFCE7" : "#F3F4F6", color: w.published ? FOREST : "#4B5563" }}>{w.published ? "Đang bán" : "Đang ẩn"}</span>
-            <span className="truncate opacity-60">{p.sku} · {p.category || "—"}</span>
+          <h3 className="text-xl font-bold leading-tight line-clamp-2" style={{ color: TEXT }} title={p.name}>{w.name || p.name}</h3>
+          <div className="mt-1 flex items-center gap-2 text-xs flex-wrap">
+            <span className="shrink-0 rounded-full px-2 py-0.5 font-semibold" style={{ background: w.published ? "#DCFCE7" : "#F3F4F6", color: w.published ? FOREST : "#4B5563" }}>{w.published ? "Đang bán trên web" : "Đang ẩn khỏi web"}</span>
+            <span style={{ color: "#4B5563", fontFamily: "'Inter', sans-serif" }}>{p.sku}</span>
+            {p.retailPrice > 0 && <span className="font-semibold" style={{ color: INK }}>{vnd(p.retailPrice)}</span>}
+            {dirty && <span className="font-semibold" style={{ color: BRASS }}>● Chưa lưu</span>}
           </div>
         </div>
-        {dirty && <span className="text-xs font-medium" style={{ color: BRASS }}>● Chưa lưu</span>}
         {p.web?.published && <a href={`https://hilipc.vn/san-pham/${effSlug}`} target="_blank" rel="noopener" className="text-xs px-3 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT, background: "#fff" }}>Xem trên web ↗</a>}
+        {goToInventoryProductEdit && (
+          <button
+            onClick={async () => {
+              if (dirty && !await askConfirm("Có thay đổi chưa lưu. Rời khỏi trang sẽ mất các thay đổi này — tiếp tục?")) return;
+              goToInventoryProductEdit(p.id);
+            }}
+            title="Sửa mã VT, giá nhập/bán, tồn kho... của sản phẩm này"
+            className="text-xs inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT, background: "#fff" }}
+          >
+            <Package size={13} /> Sửa trong kho
+          </button>
+        )}
+        <CopyWebInfoButton product={p} products={products} setWeb={setWeb} />
         <button onClick={doDiscard} disabled={!dirty} className="text-xs px-3 py-1.5 rounded-md border disabled:opacity-40" style={{ borderColor: LINE, color: TEXT, background: "#fff" }}>
           Huỷ
         </button>
@@ -16656,7 +16682,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
         </div>
       )}
 
-      <div className="flex items-center gap-2 flex-wrap mt-2.5">
+      <div className="flex items-center gap-2 flex-wrap empty:hidden mt-2.5">
         {p.variantGroupId && (() => {
           const siblings = products.filter((x) => x.variantGroupId === p.variantGroupId);
           if (siblings.length < 2) return null;
@@ -16687,20 +16713,6 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
             </>
           );
         })()}
-        <div className="flex-1" />
-        {goToInventoryProductEdit && (
-          <button
-            onClick={async () => {
-              if (dirty && !await askConfirm("Có thay đổi chưa lưu. Rời khỏi trang sẽ mất các thay đổi này — tiếp tục?")) return;
-              goToInventoryProductEdit(p.id);
-            }}
-            title="Sửa mã VT, giá nhập/bán, tồn kho... của sản phẩm này"
-            className="text-xs inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT, background: "#fff" }}
-          >
-            <Package size={13} /> Sửa trong kho
-          </button>
-        )}
-        <CopyWebInfoButton product={p} products={products} setWeb={setWeb} />
       </div>
       </div>
 
@@ -16714,7 +16726,7 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
             const noSeo = miss.includes("SEO riêng");
             return (
               <div>
-                <p className="text-sm font-medium mb-2" style={{ color: TEXT }}>Điền từng phần <span className="font-normal" style={{ color: "#6B7280" }}>· mục có dấu cảnh báo là còn thiếu</span></p>
+                <p className="text-xs mb-1.5" style={{ color: "#6B7280" }}>Bấm từng phần để điền · dấu cảnh báo là còn thiếu</p>
                 <SectionTabs value={editTab} onChange={setEditTab} tabs={[
                   { id: "content", label: "Nội dung", icon: FileText, state: contentMiss.length ? "missing" : "ok", note: contentMiss.length ? `Thiếu ${contentMiss.join(", ").toLowerCase()}` : "Mô tả, thông số, danh mục" },
                   { id: "images", label: "Ảnh", icon: Images, state: noImage ? "missing" : "ok", note: noImage ? "Chưa có ảnh" : "Đã có ảnh" },
@@ -19118,7 +19130,7 @@ export default function SalesManager() {
                 <React.Fragment key={g.label || "top"}>
                   {g.label && <p className="px-3 pt-3 pb-1 text-xs font-semibold" style={{ color: "#AEB7E6" }}>{g.label}</p>}
                   {items.map((t) => (
-                    <button key={t.id} onClick={() => { setTab(t.id); setNavOpen(false); }} className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm w-full text-left"
+                    <button key={t.id} onClick={() => { if (t.id === "website" && tab === "website") setNavTarget({ type: "weblist", at: Date.now() }); setTab(t.id); setNavOpen(false); }} className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm w-full text-left"
                       style={{ background: tab === t.id ? GOLD : "transparent", color: tab === t.id ? INK : "#E4E7F7", fontWeight: tab === t.id ? 700 : 500 }}>
                       <t.icon size={17} className="shrink-0" /> {t.label}
                     </button>
