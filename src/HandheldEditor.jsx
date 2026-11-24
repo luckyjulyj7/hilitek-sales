@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, ExternalLink, ImageOff, Link2, Plus, Search, Trash2, Upload, X } from "lucide-react";
-import { ERAS, HH_BRANDS, HH_FAQ, HH_HERO, HH_LIFE, MODELS, SPOTLIGHT, TIERS, hhImage } from "./storefront/data/handhelds.js";
+import { ERAS, HH_BRANDS, HH_FAQ, HH_HERO, HH_LIFE, MODELS, SPOTLIGHT, TIERS, hhImage, mergeModels } from "./storefront/data/handhelds.js";
 import { uploadProductImage } from "./lib/mediaUpload.js";
 import { ProductPicker } from "./HomePanels.jsx";
 
@@ -61,7 +61,7 @@ function UploadBtn({ busy, children, onFile, primary }) {
 
 export default function HandheldEditor({ webConfig, setWebConfig, products, displayImage, askConfirm, notify }) {
   const H = webConfig.HANDHELD || {};
-  const models = Array.isArray(H.models) ? H.models : MODELS;
+  const models = useMemo(() => (Array.isArray(H.models) ? mergeModels(H.models, H.removed) : MODELS), [H.models, H.removed]);
   const tiers = Array.isArray(H.tiers) && H.tiers.length === TIERS.length ? H.tiers : TIERS;
   const spot = Array.isArray(H.spotlight) ? H.spotlight : SPOTLIGHT;
   const eras = Array.isArray(H.eras) ? H.eras : ERAS;
@@ -108,7 +108,7 @@ export default function HandheldEditor({ webConfig, setWebConfig, products, disp
     if (!await askConfirm(`Xoá "${m.name}" khỏi trang?`)) return;
     setWebConfig((x) => {
       const h = x.HANDHELD || {};
-      return { ...x, HANDHELD: { ...h, models: models.filter((y) => y.slug !== open), spotlight: spot.filter((s) => s !== open), eras: eras.map((e) => ({ ...e, picks: e.picks.filter((s) => s !== open) })) } };
+      return { ...x, HANDHELD: { ...h, models: models.filter((y) => y.slug !== open), removed: [...(h.removed || []), open], spotlight: spot.filter((s) => s !== open), eras: eras.map((e) => ({ ...e, picks: e.picks.filter((s) => s !== open) })) } };
     });
     setOpen("");
   };

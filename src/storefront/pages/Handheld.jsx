@@ -167,7 +167,7 @@ function ModelCard({ m, real, onAsk, navigate }) {
   );
 }
 
-export default function Handheld({ catalog, navigate }) {
+export default function Handheld({ catalog, navigate, query = {} }) {
   const products = catalog.products || [];
   const [tierOn, setTierOn] = useState("android");
   const [era, setEra] = useState("ps2");
@@ -184,6 +184,15 @@ export default function Handheld({ catalog, navigate }) {
   const tierBox = useRef(null);
   const tierTouch = useRef(false);
   const tierWait = useRef(0);
+
+  // Vào từ menu (?dong=retro&hang=AYN): lọc sẵn và cuộn tới danh sách máy.
+  useEffect(() => {
+    const d = TIERS.some((t) => t.id === query.dong) ? query.dong : "", h = query.hang || "";
+    setTier(d); setBrand(h); setSize(""); setMore(false);
+    if (!d && !h) return undefined;
+    const t = setTimeout(() => list.current?.scrollIntoView({ behavior: "instant", block: "start" }), 350);
+    return () => clearTimeout(t);
+  }, [query.dong, query.hang]);
 
   // Bốn dòng máy tự chuyển lần lượt, rê chuột vào thì dừng để khách chọn.
   useEffect(() => {

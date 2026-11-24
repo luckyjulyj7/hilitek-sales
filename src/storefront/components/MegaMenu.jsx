@@ -53,22 +53,22 @@ export default function MegaMenu({ navigate, onClose }) {
           <span className="mm-ic"><GIcon size={22} /></span>
           <div className="min-w-0">
             <h3>{group.group}</h3>
-            {st && st.count > 0 && <p>{st.count} sản phẩm{st.minPrice ? <> · giá từ <b>{formatVND(st.minPrice)}</b></> : null}</p>}
+            {st && st.count > 0 && <p>{st.count} {st.unit || "sản phẩm"}{st.minPrice ? <> · giá từ <b>{formatVND(st.minPrice)}</b></> : null}</p>}
           </div>
           <a {...link(all)} className="hx-key y mm-all">Xem tất cả <ArrowRight size={15} /></a>
         </header>
 
         <div className="mm-grid">
           <div className="mm-cards">
-            {(st?.subs.length ? st.subs : []).map(({ node, count, image }) => {
+            {(st?.subs.length ? st.subs : []).map(({ node, count, image, cover }) => {
               const to = href("/danh-muc", { group: group.group, cat: node.name });
               const kids = node.subs || [];
               return (
                 <div key={node.slug || node.name} className={"mm-card" + (count > 0 ? "" : " empty")}>
                   <a {...link(to)} className="mm-card-main">
-                    <span className="mm-thumb">{image ? <img src={image} alt="" loading="lazy" decoding="async" width="96" height="96" /> : <GIcon size={26} />}</span>
+                    <span className={"mm-thumb" + (cover ? " cover" : "")}>{image ? <img src={image} alt="" loading="lazy" decoding="async" width="96" height="96" /> : <GIcon size={26} />}</span>
                     <span className="mm-card-t">{node.name}</span>
-                    <span className="mm-card-n">{count > 0 ? `${count} sản phẩm` : "Sắp có hàng"}</span>
+                    <span className="mm-card-n">{count > 0 ? `${count} ${st.unit || "sản phẩm"}` : "Sắp có hàng"}</span>
                   </a>
                   {kids.length > 0 && (
                     <div className="mm-kids">
@@ -100,12 +100,12 @@ export default function MegaMenu({ navigate, onClose }) {
                 </div>
               </section>
             )}
-            <section>
+            {!st?.game && <section>
               <h4>Khoảng giá</h4>
               <div className="mm-chips">
                 {PRICE_BUCKETS.map((b) => <a key={b.label} {...link(href("/danh-muc", priceBucketQuery(b, group.group)))}>{b.label}</a>)}
               </div>
-            </section>
+            </section>}
             {st?.featured.length > 0 && (
               <section>
                 <h4>Nổi bật</h4>

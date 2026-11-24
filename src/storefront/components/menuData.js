@@ -1,6 +1,8 @@
 // Số liệu cho menu danh mục (máy tính + điện thoại): đếm sản phẩm, ảnh đại diện, giá thấp nhất,
 // thương hiệu, sản phẩm nổi bật. Tính từ danh sách sản phẩm đã tải sẵn (không gọi máy chủ).
-import { productInGroup, productInCategory, brandsInGroup } from "../config.js";
+import { GAME_GROUP, productInGroup, productInCategory, brandsInGroup } from "../config.js";
+import { gameTier } from "../router.js";
+import { MODELS, hhCard, hhImage } from "../data/handhelds.js";
 
 export const imgOf = (p) => {
   const i = p?.images?.[0];
@@ -55,6 +57,15 @@ export function groupStats(products, group) {
     sample: rank(list).slice(0, 8),
     off,
   };
+  // Máy chơi game: đếm mẫu máy trưng bày (MODELS) như trang riêng, không lưu tạm vì danh sách nạp sau.
+  if (group.group === GAME_GROUP) {
+    const all = MODELS.filter((m) => !m.hidden);
+    return { ...res, game: true, unit: "mẫu", minPrice: 0, count: all.length, brands: [...new Set(all.map((m) => m.brand).filter(Boolean))],
+      subs: res.subs.map((s) => {
+        const L = all.filter((m) => m.tier === gameTier(s.node.name)), m = L.find((x) => hhCard(x)) || L[0];
+        return L.length ? { ...s, count: L.length, image: s.image || (m ? hhCard(m) || hhImage(m) : ""), cover: !s.image } : s;
+      }) };
+  }
   byGroup.set(group.group, res);
   return res;
 }

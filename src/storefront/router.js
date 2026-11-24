@@ -82,8 +82,33 @@ export function resolveLink(link) {
   return { internalPath, external, cleanLink };
 }
 
+// Nhóm máy chơi game có trang riêng: mọi link danh mục của nhóm này đi thẳng sang đó (K yêu cầu 25/11/2026).
+const GAME_PAGE = "/may-choi-game-cam-tay", GAME_NAME = "Máy chơi game cầm tay";
+/** Dòng máy theo tên danh mục con; "" nếu không phải danh mục máy game. */
+export function gameTier(cat) {
+  const c = String(cat || "").normalize("NFC").toLowerCase();
+  if (c === "máy retro") return "retro";
+  if (c === "máy android") return "android";
+  if (c === "mini pc cầm tay") return "mini";
+  if (c === "pc chơi game cầm tay" || c === "pc cầm tay") return "pc";
+  return "";
+}
+/** Link trang máy game ứng với bộ lọc danh mục, null nếu không thuộc nhóm máy game. */
+export function gamePageFor(q) {
+  if (!q || q.q) return null;
+  const tier = gameTier(q.cat);
+  if (!tier && q.cat !== GAME_NAME && !(q.group === GAME_NAME && !q.cat)) return null;
+  const p = {};
+  if (tier) p.dong = tier;
+  if (q.brand) p.hang = q.brand;
+  const qs = new URLSearchParams(p).toString();
+  return GAME_PAGE + (qs ? "?" + qs : "");
+}
+
 /** Ghép path + query thành href sạch (không dấu #). */
 export function href(path, query) {
+  const game = path === "/danh-muc" ? gamePageFor(query) : null;
+  if (game) return game;
   const qs = query ? new URLSearchParams(query).toString() : "";
   return path + (qs ? "?" + qs : "");
 }

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useRoute, match } from "./router.js";
+import { useRoute, match, gamePageFor } from "./router.js";
 import News from "./pages/News.jsx";
 import { fetchCatalog, fetchWebConfig, takePrefetchedCatalog } from "./lib/api.js";
 import { applyWebConfig } from "./lib/applyWebConfig.js";
@@ -101,6 +101,10 @@ export default function App() {
     if (!route.path.startsWith("/san-pham/")) window.scrollTo(0, 0);
   }, [route.path]);
 
+  // Link danh mục máy game cũ (Google, trang đã lưu): sang trang riêng.
+  const gameTo = route.path === "/danh-muc" ? gamePageFor(route.query) : null;
+  useEffect(() => { if (gameTo) route.navigate(gameTo, { replace: true }); }, [gameTo]);
+
   const productMatch = match("/san-pham/:slug", route.path);
   const landingMatch = match("/trang/:slug", route.path);
 
@@ -116,7 +120,7 @@ export default function App() {
   } else if (route.path === SOFTWARE_PATH) {
     page = <SoftwareLanding catalog={catalog} navigate={route.navigate} />;
   } else if (route.path === HANDHELD_PATH) {
-    page = <Handheld catalog={catalog} navigate={route.navigate} />;
+    page = <Handheld catalog={catalog} navigate={route.navigate} query={route.query} />;
   } else if (route.path === "/danh-muc") {
     page = <Catalog catalog={catalog} route={route} navigate={route.navigate} />;
   } else if (route.path === "/gio-hang") {

@@ -14,6 +14,8 @@ export const ARTICLES = [
     picks: {
       lead: "Bốn mẫu VOICSKY không dây, ba mẫu gaming có dây của Machenike và EDRA. Xem hình, chọn theo nhu cầu.",
       hero: ["/home/cut-pulse-glacier.webp", "/landing/bai/tune65.webp", "/home/cut-echo.webp"],
+      nav: "Bạn cần bàn phím kiểu nào?", extras: ["switches", "versus"], cols: [["Cỡ", "size"], ["Kết nối", "link"]],
+      end: ["Chưa biết chọn mẫu nào?", "Nhắn Hili hoặc ghé cửa hàng ở Phú Thọ, TP.HCM để gõ thử."],
       items: [
         { id: "pulse-75", tone: "", need: "Dễ chọn nhất", name: "VOICSKY PULSE 75", img: "/home/cut-pulse-glacier.webp", slug: "ban-phim-co-khong-day-voicsky-pulse-75-glacier", sound: true, size: "75%, 82 phím", link: "Không dây 3 chế độ",
           text: "Gọn mà vẫn đủ hàng phím F, có núm xoay âm lượng. Hợp người mới chơi phím cơ và dân văn phòng.", specs: [["82 phím", "Layout 75%"], ["4.000 mAh", "Pin"], ["Hotswap", "Thay switch 5-pin"], ["2 switch", "TONE hoặc CLOUDY"]] },
@@ -150,6 +152,27 @@ Hàng chính hãng, bảo hành 24 tháng với VOICSKY, đủ hoá đơn VAT. G
   },
   {
     slug: "man-hinh-27-inch-2k-hay-full-hd-180hz",
+    // Bài dạng hình ảnh (ArticlePicks.jsx).
+    picks: {
+      lead: "Sáu mẫu 27 inch đang bán, từ 2,2 triệu. Xem hình, chọn theo việc bạn làm nhiều nhất.",
+      hero: ["/landing/bai/va2728g2.webp", "/landing/bai/ip2709sg.webp", "/landing/bai/mag275qf.webp"], heroClass: "mon",
+      nav: "Bạn dùng màn hình để làm gì?", extras: ["sharp", "refresh", "panels"], cols: [["Độ nét, tần số", "size"], ["Tấm nền", "link"]],
+      end: ["Card của bạn hợp màn nào?", "Nhắn Hili tên card đồ hoạ và game hay chơi, Hili gợi ý mẫu phù hợp."],
+      items: [
+        { id: "va2728g2", tone: "", need: "Game bắn súng", name: "VSP VA2728G2", img: "/landing/bai/va2728g2.webp", slug: "man-hinh-gaming-vsp-va2728g2-27-inch-va-fhd-280hz-1ms", size: "Full HD 280Hz", link: "VA", hz: 280,
+          text: "Tần số quét cao nhất trong bài, dành cho game thủ thích mượt tối đa.", specs: [["280Hz", "Tần số quét"], ["1ms", "Phản hồi MPRT"], ["4000:1", "Tương phản"]] },
+        { id: "ip2709sg", tone: "half pink", need: "Ngân sách thấp", name: "VSP IP2709SG", img: "/landing/bai/ip2709sg.webp", slug: "man-hinh-vsp-ip2709sg-27-inch-ips-fhd-144hz-1ms", size: "Full HD 144Hz", link: "IPS", hz: 144,
+          text: "Rẻ nhất trong bài, đủ cho học, làm và chơi game.", specs: [["144Hz", "Tần số quét"], ["IPS", "Tấm nền"]] },
+        { id: "md2707k", tone: "half sky", need: "Mượt, màu chuẩn", name: "AIWA MD2707-K", img: "/landing/bai/md2707k.webp", slug: "man-hinh-may-tinh-aiwa-27-inch-monitor-180hz", size: "Full HD 180Hz", link: "IPS", hz: 180,
+          text: "Tấm nền IPS chạy 180Hz, có loa tích hợp.", specs: [["180Hz", "Tần số quét"], ["Có loa", "Tích hợp"]] },
+        { id: "gs27fc2", tone: "dark", need: "Thích màn cong", name: "GIGABYTE GS27FC2", img: "/landing/bai/gs27fc2.webp", slug: "man-hinh-cong-gigabyte-gs27fc2-27-240hz", size: "Full HD 240Hz", link: "VA cong", hz: 240,
+          text: "Màn cong ôm theo mắt, tần số quét cao cho game hành động.", specs: [["240Hz", "Tần số quét"], ["1500R", "Độ cong"], ["125% sRGB", "Độ phủ màu"]] },
+        { id: "mz270l", tone: "half mint", need: "Làm việc, 2K dễ mua", name: "AIWA MZ270L-Y", img: "/landing/bai/mz270l.webp", slug: "man-hinh-may-tinh-aiwa-27-inch-2k-monitor-2k-165hz", size: "2K 165Hz", link: "IPS", hz: 165,
+          text: "Chữ sắc nét để làm việc, vẫn đủ mượt để chơi game.", specs: [["2K", "2560×1440"], ["165Hz", "Tần số quét"]] },
+        { id: "mag275qf", tone: "half amber", need: "Game đẹp, 2K cao cấp", name: "MSI MAG 275QF E21", img: "/landing/bai/mag275qf.webp", slug: "man-hinh-msi-mag-275qf-e21", size: "2K 200Hz", link: "Rapid IPS", hz: 200,
+          text: "Hình đẹp, màu rộng, tới 210Hz khi bật ép xung.", specs: [["2K", "2560×1440"], ["200Hz", "Tần số quét"]] },
+      ],
+    },
     points: [
       "Chơi game thi đấu, card tầm trung: chọn Full HD 144Hz trở lên",
       "Làm việc nhiều, cần chữ nét: chọn 2K",
@@ -174,6 +197,7 @@ Hàng chính hãng, bảo hành 24 tháng với VOICSKY, đủ hoá đơn VAT. G
     products: [
       "man-hinh-vsp-ip2709sg-27-inch-ips-fhd-144hz-1ms",
       "man-hinh-msi-g275l-e14-27-inch-full-hd-ips-144hz-1-ms",
+      "man-hinh-may-tinh-aiwa-27-inch-monitor-180hz",
       "man-hinh-gaming-vsp-va2728g2-27-inch-va-fhd-280hz-1ms",
       "man-hinh-cong-gigabyte-gs27fc2-27-240hz",
       "man-hinh-may-tinh-aiwa-27-inch-2k-monitor-2k-165hz",
@@ -184,9 +208,9 @@ Hàng chính hãng, bảo hành 24 tháng với VOICSKY, đủ hoá đơn VAT. G
 ## Full HD tần số cao: cho game bắn súng, thi đấu
 ![Màn hình VSP VA2728G2 280Hz](https://media.hilipc.vn/desc/mwivvuid-qepx6tfn.webp)
 - Chữ và hình hơi to, mật độ điểm ảnh thấp hơn 2K, nhìn gần sẽ thấy hạt
-- Card đồ hoạ tầm trung vẫn đẩy được FPS cao, tận dụng hết 144Hz đến 280Hz
+- Card đồ hoạ tầm trung dễ đạt FPS cao hơn so với 2K
 - Giá mềm: mẫu 27 inch IPS 144Hz chỉ khoảng 2,2 triệu
-**Gợi ý:** VSP IP2709SG (IPS 144Hz), MSI G275L E14 (IPS 144Hz), VSP VA2728G2 (VA 280Hz) cho game thủ muốn mượt tối đa, GIGABYTE GS27FC2 (màn cong VA 240Hz).
+**Gợi ý:** VSP IP2709SG (IPS 144Hz), MSI G275L E14 (IPS 144Hz), AIWA MD2707-K (IPS 180Hz), VSP VA2728G2 (VA 280Hz) cho game thủ muốn mượt tối đa, GIGABYTE GS27FC2 (màn cong VA 240Hz).
 
 ## 2K: cho làm việc và game nhập vai
 ![Màn hình AIWA 27 inch 2K](https://media.hilipc.vn/desc/mwiwd5rx-rbq1rqfs.webp)
@@ -206,6 +230,27 @@ Chưa biết chọn mẫu nào hợp với card đồ hoạ đang có, nhắn Hi
   },
   {
     slug: "chon-may-choi-game-cam-tay",
+    // Bài dạng hình ảnh (ArticlePicks.jsx).
+    picks: {
+      lead: "Các dòng máy khác nhau ở game chơi được, độ gọn và tầm tiền. Chọn theo game, không theo chip.",
+      hero: ["/handheld/ayn-thor-cut.webp", "/handheld/anbernic-rg-34xxsp.webp", "/handheld/steam-deck-oled.webp"], heroClass: "hh3",
+      nav: "Bạn thuộc kiểu nào?", extras: ["eras", "sizes"],
+      end: ["Nói game bạn hay chơi", "Hili gợi ý máy chạy được và báo giá qua Zalo."],
+      items: [
+        { id: "retro", tone: "amber", need: "Chơi lại game tuổi thơ", name: "Retro", imgs: ["/landing/bai/rg40xxv.webp", "/handheld/anbernic-rg-34xxsp.webp", "/landing/bai/miyoomini.webp"], names: ["Anbernic RG40XXV", "Anbernic RG 34XXSP", "Miyoo Mini Plus"], to: "/may-choi-game-cam-tay", cta: "Xem máy Retro",
+          text: "Nhỏ, nhẹ, bỏ túi. Chơi vài ván lúc rảnh.", priceText: "Dưới 3 triệu", specs: [["PS1, GBA", "Game chơi được"], ["Khoảng 3,5 inch", "Màn hình"]] },
+        { id: "brick-pro", tone: "mint", need: "Dáng đứng, hai cần analog", name: "Trimui Brick Pro", img: "/landing/bai/brickpro.webp", to: "/may-choi-game-cam-tay", cta: "Hỏi giá",
+          text: "Dáng máy Game Boy, màn hình nét, thêm hai cần analog. Chạy Linux.", specs: [["3,95 inch", "IPS 1024×768"], ["2 analog", "Cảm biến Hall"], ["1 GB + 8 GB", "RAM, bộ nhớ"]] },
+        { id: "anbernic", tone: "sky", need: "Nhiều kiểu dáng", name: "Retro Anbernic", imgs: ["/landing/bai/rg40xxh.webp", "/landing/bai/cubexx.webp", "/landing/bai/rg28xx.webp"], names: ["RG40XX H", "RG CubeXX", "RG28XX"], to: "/may-choi-game-cam-tay", cta: "Hỏi giá",
+          text: "Máy ngang, màn vuông hoặc siêu nhỏ, cùng dòng chip H700.", specs: [["PS1, GBA", "Game chơi được"]] },
+        { id: "thor", tone: "dark", need: "Hai màn hình, đa năng", name: "Android: AYN Thor", img: "/handheld/ayn-thor-cut.webp", slug: "ayn-thor-pro-den",
+          text: "Máy gập hai màn hình AMOLED, có sẵn tại Hilitek. Chơi giả lập, game mobile, xem phim.", specs: [["2 màn AMOLED", "6 inch và 3,92 inch"], ["Snapdragon 8 Gen 2", "Bản Lite dùng 865"], ["6.000 mAh", "Pin"]] },
+        { id: "android", tone: "sky", need: "Một máy, nhiều việc", name: "Android khác", imgs: ["/handheld/ayn-odin-3.webp", "/handheld/anbernic-rg-557.webp"], names: ["AYN Odin 3", "Anbernic RG 557"], to: "/may-choi-game-cam-tay", cta: "Xem máy Android",
+          text: "Giả lập đời cao hơn tuỳ chip, cài ứng dụng như điện thoại.", priceText: "3 tới 12 triệu", specs: [["PS2, GameCube", "Tuỳ chip từng máy"], ["Khoảng 5,5 tới 6 inch", "Màn hình"]] },
+        { id: "pc", tone: "", need: "Chơi game Steam", name: "PC cầm tay", imgs: ["/handheld/steam-deck-oled.webp", "/handheld/msi-claw-8-ai.webp", "/handheld/legion-go-2.webp"], names: ["Steam Deck OLED", "MSI Claw 8 AI+", "Legion Go 2"], to: "/may-choi-game-cam-tay", cta: "Xem PC cầm tay",
+          text: "Chơi thư viện game PC ở mọi nơi. Máy to và nặng hơn.", priceText: "Từ 12 triệu", specs: [["Game PC, Steam", "Game chơi được"], ["7,4 tới 8,8 inch", "Màn hình"]] },
+      ],
+    },
     points: [
       "Chọn theo game muốn chơi, không theo chip mạnh nhất",
       "Retro: nhỏ gọn, từ khoảng 1,75 triệu",
@@ -224,7 +269,7 @@ Chưa biết chọn mẫu nào hợp với card đồ hoạ đang có, nhắn Hi
     news: "huong-dan",
     date: "2026-11-24",
     title: "Retro, Android hay PC cầm tay: máy chơi game cầm tay nào hợp với bạn?",
-    summary: "Ba dòng máy khác nhau ở game chơi được, độ gọn và tầm tiền. Chọn theo kiểu chơi, không theo chip.",
+    summary: "Các dòng máy khác nhau ở game chơi được, độ gọn và tầm tiền. Chọn theo kiểu chơi, không theo chip.",
     cover: "/handheld/retroid-pocket-6.webp",
     cta: HH,
     products: ["ayn-thor-pro-den"],

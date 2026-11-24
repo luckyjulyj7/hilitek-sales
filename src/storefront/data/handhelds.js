@@ -34,6 +34,48 @@ export const MODELS = [
   { slug: "onexplayer-x2-mini", name: "OneXPlayer X2 Mini", brand: "OneXPlayer", tier: "mini", inch: 8.8, screen: "8.8 inch OLED, 3 trong 1", chip: "Intel Arc G3 Extreme", photo: true },
 ];
 
+// Máy thêm từ 11/2026. Cấu hình K đã lưu trước đó chưa có các máy này, nên gộp thêm khi đọc (mergeModels);
+// K xoá máy nào ở trang quản lý thì slug nằm trong HANDHELD.removed và không hiện lại.
+export const NEW_MODELS = [
+  { slug: "trimui-brick-pro", name: "Trimui Brick Pro", brand: "Trimui", tier: "retro", inch: 3.95, screen: "3.95 inch 1024×768", chip: "Allwinner A133 Plus" },
+  { slug: "anbernic-rg-40xx-h", name: "Anbernic RG 40XX H", brand: "Anbernic", tier: "retro", inch: 4, screen: "4 inch, máy ngang", chip: "Allwinner H700" },
+  { slug: "anbernic-rg-40xxv", name: "Anbernic RG 40XXV", brand: "Anbernic", tier: "retro", inch: 4, screen: "4 inch, máy đứng", chip: "Allwinner H700" },
+  { slug: "anbernic-rg-cubexx", name: "Anbernic RG CubeXX", brand: "Anbernic", tier: "retro", inch: 3.95, screen: "3.95 inch 720×720", chip: "Allwinner H700" },
+  { slug: "anbernic-rg-35xx-h", name: "Anbernic RG 35XX H", brand: "Anbernic", tier: "retro", inch: 3.5, screen: "3.5 inch 640×480", chip: "Allwinner H700" },
+  { slug: "anbernic-rg-35xxsp", name: "Anbernic RG 35XXSP", brand: "Anbernic", tier: "retro", inch: 3.5, screen: "3.5 inch, thân gập", chip: "Allwinner H700" },
+  { slug: "anbernic-rg-28xx", name: "Anbernic RG 28XX", brand: "Anbernic", tier: "retro", inch: 2.8, screen: "2.8 inch, siêu nhỏ", chip: "Allwinner H700" },
+  { slug: "anbernic-rg-rotate", name: "Anbernic RG Rotate", brand: "Anbernic", tier: "retro", inch: 3.5, screen: "3.5 inch 720×720, xoay", chip: "Unisoc T618" },
+  { slug: "trimui-brick", name: "Trimui Brick", brand: "Trimui", tier: "retro", inch: 3.2, screen: "3.2 inch 1024×768", chip: "Allwinner A133 Plus", photo: true },
+  { slug: "trimui-brick-hammer", name: "Trimui Brick Hammer", brand: "Trimui", tier: "retro", inch: 3.2, screen: "3.2 inch 1024×768", chip: "Allwinner A133 Plus", photo: true },
+  { slug: "trimui-smart-pro", name: "Trimui Smart Pro", brand: "Trimui", tier: "retro", inch: 4.96, screen: "4.96 inch 1280×720", chip: "Allwinner A133 Plus" },
+  { slug: "trimui-smart-pro-s", name: "Trimui Smart Pro S", brand: "Trimui", tier: "retro", inch: 4.96, screen: "4.96 inch 1280×720", chip: "Allwinner A523" },
+  { slug: "retroid-pocket-duo", name: "Retroid Pocket Duo", brand: "Retroid", tier: "android", inch: 5.5, screen: "2 màn AMOLED 5.5 và 4.5 inch", chip: "Dragonwing Q-7790", photo: true },
+  { slug: "retroid-pocket-duo-lite", name: "Retroid Pocket Duo Lite", brand: "Retroid", tier: "android", inch: 5.5, screen: "2 màn 5.5 và 4.2 inch", chip: "Dragonwing QCS6125", photo: true },
+  { slug: "retroid-pocket-flip-2", name: "Retroid Pocket Flip 2", brand: "Retroid", tier: "android", inch: 5.5, screen: "5.5 inch AMOLED, thân gập", chip: "Snapdragon 865" },
+  { slug: "retroid-pocket-classic", name: "Retroid Pocket Classic", brand: "Retroid", tier: "android", inch: 3.92, screen: "3.92 inch AMOLED 1240×1080", chip: "Snapdragon G1 Gen 2" },
+  { slug: "retroid-pocket-4-pro", name: "Retroid Pocket 4 Pro", brand: "Retroid", tier: "android", inch: 4.7, screen: "4.7 inch 1334×750", chip: "Dimensity 1100" },
+  { slug: "ayn-odin-3-portal", name: "AYN Odin 3 Portal", brand: "AYN", tier: "android", inch: 7, screen: "7 inch AMOLED 120Hz", chip: "Dragonwing Q8" },
+  { slug: "ayn-odin-2-portal", name: "AYN Odin 2 Portal", brand: "AYN", tier: "android", inch: 7, screen: "7 inch AMOLED 120Hz", chip: "Snapdragon 8 Gen 2" },
+  { slug: "ayaneo-pocket-ds", name: "AYANEO Pocket DS", brand: "AYANEO", tier: "android", inch: 7, screen: "2 màn 7 và 5 inch", chip: "Snapdragon G3x Gen 2", photo: true },
+  { slug: "ayaneo-pocket-ace", name: "AYANEO Pocket ACE", brand: "AYANEO", tier: "android", inch: 4.5, screen: "4.5 inch 1620×1080", chip: "Snapdragon G3x Gen 2", photo: true },
+  { slug: "ayaneo-pocket-dmg", name: "AYANEO Pocket DMG", brand: "AYANEO", tier: "android", inch: 3.92, screen: "3.92 inch OLED 1240×1080", chip: "Snapdragon G3x Gen 2", photo: true },
+  { slug: "ayaneo-pocket-vert", name: "AYANEO Pocket VERT", brand: "AYANEO", tier: "android", inch: 3.5, screen: "3.5 inch 1600×1440", chip: "Snapdragon 8+ Gen 1", photo: true },
+  { slug: "ayaneo-pocket-air-mini", name: "AYANEO Pocket AIR Mini", brand: "AYANEO", tier: "android", inch: 4.2, screen: "4.2 inch 1280×960", chip: "Helio G90T", photo: true },
+];
+
+/** Danh sách đã lưu + máy mới chưa có. Máy mới chèn sau máy cuối cùng cùng dòng. */
+export function mergeModels(saved, removed = []) {
+  const out = [...saved];
+  const key = (n) => String(n || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  for (const m of NEW_MODELS) {
+    if (removed.includes(m.slug) || out.some((x) => x.slug === m.slug || key(x.name) === key(m.name))) continue;
+    const at = out.reduce((a, x, i) => (x.tier === m.tier ? i + 1 : a), 0) || out.length;
+    out.splice(at, 0, m);
+  }
+  return out;
+}
+{ const all = mergeModels(MODELS); MODELS.length = 0; MODELS.push(...all); }
+
 // Khối máy tiêu điểm, ảnh tối hiện lớn như trang của hãng.
 export const SPOTLIGHT = ["retroid-pocket-6", "ayn-thor", "retroid-pocket-nova", "rog-xbox-ally-x"];
 
@@ -48,7 +90,7 @@ export const ERAS = [
   { id: "work", label: "Vừa làm vừa chơi", tier: "mini", text: "Máy chạy Windows có bàn phím hoặc bàn phím rời, mang đi làm cũng tiện.", picks: ["gpd-win-max-2025", "onexplayer-x2-mini", "msi-claw-8-ai"] },
 ];
 
-export const HH_BRANDS = ["Anbernic", "Miyoo", "Retroid", "AYN", "Mangmi", "Valve", "ASUS ROG", "Lenovo Legion", "MSI Claw", "GPD", "OneXPlayer"];
+export const HH_BRANDS = ["Anbernic", "Miyoo", "Trimui", "Retroid", "AYN", "AYANEO", "Mangmi", "Valve", "ASUS ROG", "Lenovo Legion", "MSI Claw", "GPD", "OneXPlayer"];
 
 export const HH_HERO = {"head": "Máy chơi game", "accent": "cầm tay", "sub": "Từ máy Retro nhỏ gọn tới PC cầm tay chơi game bản quyền. Bấm START, chơi thử một ván rồi chọn máy hợp bạn."};
 
@@ -72,7 +114,7 @@ export const HH_LIFE = {
 };
 
 // Máy đã có ảnh "sân khấu tối Hili" (nền chung, máy cùng cỡ) trong public/handheld/stage/.
-export const HH_STAGE = new Set(["anbernic-rg-34xx", "anbernic-rg-34xxsp", "anbernic-rg-35xx-pro", "anbernic-rg-476h", "anbernic-rg-557", "ayn-odin-3", "ayn-thor", "gpd-win-max-2025", "legion-go-2", "mangmi-air-x", "mangmi-pocket-max", "miyoo-flip-v2", "miyoo-mini-plus", "msi-claw-8-ai", "retroid-pocket-5", "retroid-pocket-6", "retroid-pocket-nova", "rog-xbox-ally-x", "steam-deck-oled"]);
+export const HH_STAGE = new Set(["trimui-brick", "trimui-brick-hammer", "trimui-smart-pro", "trimui-smart-pro-s", "retroid-pocket-duo", "retroid-pocket-duo-lite", "retroid-pocket-flip-2", "retroid-pocket-classic", "retroid-pocket-4-pro", "ayn-odin-3-portal", "ayn-odin-2-portal", "ayaneo-pocket-ds", "ayaneo-pocket-ace", "ayaneo-pocket-dmg", "ayaneo-pocket-vert", "ayaneo-pocket-air-mini", "trimui-brick-pro", "anbernic-rg-40xx-h", "anbernic-rg-40xxv", "anbernic-rg-cubexx", "anbernic-rg-35xx-h", "anbernic-rg-35xxsp", "anbernic-rg-28xx", "anbernic-rg-rotate", "anbernic-rg-34xx", "anbernic-rg-34xxsp", "anbernic-rg-35xx-pro", "anbernic-rg-476h", "anbernic-rg-557", "ayn-odin-3", "ayn-thor", "gpd-win-max-2025", "legion-go-2", "mangmi-air-x", "mangmi-pocket-max", "miyoo-flip-v2", "miyoo-mini-plus", "msi-claw-8-ai", "retroid-pocket-5", "retroid-pocket-6", "retroid-pocket-nova", "rog-xbox-ally-x", "steam-deck-oled"]);
 
 /** Ảnh cho thẻ máy: ảnh nền tối chủ shop tải lên, rồi tới ảnh sân khấu, không có thì trả về rỗng. */
 export const hhCard = (m) => (m.image && m.photo ? m.image : HH_STAGE.has(m.slug) ? `/handheld/stage/${m.slug}.webp` : "");
@@ -85,7 +127,7 @@ const fill = (arr, next) => { if (Array.isArray(next)) { arr.length = 0; next.fo
 /** Ghi đè nội dung mặc định bằng phần chủ shop chỉnh ở Website, Nội dung, Máy chơi game cầm tay. */
 export function applyHandheld(c) {
   if (!c || typeof c !== "object") return;
-  fill(MODELS, c.models);
+  if (Array.isArray(c.models)) fill(MODELS, mergeModels(c.models, c.removed));
   fill(SPOTLIGHT, c.spotlight);
   fill(ERAS, c.eras);
   fill(HH_FAQ, c.faq);
