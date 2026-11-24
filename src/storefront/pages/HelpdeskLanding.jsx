@@ -1,5 +1,5 @@
 import React from "react";
-import { Cctv, Check, CheckCircle2, Database, Mail, MapPin, Phone, Printer, ShieldCheck, X } from "lucide-react";
+import { Cctv, Check, CheckCircle2, Database, Mail, Phone, Printer, ShieldCheck, X } from "lucide-react";
 import { SITE } from "../config.js";
 import { LxEnd, LxFaq, RemoteWindow, useLx, zaloHref } from "./lxParts.jsx";
 import "./lx.css";
@@ -32,20 +32,6 @@ const FAQ = [
 
 const OWN = ["Lương, bảo hiểm, phụ cấp hằng tháng", "Thường chỉ có một người", "Nghỉ phép, nghỉ việc là gián đoạn", "Linh kiện, bản quyền tự đi mua"];
 const US = ["Trả theo số máy, theo gói", "Cả đội kỹ thuật", "Có người thay khi một người nghỉ", "Có sẵn linh kiện và bản quyền"];
-const WIRES = ["M300 92V150H90V196", "M300 92V196", "M300 92V150H510V196"];
-
-/** Sơ đồ mạng văn phòng, tín hiệu chạy trên dây. */
-function NetMap() {
-  return (
-    <svg className="lx-net" viewBox="0 0 600 290" aria-hidden="true" fill="none">
-      {WIRES.map((d, i) => <g key={d}><path d={d} stroke="#8FA2F2" strokeWidth="4" /><path className="pl" d={d} stroke="#F7C600" strokeWidth="8" strokeLinecap="round" style={{ animationDelay: i * -0.8 + "s" }} /></g>)}
-      <rect x="220" y="24" width="160" height="70" rx="18" fill="#1E2A8A" />
-      {[0, 1, 2, 3].map((i) => <circle key={i} cx={252 + i * 32} cy="59" r="7" fill={i ? "#fff" : "#F7C600"} />)}
-      {[[20, "Văn phòng"], [230, "Wi-Fi"], [440, "Máy chủ"]].map(([x, t]) => <g key={t}><rect x={x} y="196" width="140" height="78" rx="18" fill="#fff" /><text x={x + 70} y="243" textAnchor="middle" fontSize="22" fontWeight="600" fill="#0B1230">{t}</text></g>)}
-    </svg>
-  );
-}
-
 export default function HelpdeskLanding() {
   useLx("Dịch vụ IT Helpdesk cho doanh nghiệp tại TP.HCM | Hilitek");
   const zalo = zaloHref();
@@ -70,7 +56,7 @@ export default function HelpdeskLanding() {
         <div className="lx-c"><h2>Một đầu mối cho mọi thiết bị</h2></div>
         <div className="lx-bento">
           <div className="lx-t s7 n"><h3>Máy tính, phần mềm</h3><p>Lỗi Windows, Office, máy chậm: xử lý từ xa, bạn nhìn thấy từng thao tác.</p><div className="v"><RemoteWindow /></div></div>
-          <div className="lx-t s5 bl"><h3>Mạng, Wi-Fi, máy chủ</h3><p>Phủ sóng, chia mạng, phân quyền thư mục.</p><div className="v"><NetMap /></div></div>
+          <div className="lx-t s5 bl"><h3>Mạng, Wi-Fi, máy chủ</h3><p>Phủ sóng, chia mạng, phân quyền thư mục.</p><img className="ph" src="/landing/hd-network.webp" alt="Kỹ thuật viên sắp xếp dây mạng trong tủ rack" loading="lazy" /></div>
           <div className="lx-t s4 gr"><h3>Sao lưu dữ liệu</h3><p>Lịch tự động, kiểm tra định kỳ.</p><div className="v"><div className="lx-days" aria-hidden="true">{["T2", "T3", "T4", "T5", "T6", "T7", "CN"].map((d) => <span key={d}><i><Database size={20} /></i>{d}</span>)}</div></div></div>
           <div className="lx-t s4"><h3>Email, Microsoft 365</h3><p>Hộp thư theo tên miền công ty.</p><div className="v"><div className="lx-card lx-mail" aria-hidden="true">{[["ketoan", "Phòng kế toán"], ["kinhdoanh", "Phòng kinh doanh"], ["hotro", "Chăm sóc khách"]].map(([a, b]) => <div key={a}><i><Mail size={18} /></i><span><b>{a}@tên-miền</b><small>{b}</small></span></div>)}</div></div></div>
           <div className="lx-t s4 ye"><h3>Bảo mật</h3><p>Diệt virus, vá lỗi, rà soát bản quyền.</p><div className="v"><ShieldCheck size={200} strokeWidth={1} color="#1E2A8A" fill="#fff" /></div></div>
@@ -81,10 +67,10 @@ export default function HelpdeskLanding() {
 
       <section className="lx-w lx-s">
         <div className="lx-c"><h2>Báo lỗi xong, việc còn lại để Hili</h2></div>
-        <div className="lx-3">
-          <div><div className="v"><span className="lx-bub">Wi-Fi tầng 2 chập chờn</span></div><h3>Bạn nhắn</h3><p>Zalo, gọi điện hoặc email.</p></div>
-          <div><div className="v"><svg viewBox="0 0 200 130" width="230" aria-hidden="true"><rect x="8" y="6" width="184" height="106" rx="12" fill="#1E2A8A" /><rect x="18" y="16" width="164" height="86" rx="6" fill="#5F7BFF" /><path d="M92 40l38 32-17 3 9 18-10 5-9-19-11 11z" fill="#F7C600" /><rect x="70" y="118" width="60" height="8" rx="4" fill="#0B1230" /></svg></div><h3>Hili vào máy từ xa</h3><p>Chỉ khi bạn cho phép.</p></div>
-          <div><div className="v"><MapPin size={140} strokeWidth={1.2} fill="#F7C600" /></div><h3>Cần thì tới tận nơi</h3><p>Phần cứng, mạng, máy in tại TP.HCM.</p></div>
+        <div className="lx-3 pho">
+          <div><div className="v ask"><span className="lx-bub">Wi-Fi tầng 2 chập chờn</span></div><h3>Bạn nhắn</h3><p>Zalo, gọi điện hoặc email.</p></div>
+          <div><img src="/landing/hd-remote.webp" alt="Kỹ thuật viên đeo tai nghe điều khiển máy khách từ xa" loading="lazy" /><h3>Hili vào máy từ xa</h3><p>Chỉ khi bạn cho phép.</p></div>
+          <div><img src="/landing/hd-onsite.webp" alt="Kỹ thuật viên kiểm tra máy tính tại văn phòng khách" loading="lazy" /><h3>Cần thì tới tận nơi</h3><p>Phần cứng, mạng, máy in tại TP.HCM.</p></div>
         </div>
       </section>
 

@@ -246,3 +246,12 @@
 @media(min-width:641px) and (max-width:1023px){.lx-art .act{right:auto;left:0;top:auto;bottom:5%;width:262px}.lx-chat{left:0;width:214px}.lx-art{max-width:none}.lx-art .big{width:72%}.lx-man{width:86%}.lx-pcs i{aspect-ratio:1.7}}
 @media(max-width:640px){.lx-art{min-height:400px}.lx-art .act{top:auto;bottom:22%;right:auto;left:0}}
 @media(max-width:1023px){.lx-mesh{-webkit-mask:linear-gradient(transparent,#000 35%,#000 60%,transparent 90%);mask:linear-gradient(transparent,#000 35%,#000 60%,transparent 90%)}}
+
+/* Ảnh chụp trong khối (Helpdesk) */
+.lx-t .ph{flex:1;min-height:260px;width:calc(100% + 64px);max-width:none!important;margin:26px -32px -32px;object-fit:cover;object-position:60% 40%}
+.lx-3.pho>div{padding:0 0 28px;overflow:hidden}
+.lx-3.pho :is(h3,p){padding:0 28px}
+.lx-3.pho :is(img,.v.ask){width:100%;aspect-ratio:4/3;flex:none;object-fit:cover;margin-bottom:24px}
+.lx-3.pho .v.ask{background:linear-gradient(160deg,#E3E9FF,#B9C7FF)}
+@media(max-width:640px){.lx-t .ph{width:calc(100% + 44px);margin:22px -22px -26px}}
+@media(min-width:641px) and (max-width:1023px){.lx-3.pho>div{display:grid;grid-template-columns:44% 1fr;grid-template-rows:1fr auto auto 1fr;padding:0}.lx-3.pho :is(img,.v.ask){grid-row:1/5;margin:0}.lx-3.pho h3{grid-row:2}.lx-3.pho p{grid-row:3}}

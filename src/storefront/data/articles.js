@@ -10,6 +10,31 @@ const HH = { to: "/may-choi-game-cam-tay", label: "Xem các máy chơi game cầ
 export const ARTICLES = [
   {
     slug: "top-5-ban-phim-co-duoi-1-5-trieu-cuoi-2026",
+    // Bài dạng hình ảnh (ArticlePicks.jsx). Có trường này thì web không hiện points/pairs/table/body.
+    picks: {
+      lead: "Bốn mẫu VOICSKY không dây, ba mẫu gaming có dây của Machenike và EDRA. Xem hình, chọn theo nhu cầu.",
+      hero: ["/home/cut-pulse-glacier.webp", "/landing/bai/tune65.webp", "/home/cut-echo.webp"],
+      items: [
+        { id: "pulse-75", tone: "", need: "Dễ chọn nhất", name: "VOICSKY PULSE 75", img: "/home/cut-pulse-glacier.webp", slug: "ban-phim-co-khong-day-voicsky-pulse-75-glacier", sound: true, size: "75%, 82 phím", link: "Không dây 3 chế độ",
+          text: "Gọn mà vẫn đủ hàng phím F, có núm xoay âm lượng. Hợp người mới chơi phím cơ và dân văn phòng.", specs: [["82 phím", "Layout 75%"], ["4.000 mAh", "Pin"], ["Hotswap", "Thay switch 5-pin"], ["2 switch", "TONE hoặc CLOUDY"]] },
+        { id: "pulse-96", tone: "half mint", need: "Cần phím số", name: "VOICSKY PULSE 96", img: "/landing/bai/pulse96.webp", slug: "ban-phim-co-khong-day-voicsky-pulse-96-glacier", sound: true, size: "96%, 97 phím", link: "Không dây 3 chế độ",
+          text: "Có cụm phím số cho kế toán, nhập liệu.", specs: [["97 phím", "Layout 96%"], ["4.000 mAh", "Pin"]] },
+        { id: "tune-65", tone: "half pink", need: "Bàn làm việc nhỏ", name: "VOICSKY TUNE 65", img: "/landing/bai/tune65.webp", slug: "ban-phim-co-khong-day-voicsky-tune-65-black-pink", sound: true, size: "65%, 68 phím", link: "Không dây 3 chế độ",
+          text: "Nhỏ gọn, vỏ bán trong suốt, có màn hình điểm ảnh.", specs: [["68 phím", "Layout 65%"], ["49 LED", "Màn hình PIXDOT 7×7"]] },
+        { id: "echo-75", tone: "sky", need: "Thích có màn hình", name: "VOICSKY ECHO 75", img: "/home/cut-echo.webp", slug: "ban-phim-co-khong-day-voicsky-echo-75-light-tactile", sound: true, size: "75%, 81 phím", link: "Không dây 3 chế độ",
+          text: "Màn hình nhỏ trên góc phím hiện giờ, ngày và pin, cạnh núm xoay đa năng.", specs: [["81 phím", "Layout 75%"], ["1,14 inch", "Màn hình"], ["Hotswap", "Có RGB"]] },
+        { id: "k500b", tone: "dark", need: "Giá rẻ, có dây", name: "Machenike K500B-B87", img: "/landing/bai/k500b.webp", slug: "ban-phim-machenike-k500b-b87-wired-red-switch-led-backlit-black", size: "TKL, 87 phím", link: "Có dây",
+          text: "Đèn nhiều màu, switch Red, cắm dây là dùng. Hợp game thủ cần phím ổn định với ngân sách thấp.", specs: [["87 phím", "Layout TKL"], ["11 chế độ", "Đèn LED"], ["Hotswap", "Thay switch 3-pin"]] },
+        { id: "ek316", tone: "half amber", need: "Gaming full-size", name: "EDRA EK316", img: "/landing/bai/ek316.webp", slug: "ban-phim-choi-game-co-edra-ek316", size: "Full-size, 104 phím", link: "Có dây",
+          text: "Đủ cụm phím số, đèn Rainbow, keycap xuyên LED. Chọn switch Blue, Red hoặc Brown.", specs: [["104 phím", "Full-size"], ["3 switch", "Blue, Red, Brown"]] },
+        { id: "ek387fl", tone: "half dark", need: "Gaming TKL, đèn RGB", name: "EDRA EK387FL", img: "/landing/bai/ek387fl.webp", slug: "ban-phim-co-edra-ek387fl-polar-night", size: "TKL, 87 phím", link: "Có dây, cáp rời",
+          text: "Switch Gateron, keycap PBT xuyên LED, cáp USB-C tháo rời.", specs: [["87 phím", "Layout TKL"], ["RGB", "Nhiều hiệu ứng"]] },
+      ],
+      versus: [
+        { size: "Cỡ 75%", a: { name: "VOICSKY PULSE 75", img: "/home/cut-pulse-glacier.webp", mah: 4000, slug: "ban-phim-co-khong-day-voicsky-pulse-75-glacier" }, b: { name: "AKKO 5075B Plus", img: "/landing/bai/akko5075.webp", mah: 3000, note: "Khoảng 1,29 triệu nơi khác (11/2026)" } },
+        { size: "Cỡ 96%", a: { name: "VOICSKY PULSE 96", img: "/landing/bai/pulse96.webp", mah: 4000, slug: "ban-phim-co-khong-day-voicsky-pulse-96-glacier" }, b: { name: "AKKO 3098B Plus", img: "/landing/bai/akko3098.webp", mah: 3000, note: "" } },
+      ],
+    },
     points: [
       "Dưới 1,5 triệu đã có bàn phím không dây 3 chế độ, gasket, hotswap, pin 4.000 mAh",
       "VOICSKY PULSE 75 dễ chọn nhất, PULSE 96 cho người cần cụm phím số",
@@ -34,7 +59,7 @@ export const ARTICLES = [
       },
     ],
     table: {
-      title: "So sánh nhanh 5 mẫu",
+      title: "So sánh nhanh 7 mẫu",
       head: ["Mẫu", "Layout", "Kết nối", "Điểm nổi bật"],
       rows: [
         ["VOICSKY PULSE 75", "75% (82 phím)", "3 chế độ", "Núm xoay, pin 4.000 mAh"],
@@ -42,12 +67,14 @@ export const ARTICLES = [
         ["VOICSKY TUNE 65", "65% (68 phím)", "3 chế độ", "Màn hình PIXDOT 7×7"],
         ["VOICSKY ECHO 75", "75% (81 phím)", "3 chế độ", "Màn hình 1.14 inch"],
         ["Machenike K500B", "TKL (87 phím)", "Có dây", "Giá mềm, switch Red"],
+        ["EDRA EK316", "Full-size (104 phím)", "Có dây", "Đủ cụm số, đèn Rainbow"],
+        ["EDRA EK387FL", "TKL (87 phím)", "Có dây, cáp rời", "Switch Gateron, RGB"],
       ],
     },
     news: "huong-dan",
     date: "2026-11-24",
-    title: "Top 5 bàn phím cơ dưới 1,5 triệu đáng mua cuối 2026",
-    summary: "Không dây ba chế độ, gasket, hotswap, pin 400 giờ: bốn mẫu VOICSKY, một mẫu Machenike, kèm so sánh với AKKO 5075B Plus và 3098B Plus.",
+    title: "Top 7 bàn phím cơ dưới 1,5 triệu đáng mua cuối 2026",
+    summary: "Bốn mẫu VOICSKY không dây, ba mẫu gaming có dây của Machenike và EDRA, kèm so sánh với AKKO 5075B Plus và 3098B Plus.",
     cover: "https://media.hilipc.vn/desc/mwix9l8i-4qlr4t7p.webp",
     cta: { to: "/danh-muc?cat=B%C3%A0n%20ph%C3%ADm%20c%C6%A1", label: "Xem tất cả bàn phím cơ" },
     products: [
@@ -56,8 +83,10 @@ export const ARTICLES = [
       "ban-phim-co-khong-day-voicsky-tune-65-black-pink",
       "ban-phim-co-khong-day-voicsky-echo-75-light-tactile",
       "ban-phim-machenike-k500b-b87-wired-red-switch-led-backlit-black",
+      "ban-phim-choi-game-co-edra-ek316",
+      "ban-phim-co-edra-ek387fl-polar-night",
     ],
-    body: `Dưới 1,5 triệu đồng giờ đã mua được bàn phím cơ không dây có cấu trúc gasket, keycap PBT và pin dùng cả tháng. Dưới đây là 5 mẫu Hilitek đang có hàng, xếp theo giá.
+    body: `Dưới 1,5 triệu đồng giờ đã mua được bàn phím cơ không dây có cấu trúc gasket, keycap PBT và pin 4.000 mAh. Dưới đây là 7 mẫu Hilitek đang có hàng.
 
 ## 1. VOICSKY PULSE 75: dễ chọn nhất
 ![VOICSKY PULSE 75](https://media.hilipc.vn/desc/mwix9l8i-4qlr4t7p.webp)
@@ -90,6 +119,18 @@ Cùng cấu trúc và pin với PULSE 75 nhưng có 97 phím layout 96%, giữ c
 - 87 phím TKL, switch Red linear, hotswap 3-pin
 - Keycap PBT Double-Shot, LED Rainbow 11 chế độ, chống ghosting toàn phím
 **Hợp với ai:** game thủ chỉ cần phím có dây, ổn định, ngân sách thấp.
+
+## 6. EDRA EK316: gaming full-size, đủ cụm số
+![EDRA EK316](https://media.hilipc.vn/desc/mwiw42uq-fpg2kt5f.webp)
+- 104 phím full-size, có dây USB 1,5 m, đèn Rainbow
+- E-Dra Switch Blue, Red hoặc Brown, keycap ABS Double Injection xuyên LED
+**Hợp với ai:** game thủ cần phím số, thích phím có dây.
+
+## 7. EDRA EK387FL: TKL, switch Gateron, đèn RGB
+![EDRA EK387FL](https://media.hilipc.vn/desc/mwiw4w4w-fbhf2yhk.webp)
+- 87 phím TKL, cáp USB Type-C tháo rời 1,6 m, LED RGB nhiều hiệu ứng
+- Switch Gateron Blue, Red, Brown hoặc Yellow, keycap PBT Double-Shot xuyên LED
+**Hợp với ai:** game thủ muốn phím gọn, đèn đẹp.
 
 ## Chọn TONE hay CLOUDY?
 **TONE Silent Linear** nhẹ (43g) và êm, hợp phòng làm việc chung. **CLOUDY Tactile** có khấc rõ khi nhấn, hợp người gõ nhiều chữ. Ở trang từng mẫu VOICSKY có thẻ **nghe thử tiếng gõ** để bạn so sánh trước khi mua.

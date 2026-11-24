@@ -7,6 +7,7 @@ import RichText from "../components/RichText.jsx";
 import ProductCard from "../components/ProductCard.jsx";
 import { useCatalog } from "../catalogContext.js";
 import ArticleView from "./ArticleView.jsx";
+import ArticlePicks from "./ArticlePicks.jsx";
 
 /** Trang nội dung / landing tự tạo — poster / banner trỏ tới bằng /trang/<slug>. */
 export default function LandingPage({ slug, navigate }) {
@@ -56,6 +57,7 @@ export default function LandingPage({ slug, navigate }) {
   const zalo = SITE.zaloHref || "https://zalo.me/" + (SITE.phoneRaw || "");
 
   // Bài tin tức: giao diện tạp chí riêng (ArticleView.jsx).
+  if (meta.news && meta.picks) return <ArticlePicks meta={meta} products={allProducts} navigate={navigate} />;
   if (meta.news) return <ArticleView meta={meta} page={page} failed={failed} mins={mins} products={allProducts} navigate={navigate} />;
 
   return (
