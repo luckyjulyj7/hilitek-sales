@@ -70,6 +70,26 @@ export default async function handler(req, res) {
         noscript: "<h1>Máy chơi game cầm tay</h1>",
       }), cache);
     }
+    if (q.landing === "software") {
+      // Hỏi đáp khớp SW_FAQ trong src/storefront/pages/SoftwareLanding.jsx (sửa 1 chỗ thì sửa cả 2).
+      const faq = [
+        ["Bản OEM, Retail, FQC, ESD khác nhau thế nào?", "OEM gắn với máy cài đầu tiên. Retail (FPP) chuyển được sang máy khác. FQC là mã của bản Windows OEM đóng hộp DSP. ESD là bản quyền điện tử, nhận key qua email, không có hộp."],
+        ["Hilitek có xuất hoá đơn VAT cho công ty không?", "Có. Mọi đơn phần mềm đều xuất hoá đơn VAT theo thông tin công ty, kèm chứng từ để kế toán ghi nhận chi phí."],
+        ["Làm sao kiểm tra máy đang dùng bản quyền thật?", "Windows: Cài đặt, Hệ thống, Kích hoạt, trạng thái phải là Đã kích hoạt. Office: mở Word, Tài khoản, Thông tin sản phẩm."],
+        ["Mua cho nhiều máy có giá riêng không?", "Có. Từ 5 máy trở lên Hilitek báo giá theo số lượng và gộp cài đặt một lần."],
+        ["Đang dùng bản crack thì chuyển sang bản quyền thế nào?", "Thường chỉ cần nhập key bản quyền vào Windows, Office là kích hoạt. Nếu bản lậu đã sửa hệ thống, Hilitek sao lưu dữ liệu rồi cài sạch."],
+      ];
+      const ld = (o) => `<script type="application/ld+json">${JSON.stringify(o).replace(/</g, "\\u003c")}</script>`;
+      const faqLd = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faq.map(([q2, a]) => ({ "@type": "Question", name: q2, acceptedAnswer: { "@type": "Answer", text: a } })) };
+      return send(res, 200, applyHead(html, {
+        title: "Phần mềm bản quyền cho doanh nghiệp: Windows, Office, Server | Hilitek",
+        desc: "Windows, Office, Microsoft 365, Windows Server, SQL Server chính hãng cho công ty. Hoá đơn VAT, báo giá theo số máy, cài đặt kích hoạt. Tránh phạt đến 500 triệu đồng theo Nghị định 341/2025.",
+        url: `${SITE_URL}/phan-mem-ban-quyen`,
+        image: "/home/sw-windows.webp",
+        extra: ld(faqLd),
+        noscript: "<h1>Phần mềm bản quyền cho doanh nghiệp</h1><p>Windows, Office, Microsoft 365, Windows Server, SQL Server chính hãng, hoá đơn VAT, cài đặt kích hoạt.</p>",
+      }), cache);
+    }
     if (q.landing === "news") {
       return send(res, 200, applyHead(html, {
         title: "Tin tức và video công nghệ | Hilitek",

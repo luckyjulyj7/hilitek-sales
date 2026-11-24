@@ -168,6 +168,7 @@ export default {
       if ((m = /^\/trang\/([^/]+)\/?$/.exec(p))) return withEdgeCache(request, ctx, () => run(page, { trang: decodeURIComponent(m[1]) }), env);
       // Trang thông tin (chính sách, liên hệ...): gắn tiêu đề + canonical riêng, không để trùng trang chủ.
       if (INFO_PATHS.has(p)) return withEdgeCache(request, ctx, () => run(page, { info: p }), env);
+      if (p === "/phan-mem-ban-quyen") return withEdgeCache(request, ctx, () => run(page, { landing: "software" }), env);
       if (p === "/quanlybanhang" || p.startsWith("/quanlybanhang/")) return asset(env, origin, "/admin.html", request);
       // Còn lại (/, /shop, đường dẫn của web khách): shop.html — React tự dựng trang.
       return asset(env, origin, "/shop.html", request);

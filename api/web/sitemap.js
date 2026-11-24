@@ -18,6 +18,7 @@ export default async function handler(req, res) {
     { loc: `${SITE_URL}/danh-muc`, priority: "0.8" },
     { loc: `${SITE_URL}/may-choi-game-cam-tay`, priority: "0.8" },
     { loc: `${SITE_URL}/tin-tuc`, priority: "0.7" },
+    { loc: `${SITE_URL}/phan-mem-ban-quyen`, priority: "0.8" },
     { loc: `${SITE_URL}/lien-he`, priority: "0.4" },
     { loc: `${SITE_URL}/chinh-sach-bao-hanh`, priority: "0.4" },
     { loc: `${SITE_URL}/chinh-sach-giao-hang`, priority: "0.4" },
