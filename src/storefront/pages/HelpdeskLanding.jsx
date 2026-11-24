@@ -1,13 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
-import {
-  ArrowRight, MessageCircle, Phone, Headphones, MonitorSmartphone, Wifi, Server, Mail, ShieldCheck, Printer, Cctv,
-  DatabaseBackup, Wrench, ClipboardCheck, Clock, Users, TrendingDown, CheckCircle2, ChevronDown, Ticket, Building2,
-} from "lucide-react";
+import React, { useRef } from "react";
 import { SITE } from "../config.js";
-import useReveal from "./useReveal.js";
-import "./software.css";
-import "./landing-extra.css";
-
+import LandingFigure, { hasLandingImage } from "./LandingFigure.jsx";
+import { useEdPage } from "./edFonts.js";
+import "./ed.css";
 /**
  * Trang "Dịch vụ IT Helpdesk cho doanh nghiệp" (/dich-vu-it-helpdesk).
  * Phạm vi, cách làm việc và gói dịch vụ tổng hợp từ cách các đơn vị IT thuê ngoài tại TP.HCM đang làm.
@@ -16,14 +11,14 @@ import "./landing-extra.css";
 export const HELPDESK_PATH = "/dich-vu-it-helpdesk";
 
 const SCOPE = [
-  { icon: MonitorSmartphone, t: "Máy tính, laptop", d: "Cài đặt, sửa lỗi Windows, Office, phần mềm nghiệp vụ, máy chậm, lỗi in, lỗi mạng." },
-  { icon: Wifi, t: "Mạng nội bộ, Wi-Fi", d: "Router, switch, Wi-Fi phủ văn phòng, VPN làm việc từ xa, mạng chập chờn." },
-  { icon: Server, t: "Máy chủ, chia sẻ file", d: "File server, Active Directory, phân quyền thư mục, máy chủ phần mềm kế toán." },
-  { icon: Mail, t: "Email, Microsoft 365", d: "Email tên miền công ty, tài khoản nhân viên, OneDrive, Teams." },
-  { icon: DatabaseBackup, t: "Sao lưu dữ liệu", d: "Lịch sao lưu tự động, kiểm tra bản sao lưu định kỳ, khôi phục khi sự cố." },
-  { icon: ShieldCheck, t: "Bảo mật", d: "Diệt virus doanh nghiệp, vá lỗi, phòng mã độc tống tiền, rà soát bản quyền phần mềm." },
-  { icon: Printer, t: "Máy in, máy chấm công", d: "Cài đặt, chia sẻ máy in, khắc phục máy chấm công, thiết bị văn phòng." },
-  { icon: Cctv, t: "Camera giám sát", d: "Kiểm tra, bảo trì, xem camera từ xa trên điện thoại." },
+  { t: "Máy tính, laptop", d: "Cài đặt, sửa lỗi Windows, Office, phần mềm nghiệp vụ, máy chậm, lỗi in, lỗi mạng." },
+  { t: "Mạng nội bộ, Wi-Fi", d: "Router, switch, Wi-Fi phủ văn phòng, VPN làm việc từ xa, mạng chập chờn." },
+  { t: "Máy chủ, chia sẻ file", d: "File server, Active Directory, phân quyền thư mục, máy chủ phần mềm kế toán." },
+  { t: "Email, Microsoft 365", d: "Email tên miền công ty, tài khoản nhân viên, OneDrive, Teams." },
+  { t: "Sao lưu dữ liệu", d: "Lịch sao lưu tự động, kiểm tra bản sao lưu định kỳ, khôi phục khi sự cố." },
+  { t: "Bảo mật", d: "Diệt virus doanh nghiệp, vá lỗi, phòng mã độc tống tiền, rà soát bản quyền phần mềm." },
+  { t: "Máy in, máy chấm công", d: "Cài đặt, chia sẻ máy in, khắc phục máy chấm công, thiết bị văn phòng." },
+  { t: "Camera giám sát", d: "Kiểm tra, bảo trì, xem camera từ xa trên điện thoại." },
 ];
 
 const PLANS = [
@@ -42,17 +37,36 @@ const PLANS = [
 ];
 
 const STEPS = [
-  { icon: Ticket, t: "Gửi yêu cầu", d: "Nhắn Zalo, gọi hotline hoặc email. Mỗi yêu cầu được ghi lại để theo dõi." },
-  { icon: Headphones, t: "Xử lý từ xa", d: "Phần lớn lỗi phần mềm được xử lý qua điều khiển từ xa, không cần chờ người tới." },
-  { icon: Wrench, t: "Tới tận nơi", d: "Lỗi phần cứng, mạng, máy in: kỹ thuật tới văn phòng tại TP.HCM." },
-  { icon: ClipboardCheck, t: "Báo cáo", d: "Ghi lại nguyên nhân, cách xử lý; đề xuất phòng ngừa để lỗi không lặp lại." },
+  { t: "Gửi yêu cầu", d: "Nhắn Zalo, gọi hotline hoặc email. Mỗi yêu cầu được ghi lại để theo dõi." },
+  { t: "Xử lý từ xa", d: "Phần lớn lỗi phần mềm được xử lý qua điều khiển từ xa, không cần chờ người tới." },
+  { t: "Tới tận nơi", d: "Lỗi phần cứng, mạng, máy in: kỹ thuật tới văn phòng tại TP.HCM." },
+  { t: "Báo cáo", d: "Ghi lại nguyên nhân, cách xử lý; đề xuất phòng ngừa để lỗi không lặp lại." },
 ];
 
 const WHY = [
-  { icon: TrendingDown, b: "Tiết kiệm", d: "Không tốn lương, bảo hiểm cho một nhân sự IT toàn thời gian; trả theo đúng số máy." },
-  { icon: Users, b: "Cả đội kỹ thuật", d: "Không phụ thuộc một người; nghỉ phép, nghỉ việc vẫn có người hỗ trợ." },
-  { icon: Clock, b: "Ít gián đoạn", d: "Bảo trì định kỳ phát hiện lỗi sớm, đỡ cảnh cả văn phòng ngồi chờ máy." },
-  { icon: Building2, b: "Một đầu mối", d: "Hilitek vừa hỗ trợ kỹ thuật vừa cung cấp linh kiện, bản quyền: đổi, nâng cấp nhanh." },
+  { b: "Tiết kiệm", d: "Không tốn lương, bảo hiểm cho một nhân sự IT toàn thời gian; trả theo đúng số máy." },
+  { b: "Cả đội kỹ thuật", d: "Không phụ thuộc một người; nghỉ phép, nghỉ việc vẫn có người hỗ trợ." },
+  { b: "Ít gián đoạn", d: "Bảo trì định kỳ phát hiện lỗi sớm, đỡ cảnh cả văn phòng ngồi chờ máy." },
+  { b: "Một đầu mối", d: "Hilitek vừa hỗ trợ kỹ thuật vừa cung cấp linh kiện, bản quyền: đổi, nâng cấp nhanh." },
+];
+
+// Dấu hiệu công ty nên có người lo IT.
+const SIGNS = [
+  "Máy tính chậm, treo, nhân viên phải chờ hoặc tự sửa",
+  "Mạng, Wi-Fi rớt liên tục mà không ai biết nguyên nhân",
+  "Không ai chắc dữ liệu kế toán, hợp đồng đã được sao lưu",
+  "Nhân viên tự cài phần mềm lậu, máy nhiễm virus quảng cáo",
+  "Người cũ nghỉ việc, không còn ai nắm mật khẩu router, email",
+  "Mỗi lần có sự cố lại gọi một người quen khác nhau",
+];
+
+// So sánh IT nội bộ và IT thuê ngoài.
+const COMPARE = [
+  ["Chi phí", "Lương, bảo hiểm, phụ cấp hằng tháng", "Trả theo số máy, theo gói"],
+  ["Số người hỗ trợ", "Thường 1 người", "Cả đội kỹ thuật"],
+  ["Khi nghỉ phép, nghỉ việc", "Gián đoạn, mất người nắm hệ thống", "Có người thay, hồ sơ hệ thống được ghi lại"],
+  ["Kiến thức", "Phụ thuộc 1 người", "Nhiều mảng: mạng, máy chủ, bảo mật, phần mềm"],
+  ["Linh kiện, bản quyền", "Tự đi mua", "Hilitek cung cấp, đổi, nâng cấp nhanh"],
 ];
 
 const FAQ = [
@@ -63,149 +77,166 @@ const FAQ = [
   ["Dữ liệu công ty có an toàn không?", "Kỹ thuật chỉ truy cập khi được công ty cho phép, mỗi lần hỗ trợ từ xa đều cần người dùng đồng ý. Hai bên có thể ký thoả thuận bảo mật thông tin."],
 ];
 
-function Faq() {
-  const [open, setOpen] = useState(0);
-  return (
-    <div className="sw-faq">
-      {FAQ.map(([q, a], i) => (
-        <div key={q} className={"sw-qa rv" + (open === i ? " on" : "")}>
-          <button type="button" aria-expanded={open === i} onClick={() => setOpen(open === i ? -1 : i)}><span>{q}</span><ChevronDown size={18} /></button>
-          {open === i && <p>{a}</p>}
-        </div>
-      ))}
-    </div>
-  );
-}
+// Nhật ký yêu cầu mẫu ở đầu trang: đúng thứ công ty khách nhận được mỗi ngày.
+const LOG = [
+  ["#1042", "Máy kế toán không in được", "Từ xa · 25 phút", "ok", "Đã xong"],
+  ["#1043", "Wi-Fi tầng 2 chập chờn", "Tận nơi · kỹ thuật đang tới", "run", "Đang xử lý"],
+  ["#1044", "Tạo email cho nhân viên mới", "Từ xa · 10 phút", "ok", "Đã xong"],
+  ["#1045", "Kiểm tra bản sao lưu tháng 11", "Máy chủ · 18:00", "new", "Đã lên lịch"],
+];
 
 export default function HelpdeskLanding() {
-  const root = useRef(null);
-  useReveal(root);
+  useEdPage("Dịch vụ IT Helpdesk cho doanh nghiệp tại TP.HCM | Hilitek");
   const zalo = SITE.zaloHref || "https://zalo.me/" + (SITE.phoneRaw || "");
   const tel = "tel:" + (SITE.techPhoneRaw || SITE.phoneRaw || "");
-
-  useEffect(() => {
-    const prev = document.title;
-    document.title = "Dịch vụ IT Helpdesk cho doanh nghiệp tại TP.HCM | Hilitek";
-    return () => { document.title = prev; };
-  }, []);
+  const scopeRef = useRef(null);
+  const toScope = (e) => { e.preventDefault(); scopeRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); };
 
   return (
-    <div ref={root} className="sw font-sans">
+    <div className="ed">
       {/* ===== Đầu trang ===== */}
-      <section className="sw-hero">
-        <div className="sw-wrap sw-hero-in">
-          <div className="rv">
-            <span className="sw-tag"><Headphones size={14} /> Dịch vụ IT cho doanh nghiệp</span>
-            <h1>IT Helpdesk cho công ty: <em>máy chạy ổn, nhân viên yên tâm làm việc</em></h1>
-            <p className="sw-lead">Hilitek làm bộ phận IT thuê ngoài cho văn phòng: hỗ trợ từ xa, kỹ thuật tới tận nơi tại TP.HCM, bảo trì định kỳ, sao lưu dữ liệu và bảo mật. Trả theo số máy, không cần tuyển IT riêng.</p>
-            <div className="sw-cta">
-              <a href={zalo} target="_blank" rel="noreferrer" className="hx-key y sw-btn"><MessageCircle size={18} /> Khảo sát miễn phí qua Zalo</a>
-              <a href={tel} className="hx-key sw-btn"><Phone size={17} /> Gọi kỹ thuật</a>
-            </div>
-            <ul className="sw-ticks">
-              <li><CheckCircle2 size={15} /> Hỗ trợ từ xa và tận nơi</li>
-              <li><CheckCircle2 size={15} /> SLA ghi trong hợp đồng</li>
-              <li><CheckCircle2 size={15} /> Hoá đơn VAT</li>
-            </ul>
-          </div>
-          {/* Hình minh hoạ: ảnh kỹ thuật viên + bảng theo dõi yêu cầu */}
-          <div className="hd-visual rv">
-            <img src="/home/it-helpdesk.webp" alt="Kỹ thuật viên IT Helpdesk Hilitek" className="hd-photo" loading="eager" decoding="async" />
-            <div className="hd-ticket">
-              <div className="hd-tk-h"><Ticket size={15} /> Yêu cầu hỗ trợ</div>
-              {[["Máy kế toán không in được", "Đã xử lý", "ok"], ["Wi-Fi tầng 2 chập chờn", "Đang xử lý", "run"], ["Tạo email nhân viên mới", "Đã xử lý", "ok"]].map(([t, s, k]) => (
-                <div key={t} className="hd-tk-row"><span>{t}</span><b className={k}>{s}</b></div>
-              ))}
-            </div>
+      <section className="ed-hero"><div className="ed-wrap ed-grid">
+        <div className="ed-hero-tx">
+          <p className="ed-label"><b>IT Helpdesk</b> &nbsp;/&nbsp; cho văn phòng tại TP.HCM</p>
+          <h1>Bộ phận IT thuê ngoài, <span className="ed-u">trả theo số máy</span>.</h1>
+          <p>Hilitek lo máy tính, mạng, máy in, email, sao lưu và bảo mật cho công ty. Kỹ thuật hỗ trợ từ xa qua UltraViewer, AnyDesk trong giờ làm việc và tới tận nơi khi cần, không cần tuyển nhân viên IT.</p>
+          <div className="ed-cta">
+            <a className="ed-btn" href={zalo} target="_blank" rel="noreferrer">Đặt lịch khảo sát miễn phí <span className="ed-ar">→</span></a>
+            <a className="ed-link" href="#pham-vi" onClick={toScope}>Hilitek lo những gì</a>
           </div>
         </div>
-      </section>
+        <div className="ed-hero-pic">
+          {hasLandingImage("hd-onsite.webp") && <LandingFigure src="/landing/hd-onsite.webp" alt="Kỹ thuật viên Hilitek kiểm tra máy tính tại văn phòng khách" eager />}
+          <div className="ed-log" aria-label="Ví dụ nhật ký yêu cầu hỗ trợ của một văn phòng" style={hasLandingImage("hd-onsite.webp") ? { marginTop: 18 } : undefined}>
+            <div className="ed-log-h"><b>Yêu cầu hôm nay</b><span className="ed-label">Văn phòng 24 máy</span></div>
+            <ol>
+              {LOG.map(([id, t, how, st, label]) => (
+                <li key={id}><span className="id">{id}</span><span className="t">{t}<small>{how}</small></span><span className={"st " + st}>{label}</span></li>
+              ))}
+            </ol>
+            <div className="ed-log-f"><span>Mọi yêu cầu được ghi lại</span><span>Báo cáo gửi hằng tháng</span></div>
+          </div>
+        </div>
+      </div></section>
 
-      {/* ===== Lợi ích ===== */}
-      <section className="sw-wrap sw-stats hd-why">
-        {WHY.map(({ icon: I, b, d }) => (
-          <div key={b} className="rv"><span className="sw-ic"><I size={20} /></span><b>{b}</b><span>{d}</span></div>
-        ))}
-      </section>
+      <section className="ed-facts"><div className="ed-wrap ed-grid">
+        <div><span className="ed-label">01</span><b>Hỗ trợ từ xa</b><span>Qua UltraViewer, AnyDesk, xử lý ngay trong giờ làm việc</span></div>
+        <div><span className="ed-label">02</span><b>Tới tận nơi</b><span>Lỗi phần cứng, mạng, máy in tại TP.HCM</span></div>
+        <div><span className="ed-label">03</span><b>Thời hạn trong hợp đồng</b><span>Theo từng mức sự cố</span></div>
+        <div><span className="ed-label">04</span><b>Có hoá đơn VAT</b><span>Chi phí hợp lệ cho công ty</span></div>
+      </div></section>
+
+      {/* ===== Vì sao ===== */}
+      <section className="ed-sec"><div className="ed-wrap ed-grid">
+        <p className="ed-label ed-side">01 &nbsp;Vì sao thuê ngoài</p>
+        <div className="ed-main">
+          <h2>Văn phòng dưới 50 máy hiếm khi đủ việc cho một nhân viên IT làm cả ngày.</h2>
+          <div className="ed-two">
+            <p>Thuê ngoài, công ty trả theo số máy thay vì lương, bảo hiểm và phụ cấp cho một người. Phía sau là cả đội kỹ thuật, nên khi một người nghỉ phép hay nghỉ việc, văn phòng vẫn có người lo.</p>
+            <p>Mật khẩu, sơ đồ mạng, lịch sao lưu được Hilitek ghi thành hồ sơ hệ thống và bàn giao cho công ty. Không còn cảnh người cũ nghỉ là không ai biết mật khẩu router, email.</p>
+          </div>
+        </div>
+      </div></section>
 
       {/* ===== Phạm vi ===== */}
-      <section className="sw-wrap sw-sec">
-        <h2 className="rv">Hilitek lo những việc gì?</h2>
-        <p className="sw-sub rv">Toàn bộ thiết bị và phần mềm công nghệ trong văn phòng, từ một chiếc máy in tới máy chủ.</p>
-        <div className="sw-grid4">
-          {SCOPE.map(({ icon: I, t, d }) => (
-            <div key={t} className="sw-card hd-card rv"><span className="sw-ic"><I size={20} /></span><h3>{t}</h3><p>{d}</p></div>
-          ))}
+      <section id="pham-vi" ref={scopeRef} className="ed-sec stone" style={{ scrollMarginTop: 110 }}><div className="ed-wrap ed-grid">
+        <p className="ed-label ed-side">02 &nbsp;Phạm vi</p>
+        <div className="ed-main">
+          <h2>Mọi thiết bị công nghệ trong văn phòng, một đầu mối.</h2>
+          <ul className="ed-rows">
+            {SCOPE.map(({ t, d }, i) => <li key={t}><span className="n">{String(i + 1).padStart(2, "0")}</span><h3>{t}</h3><p>{d}</p><span /></li>)}
+          </ul>
+          {["hd-remote.webp", "hd-network.webp", "hd-team.webp"].some(hasLandingImage) && (
+            <div className="ed-photos">
+              <LandingFigure src="/landing/hd-remote.webp" alt="Kỹ thuật viên Hilitek hỗ trợ từ xa" />
+              <LandingFigure src="/landing/hd-network.webp" alt="Kỹ thuật viên Hilitek sắp xếp tủ mạng" />
+              <LandingFigure src="/landing/hd-team.webp" alt="Đội kỹ thuật Hilitek" />
+            </div>
+          )}
         </div>
-      </section>
+      </div></section>
 
-      {/* ===== Quy trình ===== */}
-      <section className="sw-law">
-        <div className="sw-wrap sw-sec">
-          <h2 className="rv">Gửi yêu cầu là có người lo</h2>
-          <p className="sw-sub rv">Quy trình bốn bước, mỗi yêu cầu đều được ghi lại để công ty theo dõi.</p>
-          <ol className="hd-flow">
-            {STEPS.map(({ icon: I, t, d }, i) => (
-              <li key={t} className="rv" style={{ transitionDelay: `${i * 80}ms` }}>
-                <span className="hd-num">{String(i + 1).padStart(2, "0")}</span>
-                <span className="hd-fic"><I size={22} /></span>
-                <h3>{t}</h3><p>{d}</p>
-              </li>
-            ))}
-          </ol>
+      {/* ===== Dấu hiệu ===== */}
+      <section className="ed-sec"><div className="ed-wrap ed-grid">
+        <p className="ed-label ed-side">03 &nbsp;Tự kiểm tra</p>
+        <div className="ed-main">
+          <h2>Có từ hai dấu hiệu trở lên, công ty đã cần người lo IT bài bản.</h2>
+          <ul className="ed-rows">
+            {SIGNS.map((x, i) => <li key={x}><span className="n">{String(i + 1).padStart(2, "0")}</span><h3 style={{ gridColumn: "2 / 4" }}>{x}</h3><span /></li>)}
+          </ul>
         </div>
-      </section>
+      </div></section>
 
       {/* ===== Gói dịch vụ ===== */}
-      <section className="sw-wrap sw-sec">
-        <h2 className="rv">Chọn cách làm việc phù hợp</h2>
-        <p className="sw-sub rv">Báo giá theo số máy, số người dùng và tần suất bảo trì. Khảo sát văn phòng miễn phí.</p>
-        <div className="hd-plans">
-          {PLANS.map((p) => (
-            <div key={p.t} className={"hd-plan rv" + (p.hot ? " hot" : "")}>
-              {p.hot && <span className="hd-badge">Nhiều công ty chọn</span>}
+      <section className="ed-sec line"><div className="ed-wrap">
+        <div className="ed-head">
+          <h2>Ba cách làm việc, báo giá theo số máy.</h2>
+          <p className="ed-label">Khảo sát miễn phí trước khi báo giá</p>
+        </div>
+        <div className="ed-plans">
+          {PLANS.map((p, i) => (
+            <div key={p.t} className={"ed-plan" + (p.hot ? " hot" : "")}>
+              <span className="ed-label">{String(i + 1).padStart(2, "0")}{p.hot ? "  /  nhiều công ty chọn" : ""}</span>
               <h3>{p.t}</h3>
-              <p className="hd-plan-sub">{p.sub}</p>
-              <ul>{p.f.map((x) => <li key={x}><CheckCircle2 size={16} /> {x}</li>)}</ul>
-              <a href={zalo} target="_blank" rel="noreferrer" className={"hx-key sw-btn hd-plan-btn" + (p.hot ? " y" : "")}>Nhận báo giá <ArrowRight size={16} /></a>
+              <p className="for">{p.sub}</p>
+              <ul>{p.f.map((x) => <li key={x}>{x}</li>)}</ul>
+              <a className="ed-link" href={zalo} target="_blank" rel="noreferrer">Nhận báo giá →</a>
             </div>
           ))}
         </div>
-      </section>
+      </div></section>
 
-      {/* ===== SLA tham khảo ===== */}
-      <section className="sw-wrap sw-sec">
-        <div className="hd-sla rv">
-          <div>
-            <h2>Cam kết thời gian, ghi rõ trong hợp đồng</h2>
-            <p>Mỗi mức sự cố có thời gian phản hồi và thời gian tới tận nơi riêng. Ví dụ cách chia thường gặp trên thị trường:</p>
+      {/* ===== Quy trình ===== */}
+      <section className="ed-sec stone"><div className="ed-wrap">
+        <h2>Gửi yêu cầu là có người nhận, người xử lý và báo cáo.</h2>
+        <ol className="ed-steps">
+          {STEPS.map(({ t, d }) => <li key={t}><h3>{t}</h3><p>{d}</p></li>)}
+        </ol>
+      </div></section>
+
+      {/* ===== Thời hạn + so sánh ===== */}
+      <section className="ed-sec"><div className="ed-wrap ed-grid">
+        <p className="ed-label ed-side">04 &nbsp;Cam kết</p>
+        <div className="ed-main">
+          <h2>Mỗi mức sự cố một thời hạn, ghi trong hợp đồng.</h2>
+          <div className="ed-table">
+            <table>
+              <thead><tr><th>Mức</th><th>Ví dụ</th><th>Cách xử lý</th></tr></thead>
+              <tbody>
+                <tr><td>Khẩn cấp</td><td>Cả văn phòng mất mạng, máy chủ dừng</td><td className="us">Ưu tiên ngay, tới tận nơi nếu từ xa không được</td></tr>
+                <tr><td>Cao</td><td>Một bộ phận không làm việc được, kế toán không in được hoá đơn</td><td className="us">Xử lý trong ngày</td></tr>
+                <tr><td>Thường</td><td>Lỗi một máy, cài phần mềm, tạo tài khoản, thêm máy in</td><td className="us">Xếp lịch trong giờ làm việc</td></tr>
+              </tbody>
+            </table>
           </div>
-          <div className="hd-sla-grid">
-            <div><b className="red">Khẩn cấp</b><span>Cả văn phòng mất mạng, máy chủ dừng: ưu tiên xử lý ngay</span></div>
-            <div><b className="yel">Cao</b><span>Một bộ phận không làm việc được: xử lý trong ngày</span></div>
-            <div><b className="grn">Thường</b><span>Lỗi một máy, cài phần mềm, tạo tài khoản: xếp lịch</span></div>
+          <h2 style={{ marginTop: 96 }}>Tuyển IT riêng hay thuê Hilitek?</h2>
+          <div className="ed-table">
+            <table>
+              <thead><tr><th></th><th>Tuyển nhân viên IT</th><th className="us">Thuê Hilitek</th></tr></thead>
+              <tbody>{COMPARE.map((r) => <tr key={r[0]}><td>{r[0]}</td><td>{r[1]}</td><td className="us">{r[2]}</td></tr>)}</tbody>
+            </table>
           </div>
         </div>
-      </section>
+      </div></section>
 
       {/* ===== Hỏi đáp ===== */}
-      <section className="sw-wrap sw-sec">
-        <h2 className="rv">Câu hỏi thường gặp</h2>
-        <Faq />
-      </section>
-
-      <section className="sw-wrap sw-sec">
-        <div className="sw-final rv">
-          <div>
-            <h2>Khảo sát hệ thống IT miễn phí</h2>
-            <p>Cho Hili biết số máy và việc công ty đang dùng, kỹ thuật sẽ khảo sát và gửi đề xuất trong ngày.</p>
-          </div>
-          <div className="sw-cta">
-            <a href={zalo} target="_blank" rel="noreferrer" className="hx-key y sw-btn"><MessageCircle size={18} /> Nhắn Zalo</a>
-            <a href={tel} className="hx-key sw-btn"><Phone size={17} /> Gọi {SITE.techPhone || SITE.phone}</a>
-          </div>
+      <section className="ed-sec stone"><div className="ed-wrap ed-grid">
+        <p className="ed-label ed-side">05 &nbsp;Hỏi đáp</p>
+        <div className="ed-main">
+          <h2 style={{ marginBottom: 40 }}>Câu hỏi các công ty hay hỏi.</h2>
+          <div className="ed-faq">{FAQ.map(([q, a]) => <details key={q}><summary>{q}</summary><p>{a}</p></details>)}</div>
         </div>
-      </section>
+      </div></section>
+
+      <section className="ed-end"><div className="ed-wrap ed-grid">
+        <h2>Khảo sát hệ thống IT miễn phí, đề xuất gửi trong ngày.</h2>
+        <div className="ed-end-r">
+          <p className="ed-label">Kỹ thuật Hilitek</p>
+          <a className="ed-tel" href={tel}>{SITE.techPhone || SITE.phone}</a>
+          <p style={{ marginTop: 14 }}>Cho Hilitek biết số máy và phần mềm công ty đang dùng. Kỹ thuật khảo sát và gửi đề xuất trong ngày.</p>
+          <a className="ed-btn y" href={zalo} target="_blank" rel="noreferrer">Nhắn Zalo <span className="ed-ar">→</span></a>
+        </div>
+      </div></section>
     </div>
   );
 }

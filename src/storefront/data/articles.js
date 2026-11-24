@@ -16,6 +16,23 @@ export const ARTICLES = [
       "Switch TONE êm cho văn phòng, CLOUDY có khấc cho người gõ nhiều",
       "So với AKKO cùng layout: VOICSKY pin lớn hơn, giá thấp hơn",
     ],
+    // So sánh trực quan: ảnh hai mẫu cùng layout đặt cạnh nhau.
+    pairs: [
+      {
+        title: "Layout 75%: VOICSKY PULSE 75 và AKKO 5075B Plus",
+        left: { name: "VOICSKY PULSE 75", img: "https://media.hilipc.vn/desc/mwix9l8i-4qlr4t7p.webp", slug: "ban-phim-co-khong-day-voicsky-pulse-75-glacier",
+          specs: ["82 phím, núm xoay âm lượng", "Gasket, hotswap 5-pin", "Pin 4.000 mAh", "Khoảng 1,14 triệu tại Hilitek"] },
+        right: { name: "AKKO 5075B Plus", img: "https://media.hilipc.vn/desc/akko-5075-1.webp", credit: "Ảnh: AKKO",
+          specs: ["Layout 75%, núm xoay", "Gasket, hotswap 5-pin", "Pin 3.000 mAh", "Khoảng 1,29 triệu (cửa hàng khác)"] },
+      },
+      {
+        title: "Layout 96%: VOICSKY PULSE 96 và AKKO 3098B Plus",
+        left: { name: "VOICSKY PULSE 96", img: "https://media.hilipc.vn/desc/mwixm06m-1amgzdt8.webp", slug: "ban-phim-co-khong-day-voicsky-pulse-96-glacier",
+          specs: ["97 phím, có cụm số", "Núm xoay âm lượng", "Pin 4.000 mAh", "Khoảng 1,28 triệu tại Hilitek"] },
+        right: { name: "AKKO 3098B Plus", img: "https://media.hilipc.vn/desc/akko-3098-1.webp", credit: "Ảnh: AKKO",
+          specs: ["Layout 96%, có cụm số", "Kết nối 3 chế độ, hotswap", "Pin 3.000 mAh", "Hilitek không bán"] },
+      },
+    ],
     table: {
       title: "So sánh nhanh 5 mẫu",
       head: ["Mẫu", "Layout", "Kết nối", "Điểm nổi bật"],

@@ -72,11 +72,25 @@ function mediaHostRewriter(env) {
 // dùng chung 1 bản HTML (tiêu đề + canonical sai, lỗi SEO 23/11/2026).
 const CACHE_PARAMS = { "/api/web/product": ["slug"], "/api/web/config": ["landing"], "/danh-muc": ["cat", "group", "brand", "q"] };
 const INFO_PATHS = new Set(["/lien-he", "/bao-hanh", "/xay-dung-cau-hinh", "/huong-dan-thanh-toan", "/chinh-sach-bao-hanh", "/chinh-sach-giao-hang", "/chinh-sach-bao-mat", "/chinh-sach-doi-tra", "/quyen-nghia-vu", "/dieu-khoan-website", "/chinh-sach-kiem-hang", "/chinh-sach-van-chuyen"]);
-function edgeCacheKey(request) {
+// Khoá cache gắn tên file JS của bản đang chạy (đổi sau mỗi lần build): HTML cũ trỏ tới file JS/CSS
+// đã bị thay không còn được trả ra sau deploy (sự cố trang trắng sau deploy 24/11/2026).
+// Đọc shop.html 1 lần mỗi isolate (file tĩnh, không tốn lượt Worker).
+let buildTag = "";
+async function getBuildTag(env, request) {
+  if (buildTag) return buildTag;
+  try {
+    const r = await env.ASSETS.fetch(new Request(new URL(request.url).origin + "/shop.html"));
+    const m = /\/assets\/shop-([\w-]+)\.js/.exec(await r.text());
+    buildTag = (m && m[1]) || "x";
+  } catch { return "x"; }
+  return buildTag;
+}
+function edgeCacheKey(request, ver) {
   const u = new URL(request.url);
   const keepList = CACHE_PARAMS[u.pathname] || [];
   const keep = new URLSearchParams();
   for (const k of keepList) if (u.searchParams.has(k)) keep.set(k, u.searchParams.get(k));
+  if (ver) keep.set("__v", ver);
   u.search = keep.toString();
   u.hash = "";
   return new Request(u.toString(), { method: "GET" });
@@ -85,7 +99,7 @@ function edgeCacheKey(request) {
 async function withEdgeCache(request, ctx, make, env) {
   if (request.method !== "GET") return make();
   const cache = caches.default;
-  const key = edgeCacheKey(request);
+  const key = edgeCacheKey(request, env && env.ASSETS ? await getBuildTag(env, request) : "");
   const hit = await cache.match(key);
   if (hit) return hit;
   let res = await make();

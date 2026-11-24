@@ -134,3 +134,62 @@
   .art-body { font-size: 16px; }
   .art-lead { font-size: 16px; }
 }
+
+/* ===== Ảnh minh hoạ ===== */
+.lf { margin: 0; border-radius: 20px; overflow: hidden; background: #fff; border: 1px solid #E6E9F2; box-shadow: 0 20px 40px -28px rgba(11,18,48,.45); }
+.lf img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; transition: transform .6s cubic-bezier(.2,.7,.2,1); }
+.lf:hover img { transform: scale(1.03); }
+.lf figcaption { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; font-size: 14.5px; font-weight: 600; color: #0B1230; }
+.lf-note { flex: none; font-size: 11.5px; font-weight: 500; color: #6B7280; }
+.lf-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 20px; }
+.lf-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 0; }
+.lf-wide img { aspect-ratio: 21 / 9; }
+
+/* Dấu hiệu / cam kết */
+.hd-signs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: center; }
+.hd-sign-list { display: grid; gap: 10px; margin-top: 18px; }
+.hd-sign-list li { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #fff; border: 1px solid #E6E9F2; font-size: 15px; line-height: 1.5; }
+.hd-sign-list li svg { flex: none; margin-top: 2px; color: #E09400; }
+.hd-sign-list.ok li svg { color: #22A35A; }
+
+@media (max-width: 1023.98px) {
+  .hd-signs { grid-template-columns: 1fr; }
+  .lf-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 639.98px) {
+  .lf-grid, .lf-grid.two { grid-template-columns: 1fr; }
+  .lf-wide img { aspect-ratio: 16 / 10; }
+  .hd-sign-list li { font-size: 14.5px; padding: 10px 12px; }
+}
+/* Ảnh chưa có (đã ẩn) thì phần chữ dùng hết chiều ngang */
+.hd-signs:not(:has(> figure)) { grid-template-columns: 1fr; }
+.hd-signs:not(:has(> figure)) .hd-sign-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 639.98px) { .hd-signs:not(:has(> figure)) .hd-sign-list { grid-template-columns: 1fr; } }
+
+/* ===== Bài viết: so sánh 2 mẫu cạnh nhau ===== */
+.art-vs { margin-top: 30px; }
+.art-vs h2 { font: 800 22px/1.2 var(--font-web, "Archivo"), system-ui, sans-serif; font-stretch: 80%; color: #0B1230; margin-bottom: 12px; }
+.art-vs-grid { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.art-vs-card { display: flex; flex-direction: column; padding: 14px; border-radius: 18px; background: #fff; border: 1px solid #E6E9F2; }
+.art-vs-card.own { border: 2px solid #F7C600; box-shadow: 0 18px 36px -24px rgba(247,198,0,.8); }
+.art-vs-img { display: grid; place-items: center; aspect-ratio: 4 / 3; border-radius: 12px; background: #F6F7FB; overflow: hidden; }
+.art-vs-img img { width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply; transition: transform .4s; }
+.art-vs-card:hover .art-vs-img img { transform: scale(1.04); }
+.art-vs-card b { margin-top: 10px; font-size: 16px; color: #0B1230; }
+.art-vs-card ul { margin: 8px 0 0; display: grid; gap: 4px; }
+.art-vs-card li { position: relative; padding-left: 14px; font-size: 14px; line-height: 1.45; color: #374151; }
+.art-vs-card li::before { content: ""; position: absolute; left: 0; top: 8px; width: 6px; height: 6px; border-radius: 2px; background: #F7C600; }
+.art-vs-card.own li::before { background: #22A35A; }
+.art-vs-btn { margin-top: auto; min-height: 42px; padding: 0 12px; font-size: 13.5px; }
+.art-vs-card ul + .art-vs-btn, .art-vs-card ul + .art-vs-credit { margin-top: 12px; }
+.art-vs-credit { margin-top: auto; font-size: 12px; color: #6B7280; }
+.art-vs-badge { position: absolute; left: 50%; top: 34%; transform: translate(-50%, -50%); display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%;
+  font: 800 15px "Chakra Petch", system-ui, sans-serif; color: #0B1230; background: #F7C600; box-shadow: 0 0 0 5px #fff, 0 8px 18px -6px rgba(0,0,0,.35); }
+@media (max-width: 639.98px) {
+  .art-vs-grid { gap: 8px; }
+  .art-vs-card { padding: 10px; }
+  .art-vs-card b { font-size: 14.5px; }
+  .art-vs-card li { font-size: 13px; }
+  .art-vs-badge { width: 38px; height: 38px; font-size: 13px; top: 26%; }
+  .art-vs-btn { font-size: 12.5px; padding: 0 8px; }
+}

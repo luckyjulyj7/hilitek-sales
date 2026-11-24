@@ -6,6 +6,7 @@ import { fetchLanding } from "../lib/api.js";
 import RichText from "../components/RichText.jsx";
 import ProductCard from "../components/ProductCard.jsx";
 import { useCatalog } from "../catalogContext.js";
+import ArticleView from "./ArticleView.jsx";
 
 /** Trang nội dung / landing tự tạo — poster / banner trỏ tới bằng /trang/<slug>. */
 export default function LandingPage({ slug, navigate }) {
@@ -54,6 +55,9 @@ export default function LandingPage({ slug, navigate }) {
   const mins = Math.max(1, Math.round(words / 220));
   const zalo = SITE.zaloHref || "https://zalo.me/" + (SITE.phoneRaw || "");
 
+  // Bài tin tức: giao diện tạp chí riêng (ArticleView.jsx).
+  if (meta.news) return <ArticleView meta={meta} page={page} failed={failed} mins={mins} products={allProducts} navigate={navigate} />;
+
   return (
     <div className="art mx-auto max-w-3xl px-4 py-8 sm:py-12 font-sans">
       {meta.news && (
@@ -84,6 +88,25 @@ export default function LandingPage({ slug, navigate }) {
       ) : (
         <p className="text-mute">Đang tải…</p>
       )}
+      {/* So sánh trực quan: 2 mẫu cạnh nhau, ảnh thật + thông số */}
+      {Array.isArray(meta.pairs) && meta.pairs.map((pr) => (
+        <section key={pr.title} className="art-vs">
+          <h2>{pr.title}</h2>
+          <div className="art-vs-grid">
+            {[pr.left, pr.right].map((x, i) => (
+              <div key={x.name} className={"art-vs-card" + (i === 0 ? " own" : "")}>
+                <div className="art-vs-img"><img src={x.img} alt={x.name} loading="lazy" decoding="async" /></div>
+                <b>{x.name}</b>
+                <ul>{x.specs.map((sp) => <li key={sp}>{sp}</li>)}</ul>
+                {x.slug ? (
+                  <a href={`/san-pham/${x.slug}`} onClick={(e) => { e.preventDefault(); navigate(`san-pham/${x.slug}`); }} className="hx-key y art-vs-btn">Xem giá &amp; nghe gõ</a>
+                ) : x.credit ? <span className="art-vs-credit">{x.credit}</span> : null}
+              </div>
+            ))}
+            <span className="art-vs-badge" aria-hidden="true">VS</span>
+          </div>
+        </section>
+      ))}
       {/* Bảng so sánh (nếu bài có) */}
       {meta.table && (
         <section className="mt-8">
