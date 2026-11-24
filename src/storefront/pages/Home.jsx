@@ -83,7 +83,8 @@ function Tile({ t, slot, products, navigate }) {
   const auto = !t.image;
   const img = t.image || price.image;
   const rawTo = t.href === "zalo" ? SITE.zaloHref : t.href || "/danh-muc";
-  const to = t.id === "t-phan-mem" && /^\/danh-muc\?group=Ph/.test(rawTo) ? "/phan-mem-ban-quyen" : rawTo;
+  const to = t.id === "t-phan-mem" && /^\/danh-muc\?group=Ph/.test(rawTo) ? "/phan-mem-ban-quyen"
+    : t.id === "t-it" && t.href === "zalo" ? "/dich-vu-it-helpdesk" : rawTo;
   const { internalPath } = resolveLink(to);
   const fan = (Array.isArray(t.images) ? t.images : []).filter(Boolean).slice(0, 4);
   const link = internalPath != null

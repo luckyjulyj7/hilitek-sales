@@ -63,7 +63,18 @@ html.hili-dark .nl-band button { background: #F7C600; color: #060A2A; }
 
 /* ---- Flash sale: khung kính tối, thẻ sản phẩm giữ nền trắng cho ảnh ---- */
 .hc-flash > div { background: linear-gradient(180deg, #10184A, #0B1239) !important; border: 1px solid var(--hc-line); box-shadow: 0 24px 50px -30px rgba(0,0,0,.9); }
-.hc-flash .bg-ink { background: #fff !important; color: var(--hc-ink) !important; }
+/* Flash Sale: thẻ bo góc, giá đỏ, nút đặt hàng kiểu phím đỏ nổi bật có vệt sáng chạy */
+.hc-flash .group { border-radius: 14px; }
+.hc-flash .group .text-navy { color: #E3121F !important; }
+.hc-flash .group button.bg-ink { position: relative; overflow: hidden; border-radius: 10px; color: #fff !important; font-weight: 800; letter-spacing: .02em;
+  background: linear-gradient(180deg, #FF4A3D, #E3121F 55%, #C40812) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 -3px 0 rgba(0,0,0,.22), 0 3px 0 #8E0A14, 0 12px 20px -12px rgba(237,28,36,.9);
+  transition: transform .09s, box-shadow .09s, filter .2s; }
+.hc-flash .group button.bg-ink:hover { filter: brightness(1.06); }
+.hc-flash .group button.bg-ink:active { transform: translateY(2px); box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 1px 0 #8E0A14; }
+.hc-flash .group button.bg-ink::after { content: ""; position: absolute; top: 0; bottom: 0; left: -60%; width: 40%; background: linear-gradient(100deg, transparent, rgba(255,255,255,.45), transparent); transform: skewX(-20deg); animation: hc-shine 3.2s ease-in-out infinite; }
+@keyframes hc-shine { 0%, 55% { left: -60%; } 100% { left: 130%; } }
+@media (prefers-reduced-motion: reduce) { .hc-flash .group button.bg-ink::after { animation: none; display: none; } }
 
 /* ---- Sản phẩm (ProductTabs): tab là phím cơ ---- */
 .hc-show > section { padding-top: 0 !important; }

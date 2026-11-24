@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Clock, MessageCircle } from "lucide-react";
+import "./landing-extra.css";
 import { NEWS_KINDS, NEWS_PATH, SITE, findPage } from "../config.js";
 import { fetchLanding } from "../lib/api.js";
 import RichText from "../components/RichText.jsx";
@@ -48,22 +49,52 @@ export default function LandingPage({ slug, navigate }) {
     );
   }
 
+  // Thời gian đọc ước tính: ~220 chữ/phút.
+  const words = String((page && page.body) || "").split(/\s+/).filter(Boolean).length;
+  const mins = Math.max(1, Math.round(words / 220));
+  const zalo = SITE.zaloHref || "https://zalo.me/" + (SITE.phoneRaw || "");
+
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12 font-sans">
+    <div className="art mx-auto max-w-3xl px-4 py-8 sm:py-12 font-sans">
       {meta.news && (
         <>
-          <a href={NEWS_PATH} onClick={(e) => { e.preventDefault(); navigate(NEWS_PATH.slice(1)); }} className="mb-4 inline-flex min-h-[44px] items-center gap-1.5 text-[15px] font-semibold text-navy hover:underline"><ArrowLeft size={16} /> Tin tức &amp; video</a>
-          <p className="mb-2 text-[14px] font-semibold text-navy">{NEWS_KINDS[meta.news]}{meta.date ? ` · ${meta.date.split("-").reverse().join("/")}` : ""}</p>
+          <a href={NEWS_PATH} onClick={(e) => { e.preventDefault(); navigate(NEWS_PATH.slice(1)); }} className="mb-3 inline-flex min-h-[44px] items-center gap-1.5 text-[15px] font-semibold text-navy hover:underline"><ArrowLeft size={16} /> Tin tức &amp; video</a>
+          <div className="art-meta">
+            <span className="art-kind">{NEWS_KINDS[meta.news]}</span>
+            {meta.date && <span>{meta.date.split("-").reverse().join("/")}</span>}
+            {page && <span className="inline-flex items-center gap-1"><Clock size={14} /> {mins} phút đọc</span>}
+          </div>
         </>
       )}
-      <h1 className="font-display text-2xl sm:text-3xl font-bold text-ink mb-5">{meta.title}</h1>
-      {meta.news && meta.cover && !meta.videoUrl && <img src={meta.cover} alt="" className="mb-6 w-full rounded-2xl" />}
+      <h1 className="font-display text-[28px] sm:text-[40px] leading-[1.08] font-bold text-ink">{meta.title}</h1>
+      {meta.news && meta.summary && <p className="art-lead">{meta.summary}</p>}
+      {meta.news && meta.cover && !meta.videoUrl && <div className="art-hero mt-6"><img src={meta.cover} alt={meta.title} loading="eager" decoding="async" /></div>}
+      {/* Tóm tắt nhanh: đọc 10 giây là nắm ý chính */}
+      {Array.isArray(meta.points) && meta.points.length > 0 && (
+        <aside className="art-tldr">
+          <h2>Tóm tắt nhanh</h2>
+          <ul>{meta.points.map((x) => <li key={x}>{x}</li>)}</ul>
+        </aside>
+      )}
+      {!meta.points && <div className="mt-6" />}
       {page ? (
-        <RichText text={[meta.videoUrl && !String(page.body).includes(meta.videoUrl) ? meta.videoUrl : "", page.body].filter(Boolean).join("\n\n")} />
+        <div className="art-body"><RichText text={[meta.videoUrl && !String(page.body).includes(meta.videoUrl) ? meta.videoUrl : "", page.body].filter(Boolean).join("\n\n")} imgAlt={meta.title} /></div>
       ) : failed ? (
         <p className="text-mute">Không tải được nội dung trang. Vui lòng tải lại trang.</p>
       ) : (
         <p className="text-mute">Đang tải…</p>
+      )}
+      {/* Bảng so sánh (nếu bài có) */}
+      {meta.table && (
+        <section className="mt-8">
+          {meta.table.title && <h2 className="mb-3 font-display text-[22px] font-bold text-ink">{meta.table.title}</h2>}
+          <div className="sw-table-wrap" style={{ marginTop: 0 }}>
+            <table className="sw-table">
+              <thead><tr>{meta.table.head.map((h) => <th key={h}>{h}</th>)}</tr></thead>
+              <tbody>{meta.table.rows.map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j}>{c}</td>)}</tr>)}</tbody>
+            </table>
+          </div>
+        </section>
       )}
       {Array.isArray(meta.products) && meta.products.length > 0 && (() => {
         const list = meta.products.map((s) => (allProducts || []).find((p) => p.slug === s)).filter(Boolean);
@@ -77,8 +108,18 @@ export default function LandingPage({ slug, navigate }) {
           </section>
         );
       })()}
-      {meta.cta && (
+      {meta.cta && !meta.news && (
         <a href={meta.cta.to} onClick={(e) => { e.preventDefault(); navigate(meta.cta.to.slice(1)); }} className="mt-6 inline-flex min-h-[46px] items-center rounded-lg bg-ink px-4 font-semibold text-white hover:bg-navy">{meta.cta.label}</a>
+      )}
+      {/* Cuối bài: kêu gọi rõ ràng */}
+      {meta.news && (
+        <div className="art-cta">
+          <div><b>Cần Hili tư vấn thêm?</b><p>Nhắn Zalo hoặc ghé cửa hàng ở Phú Thọ, TP.HCM để xem, dùng thử trực tiếp.</p></div>
+          <div className="flex flex-wrap gap-2">
+            {meta.cta && <a href={meta.cta.to} onClick={(e) => { e.preventDefault(); navigate(meta.cta.to.slice(1)); }} className="hx-key y min-h-[46px] px-4 text-[14.5px]">{meta.cta.label}</a>}
+            <a href={zalo} target="_blank" rel="noreferrer" className="hx-key min-h-[46px] px-4 text-[14.5px]"><MessageCircle size={16} /> Nhắn Zalo</a>
+          </div>
+        </div>
       )}
     </div>
   );

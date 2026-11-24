@@ -1,0 +1,136 @@
+/* Hiệu ứng + khối thêm dùng chung cho các trang giới thiệu (phần mềm, IT Helpdesk) và bài viết. */
+
+/* Hiện dần khi cuộn tới */
+.rv { opacity: 0; transform: translateY(16px); transition: opacity .6s cubic-bezier(.2,.7,.2,1), transform .6s cubic-bezier(.2,.7,.2,1); }
+.rv.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .rv { opacity: 1; transform: none; transition: none; } }
+
+/* Thẻ nổi nhẹ khi rê chuột */
+.sw-card { transition: border-color .2s, box-shadow .25s, transform .25s; }
+.sw-card:hover { border-color: #C9D0EA; box-shadow: 0 16px 32px -20px rgba(11,18,48,.35); transform: translateY(-3px); }
+.sw-card:hover .sw-ic { background: #F7C600; color: #0B1230; }
+.sw-ic { transition: background .2s, color .2s; }
+
+/* ===== IT Helpdesk: hình minh hoạ đầu trang ===== */
+.hd-visual { position: relative; min-height: 380px; }
+.hd-photo { width: 100%; height: 380px; object-fit: cover; object-position: right center; border-radius: 26px; box-shadow: 0 30px 60px -30px rgba(0,0,0,.7); }
+.hd-ticket { position: absolute; left: -24px; bottom: -20px; width: min(320px, 80%); padding: 14px; border-radius: 16px; background: rgba(255,255,255,.97); color: #0B1230;
+  box-shadow: 0 24px 48px -20px rgba(0,0,0,.55); animation: hd-float 6s ease-in-out infinite; }
+.hd-tk-h { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-weight: 800; font-size: 14px; color: #1E2A8A; }
+.hd-tk-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; border-top: 1px solid #EEF0F6; font-size: 13.5px; }
+.hd-tk-row b { flex: none; font-size: 12px; padding: 3px 8px; border-radius: 999px; }
+.hd-tk-row b.ok { background: #E3F4EA; color: #17643A; }
+.hd-tk-row b.run { background: #FFF4CC; color: #7A5A00; }
+@keyframes hd-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@media (prefers-reduced-motion: reduce) { .hd-ticket { animation: none; } }
+
+.hd-why { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.hd-why b { font-size: 20px !important; color: #0B1230 !important; }
+.hd-why .sw-ic { margin-bottom: 10px; }
+
+/* Quy trình */
+.hd-flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 22px; position: relative; }
+.hd-flow li { position: relative; padding: 22px 20px; border-radius: 18px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); }
+.hd-flow li h3 { margin-top: 12px; color: #fff; }
+.hd-flow li p { margin-top: 6px; font-size: 14.5px; line-height: 1.6; color: rgba(225,231,255,.8); }
+.hd-num { position: absolute; right: 16px; top: 12px; font: 800 30px/1 "Chakra Petch", system-ui, sans-serif; color: rgba(247,198,0,.35); }
+.hd-fic { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 14px; color: #0B1230; background: linear-gradient(180deg, #FFD84D, #F2BF00); box-shadow: 0 3px 0 #8D6E00; }
+
+/* Gói dịch vụ */
+.hd-plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 22px; align-items: stretch; }
+.hd-plan { position: relative; display: flex; flex-direction: column; padding: 24px; border-radius: 20px; background: #fff; border: 1px solid #E6E9F2; transition: transform .25s, box-shadow .25s; }
+.hd-plan:hover { transform: translateY(-4px); box-shadow: 0 22px 40px -24px rgba(11,18,48,.4); }
+.hd-plan.hot { color: #fff; background: linear-gradient(180deg, #1A2470, #0D1442); border-color: transparent; box-shadow: 0 26px 50px -26px rgba(30,42,138,.8); }
+.hd-plan h3 { font-size: 22px; }
+.hd-plan-sub { margin-top: 4px; font-size: 14px; color: #5A6484; }
+.hd-plan.hot .hd-plan-sub { color: rgba(225,231,255,.75); }
+.hd-plan ul { margin: 16px 0 20px; display: grid; gap: 10px; }
+.hd-plan li { display: flex; gap: 8px; align-items: flex-start; font-size: 14.5px; line-height: 1.45; }
+.hd-plan li svg { flex: none; margin-top: 2px; color: #22A35A; }
+.hd-plan.hot li svg { color: #F7C600; }
+.hd-plan-btn { margin-top: auto; width: 100%; }
+.hd-badge { position: absolute; top: -12px; left: 24px; padding: 4px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 800; color: #0B1230; background: #F7C600; }
+
+/* SLA */
+.hd-sla { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.4fr); gap: 20px; align-items: center; padding: 28px; border-radius: 22px; background: #fff; border: 1px solid #E6E9F2; }
+.hd-sla p { margin-top: 8px; font-size: 15px; line-height: 1.6; color: #4B5563; }
+.hd-sla-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.hd-sla-grid div { padding: 16px; border-radius: 14px; background: #F6F7FB; }
+.hd-sla-grid b { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 13px; color: #fff; }
+.hd-sla-grid b.red { background: #E3121F; } .hd-sla-grid b.yel { background: #E09400; } .hd-sla-grid b.grn { background: #22A35A; }
+.hd-sla-grid span { display: block; margin-top: 8px; font-size: 14px; line-height: 1.5; color: #374151; }
+
+/* ===== Phần mềm: bảng so sánh, khu kiểm tra bản quyền ===== */
+.sw-table-wrap { margin-top: 18px; overflow-x: auto; border-radius: 16px; border: 1px solid #E6E9F2; background: #fff; }
+.sw-table { width: 100%; min-width: 640px; border-collapse: collapse; font-size: 14.5px; }
+.sw-table th { text-align: left; padding: 14px 16px; background: #0D1442; color: #fff; font-weight: 700; }
+.sw-table td { padding: 13px 16px; border-top: 1px solid #EEF0F6; vertical-align: top; color: #374151; }
+.sw-table td:first-child { font-weight: 700; color: #0B1230; white-space: nowrap; }
+.sw-table tr:nth-child(even) td { background: #FAFBFE; }
+.sw-yes { color: #17643A; font-weight: 700; } .sw-no { color: #B91C1C; font-weight: 700; }
+
+.sw-check { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; align-items: center; }
+.sw-win { border-radius: 14px; overflow: hidden; background: #fff; box-shadow: 0 24px 50px -24px rgba(11,18,48,.45); border: 1px solid #E6E9F2; }
+.sw-win-bar { display: flex; align-items: center; gap: 6px; padding: 10px 14px; background: #F1F3F8; font-size: 13px; color: #4B5563; }
+.sw-win-bar i { width: 10px; height: 10px; border-radius: 50%; background: #D0D5E2; }
+.sw-win-body { padding: 22px; }
+.sw-win-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 0; border-top: 1px solid #EEF0F6; font-size: 14.5px; }
+.sw-win-row:first-child { border-top: 0; }
+.sw-win-ok { display: inline-flex; align-items: center; gap: 6px; color: #17643A; font-weight: 700; }
+.sw-steps-v { display: grid; gap: 12px; counter-reset: c; }
+.sw-steps-v li { position: relative; padding: 14px 16px 14px 56px; border-radius: 14px; background: #fff; border: 1px solid #E6E9F2; font-size: 15px; line-height: 1.55; }
+.sw-steps-v li::before { counter-increment: c; content: counter(c); position: absolute; left: 14px; top: 12px; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 9px; font-weight: 800; color: #0B1230; background: #F7C600; }
+
+.sw-dept { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 22px; }
+.sw-dept .sw-card h3 { display: flex; align-items: center; gap: 8px; }
+.sw-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.sw-chips span { font-size: 12.5px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: #EEF0FB; color: #1E2A8A; }
+
+/* ===== Bài viết ===== */
+.art { --art-w: 760px; }
+.art-hero { position: relative; overflow: hidden; border-radius: 22px; background: #0D1442; }
+.art-hero img { width: 100%; height: clamp(200px, 38vw, 380px); object-fit: contain; background: #fff; }
+.art-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-bottom: 10px; font-size: 14px; color: #5A6484; }
+.art-kind { display: inline-block; padding: 4px 10px; border-radius: 999px; font-weight: 700; font-size: 13px; color: #0B1230; background: #F7C600; }
+.art-lead { margin: 14px 0 0; font-size: 17.5px; line-height: 1.6; color: #374151; }
+.art-tldr { margin: 22px 0; padding: 18px 20px; border-radius: 16px; background: #F4F6FB; border-left: 4px solid #F7C600; }
+.art-tldr h2 { font: 800 15px/1.2 "Chakra Petch", system-ui, sans-serif; letter-spacing: .04em; text-transform: uppercase; color: #1E2A8A; margin-bottom: 8px; }
+.art-tldr ul { display: grid; gap: 8px; }
+.art-tldr li { display: flex; gap: 8px; font-size: 15.5px; line-height: 1.5; color: #1F2937; }
+.art-tldr li::before { content: ""; flex: none; width: 8px; height: 8px; margin-top: 8px; border-radius: 2px; background: #F7C600; transform: rotate(45deg); }
+.art-body { font-size: 16.5px; }
+.art-body h2 { margin-top: 30px !important; padding-top: 6px; font-size: 24px !important; color: #0B1230; }
+.art-body img { border-radius: 14px; margin: 6px 0; }
+.art-cta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; margin-top: 28px; padding: 22px; border-radius: 18px; color: #fff; background: linear-gradient(120deg, #141D5C, #0B1238); }
+.art-cta b { font-size: 18px; }
+.art-cta p { margin-top: 4px; font-size: 14.5px; color: rgba(225,231,255,.8); }
+
+/* ===== Điện thoại, máy tính bảng ===== */
+@media (max-width: 1023.98px) {
+  .hd-why { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hd-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hd-plans { grid-template-columns: 1fr; max-width: 560px; }
+  .hd-sla { grid-template-columns: 1fr; }
+  .hd-visual { min-height: 0; }
+  .hd-photo { height: 260px; }
+  .hd-ticket { left: 12px; bottom: -16px; }
+  .sw-check { grid-template-columns: 1fr; }
+  .sw-dept { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 639.98px) {
+  .hd-why { gap: 10px; }
+  .hd-why > div { padding: 14px; }
+  .hd-why b { font-size: 17px !important; }
+  .hd-flow { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .hd-flow li { padding: 16px 14px; }
+  .hd-flow li p { font-size: 13.5px; }
+  .hd-fic { width: 40px; height: 40px; }
+  .hd-sla { padding: 20px; }
+  .hd-sla-grid { grid-template-columns: 1fr; }
+  .hd-photo { height: 220px; }
+  .hd-ticket { width: 86%; padding: 10px 12px; }
+  .hd-tk-row { font-size: 13px; padding: 6px 0; }
+  .sw-dept { grid-template-columns: 1fr; }
+  .art-body { font-size: 16px; }
+  .art-lead { font-size: 16px; }
+}

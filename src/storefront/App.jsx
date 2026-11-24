@@ -7,6 +7,7 @@ import { PAGES, NEWS_PATH } from "./config.js";
 import { trackPage, trackPath } from "./lib/track.js";
 import AdminEditBar from "./components/AdminEditBar.jsx";
 import SoftwareLanding, { SOFTWARE_PATH } from "./pages/SoftwareLanding.jsx";
+import HelpdeskLanding, { HELPDESK_PATH } from "./pages/HelpdeskLanding.jsx";
 import { CatalogCtx } from "./catalogContext.js";
 import Header from "./components/Header.jsx";
 import Footer from "./components/Footer.jsx";
@@ -110,6 +111,8 @@ export default function App() {
     page = <LandingPage slug={landingMatch.slug} navigate={route.navigate} />;
   } else if (route.path === NEWS_PATH) {
     page = <News navigate={route.navigate} />;
+  } else if (route.path === HELPDESK_PATH) {
+    page = <HelpdeskLanding />;
   } else if (route.path === SOFTWARE_PATH) {
     page = <SoftwareLanding catalog={catalog} navigate={route.navigate} />;
   } else if (route.path === HANDHELD_PATH) {

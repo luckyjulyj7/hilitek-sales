@@ -91,6 +91,19 @@ export default async function handler(req, res) {
         noscript: "<h1>Phần mềm bản quyền cho doanh nghiệp</h1><p>Windows, Office, Microsoft 365, Windows Server, SQL Server chính hãng, hoá đơn VAT, cài đặt kích hoạt.</p>",
       }), cache);
     }
+    if (q.landing === "helpdesk") {
+      const ld = { "@context": "https://schema.org", "@type": "Service", serviceType: "IT Helpdesk", name: "Dịch vụ IT Helpdesk cho doanh nghiệp",
+        provider: { "@id": `${SITE_URL}/#store` }, areaServed: { "@type": "City", name: "TP Hồ Chí Minh" },
+        description: "Hỗ trợ kỹ thuật từ xa và tận nơi, bảo trì định kỳ, mạng, máy chủ, email, sao lưu, bảo mật cho văn phòng." };
+      return send(res, 200, applyHead(html, {
+        title: "Dịch vụ IT Helpdesk cho doanh nghiệp tại TP.HCM | Hilitek",
+        desc: "IT thuê ngoài cho văn phòng: hỗ trợ từ xa, kỹ thuật tới tận nơi tại TP.HCM, bảo trì định kỳ, mạng, máy chủ, email, sao lưu và bảo mật. Khảo sát miễn phí, báo giá theo số máy.",
+        url: `${SITE_URL}/dich-vu-it-helpdesk`,
+        image: "/home/it-helpdesk.webp",
+        extra: `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, "\\u003c")}</script>`,
+        noscript: "<h1>Dịch vụ IT Helpdesk cho doanh nghiệp</h1><p>Hỗ trợ từ xa và tận nơi tại TP.HCM, bảo trì định kỳ, mạng, máy chủ, email, sao lưu, bảo mật.</p>",
+      }), cache);
+    }
     if (q.landing === "news") {
       return send(res, 200, applyHead(html, {
         title: "Tin tức và video công nghệ | Hilitek",

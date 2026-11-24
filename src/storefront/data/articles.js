@@ -10,6 +10,23 @@ const HH = { to: "/may-choi-game-cam-tay", label: "Xem các máy chơi game cầ
 export const ARTICLES = [
   {
     slug: "top-5-ban-phim-co-duoi-1-5-trieu-cuoi-2026",
+    points: [
+      "Dưới 1,5 triệu đã có bàn phím không dây 3 chế độ, gasket, hotswap, pin 4.000 mAh",
+      "VOICSKY PULSE 75 dễ chọn nhất, PULSE 96 cho người cần cụm phím số",
+      "Switch TONE êm cho văn phòng, CLOUDY có khấc cho người gõ nhiều",
+      "So với AKKO cùng layout: VOICSKY pin lớn hơn, giá thấp hơn",
+    ],
+    table: {
+      title: "So sánh nhanh 5 mẫu",
+      head: ["Mẫu", "Layout", "Kết nối", "Điểm nổi bật"],
+      rows: [
+        ["VOICSKY PULSE 75", "75% (82 phím)", "3 chế độ", "Núm xoay, pin 4.000 mAh"],
+        ["VOICSKY PULSE 96", "96% (97 phím)", "3 chế độ", "Có cụm phím số"],
+        ["VOICSKY TUNE 65", "65% (68 phím)", "3 chế độ", "Màn hình PIXDOT 7×7"],
+        ["VOICSKY ECHO 75", "75% (81 phím)", "3 chế độ", "Màn hình 1.14 inch"],
+        ["Machenike K500B", "TKL (87 phím)", "Có dây", "Giá mềm, switch Red"],
+      ],
+    },
     news: "huong-dan",
     date: "2026-11-24",
     title: "Top 5 bàn phím cơ dưới 1,5 triệu đáng mua cuối 2026",
@@ -26,6 +43,7 @@ export const ARTICLES = [
     body: `Dưới 1,5 triệu đồng giờ đã mua được bàn phím cơ không dây có cấu trúc gasket, keycap PBT và pin dùng cả tháng. Dưới đây là 5 mẫu Hilitek đang có hàng, xếp theo giá.
 
 ## 1. VOICSKY PULSE 75: dễ chọn nhất
+![VOICSKY PULSE 75](https://media.hilipc.vn/desc/mwix9l8i-4qlr4t7p.webp)
 - 82 phím layout 75% Exploded, núm xoay chỉnh âm lượng, nhấn để tắt tiếng
 - Gasket Mount và tiêu âm 5 lớp, gõ êm, ít tiếng rỗng
 - Hai loại switch: **TONE Silent Linear** (êm, nhẹ) hoặc **CLOUDY Tactile** (có khấc)
@@ -34,20 +52,24 @@ export const ARTICLES = [
 **Hợp với ai:** người mới chơi phím cơ, dân văn phòng muốn bàn gọn mà vẫn đủ hàng phím F.
 
 ## 2. VOICSKY PULSE 96: đủ cụm số trong thân gọn
+![VOICSKY PULSE 96](https://media.hilipc.vn/desc/mwixm06m-1amgzdt8.webp)
 Cùng cấu trúc và pin với PULSE 75 nhưng có 97 phím layout 96%, giữ cụm phím số mà vẫn ngắn hơn bàn phím fullsize. **Hợp với ai:** kế toán, nhập liệu, người hay gõ số.
 
 ## 3. VOICSKY TUNE 65: nhỏ gọn, có màn hình điểm ảnh
+![VOICSKY TUNE 65](https://media.hilipc.vn/desc/mwixt1hj-40licbxv.webp)
 - 68 phím layout 65%, vỏ bán trong suốt
 - Màn hình PIXDOT 7×7 với 49 đèn LED hiển thị hiệu ứng
 - Switch TONE Silent Linear 43g, gasket mount, pin 4.000 mAh
 **Hợp với ai:** bàn làm việc nhỏ, người thích phím có điểm nhấn.
 
 ## 4. VOICSKY ECHO 75: có màn hình thông tin
+![VOICSKY ECHO 75](https://media.hilipc.vn/desc/mwixepd9-0pyuy7w3.webp)
 - 81 phím layout 75%, màn hình Dynamic Screen 1.14 inch hiện giờ, ngày, pin
 - Núm xoay đa năng, switch TONE hoặc CLOUDY, socket hotswap có RGB
 **Hợp với ai:** người muốn bàn phím "có gì đó để nhìn" mà vẫn dưới 1,5 triệu.
 
 ## 5. Machenike K500B-B87: có dây, giá dễ tiếp cận
+![Machenike K500B-B87](https://media.hilipc.vn/desc/mwnk4un8-dd3rg6ki.webp)
 - 87 phím TKL, switch Red linear, hotswap 3-pin
 - Keycap PBT Double-Shot, LED Rainbow 11 chế độ, chống ghosting toàn phím
 **Hợp với ai:** game thủ chỉ cần phím có dây, ổn định, ngân sách thấp.
@@ -70,6 +92,21 @@ Hàng chính hãng, bảo hành 24 tháng với VOICSKY, đủ hoá đơn VAT. G
   },
   {
     slug: "man-hinh-27-inch-2k-hay-full-hd-180hz",
+    points: [
+      "Chơi game thi đấu, card tầm trung: chọn Full HD 144Hz trở lên",
+      "Làm việc nhiều, cần chữ nét: chọn 2K",
+      "IPS cho màu chuẩn, VA cho tương phản cao và tần số quét cao giá tốt",
+    ],
+    table: {
+      title: "Full HD tần số cao hay 2K?",
+      head: ["Tiêu chí", "Full HD 144–280Hz", "2K 165–200Hz"],
+      rows: [
+        ["Độ nét chữ ở 27 inch", "Vừa đủ, nhìn gần thấy hạt", "Sắc nét"],
+        ["Card đồ hoạ cần", "Tầm trung là đủ", "Mạnh hơn để giữ FPS"],
+        ["Hợp nhất với", "Game bắn súng, thi đấu", "Làm việc, game nhập vai"],
+        ["Giá tham khảo", "Từ khoảng 2,2 triệu", "Từ khoảng 3,6 triệu"],
+      ],
+    },
     news: "huong-dan",
     date: "2026-11-24",
     title: "Màn hình 27 inch 2K hay Full HD 180Hz: chơi game, làm việc nên chọn gì?",
@@ -87,12 +124,14 @@ Hàng chính hãng, bảo hành 24 tháng với VOICSKY, đủ hoá đơn VAT. G
     body: `Ở cỡ 27 inch, câu hỏi lớn nhất là nên lấy độ phân giải 2K (2560×1440) hay Full HD (1920×1080) với tần số quét cao. Câu trả lời phụ thuộc vào việc bạn làm nhiều nhất và card đồ hoạ đang có.
 
 ## Full HD tần số cao: cho game bắn súng, thi đấu
+![Màn hình VSP VA2728G2 280Hz](https://media.hilipc.vn/desc/mwivvuid-qepx6tfn.webp)
 - Chữ và hình hơi to, mật độ điểm ảnh thấp hơn 2K, nhìn gần sẽ thấy hạt
 - Card đồ hoạ tầm trung vẫn đẩy được FPS cao, tận dụng hết 144Hz đến 280Hz
 - Giá mềm: mẫu 27 inch IPS 144Hz chỉ khoảng 2,2 triệu
 **Gợi ý:** VSP IP2709SG (IPS 144Hz), MSI G275L E14 (IPS 144Hz), VSP VA2728G2 (VA 280Hz) cho game thủ muốn mượt tối đa, GIGABYTE GS27FC2 (màn cong VA 240Hz).
 
 ## 2K: cho làm việc và game nhập vai
+![Màn hình AIWA 27 inch 2K](https://media.hilipc.vn/desc/mwiwd5rx-rbq1rqfs.webp)
 - Chữ sắc nét, chia đôi màn hình làm việc thoải mái
 - Game đẹp hơn nhưng cần card đồ hoạ mạnh hơn để giữ FPS cao
 **Gợi ý:** AIWA MZ270L-Y (IPS 2K 165Hz), MSI MAG 275QF E21 (Rapid IPS 2K, tới 200Hz).
@@ -109,6 +148,21 @@ Chưa biết chọn mẫu nào hợp với card đồ hoạ đang có, nhắn Hi
   },
   {
     slug: "chon-may-choi-game-cam-tay",
+    points: [
+      "Chọn theo game muốn chơi, không theo chip mạnh nhất",
+      "Retro: nhỏ gọn, từ khoảng 1,75 triệu",
+      "Android: linh hoạt, chơi được cả game mobile",
+      "PC cầm tay: chơi game Steam, từ khoảng 15 triệu",
+    ],
+    table: {
+      title: "Ba dòng máy trong một bảng",
+      head: ["Dòng", "Chơi được", "Độ gọn", "Giá tham khảo"],
+      rows: [
+        ["Retro", "Game cổ, PS1, Game Boy", "Bỏ túi", "Khoảng 1,7 đến 2,5 triệu"],
+        ["Android", "Giả lập PS2, Switch, game mobile", "Vừa", "Tuỳ chip, ví dụ AYN Thor"],
+        ["PC cầm tay", "Game PC, Steam", "To, nặng hơn", "Khoảng 15 đến 28 triệu"],
+      ],
+    },
     news: "huong-dan",
     date: "2026-11-24",
     title: "Retro, Android hay PC cầm tay: máy chơi game cầm tay nào hợp với bạn?",
@@ -125,6 +179,7 @@ Chưa biết chọn mẫu nào hợp với card đồ hoạ đang có, nhắn Hi
 **Hợp với ai:** người muốn một chiếc máy bỏ túi, chơi vài ván lúc rảnh.
 
 ## Android: linh hoạt nhất
+![AYN Thor hai màn hình](https://media.hilipc.vn/desc/mwj0mg7f-21ax645f.webp)
 - Giả lập được nhiều hệ máy đời mới hơn như PS2, Switch, tuỳ chip
 - Chơi được cả game mobile, xem YouTube, cài ứng dụng như điện thoại
 - Có mẫu thiết kế đặc biệt như **AYN Thor** gập với hai màn hình AMOLED
@@ -147,6 +202,24 @@ Giá trên là giá tham khảo tại các cửa hàng tháng 11/2026, thay đ�
   },
   {
     slug: "build-pc-choi-game-15-trieu-thang-12-2026",
+    points: [
+      "Khung 15 triệu: i5-12400F, RAM 16GB, RTX 3050, SSD NVMe 512GB, nguồn 650W",
+      "Phần nền chọn loại bền để nâng cấp sau, CPU và VGA chọn theo giá từng ngày",
+      "Bộ máy tương tự trên thị trường đang bán trọn khoảng 16 đến 18,6 triệu",
+    ],
+    table: {
+      title: "Cấu hình gợi ý",
+      head: ["Linh kiện", "Gợi ý", "Ghi chú"],
+      rows: [
+        ["CPU", "Intel Core i5-12400F", "6 nhân 12 luồng"],
+        ["Mainboard", "ASRock B760M-HDV/M.2 D4", "Có bán tại Hilitek"],
+        ["RAM", "16GB DDR4 (2 × 8GB)", "Kênh đôi"],
+        ["VGA", "RTX 3050", "Dư tiền lên RTX 5060 8GB"],
+        ["SSD", "SSTC E130 512GB NVMe", "Có bán tại Hilitek"],
+        ["Nguồn", "650W 80 Plus Bronze", "Đủ dư để nâng card"],
+        ["Vỏ", "Xigmatek Cloud M DGT", "Có bán tại Hilitek"],
+      ],
+    },
     news: "huong-dan",
     date: "2026-11-24",
     title: "Build PC chơi game 15 triệu tháng 12/2026",
@@ -184,6 +257,11 @@ Dùng công cụ **Xây dựng cấu hình PC** trên web: chọn từng món, w
   },
   {
     slug: "qua-tet-noel-cho-game-thu-duoi-2-trieu",
+    points: [
+      "Quà dùng hằng ngày: chuột, bàn phím, tai nghe chính hãng",
+      "Dưới 1 triệu: chuột VOICSKY CLOUD S1 PRO 49g",
+      "Combo bàn phím VOICSKY PULSE 75 + chuột Machenike L9 dưới 2 triệu",
+    ],
     news: "tin",
     date: "2026-11-24",
     title: "Mua quà Tết, Noel cho game thủ dưới 2 triệu",
@@ -206,6 +284,7 @@ Dùng công cụ **Xây dựng cấu hình PC** trên web: chọn từng món, w
 - **Chuột không dây Machenike L9:** không vướng dây, gọn bàn
 
 ## Dưới 1 triệu
+![Chuột VOICSKY CLOUD S1 PRO](https://media.hilipc.vn/desc/mwj2vje0-9udhu2wl.webp)
 - **Chuột không dây VOICSKY CLOUD S1 PRO:** chỉ 49g, cảm biến PixArt PAW3395 tới 26.000 DPI, kết nối 3 chế độ
 - **Tai nghe Xiberia K9 Pro:** tai nghe gaming tầm giá dưới 1 triệu
 
@@ -221,6 +300,11 @@ Hàng chính hãng, có hoá đơn, bảo hành theo số serial nên người n
   },
   {
     slug: "cach-tra-bao-hanh-bang-so-serial",
+    points: [
+      "Không cần giữ hoá đơn giấy, chỉ cần số serial",
+      "Tra trên web trong 3 bước, có kết quả ngay",
+      "Mất tem serial: nhắn Zalo kèm số điện thoại đã mua",
+    ],
     news: "huong-dan",
     date: "2026-11-24",
     title: "Cách tra bảo hành bằng số serial tại Hilitek",
@@ -245,6 +329,22 @@ Mang sản phẩm tới cửa hàng Hilitek ở Phú Thọ, TP.HCM, hoặc nhắ
   },
   {
     slug: "windows-11-pro-ban-quyen-oem-retail-fqc",
+    points: [
+      "OEM, FQC gắn với một máy, giá tốt nhất",
+      "Retail chuyển được sang máy khác",
+      "ESD là bản quyền điện tử, nhận khoá qua email",
+      "Dùng sai giấy phép có thể bị phạt tới 500 triệu đồng với tổ chức",
+    ],
+    table: {
+      title: "So sánh các loại giấy phép Windows",
+      head: ["Loại", "Chuyển máy", "Có hộp", "Hợp với"],
+      rows: [
+        ["OEM", "Không", "Không", "Máy mới dùng cố định"],
+        ["FQC (OEM đóng hộp)", "Không", "Có", "Máy lắp ráp"],
+        ["Retail (FPP)", "Có", "Có", "Hay thay máy"],
+        ["ESD", "Theo loại", "Không", "Cần kích hoạt nhanh"],
+      ],
+    },
     news: "huong-dan",
     date: "2026-11-24",
     title: "Windows 11 Pro bản quyền: OEM, Retail, FQC khác nhau thế nào?",
