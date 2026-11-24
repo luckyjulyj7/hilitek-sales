@@ -1,73 +1,26 @@
-import React, { useMemo, useRef } from "react";
+import React, { useMemo, useRef, useState } from "react";
+import { ArrowRight, BadgeCheck, Check, CheckCircle2, Cloud, Laptop, Mail, Monitor, RefreshCw, ShieldCheck, Users } from "lucide-react";
 import { SITE, productInCategory } from "../config.js";
 import { formatVND } from "../lib/format.js";
-import LandingFigure, { hasLandingImage } from "./LandingFigure.jsx";
-import { useEdPage } from "./edFonts.js";
-import "./ed.css";
-/**
- * Trang giới thiệu "Phần mềm bản quyền cho doanh nghiệp" (/phan-mem-ban-quyen).
- * Nội dung pháp lý tóm tắt từ văn bản chính thức (xem nguồn ở cuối trang); sản phẩm lấy từ
- * danh mục "Phần mềm bản quyền" đang bán, cộng các dòng phần mềm báo giá theo số lượng.
- */
+import { LxEnd, LxFaq, RemoteWindow, useLx, zaloHref } from "./lxParts.jsx";
+import "./lx.css";
+
+/** Trang "Phần mềm bản quyền cho doanh nghiệp". Sản phẩm, giá lấy từ danh mục đang bán. */
 export const SOFTWARE_PATH = "/phan-mem-ban-quyen";
 const SW_CAT = "Phần mềm bản quyền";
 
-const RISKS = [
-  { t: "Rủi ro pháp lý", d: "Phần mềm máy tính được bảo hộ như tác phẩm. Dùng bản không có giấy phép cho công việc có thể bị phạt hành chính đến 500 triệu đồng với tổ chức, kèm tịch thu tang vật vi phạm." },
-  { t: "Rủi ro bảo mật", d: "Bản crack, bản bẻ khoá thường kèm mã độc, mã đào tiền ảo hoặc mã tống tiền. Một lần mất dữ liệu kế toán, hợp đồng thường đắt hơn nhiều so với tiền bản quyền." },
-  { t: "Không được cập nhật", d: "Bản lậu hay bị chặn cập nhật bảo mật, lỗi kích hoạt giữa chừng, không được hãng hỗ trợ. Máy chạy chập chờn, nhân viên mất thời gian xử lý." },
-  { t: "Chi phí hợp lệ", d: "Mua bản quyền có hoá đơn VAT, chứng từ đầy đủ: khoản chi được ghi nhận vào chi phí của doanh nghiệp, đầy đủ khi quyết toán và kiểm tra." },
+const USES = [
+  { id: "oem", ic: Monitor, q: "Máy dùng cố định nhiều năm", a: "OEM / FQC", d: "Gắn với máy cài đầu tiên, trả một lần.", l: [["Đổi sang máy khác", "Không"], ["Thanh toán", "Một lần"]] },
+  { id: "fpp", ic: RefreshCw, q: "Hay thay, luân chuyển máy", a: "Retail (FPP)", d: "Gỡ khỏi máy cũ rồi cài sang máy mới.", l: [["Đổi sang máy khác", "Có, gỡ máy cũ"], ["Thanh toán", "Một lần"]] },
+  { id: "esd", ic: Mail, q: "Cần nhận key qua email", a: "ESD điện tử", d: "Không có hộp, nhận key qua email để kích hoạt.", l: [["Đổi sang máy khác", "Tuỳ bản OEM hay Retail"], ["Thanh toán", "Một lần"]] },
+  { id: "365", ic: Cloud, q: "Làm việc trên nhiều thiết bị", a: "Microsoft 365", d: "Office luôn bản mới, kèm email và OneDrive, tính theo người dùng.", l: [["Đổi sang máy khác", "Có"], ["Thanh toán", "Theo tháng, năm"]] },
 ];
-
-const LAWS = [
-  {
-    tag: "Luật",
-    t: "Luật Sở hữu trí tuệ",
-    d: "Chương trình máy tính được bảo hộ quyền tác giả. Sao chép, cài đặt, sử dụng phần mềm khi chưa được chủ sở hữu cho phép là hành vi xâm phạm quyền tác giả.",
-  },
-  {
-    tag: "Từ 15/02/2026",
-    t: "Nghị định 341/2025/NĐ-CP",
-    d: "Thay thế Nghị định 131/2013. Quy định xử phạt hành chính về quyền tác giả, quyền liên quan: mức phạt tối đa 250 triệu đồng với cá nhân và 500 triệu đồng với tổ chức, kèm tịch thu tang vật vi phạm.",
-  },
-  {
-    tag: "Hình sự",
-    t: "Điều 225 Bộ luật Hình sự",
-    d: "Vi phạm ở quy mô thương mại có thể bị truy cứu trách nhiệm hình sự. Pháp nhân thương mại có thể bị phạt tiền đến hàng tỷ đồng và bị đình chỉ hoạt động có thời hạn.",
-  },
-];
-
-// Dòng phần mềm báo giá theo số lượng máy, số người dùng.
-const QUOTE = [
-  { t: "Windows 11 Pro / Enterprise", d: "Cho máy văn phòng, đủ BitLocker, tham gia domain." },
-  { t: "Microsoft Office 2024 / LTSC", d: "Word, Excel, PowerPoint, Outlook dùng vĩnh viễn." },
-  { t: "Microsoft 365 Business", d: "Office + email tên miền + OneDrive, trả theo năm." },
-  { t: "Windows Server 2025", d: "Máy chủ file, domain, phần mềm kế toán. Tư vấn số CAL." },
-  { t: "SQL Server 2025", d: "Cơ sở dữ liệu cho phần mềm kế toán, ERP, bán hàng." },
-  { t: "Diệt virus doanh nghiệp", d: "Bảo vệ máy trạm, máy chủ, quản lý tập trung." },
-];
-
-const STEPS = [
-  ["Khảo sát", "Cho Hili biết số máy, việc đang dùng (kế toán, thiết kế, máy chủ…)."],
-  ["Báo giá trong ngày", "Đề xuất đúng phiên bản, đúng số lượng, không mua thừa."],
-  ["Hoá đơn VAT, giấy phép", "Xuất hoá đơn cho công ty, giao key, tem, giấy phép điện tử."],
-  ["Cài đặt, kích hoạt", "Kỹ thuật Hili cài và kích hoạt tận nơi tại TP.HCM hoặc hỗ trợ từ xa."],
-];
-
-// Phần mềm theo bộ phận: giúp khách biết nhanh công ty mình cần gì.
-const DEPTS = [
-  { t: "Văn phòng, hành chính", d: "Soạn thảo, bảng tính, email, họp trực tuyến.", chips: ["Windows 11 Pro", "Office 2024", "Microsoft 365"] },
-  { t: "Kế toán", d: "Phần mềm kế toán thường chạy trên SQL Server, cần máy chủ ổn định.", chips: ["Windows 11 Pro", "Office", "SQL Server"] },
-  { t: "Máy chủ, IT", d: "Chia sẻ file, quản lý tài khoản, phân quyền cho nhân viên.", chips: ["Windows Server", "CAL người dùng", "Sao lưu"] },
-  { t: "Bảo mật", d: "Chặn mã độc, mã tống tiền, quản lý tập trung các máy.", chips: ["Diệt virus doanh nghiệp", "Cập nhật Windows"] },
-];
-
-// Bảng so sánh các loại giấy phép phổ biến.
-const LICENSES = [
-  ["OEM / FQC", "Gắn với 1 máy cài đầu tiên", "Không", "Trả 1 lần", "Máy mới, dùng cố định lâu dài"],
-  ["Retail (FPP)", "1 máy tại một thời điểm", "Có (gỡ máy cũ)", "Trả 1 lần", "Hay thay, luân chuyển máy"],
-  ["ESD (điện tử)", "Theo loại OEM hoặc Retail", "Theo loại", "Trả 1 lần", "Cần kích hoạt nhanh, mua nhiều máy"],
-  ["Microsoft 365", "Theo người dùng (nhiều thiết bị)", "Có", "Theo tháng, năm", "Cần email, lưu trữ đám mây, luôn bản mới"],
+const DV = { oem: [Monitor, Check], fpp: [Monitor, ArrowRight, Laptop], esd: [Mail, ArrowRight, Monitor], 365: [Laptop, Users, Cloud] };
+const MORE = [
+  ["Windows Server", "Máy chủ file, domain", "/home/sw-server.webp"],
+  ["SQL Server", "Kế toán, ERP, bán hàng", "/home/sw-sql.webp"],
+  ["Microsoft 365", "Office, email, OneDrive", null, Cloud],
+  ["Diệt virus", "Quản lý tập trung", null, ShieldCheck],
 ];
 
 export const SW_FAQ = [
@@ -78,187 +31,101 @@ export const SW_FAQ = [
   ["Đang dùng bản crack thì chuyển sang bản quyền thế nào?", "Thường không cần cài lại máy: nhập key bản quyền vào Windows, Office là kích hoạt. Trường hợp bản lậu đã sửa hệ thống, Hili sẽ sao lưu dữ liệu rồi cài sạch."],
 ];
 
-// Ảnh dự phòng khi danh mục chưa tải xong.
-const HERO_IMG = "https://media.hilipc.vn/desc/mwixu5no-sbc24zg3.webp";
-
-function info(p) {
-  const n = p.name || "";
-  if (/win(dows)?\s*(pro\s*)?11|win pro 11/i.test(n)) return { name: "Windows 11 Pro", code: "FQC-10528 · OEM", d: "Bản 64-bit đóng hộp, dùng vĩnh viễn cho một máy." };
-  if (/office home & business 2024/i.test(n)) return { name: "Office Home & Business 2024", code: "EP2-06604 · ESD", d: "Word, Excel, PowerPoint, Outlook. Bản điện tử, dùng vĩnh viễn." };
-  return { name: n.replace(/^Phần mềm\s+/i, ""), code: p.sku || "", d: p.shortDesc || "" };
+function look(p) {
+  const n = String(p.name || "").normalize("NFC");
+  if (/win(dows)?\s*(pro\s*)?11/i.test(n)) return { n: "Windows 11 Pro", d: "Bản OEM đóng hộp FQC-10528, 64-bit, cho một máy.", img: "/landing/win11-cut.webp" };
+  if (/office home & business 2024/i.test(n)) return { n: "Office Home & Business 2024", d: "Word, Excel, PowerPoint, Outlook. Dùng vĩnh viễn.", img: "/landing/office24.webp", cov: true };
+  return { n: n.replace(/^Phần mềm\s+/i, ""), d: p.shortDesc || "", img: p.images?.[0], cov: true };
 }
 
 export default function SoftwareLanding({ catalog, navigate }) {
-  useEdPage("Phần mềm bản quyền cho doanh nghiệp: Windows, Office, Server | Hilitek");
+  useLx("Phần mềm bản quyền cho doanh nghiệp: Windows, Office, Server | Hilitek");
   const products = useMemo(() => (catalog?.products || []).filter((p) => productInCategory(p, SW_CAT)), [catalog]);
-  const tel = "tel:" + (SITE.phoneRaw || "");
-  const zalo = SITE.zaloHref || "https://zalo.me/" + (SITE.phoneRaw || "");
-  const listRef = useRef(null);
-  const lead = products.find((p) => /win/i.test(p.name)) || products[0];
-  const li = lead ? info(lead) : { name: "Windows 11 Pro", code: "FQC-10528 · OEM" };
-  const open = (slug) => (e) => { e.preventDefault(); navigate(`san-pham/${slug}`); };
-  const toList = (e) => { e.preventDefault(); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); };
+  const win = products.find((p) => look(p).n === "Windows 11 Pro");
+  const list = useRef(null);
+  const [use, setUse] = useState("oem");
+  const u = USES.find((x) => x.id === use);
+  const zalo = zaloHref();
 
   return (
-    <div className="ed">
-      {/* ===== Đầu trang ===== */}
-      <section className="ed-hero"><div className="ed-wrap ed-grid">
-        <div className="ed-hero-tx">
-          <p className="ed-label"><b>Phần mềm Microsoft</b> &nbsp;/&nbsp; cho doanh nghiệp</p>
-          <h1>Bản quyền cho cả công ty. <span className="ed-u">Có hoá đơn, có chứng nhận.</span></h1>
-          <p>Windows, Office, Microsoft 365, Windows Server và SQL Server chính hãng. Mỗi giấy phép kèm hoá đơn VAT và chứng nhận bản quyền. Kỹ thuật Hilitek cài đặt, kích hoạt và hỗ trợ từ xa khi máy gặp sự cố.</p>
-          <div className="ed-cta">
-            <a className="ed-btn" href={zalo} target="_blank" rel="noreferrer">Nhận báo giá qua Zalo <span className="ed-ar">→</span></a>
-            <a className="ed-link" href="#bang-gia" onClick={toList}>Xem bảng giá</a>
+    <div className="lx">
+      <section className="lx-hero"><div className="lx-mesh" /><div className="lx-w in">
+        <div>
+          <h1>Windows, Office chính hãng cho cả công ty</h1>
+          <p>Có hoá đơn VAT, có chứng nhận bản quyền. Kỹ thuật Hilitek cài đặt và bảo hành online qua điều khiển từ xa.</p>
+          <div className="lx-bs">
+            <a className="lx-b p" href={zalo} target="_blank" rel="noreferrer">Nhận báo giá qua Zalo</a>
+            <button type="button" className="lx-b o" onClick={() => list.current?.scrollIntoView({ behavior: "smooth" })}>Xem giá</button>
           </div>
+          <ul className="lx-ok"><li><CheckCircle2 size={19} /> Hoá đơn VAT</li><li><CheckCircle2 size={19} /> Chứng nhận bản quyền</li><li><CheckCircle2 size={19} /> Bảo hành online</li></ul>
         </div>
-        <figure className="ed-hero-pic">
-          {lead
-            ? <a className="ed-shot" href={`/san-pham/${lead.slug}`} onClick={open(lead.slug)}><img src={lead.images?.[0] || HERO_IMG} alt={lead.name} loading="eager" decoding="async" /></a>
-            : <div className="ed-shot"><img src={HERO_IMG} alt="Windows 11 Pro bản OEM đóng hộp" loading="eager" decoding="async" /></div>}
-          <dl className="ed-spec">
-            <div><dt>Sản phẩm</dt><dd>{li.name}</dd></div>
-            <div><dt>Mã</dt><dd className="ed-num">{li.code}</dd></div>
-            <div><dt>Kèm theo</dt><dd>Hoá đơn VAT, chứng nhận bản quyền</dd></div>
-            <div><dt>Bảo hành</dt><dd>Hỗ trợ từ xa qua UltraViewer, AnyDesk</dd></div>
-            {lead && <div><dt>Giá, gồm VAT</dt><dd className="p">{formatVND(lead.price)}</dd></div>}
-          </dl>
-        </figure>
-      </div></section>
-
-      <section className="ed-facts"><div className="ed-wrap ed-grid">
-        <div><span className="ed-label">01</span><b>Có hoá đơn VAT</b><span>Xuất theo thông tin công ty</span></div>
-        <div><span className="ed-label">02</span><b>Có chứng nhận bản quyền</b><span>Giấy phép chính hãng Microsoft</span></div>
-        <div><span className="ed-label">03</span><b>Bảo hành online</b><span>Kỹ thuật hỗ trợ từ xa qua UltraViewer, AnyDesk</span></div>
-        <div><span className="ed-label">04</span><b>Cài đặt, kích hoạt giúp</b><span>Tận nơi tại TP.HCM hoặc từ xa</span></div>
-      </div></section>
-
-      {/* ===== Pháp lý ===== */}
-      <section className="ed-sec"><div className="ed-wrap ed-grid">
-        <p className="ed-label ed-side">01 &nbsp;Pháp lý</p>
-        <div className="ed-main">
-          <h2>Từ 15/02/2026, tổ chức dùng phần mềm không bản quyền có thể bị phạt tới <span className="ed-u">500 triệu đồng</span>.<sup>1</sup></h2>
-          <div className="ed-two">
-            <p>{LAWS[0].d}</p>
-            <p>Ngoài tiền phạt, tang vật và phương tiện vi phạm có thể bị tịch thu. Vi phạm ở quy mô thương mại còn có thể bị truy cứu theo Điều 225 Bộ luật Hình sự.<sup>2</sup></p>
-          </div>
-          <div className="ed-big"><strong>500</strong><span>triệu đồng, mức phạt hành chính tối đa với tổ chức. Cá nhân tới 250 triệu đồng.</span></div>
-          <p className="ed-foot">
-            <span className="ed-num">1</span> Nghị định 341/2025/NĐ-CP, thay Nghị định 131/2013. <a href="https://congbao.chinhphu.vn/van-ban/nghi-dinh-so-341-2025-nd-cp-468563.htm" target="_blank" rel="noreferrer nofollow">Công báo Chính phủ</a>, <a href="https://cov.gov.vn/tin-tuc/gioi-thieu-nghi-dinh-so-3412025ndcp-quy-dinh-xu-phat-vi-pham-hanh-chinh-ve-quyen-tac-gia-quyen-lien-quan-168844.html" target="_blank" rel="noreferrer nofollow">Cục Bản quyền tác giả</a>.
-            &nbsp; <span className="ed-num">2</span> Bộ luật Hình sự 2015, sửa đổi 2017. Thông tin tham khảo, không thay tư vấn pháp lý.
-          </p>
+        <div className="lx-art">
+          <img className="big" src="/landing/win11-cut.webp" alt="Bộ Windows 11 Pro OEM gồm đĩa và bao giấy phép" />
+          <div className="lx-card act" aria-hidden="true"><span className="lx-mini">Cài đặt, Kích hoạt</span><b><CheckCircle2 size={22} /> Windows đã kích hoạt</b></div>
+          {win && <div className="lx-card pr"><span className="lx-mini">Windows 11 Pro</span><b>{formatVND(win.price)}</b></div>}
         </div>
       </div></section>
 
-      {/* ===== Sản phẩm có sẵn ===== */}
-      <section id="bang-gia" ref={listRef} className="ed-sec stone" style={{ scrollMarginTop: 110 }}><div className="ed-wrap">
-        <div className="ed-head">
-          <h2>Có sẵn, giao key trong ngày.</h2>
-          <p className="ed-label">{products.length || 2} sản phẩm &nbsp;/&nbsp; giá đã gồm VAT</p>
-        </div>
-        {products.length > 0 && (
-          <div className="ed-cards">
-            {products.map((p) => {
-              const x = info(p);
-              return (
-                <a key={p.id} className="ed-card" href={`/san-pham/${p.slug}`} onClick={open(p.slug)}>
-                  <div className="pic"><img src={p.images?.[0] || HERO_IMG} alt={p.name} loading="lazy" decoding="async" /></div>
-                  <div className="tx"><h3>{x.name}</h3><span className="pr">{formatVND(p.price)}</span><p>{x.d}</p><span className="ed-link">Xem chi tiết</span></div>
-                </a>
-              );
-            })}
-          </div>
-        )}
-      </div></section>
-
-      {/* ===== Báo giá theo số máy ===== */}
-      <section className="ed-sec"><div className="ed-wrap ed-grid">
-        <p className="ed-label ed-side">02 &nbsp;Báo giá theo số máy</p>
-        <div className="ed-main">
-          <h2>Phần mềm cho cả hệ thống, báo giá trong ngày.</h2>
-          <p>Từ 5 máy trở lên Hilitek báo giá riêng và gộp cài đặt một lần. Bấm vào dòng cần báo giá để nhắn Zalo.</p>
-          <div className="ed-rows">
-            {QUOTE.map(({ t, d }, i) => (
-              <a key={t} href={zalo} target="_blank" rel="noreferrer">
-                <span className="n">{String(i + 1).padStart(2, "0")}</span><h3>{t}</h3><p>{d}</p><span className="go">→</span>
+      <section ref={list} className="lx-w lx-s" style={{ scrollMarginTop: 90 }}>
+        <div className="lx-c"><h2>Đang bán tại Hilitek</h2></div>
+        <div className="lx-two">
+          {products.map((p) => {
+            const x = look(p);
+            return (
+              <a key={p.id} className={"lx-prod" + (x.cov ? " g" : "")} href={`/san-pham/${p.slug}`} onClick={(e) => { e.preventDefault(); navigate(`san-pham/${p.slug}`); }}>
+                <h3>{x.n}</h3><p className="d">{x.d}</p>
+                <div className="r"><b>{formatVND(p.price)}</b><span>Xem chi tiết <ArrowRight size={16} /></span></div>
+                <div className="im"><img className={x.cov ? "cov" : ""} src={x.img} alt={p.name} loading="lazy" /></div>
               </a>
-            ))}
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="lx-w lx-s">
+        <div className="lx-c"><h2>Mua một lần, đủ giấy tờ và người hỗ trợ</h2></div>
+        <div className="lx-bento">
+          <div className="lx-t s7 bl"><h3>Hoá đơn VAT theo công ty</h3><p>Kế toán có chứng từ để ghi nhận chi phí.</p>
+            <div className="v"><div className="lx-card lx-inv" aria-hidden="true">
+              <header><span>HOÁ ĐƠN GTGT</span><span className="lx-mini">Hình minh hoạ</span></header>
+              <div><span>Người mua</span><b>Công ty của bạn</b></div><div><span>Windows 11 Pro</span><span>Bản quyền</span></div><div><span>Thuế GTGT</span><span>Có trên hoá đơn</span></div>
+            </div></div></div>
+          <div className="lx-t s5 ye"><h3>Chứng nhận bản quyền</h3><p>Biết rõ máy nào dùng giấy phép nào.</p>
+            <div className="v"><div className="lx-card lx-cert" aria-hidden="true"><BadgeCheck size={64} strokeWidth={1.5} /><b>Giấy phép phần mềm</b><i style={{ width: "72%" }} /><i style={{ width: "54%" }} /></div></div></div>
+          <div className="lx-t s7 n"><h3>Bảo hành online</h3><p>Kỹ thuật vào máy qua UltraViewer hoặc AnyDesk khi bạn cho phép.</p><div className="v"><RemoteWindow /></div></div>
+          <div className="lx-t s5"><h3>Từ 5 máy có giá riêng</h3><p>Gộp cài đặt cho cả văn phòng một lần.</p>
+            <div className="v"><div className="lx-pcs" aria-hidden="true">{Array.from({ length: 12 }, (_, i) => <i key={i} className={i < 5 ? "on" : ""}><Monitor size={30} strokeWidth={1.7} /></i>)}</div></div></div>
+        </div>
+      </section>
+
+      <section className="lx-w lx-s"><div className="lx-fine">
+        <div>
+          <h2>Phần mềm lậu có thể bị phạt tới 500 triệu đồng</h2>
+          <p>Nghị định 341/2025/NĐ-CP, hiệu lực từ 15/02/2026, kèm tịch thu tang vật vi phạm.</p>
+          <small>Nguồn: <a href="https://congbao.chinhphu.vn/van-ban/nghi-dinh-so-341-2025-nd-cp-468563.htm" target="_blank" rel="noreferrer nofollow">Công báo Chính phủ</a>, <a href="https://cov.gov.vn/tin-tuc/gioi-thieu-nghi-dinh-so-3412025ndcp-quy-dinh-xu-phat-vi-pham-hanh-chinh-ve-quyen-tac-gia-quyen-lien-quan-168844.html" target="_blank" rel="noreferrer nofollow">Cục Bản quyền tác giả</a>. Thông tin tham khảo.</small>
+        </div>
+        <div className="lx-bars"><div><b>250<small>triệu</small></b><i style={{ height: "32%" }} /><span>Cá nhân, tối đa</span></div><div className="h"><b>500<small>triệu</small></b><i style={{ height: "64%" }} /><span>Tổ chức, tối đa</span></div></div>
+      </div></section>
+
+      <section className="lx-w lx-s">
+        <div className="lx-c"><h2>Công ty bạn dùng máy thế nào?</h2><p>Chọn một câu, xem loại giấy phép phù hợp.</p></div>
+        <div className="lx-pick">
+          <div className="lx-q">{USES.map(({ id, ic: I, q }) => <button key={id} type="button" aria-pressed={id === use} onClick={() => setUse(id)}><I size={26} />{q}</button>)}</div>
+          <div className="lx-a" aria-live="polite">
+            <div className="dv" aria-hidden="true">{DV[use].map((I, i) => <I key={use + i} size={i === 1 && I !== Users ? 38 : 72} strokeWidth={1.4} />)}</div>
+            <div><h3>{u.a}</h3><p>{u.d}</p></div>
+            <ul>{u.l.map(([k, v]) => <li key={k}><small>{k}</small>{v}</li>)}</ul>
           </div>
         </div>
-      </div></section>
+      </section>
 
-      {/* ===== Chọn giấy phép ===== */}
-      <section className="ed-sec line"><div className="ed-wrap ed-grid">
-        <p className="ed-label ed-side">03 &nbsp;Chọn giấy phép</p>
-        <div className="ed-main">
-          <h2>Cùng là Windows, mỗi loại giấy phép hợp một cách dùng máy.</h2>
-          <div className="ed-table">
-            <table>
-              <thead><tr><th>Loại</th><th>Dùng cho</th><th>Chuyển máy</th><th>Thanh toán</th><th>Hợp khi</th></tr></thead>
-              <tbody>{LICENSES.map((r) => <tr key={r[0]}>{r.map((c, i) => <td key={i}>{c}</td>)}</tr>)}</tbody>
-            </table>
-          </div>
-        </div>
-      </div></section>
+      <section className="lx-w lx-s">
+        <div className="lx-c"><h2>Báo giá theo số máy</h2></div>
+        <div className="lx-more">{MORE.map(([t, d, img, I]) => <a key={t} className="lx-m" href={zalo} target="_blank" rel="noreferrer"><span className="im">{img ? <img src={img} alt="" loading="lazy" /> : <I size={120} strokeWidth={1.1} color="#1E2A8A" fill={t === "Microsoft 365" ? "#BFD0FF" : "#F7C600"} />}</span><b>{t}</b><span>{d}</span></a>)}</div>
+      </section>
 
-      {/* ===== Theo bộ phận ===== */}
-      <section className="ed-sec stone"><div className="ed-wrap ed-grid">
-        <p className="ed-label ed-side">04 &nbsp;Theo bộ phận</p>
-        <div className="ed-main">
-          <h2>Mỗi phòng ban cần một bộ phần mềm khác nhau.</h2>
-          <ul className="ed-rows">
-            {DEPTS.map(({ t, d, chips }, i) => (
-              <li key={t}><span className="n">{String(i + 1).padStart(2, "0")}</span><h3>{t}</h3><p>{d}<small>{chips.join("  ·  ")}</small></p><span /></li>
-            ))}
-          </ul>
-        </div>
-      </div></section>
-
-      {/* ===== Rủi ro ===== */}
-      <section className="ed-sec"><div className="ed-wrap ed-grid">
-        <p className="ed-label ed-side">05 &nbsp;Vì sao</p>
-        <div className="ed-main">
-          <h2>Bản crack rẻ lúc đầu, đắt về sau.</h2>
-          <ul className="ed-rows">
-            {RISKS.map(({ t, d }, i) => <li key={t}><span className="n">{String(i + 1).padStart(2, "0")}</span><h3>{t}</h3><p>{d}</p><span /></li>)}
-          </ul>
-        </div>
-      </div></section>
-
-      {/* ===== Quy trình ===== */}
-      <section className="ed-sec line"><div className="ed-wrap">
-        <h2>Hilitek làm trọn, từ khảo sát tới kích hoạt.</h2>
-        <ol className="ed-steps">
-          {STEPS.map(([t, d]) => <li key={t}><h3>{t}</h3><p>{d}</p></li>)}
-        </ol>
-        {["sw-meeting.webp", "sw-install.webp", "sw-office-team.webp"].some(hasLandingImage) && (
-          <div className="ed-photos">
-            <LandingFigure src="/landing/sw-meeting.webp" alt="Nhân viên Hilitek tư vấn bản quyền cho doanh nghiệp" />
-            <LandingFigure src="/landing/sw-install.webp" alt="Kỹ thuật viên Hilitek cài đặt, kích hoạt phần mềm" />
-            <LandingFigure src="/landing/sw-office-team.webp" alt="Văn phòng dùng phần mềm bản quyền" />
-          </div>
-        )}
-      </div></section>
-
-      {/* ===== Hỏi đáp ===== */}
-      <section className="ed-sec stone"><div className="ed-wrap ed-grid">
-        <p className="ed-label ed-side">06 &nbsp;Hỏi đáp</p>
-        <div className="ed-main">
-          <h2 style={{ marginBottom: 40 }}>Câu hỏi các công ty hay hỏi.</h2>
-          <div className="ed-faq">{SW_FAQ.map(([q, a]) => <details key={q}><summary>{q}</summary><p>{a}</p></details>)}</div>
-        </div>
-      </div></section>
-
-      {/* ===== Cuối trang ===== */}
-      <section className="ed-end"><div className="ed-wrap ed-grid">
-        <h2>Rà soát bản quyền miễn phí cho cả văn phòng.</h2>
-        <div className="ed-end-r">
-          <p className="ed-label">Gọi hoặc nhắn Zalo</p>
-          <a className="ed-tel" href={tel}>{SITE.phone}</a>
-          <p style={{ marginTop: 14 }}>Gửi số máy và phần mềm đang dùng, Hilitek báo giá trọn gói trong ngày.</p>
-          <a className="ed-btn y" href={zalo} target="_blank" rel="noreferrer">Nhắn Zalo <span className="ed-ar">→</span></a>
-        </div>
-      </div></section>
+      <LxFaq items={SW_FAQ} />
+      <LxEnd title="Cần bao nhiêu bản quyền? Hỏi Hili." text="Gửi số máy và phần mềm đang dùng, Hilitek tư vấn đúng loại." phone={SITE.phone} phoneRaw={SITE.phoneRaw} />
     </div>
   );
 }
