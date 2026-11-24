@@ -53,7 +53,8 @@ export default function ProductTabs({ products, navigate }) {
       <div className="flex items-center justify-between gap-3">
         <h2 className="min-w-0 font-display text-[25px] min-[400px]:text-[28px] sm:text-[38px] font-bold leading-tight text-ink">{HOME_TITLES.hot}</h2>
         <a href={tab.to} onClick={openAll} aria-label={`Xem tất cả ${tab.all}`} className="pt-all shrink-0">
-          <span className="flex flex-col items-center leading-tight">
+          <span className="sm:hidden inline-flex items-center gap-1">Tất cả <ArrowRight size={15} /></span>
+          <span className="hidden sm:flex flex-col items-center leading-tight">
             <span className="inline-flex items-center gap-1.5">Xem tất cả <ArrowRight size={16} /></span>
             <span className="max-w-[130px] truncate text-[12px] font-semibold">{tab.all}</span>
           </span>

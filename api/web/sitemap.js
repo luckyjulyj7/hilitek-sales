@@ -5,6 +5,7 @@
  */
 import { readWebCached } from "./_catalog.js";
 import { catalogUrl } from "./_seo.js";
+import { ARTICLES } from "../../src/storefront/data/articles.js";
 
 const SITE_URL = "https://hilipc.vn";
 
@@ -28,6 +29,7 @@ export default async function handler(req, res) {
   try {
     const { details: products, landings } = await readWebCached();
     for (const l of landings) urls.push({ loc: `${SITE_URL}/trang/${l.slug}`, priority: "0.6" });
+    for (const a of ARTICLES) if (!landings.some((l) => l.slug === a.slug)) urls.push({ loc: `${SITE_URL}/trang/${a.slug}`, priority: "0.6" });
     const cats = new Set(products.map((p) => p.category).filter((c) => c && c !== "Flash Sale"));
     for (const cat of cats) urls.push({ loc: catalogUrl({ cat }), priority: "0.8" });
     const seen = new Set();

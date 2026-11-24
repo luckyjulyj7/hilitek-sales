@@ -1,3 +1,4 @@
+import { ARTICLES } from "./data/articles.js";
 /**
  * Cấu hình hiển thị của website bán hàng.
  *
@@ -1173,9 +1174,12 @@ const NEWS_POSTS = [
   },
 ];
 
+// Bài viết mới (data/articles.js) đứng trước; bài cũ trùng slug thì bỏ.
+const BUILTIN_POSTS = [...ARTICLES, ...NEWS_POSTS.filter((p) => !ARTICLES.some((a) => a.slug === p.slug))];
+
 /** Tìm trang theo đường dẫn: trang chủ shop tạo trước, bài có sẵn sau. */
 export function findPage(slug) {
-  return LANDINGS.find((l) => l && l.slug === slug && l.published !== false) || NEWS_POSTS.find((p) => p.slug === slug);
+  return LANDINGS.find((l) => l && l.slug === slug && l.published !== false) || BUILTIN_POSTS.find((p) => p.slug === slug);
 }
 
 const HH_TOPIC = /cầm tay|handheld|retro|máy chơi game|steam deck|retroid|anbernic|miyoo|mangmi|\bayn\b/i;
@@ -1194,7 +1198,10 @@ export function newsItems(topic) {
       to: l.videoUrl && !yt ? l.videoUrl : `/trang/${l.slug}`,
     };
   });
-  const posts = NEWS_POSTS.map((p) => ({ kind: p.news, title: p.title, summary: p.summary, date: "", image: p.cover, to: `/trang/${p.slug}` }));
+  const posts = BUILTIN_POSTS
+    .filter((p) => topic !== "handheld" || HH_TOPIC.test(`${p.title} ${p.summary || ""}`))
+    .map((p) => ({ kind: p.news, title: p.title, summary: p.summary, date: p.date || "", image: p.cover, to: `/trang/${p.slug}` }));
   if (topic === "handheld") return [...own, ...posts, NEWS_STARTERS[1]];
-  return [...own, NEWS_STARTERS[0], ...posts.slice(0, 2), ...NEWS_STARTERS.slice(2), ...posts.slice(2), NEWS_STARTERS[1]];
+  // Bài chủ shop đăng trước, rồi bài có sẵn; lối tắt (starters) xếp cuối, bỏ cái trùng chủ đề bài mới.
+  return [...own, ...posts, NEWS_STARTERS[0], NEWS_STARTERS[2], NEWS_STARTERS[3]];
 }

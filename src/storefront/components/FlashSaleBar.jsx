@@ -41,7 +41,7 @@ export default function FlashSaleBar({ navigate }) {
   );
 
   return (
-    <div className="flex flex-wrap items-center gap-2 sm:gap-6">
+    <div className="fs-bar flex flex-wrap items-center gap-2 sm:gap-6">
       {/* Logo FLASH SALE — khối 2 màu nghiêng + tia sét vàng, nhấp nháy & rung theo nhịp */}
       <div className="relative shrink-0 select-none pr-4 sm:pr-5 origin-center animate-flashpulse">
         <div className="font-display font-extrabold italic leading-none -skew-x-6">
@@ -62,7 +62,9 @@ export default function FlashSaleBar({ navigate }) {
       </div>
 
       <button type="button" onClick={goSeeAll} aria-label="Xem tất cả Flash Sale" className="pt-all ml-auto shrink-0">
-        <span className="flex flex-col items-center leading-tight">
+        {/* Điện thoại: nút gọn 1 dòng để cả thanh nằm trên 1 hàng */}
+        <span className="sm:hidden inline-flex items-center gap-1">Tất cả <ArrowRight size={15} /></span>
+        <span className="hidden sm:flex flex-col items-center leading-tight">
           <span className="inline-flex items-center gap-1.5">Xem tất cả <ArrowRight size={16} /></span>
           <span className="text-[12px] font-semibold">Flash Sale</span>
         </span>

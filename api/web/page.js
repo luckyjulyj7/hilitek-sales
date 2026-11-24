@@ -5,6 +5,7 @@
  */
 import { readWebCached, findDetail } from "./_catalog.js";
 import { applyHead, productHead, catalogHead, plainText, SITE_URL } from "./_seo.js";
+import { ARTICLES } from "../../src/storefront/data/articles.js";
 
 // Mỗi bản deploy có function mới, nên shop.html nhớ tạm ở đây luôn khớp tên file JS của bản đó.
 let shell = "";
@@ -105,6 +106,18 @@ export default async function handler(req, res) {
     if (q.trang) {
       const { landings } = await readWebCached();
       const page = landings.find((l) => l.slug === String(q.trang));
+      const art = !page && ARTICLES.find((a) => a.slug === String(q.trang));
+      if (art) {
+        const url = `${SITE_URL}/trang/${art.slug}`;
+        const img = /^https?:/.test(art.cover || "") ? art.cover : `${SITE_URL}${art.cover || "/og-hilitek.jpg"}`;
+        const ld = { "@context": "https://schema.org", "@type": "Article", headline: art.title, description: art.summary, image: [img], datePublished: art.date, dateModified: art.date,
+          author: { "@type": "Organization", name: "Hilitek" }, publisher: { "@type": "Organization", name: "Hilitek", logo: { "@type": "ImageObject", url: `${SITE_URL}/Logo2.png` } }, mainEntityOfPage: url };
+        return send(res, 200, applyHead(html, {
+          title: `${art.title} | Hilitek`, desc: plainText(art.summary, 200), url, image: art.cover, type: "article",
+          extra: `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, "\\u003c")}</script>`,
+          noscript: `<h1>${art.title.replace(/</g, "&lt;")}</h1><p>${plainText(art.summary, 300)}</p>`,
+        }), cache);
+      }
       if (!page) return send(res, 200, html, cache);
       // Bỏ ảnh nhúng trong nội dung trước khi lấy mô tả, ảnh có thể là chuỗi base64 rất dài.
       const body = String(page.body || "").replace(/!\[[^\]]*\]\([^)]*\)/g, " ").replace(/https?:\/\/\S+/g, " ");

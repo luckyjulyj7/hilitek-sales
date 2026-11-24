@@ -3,12 +3,15 @@ import { ArrowLeft } from "lucide-react";
 import { NEWS_KINDS, NEWS_PATH, SITE, findPage } from "../config.js";
 import { fetchLanding } from "../lib/api.js";
 import RichText from "../components/RichText.jsx";
+import ProductCard from "../components/ProductCard.jsx";
+import { useCatalog } from "../catalogContext.js";
 
 /** Trang nội dung / landing tự tạo — poster / banner trỏ tới bằng /trang/<slug>. */
 export default function LandingPage({ slug, navigate }) {
   // Cấu hình chung chỉ giữ tiêu đề/slug (nội dung nặng — có thể vài MB nếu nhúng ảnh — tải riêng
   // khi mở đúng trang này). Bản mặc định trong config.js (chưa cấu hình) thì còn nguyên nội dung.
   const meta = findPage(slug);
+  const { products: allProducts } = useCatalog() || {};
   const hasMeta = !!meta;
   const hasInlineBody = !!(meta && meta.body);
   const [fetched, setFetched] = useState(null);
@@ -62,6 +65,18 @@ export default function LandingPage({ slug, navigate }) {
       ) : (
         <p className="text-mute">Đang tải…</p>
       )}
+      {Array.isArray(meta.products) && meta.products.length > 0 && (() => {
+        const list = meta.products.map((s) => (allProducts || []).find((p) => p.slug === s)).filter(Boolean);
+        if (!list.length) return null;
+        return (
+          <section className="mt-8">
+            <h2 className="mb-3 font-display text-[22px] font-bold text-ink">Sản phẩm trong bài</h2>
+            <div className="art-products grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+              {list.map((p) => <ProductCard key={p.id} product={p} onOpen={(s2) => navigate(`san-pham/${s2}`)} />)}
+            </div>
+          </section>
+        );
+      })()}
       {meta.cta && (
         <a href={meta.cta.to} onClick={(e) => { e.preventDefault(); navigate(meta.cta.to.slice(1)); }} className="mt-6 inline-flex min-h-[46px] items-center rounded-lg bg-ink px-4 font-semibold text-white hover:bg-navy">{meta.cta.label}</a>
       )}
