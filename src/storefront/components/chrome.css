@@ -151,3 +151,6 @@ main a:focus-visible img { outline: none; }
 
 /* Laptop nhỏ (1024–1279px): thanh menu chỉ giữ 3 link đầu để không xuống dòng. */
 @media (max-width: 1279.98px) { .hx-link.xl-only { display: none; } .hx-link { padding: 0 9px; font-size: 13.5px; } }
+
+/* Nút "lên đầu trang" ẩn trên điện thoại/máy tính bảng: đỡ che chữ, đã có thanh dưới + bấm logo. */
+@media (max-width: 1023.98px) { button[data-top] { display: none !important; } }

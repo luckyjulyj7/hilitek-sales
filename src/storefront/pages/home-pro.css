@@ -160,3 +160,16 @@ html.hili-dark .nl-band button { background: #F7C600; color: #060A2A; }
   .hc-tier { scroll-snap-align: start; }
   .hc-tier img { aspect-ratio: 16/10; }
 }
+
+/* ===== Điện thoại: chỉnh nốt ===== */
+@media (max-width: 1023.98px) {
+  /* Nhãn phím tắt F1, F2… chỉ có ý nghĩa trên máy tính */
+  .hc-show [role=tablist] button::before { display: none; }
+  .hc-show [role=tablist] button { padding-left: 18px !important; }
+  /* Ô "side" (ảnh người): phủ nhạt phần chữ phía trên */
+}
+@media (max-width: 639.98px) {
+  /* Khối máy chơi game cuộn ngang: phần chữ giới thiệu không bị cắt theo khung cuộn */
+  .hc-hh-in { position: sticky; left: 0; max-width: calc(100vw - 60px); }
+  .hc-hh-in h3 { font-size: 26px; }
+}

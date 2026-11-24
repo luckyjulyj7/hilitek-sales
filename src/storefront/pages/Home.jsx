@@ -100,7 +100,7 @@ function Tile({ t, slot, products, navigate }) {
           <div className="absolute inset-0" style={{ background: "linear-gradient(90deg,rgba(6,10,42,.9),rgba(6,10,42,.5) 50%,transparent 85%)" }} />
         </>
       )}
-      {style === "side" && img && <img src={img} alt="" {...ld} className="absolute inset-0 h-full w-full object-cover object-right transition duration-700 group-hover:scale-[1.03]" />}
+      {style === "side" && img && <img src={img} alt="" {...ld} className="absolute inset-x-0 bottom-0 h-[62%] lg:inset-0 lg:h-full w-full object-cover object-[right_top] lg:object-right transition duration-700 group-hover:scale-[1.03]" />}
       {/* Ô nhỏ trên điện thoại: phủ nền nhạt phía trên để chữ không đè lên ảnh */}
       {style === "side" && img && <div className="absolute inset-0 lg:hidden" style={{ background: dark ? "linear-gradient(180deg,rgba(6,10,42,.9),rgba(6,10,42,.55) 45%,transparent 75%)" : "linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,.7) 45%,transparent 75%)" }} />}
       {style === "cut" && img && (

@@ -79,7 +79,10 @@ export default function Header({ route, navigate, drawer, setDrawer }) {
       <div className="bg-ink text-white/75 text-[13px]">
         <div className="mx-auto max-w-[1500px] px-4 h-10 flex items-center justify-between gap-4">
           <span className="inline-flex items-center gap-1.5 truncate">
-            <MapPin size={13} className="shrink-0 text-yellow" /> {SITE.address}
+            <MapPin size={13} className="shrink-0 text-yellow" />
+            <span className="hidden sm:inline truncate">{SITE.address}</span>
+            {/* Điện thoại: địa chỉ ngắn + giờ mở cửa, không bị cắt chữ */}
+            <span className="sm:hidden truncate">Phú Thọ, TP.HCM · Mở cửa {SITE.workingHours}</span>
           </span>
           <span className="hidden md:flex items-center gap-4 shrink-0">
             {FEATURES.warrantyLookup && (
@@ -143,6 +146,13 @@ export default function Header({ route, navigate, drawer, setDrawer }) {
             </div>
           )}
 
+          {/* Điện thoại: nút gọi nhanh ở góc phải (giỏ hàng đã có ở thanh dưới) */}
+          {(SITE.phoneRaw || mainPhone) && (
+            <a href={"tel:" + (SITE.phoneRaw || String(mainPhone).replace(/\D/g, ""))} aria-label={"Gọi " + (mainPhone || "")}
+              className="lg:hidden ml-auto shrink-0 inline-flex items-center gap-1.5 h-11 pl-3 pr-3.5 rounded-full bg-yellow text-ink font-bold text-[14px] shadow-[0_3px_0_#8D6E00]">
+              <Phone size={16} /> Gọi ngay
+            </a>
+          )}
           <button
             onClick={() => go("/gio-hang")} aria-label="Giỏ hàng"
             className={

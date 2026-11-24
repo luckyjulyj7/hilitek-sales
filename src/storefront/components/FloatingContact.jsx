@@ -68,7 +68,7 @@ export default function FloatingContact() {
         {open ? <X size={20} /> : <MessageCircle size={20} />}
       </button>
       {showTop && !open && (
-        <button
+        <button data-top=""
           type="button"
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           aria-label="Lên đầu trang"
