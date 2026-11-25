@@ -49,15 +49,27 @@ export const STORIES = {
     combos: [["Nhẹ tay, nghe rõ", ["s1", "v15"]], ["Góc máy không dây", ["p75", "l9"]]],
   },
   "build-pc-choi-game-15-trieu-thang-12-2026": {
-    kind: "build", budget: 15000000,
-    parts: [
-      { k: "Mainboard", n: "ASRock B760M-HDV/M.2 D4", d: "Chân LGA1700, RAM DDR4", img: "/landing/bai/b-main.webp", find: "mainboard-asrock-b760m-hdv-m-2-d4" },
-      { k: "SSD", n: "SSTC E130 512GB NVMe", d: "Khởi động và vào game nhanh", img: "/landing/bai/b-ssd.webp", find: "o-cung-ssd-sstc-oceanic-whitetip-e130-512gb" },
-      { k: "Nguồn", n: "VSP VGP650BRU PRO 650W", d: "80 Plus Bronze, dư để nâng card", img: "/landing/bai/b-psu.webp", find: "nguon-may-tinh-vsp-vgp650bru-pro" },
-      { k: "Vỏ máy", n: "Xigmatek Cloud M DGT", d: "Kính cường lực, màn hình nhiệt độ", img: "/landing/bai/b-case.webp", find: "case-xigmatek-cloud-m-dgt" },
+    kind: "build",
+    // est: giá tham khảo tháng 11/2026 (VND), chưa phải giá bán trên web.
+    sets: [
+      { name: "Tiết kiệm", sub: "Game eSports, Full HD",
+        parts: [
+          { k: "Vỏ máy", n: "Xigmatek Cloud M DGT", d: "Kính cường lực, màn hình nhiệt độ", img: "/landing/bai/b-case.webp", find: "case-xigmatek-cloud-m-dgt" },
+          { k: "Mainboard", n: "ASRock H610M-H2/M.2", d: "Chân LGA1700, RAM DDR4", img: "/landing/bai/b-h610a.webp", find: "mainboard-asrock-h610m-h2-m-2" },
+          { k: "SSD", n: "SSTC E130 512GB NVMe", d: "Khởi động và vào game nhanh", img: "/landing/bai/b-ssd.webp", find: "o-cung-ssd-sstc-oceanic-whitetip-e130-512gb" },
+          { k: "Nguồn", n: "VSP VGP650BRU PRO 650W", d: "80 Plus Bronze, dư để nâng card", img: "/landing/bai/b-psu.webp", find: "nguon-may-tinh-vsp-vgp650bru-pro" },
+        ],
+        daily: [["CPU", "Core i3-12100F", "4 nhân 8 luồng", 2550000], ["RAM", "16GB DDR4 3200", "Một thanh, chừa một khe", 2620000], ["Card", "RTX 3050 6GB", "Chơi tốt game eSports", 4390000]] },
+      { name: "Nên mua", sub: "Game và làm việc, dễ nâng cấp",
+        parts: [
+          { k: "Vỏ máy", n: "Xigmatek Cloud M DGT 3 AF", d: "Kèm sẵn 3 quạt ARGB", img: "/landing/bai/b-case3.webp", find: "vo-case-xigmatek-cloud-m-dgt-3af-black" },
+          { k: "Mainboard", n: "Colorful H610M-D V20A", d: "Chân LGA1700, RAM DDR4", img: "/landing/bai/b-h610c.webp", find: "mainboard-colorful-h610m-d-v20a" },
+          { k: "SSD", n: "SSTC E130 512GB NVMe", d: "Khởi động và vào game nhanh", img: "/landing/bai/b-ssd.webp", find: "o-cung-ssd-sstc-oceanic-whitetip-e130-512gb" },
+          { k: "Nguồn", n: "VSP VGP650BRU PRO 650W", d: "80 Plus Bronze, dư để nâng card", img: "/landing/bai/b-psu.webp", find: "nguon-may-tinh-vsp-vgp650bru-pro" },
+        ],
+        daily: [["CPU", "Core i5-12400F", "6 nhân 12 luồng", 3280000], ["RAM", "16GB DDR4 3200", "Một thanh, chừa một khe", 2620000], ["Card", "RTX 3050 6GB", "Dư tiền thì lên RTX 5060 8GB", 5000000]] },
     ],
-    daily: [["CPU", "Core i5-12400F", "6 nhân 12 luồng"], ["RAM", "16GB DDR4", "2 thanh 8GB, chạy kênh đôi"], ["Card", "RTX 3050", "Dư tiền thì lên RTX 5060 8GB"]],
-    tips: ["Đừng tiết kiệm ở nguồn", "Chừa khe RAM trống để lên 32GB", "Ghép màn Full HD 144Hz là vừa"],
+    tips: ["Đừng tiết kiệm ở nguồn", "Chừa một khe RAM để lên 32GB", "Ghép màn Full HD 144Hz là vừa"],
   },
   "windows-11-pro-ban-quyen-oem-retail-fqc": { kind: "decide", slug: "phan-mem-windows-11-pro-64bit-eng-intl-fqc-10528" },
 };

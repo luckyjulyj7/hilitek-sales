@@ -86,24 +86,28 @@ function Panels({ meta, S, go }) {
 
 /* ========== DỰNG MÁY: bản vẽ kỹ thuật + phiếu cộng tiền ========== */
 function Build({ meta, S, go, find }) {
-  const L = S.parts.map((x) => { const p = find(x.find); return { ...x, p: p?.price || 0, slug: p?.slug }; });
+  const [set, setSet] = useState(0);
   const [on, setOn] = useState(0);
-  const sum = L.reduce((a, x) => a + x.p, 0), left = S.budget - sum, full = L.every((x) => x.p);
+  const T = S.sets[set];
+  const calc = (t) => { const l = t.parts.map((x) => { const p = find(x.find); return { ...x, p: p?.price || 0, slug: p?.slug }; }); return { l, sum: l.reduce((a, x) => a + x.p, 0), full: l.every((x) => x.p), est: t.daily.reduce((a, x) => a + x[3], 0) }; };
+  const { l: L, sum, full, est } = calc(T);
+  const mil = (v) => `${(Math.round(v / 1e5 + 1e-6) / 10).toFixed(1).replace(".", ",")} triệu`;
   return (
     <>
-      <header className="w bd-hero"><Back go={go} /><h1>{meta.title}</h1><p>Phần nền chọn loại bền để dùng lâu. CPU, RAM và card chọn theo giá từng ngày.</p></header>
+      <header className="w bd-hero"><Back go={go} /><h1>{meta.title}</h1><p>Hai bộ đều có card rời. Chọn bộ để xem linh kiện và tiền.</p>
+        <div className="bd-set" role="group" aria-label="Chọn bộ máy">{S.sets.map((t, i) => { const c = calc(t); return <button key={t.name} type="button" aria-pressed={i === set} onClick={() => { setSet(i); setOn(0); }}><img src={t.parts[0].img} alt="" /><span><b>{t.name}</b><small>{t.sub}</small><em>{c.full ? `Khoảng ${mil(c.sum + c.est)}` : "Hỏi giá"}</em></span></button>; })}</div></header>
       <div className="w bd-main">
-        <section className="bd-draw"><div className="view"><img key={on} src={L[on].img} alt={L[on].n} /><span>{L[on].k}</span></div>
+        <section className="bd-draw"><div className="view"><img key={L[on].n} src={L[on].img} alt={L[on].n} /><span>{L[on].k}</span></div>
           <ul>{L.map((x, i) => <li key={x.k}><button type="button" aria-pressed={i === on} onClick={() => setOn(i)}><img src={x.img} alt="" loading="lazy" /><span><small>{x.k}</small><b>{x.n}</b><i>{x.d}</i></span></button></li>)}</ul></section>
-        <aside className="bd-bill"><h2>Phiếu cấu hình</h2>
+        <aside className="bd-bill"><h2>Bộ {T.name.toLowerCase()}</h2>
           {L.map((x) => <a key={x.k} className="ln" href={x.slug ? `/san-pham/${x.slug}` : "#"} onClick={x.slug ? go(`/san-pham/${x.slug}`) : (e) => e.preventDefault()}><span>{x.k}</span><b>{x.p ? formatVND(x.p) : "Hỏi giá"}</b></a>)}
-          <div className="ln t"><span>Phần nền</span><b>{full ? formatVND(sum) : ""}</b></div>
-          {full && <><div className="pb"><i style={{ width: `${Math.min(100, sum / S.budget * 100)}%` }} /></div><p>Còn <b>{formatVND(left)}</b> trong 15 triệu cho CPU, RAM và card.</p></>}
-          {S.daily.map(([k, n]) => <div key={k} className="ln d"><span>{k}: {n}</span><b>Báo theo ngày</b></div>)}
+                    {T.daily.map(([k, n, , v]) => <div key={k} className="ln d"><span>{n}</span><b>khoảng {mil(v)}</b></div>)}
+          {full && <div className="ln t"><span>Cả bộ, khoảng</span><b>{mil(sum + est)}</b></div>}
+          <p className="nt">CPU, RAM, card là giá tham khảo tháng 11/2026, đổi theo ngày. Chưa gồm màn hình, phím, chuột.</p>
           <Zalo className="y">Hỏi giá hôm nay</Zalo><a className="alt" href={meta.cta.to} onClick={go(meta.cta.to)}>Tự chọn linh kiện trên web</a></aside>
       </div>
-      <section className="w bd-day">{S.daily.map(([k, n, d]) => <div key={k}><small>{k}</small><h2>{n}</h2><p>{d}</p></div>)}</section>
-      <section className="w bd-tip"><h2>Ba điều nên nhớ</h2><ol>{S.tips.map((t) => <li key={t}>{t}</li>)}</ol><p>Tham khảo tháng 11/2026: bộ máy i5-12400F, 16GB, RTX 3050 ở các cửa hàng lớn bán trọn khoảng 16 đến 18,6 triệu. Giá RAM và card đổi theo tuần.</p></section>
+      <section className="w bd-day">{T.daily.map(([k, n, d]) => <div key={k}><small>{k}</small><h2>{n}</h2><p>{d}</p></div>)}</section>
+      <section className="w bd-tip"><h2>Ba điều nên nhớ</h2><ol>{S.tips.map((t) => <li key={t}>{t}</li>)}</ol></section>
     </>
   );
 }

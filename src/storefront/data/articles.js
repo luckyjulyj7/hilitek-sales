@@ -306,55 +306,61 @@ Giá trên là giá tham khảo tại các cửa hàng tháng 11/2026, thay đ�
   {
     slug: "build-pc-choi-game-15-trieu-thang-12-2026",
     points: [
-      "Khung 15 triệu: i5-12400F, RAM 16GB, RTX 3050, SSD NVMe 512GB, nguồn 650W",
-      "Phần nền chọn loại bền để nâng cấp sau, CPU và VGA chọn theo giá từng ngày",
-      "Bộ máy tương tự trên thị trường đang bán trọn khoảng 16 đến 18,6 triệu",
+      "Bộ tiết kiệm khoảng 15 triệu: i3-12100F, RAM 16GB, RTX 3050 6GB",
+      "Bộ nên mua khoảng 17 triệu: i5-12400F, RAM 16GB, RTX 3050 6GB, case kèm 3 quạt ARGB",
+      "CPU, RAM, card là giá tham khảo tháng 11/2026, đổi theo ngày",
     ],
     table: {
-      title: "Cấu hình gợi ý",
-      head: ["Linh kiện", "Gợi ý", "Ghi chú"],
+      title: "Hai bộ cấu hình",
+      head: ["Linh kiện", "Tiết kiệm", "Nên mua"],
       rows: [
-        ["CPU", "Intel Core i5-12400F", "6 nhân 12 luồng"],
-        ["Mainboard", "ASRock B760M-HDV/M.2 D4", "Có bán tại Hilitek"],
-        ["RAM", "16GB DDR4 (2 × 8GB)", "Kênh đôi"],
-        ["VGA", "RTX 3050", "Dư tiền lên RTX 5060 8GB"],
-        ["SSD", "SSTC E130 512GB NVMe", "Có bán tại Hilitek"],
-        ["Nguồn", "650W 80 Plus Bronze", "Đủ dư để nâng card"],
-        ["Vỏ", "Xigmatek Cloud M DGT", "Có bán tại Hilitek"],
+        ["CPU", "Core i3-12100F", "Core i5-12400F"],
+        ["Mainboard", "ASRock H610M-H2/M.2", "Colorful H610M-D V20A"],
+        ["RAM", "16GB DDR4 3200", "16GB DDR4 3200"],
+        ["Card", "RTX 3050 6GB", "RTX 3050 6GB"],
+        ["SSD", "SSTC E130 512GB NVMe", "SSTC E130 512GB NVMe"],
+        ["Nguồn", "VSP VGP650BRU PRO 650W", "VSP VGP650BRU PRO 650W"],
+        ["Vỏ", "Xigmatek Cloud M DGT", "Xigmatek Cloud M DGT 3 AF"],
       ],
     },
     news: "huong-dan",
     date: "2026-11-24",
-    title: "Build PC chơi game 15 triệu tháng 12/2026",
-    summary: "Khung cấu hình 15 triệu với i5-12400F, RAM 16GB, RTX 3050: phần nền bền dùng lâu, so với giá bộ máy đang bán trên thị trường.",
+    title: "Build PC chơi game 15 đến 17 triệu tháng 12/2026",
+    summary: "Hai bộ PC chơi game có RTX 3050: bộ tiết kiệm i3-12100F khoảng 15 triệu, bộ nên mua i5-12400F khoảng 17 triệu.",
     cover: "https://media.hilipc.vn/desc/mwivxx2a-v8x75s9y.webp",
     cta: { to: "/xay-dung-cau-hinh", label: "Tự chọn linh kiện, web cộng tổng tiền" },
     products: [
-      "mainboard-asrock-b760m-hdv-m-2-d4",
+      "mainboard-asrock-h610m-h2-m-2",
+      "mainboard-colorful-h610m-d-v20a",
       "o-cung-ssd-sstc-oceanic-whitetip-e130-512gb-nvme-m2",
       "case-xigmatek-cloud-m-dgt",
     ],
-    body: `Với 15 triệu đồng, mục tiêu hợp lý là chơi mượt các game eSports và game phổ biến ở Full HD. Cách chia tiền khôn ngoan: phần nền (main, nguồn, SSD, vỏ) chọn loại bền để nâng cấp về sau, phần CPU và VGA chọn theo giá từng thời điểm.
+    body: `Tầm 15 đến 17 triệu là đủ để có bộ máy card rời chơi mượt game eSports và game phổ biến ở Full HD. Giá dưới đây chưa gồm màn hình, bàn phím, chuột.
 
-## Phần nền (khoảng 6–6,5 triệu)
-- **Mainboard:** ASRock B760M-HDV/M.2 D4, chân Intel đời 12–14, dùng RAM DDR4 để tiết kiệm
-- **SSD:** SSTC Oceanic Whitetip E130 512GB NVMe, khởi động và vào game nhanh
-- **Nguồn:** 650W chuẩn 80 Plus Bronze, như VSP VGP650BRU PRO, đủ dư để nâng card sau này
-- **Vỏ:** Xigmatek Cloud M DGT, kính cường lực, có màn hình nhiệt độ
+## Bộ tiết kiệm, khoảng 15 triệu
+- **CPU:** Intel Core i3-12100F, 4 nhân 8 luồng
+- **Mainboard:** ASRock H610M-H2/M.2
+- **RAM:** 16GB DDR4 3200, một thanh
+- **Card:** RTX 3050 6GB
+- **SSD:** SSTC Oceanic Whitetip E130 512GB NVMe
+- **Nguồn:** VSP VGP650BRU PRO 650W 80 Plus Bronze
+- **Vỏ:** Xigmatek Cloud M DGT, kính cường lực, màn hình nhiệt độ
 
-## Phần sức mạnh (khoảng 8–9 triệu)
-- **CPU:** Intel Core i5-12400F, 6 nhân 12 luồng, hợp chân LGA1700 của main B760M
-- **RAM:** 16GB DDR4 chạy kênh đôi (2 thanh 8GB)
-- **VGA:** RTX 3050, chơi tốt game eSports ở Full HD; dư tiền thì lên RTX 5060 8GB
-Giá RAM và card đồ hoạ thay đổi theo tuần, nên Hili báo giá phần này theo ngày để bạn có cấu hình tốt nhất trong 15 triệu.
+## Bộ nên mua, khoảng 17 triệu
+- **CPU:** Intel Core i5-12400F, 6 nhân 12 luồng
+- **Mainboard:** Colorful H610M-D V20A
+- **RAM:** 16GB DDR4 3200, một thanh
+- **Card:** RTX 3050 6GB, dư tiền thì lên RTX 5060 8GB
+- **SSD:** SSTC Oceanic Whitetip E130 512GB NVMe
+- **Nguồn:** VSP VGP650BRU PRO 650W 80 Plus Bronze
+- **Vỏ:** Xigmatek Cloud M DGT 3 AF, kèm sẵn 3 quạt ARGB
 
-## Thị trường đang bán thế nào?
-Tham khảo các cửa hàng lớn tháng 11/2026: bộ máy **Core i5-12400F + RAM 16GB + RTX 3050** đang được bán trọn bộ khoảng **16 đến 18,6 triệu**. Muốn lên **RTX 5060 8GB** thì trọn bộ thường từ khoảng **18 đến 21 triệu**. Tự chọn từng món như trên giúp bạn giữ được mức 15 triệu với RTX 3050, rồi nâng card sau khi có thêm ngân sách.
+Mainboard, SSD, nguồn và vỏ là giá đang bán trên web. CPU, RAM và card là giá tham khảo tháng 11/2026, đổi theo ngày, nhắn Hili để có giá hôm nay.
 
 ## Mẹo
-- Ưu tiên nguồn tốt, đừng tiết kiệm ở nguồn
-- Chừa khe RAM trống để nâng lên 32GB sau
-- Màn hình Full HD 144Hz là cặp đôi hợp lý với cấu hình này
+- Đừng tiết kiệm ở nguồn
+- Chừa một khe RAM để lên 32GB sau
+- Ghép màn hình Full HD 144Hz là vừa
 
 Dùng công cụ **Xây dựng cấu hình PC** trên web: chọn từng món, web tự cộng tiền, rồi gửi cho Hili kiểm tra tương thích miễn phí.`,
   },

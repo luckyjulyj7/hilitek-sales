@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Package, ShoppingCart, Users, BarChart3,
   Plus, Trash2, Pencil, X, Search, Store, Globe, Menu, Home, Tag, Settings, Images,
   TrendingUp, AlertTriangle, Loader2, ChevronDown, ChevronRight, ChevronLeft, ChevronUp,
-  ArrowDownToLine, ArrowUpFromLine, Barcode, ImagePlus, ImageOff, Check, Printer, RotateCcw, KeyRound, LogOut, Eye, EyeOff, Filter, Target, History, ShieldCheck, XCircle, Wallet, PackageCheck, Truck, Clock, Bell, FileSpreadsheet, FileText, MapPin, UserCircle, Crown, Link2 as LinkIcon, Copy, Wand2, Bold, Italic, Heading1, Heading2, Heading3, List, Sparkles, Save, Layers, Star, ArrowUp, ArrowDown, Info, Zap
+  ArrowDownToLine, ArrowUpFromLine, Barcode, ImagePlus, ImageOff, Check, Printer, RotateCcw, KeyRound, LogOut, Eye, EyeOff, Filter, Target, History, ShieldCheck, XCircle, Wallet, PackageCheck, Truck, Clock, Bell, FileSpreadsheet, FileText, MapPin, UserCircle, Crown, Link2 as LinkIcon, Copy, Wand2, Bold, Italic, Heading1, Heading2, Heading3, List, Sparkles, Save, Layers, Star, ArrowUp, ArrowDown, Info, Zap, ClipboardPaste,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -47,6 +47,7 @@ import HandheldEditor from "./HandheldEditor.jsx";
 import WebStats from "./WebStats.jsx";
 import StaffChat from "./StaffChat.jsx";
 import GameProductEditor from "./GameProductEditor.jsx";
+import PasteDescPanel from "./admin/PasteDescPanel.jsx";
 import { StartGuide, ProductScreensNote, DueNotice, ViewModeToggle, SimpleStockList, RowAction, usePref, MoreFields, ReadyChecklist } from "./admin/AdminHelpers.jsx";
 
 // Xuất 1 hoặc nhiều bảng dữ liệu ra 1 file Excel (.xlsx), mỗi bảng là 1 sheet riêng.
@@ -1345,7 +1346,10 @@ const DescFontStyle = Quill.import("attributors/style/font");
 DescFontStyle.whitelist = DESC_FONTS.map((f) => f.family);
 Quill.register(DescFontStyle, true);
 
+SizeIcons.undo = '<svg viewBox="0 0 18 18"><path class="ql-stroke" d="M6.5 3 3 6.5 6.5 10M3 6.5h7a4 4 0 0 1 0 8H7"/></svg>';
+SizeIcons.redo = '<svg viewBox="0 0 18 18"><path class="ql-stroke" d="M11.5 3 15 6.5 11.5 10M15 6.5H8a4 4 0 0 0 0 8h3"/></svg>';
 const DESC_TOOLBAR = [
+  ["undo", "redo"],
   [{ header: 2 }, { header: 3 }],
   [{ size: "small" }, { size: "large" }, { size: "huge" }],
   ["bold", "italic", "underline", "strike"],
@@ -1383,6 +1387,7 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
   const [drag, setDrag] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkVal, setLinkVal] = useState("");
+  const [pasteOpen, setPasteOpen] = useState(false); // khung "Dán nội dung"
   // Chèn âm thanh (VD tiếng gõ switch): lưu thành 1 dòng link riêng tới file .mp3 trong kho.
   // Web khách (RichText) tự đổi dòng link đó thành thẻ "nghe thử" có nút phát.
   const [soundOpen, setSoundOpen] = useState(false);
@@ -1534,7 +1539,7 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
     const quill = new Quill(editorEl, {
       theme: "snow",
       placeholder: "Nội dung mô tả…",
-      modules: { toolbar: { container: DESC_TOOLBAR, handlers: { image: imageHandler, colorpick: colorPickHandler, color: colorHandler, background: backgroundHandler } } },
+      modules: { toolbar: { container: DESC_TOOLBAR, handlers: { undo() { this.quill.history.undo(); }, redo() { this.quill.history.redo(); }, image: imageHandler, colorpick: colorPickHandler, color: colorHandler, background: backgroundHandler } } },
     });
     quill.on("selection-change", (r) => { if (r && r.length) lastSelRef.current = r; });
 
@@ -1553,6 +1558,17 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
     // "có thay đổi chưa lưu" ngay khi vừa mở trang (gán innerHTML trực tiếp trước đây khiến
     // MutationObserver nội bộ của Quill tự coi đây là 1 thay đổi thật).
     if (value) { loadingRef.current = true; try { quill.clipboard.dangerouslyPasteHTML(value, "silent"); } finally { loadingRef.current = false; } }
+    quill.history.clear(); // hoàn tác không được lùi quá nội dung đã lưu (nếu không sẽ xoá trắng bài)
+    // Nút Hoàn tác / Làm lại: ghi chú cho người dùng và mờ đi khi không còn bước nào.
+    const tb = quill.getModule("toolbar").container;
+    const undoBtns = [["undo", "Hoàn tác (Ctrl+Z)"], ["redo", "Làm lại (Ctrl+Y)"]].map(([k, t]) => {
+      const b = tb.querySelector(".ql-" + k);
+      if (b) { b.title = t; b.setAttribute("aria-label", t); }
+      return [k, b];
+    });
+    const markUndo = () => undoBtns.forEach(([k, b]) => { if (b) { b.style.opacity = quill.history.stack[k].length ? "1" : ".3"; } });
+    markUndo();
+    quill.on("editor-change", () => setTimeout(markUndo, 0));
     quill.on("text-change", () => {
       const html = quill.root.innerHTML;
       lastEmitted.current = html;
@@ -1598,6 +1614,7 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
     if (value !== lastEmitted.current) {
       loadingRef.current = true;
       try { quill.clipboard.dangerouslyPasteHTML(value || "", "silent"); } finally { loadingRef.current = false; }
+      quill.history.clear();
       lastEmitted.current = value;
     }
   }, [value]);
@@ -1623,7 +1640,7 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
     };
     const onFocusIn = (e) => {
       const target = e.target;
-      if (target.tagName === "BUTTON" && containerRef.current && !containerRef.current.contains(target) && armedRef.current == null) {
+      if (target.tagName === "BUTTON" && containerRef.current && !containerRef.current.contains(target) && !target.closest("[data-dan-mo-ta]") && armedRef.current == null) {
         restoreScroll();
         const quill = quillRef.current;
         if (quill) requestAnimationFrame(() => { quill.root.focus({ preventScroll: true }); restoreScroll(); });
@@ -1678,6 +1695,23 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
       setMsg("Đã chèn âm thanh. Trên web sẽ hiện thành thẻ nghe thử.");
     } catch (err) { setMsg("Lỗi: " + (err.message || err)); }
     finally { setBusy(false); }
+  };
+
+  // Nội dung từ khung "Dán nội dung". keepColor: chữ do mình soạn thì giữ màu; bài chép từ web khác thì bỏ màu lạ.
+  const insertPasted = (html, mode, keepColor) => {
+    const quill = quillRef.current;
+    if (!quill) throw new Error("khung soạn chưa sẵn sàng");
+    quill.history.cutoff();
+    loadingRef.current = keepColor;
+    try {
+      if (mode === "replace") quill.clipboard.dangerouslyPasteHTML(html, "user");
+      else {
+        const end = quill.getLength() - 1;
+        if (end > 0) quill.insertText(end, "\n", "user");
+        quill.clipboard.dangerouslyPasteHTML(end > 0 ? end + 1 : 0, html, "user");
+      }
+    } finally { loadingRef.current = false; }
+    quill.history.cutoff();
   };
 
   const insertEmoji = (emo) => {
@@ -1749,6 +1783,14 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
     <div ref={rootRef}>
       <div className="flex items-center gap-2 mb-1 flex-wrap">
         <button type="button"
+          onMouseDown={arm("danBai")}
+          onClick={guardedClick("danBai", () => { setPasteOpen((v) => !v); setLinkOpen(false); setSoundOpen(false); setMsg(""); })}
+          disabled={busy} aria-expanded={pasteOpen}
+          title="Dán cả bài mô tả một lần: chữ thường, HTML hoặc Markdown"
+          className="text-xs px-2 py-1 rounded-md border inline-flex items-center gap-1 font-semibold" style={{ borderColor: INK, color: pasteOpen ? "#fff" : INK, background: pasteOpen ? INK : "#fff", opacity: busy ? 0.5 : 1 }}>
+          <ClipboardPaste size={13} /> Dán nội dung
+        </button>
+        <button type="button"
           onMouseDown={arm("linkNgoai")}
           onClick={guardedClick("linkNgoai", () => { setLinkOpen((v) => !v); setMsg(""); })}
           disabled={busy}
@@ -1798,6 +1840,12 @@ export function WebDescEditor({ value, onChange, rows = 6, bg }) {
             className="rounded-md border px-2 py-1 text-xs font-medium" style={{ borderColor: LINE, color: TEXT }}>Tô màu</button>
         </span>
       </div>
+      {pasteOpen && (
+        <PasteDescPanel rehost={rehostExternalImage} notify={setMsg} onClose={() => setPasteOpen(false)}
+          helpers={{ markdown: simpleMarkdownToHtml, beautify: beautifyDescriptionHtml }}
+          hasContent={() => { const q = quillRef.current; return !!q && (q.getText().trim() !== "" || !!q.root.querySelector("img, iframe")); }}
+          onInsert={insertPasted} />
+      )}
       {linkOpen && (
         <div className="mb-1">
           <div className="flex gap-2">

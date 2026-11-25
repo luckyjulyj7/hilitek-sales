@@ -126,6 +126,16 @@
 .bd-hero{padding-top:28px;padding-bottom:44px}
 .bd-hero h1{max-width:12em;margin-top:18px;font-size:clamp(38px,5.4vw,74px);line-height:1.04;font-weight:800;letter-spacing:-.045em}
 .bd-hero p{max-width:32em;margin-top:16px;font-size:19px}
+.bd-set{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:32px}
+.bd-set button{display:grid;grid-template-columns:150px minmax(0,1fr);gap:22px;align-items:center;padding:18px 24px;border:2px solid rgba(255,255,255,.4);background:rgba(8,24,64,.6);text-align:left;transition:background .2s}
+.bd-set img{width:150px;height:130px;object-fit:contain}
+.bd-set b,.bd-set small,.bd-set em{display:block;font-style:normal;line-height:1.3}
+.bd-set b{font-size:26px;letter-spacing:-.03em}
+.bd-set small{font-size:15px}
+.bd-set em{margin-top:8px;font-size:22px;font-weight:700;color:#F7C600}
+.st .bd-set button[aria-pressed=true]{border-color:#F7C600;background:#F7C600;color:#0B1230}
+.st .bd-set button[aria-pressed=true] em{color:#0B1230}
+.bd-bill .nt{margin-top:10px;font-size:14px;color:#555}
 .bd-main{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:28px;align-items:start}
 .bd-draw .view{position:relative;display:grid;place-items:center;height:430px;border:2px solid rgba(255,255,255,.65)}
 .bd-draw .view:before,.bd-draw .view:after{content:"";position:absolute;background:rgba(255,255,255,.22)}
@@ -239,6 +249,7 @@
   .dc-law .w{grid-template-columns:1fr;gap:18px}.dc-law .st-btn{justify-self:start}
 }
 @media(max-width:640px){
+  .bd-set button{grid-template-columns:92px minmax(0,1fr);gap:14px;padding:12px 14px}.bd-set img{width:92px;height:86px}.bd-set b{font-size:21px}.bd-set em{font-size:18px;margin-top:4px}
   .st .pn{grid-template-columns:1fr;min-height:0}.pn section{padding:28px 20px 30px}.pn img{height:240px}.pn.n4 section{min-height:380px}.pn-end span{width:100%}
   .st{font-size:16px}.st .w{padding-left:16px;padding-right:16px}
   .nw-hero .w{padding-bottom:32px}.nw-hero{min-height:560px}.nw-hero .st-back{left:16px}
@@ -251,7 +262,7 @@
   .gf-pick label{padding:24px 20px 0;font-size:17px}.gf-pick .rg{padding:0 20px}.gf-pick>p{padding:0 20px 22px}
   .gf-grid{gap:10px}.gf-grid a{padding:16px;border-radius:20px}.gf-grid .im{height:130px}.gf-grid img{max-height:125px}.gf-grid b{font-size:15.5px}.gf-grid strong{font-size:18px}
   .gf-combo .g{grid-template-columns:1fr}.gf-combo article{padding:24px 18px}.gf-combo .pair img{height:110px}
-  .bd-draw .view{height:290px}.bd-draw .view img{max-height:240px}.bd-draw ul,.bd-day,.bd-tip ol{grid-template-columns:1fr}
+  .bd-draw .view{height:290px}.bd-draw .view img{max-height:240px}.bd-set,.bd-draw ul,.bd-day,.bd-tip ol{grid-template-columns:1fr}
   .bd-day div+div{border-left:1px solid rgba(255,255,255,.45);border-top:0}
   .dc-quiz fieldset{padding:22px 18px}.dc-quiz fieldset button{width:100%;margin-right:0}.dc-quiz .rs{padding:30px 22px}
   .dc-four .g,.dc-chk ol{grid-template-columns:1fr}.dc-four .g>div{min-height:200px}.dc-chk li{min-height:62px}
