@@ -155,7 +155,7 @@ Hàng chính hãng, bảo hành 24 tháng với VOICSKY, đủ hoá đơn VAT. G
     // Bài dạng hình ảnh (ArticlePicks.jsx).
     picks: {
       lead: "Sáu mẫu 27 inch đang bán, từ 2,2 triệu. Xem hình, chọn theo việc bạn làm nhiều nhất.",
-      hero: ["/landing/bai/va2728g2.webp", "/landing/bai/ip2709sg.webp", "/landing/bai/mag275qf.webp"], heroClass: "mon",
+      hero: ["/landing/bai/va2728g2.webp", "/landing/bai/ip2709sg.webp", "/landing/bai/mag275qf.webp"], look: "hz",
       nav: "Bạn dùng màn hình để làm gì?", extras: ["sharp", "refresh", "panels"], cols: [["Độ nét, tần số", "size"], ["Tấm nền", "link"]],
       end: ["Card của bạn hợp màn nào?", "Nhắn Hili tên card đồ hoạ và game hay chơi, Hili gợi ý mẫu phù hợp."],
       items: [
@@ -233,7 +233,7 @@ Chưa biết chọn mẫu nào hợp với card đồ hoạ đang có, nhắn Hi
     // Bài dạng hình ảnh (ArticlePicks.jsx).
     picks: {
       lead: "Các dòng máy khác nhau ở game chơi được, độ gọn và tầm tiền. Chọn theo game, không theo chip.",
-      hero: ["/handheld/ayn-thor-cut.webp", "/handheld/anbernic-rg-34xxsp.webp", "/handheld/steam-deck-oled.webp"], heroClass: "hh3",
+      hero: ["/handheld/ayn-thor-cut.webp", "/handheld/anbernic-rg-34xxsp.webp", "/handheld/steam-deck-oled.webp"], look: "select",
       nav: "Bạn thuộc kiểu nào?", extras: ["eras", "sizes"],
       end: ["Nói game bạn hay chơi", "Hili gợi ý máy chạy được và báo giá qua Zalo."],
       items: [

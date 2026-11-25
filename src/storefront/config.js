@@ -1177,6 +1177,9 @@ const NEWS_POSTS = [
 // Bài viết mới (data/articles.js) đứng trước; bài cũ trùng slug thì bỏ.
 const BUILTIN_POSTS = [...ARTICLES, ...NEWS_POSTS.filter((p) => !ARTICLES.some((a) => a.slug === p.slug))];
 
+/** Bài có sẵn trong code (không phải trang chủ shop tự tạo). */
+export const isBuiltinPost = (p) => BUILTIN_POSTS.includes(p);
+
 /** Tìm trang theo đường dẫn: trang chủ shop tạo trước, bài có sẵn sau. */
 export function findPage(slug) {
   return LANDINGS.find((l) => l && l.slug === slug && l.published !== false) || BUILTIN_POSTS.find((p) => p.slug === slug);

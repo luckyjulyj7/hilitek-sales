@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { ArrowLeft, Clock, MessageCircle } from "lucide-react";
 import "./landing-extra.css";
-import { NEWS_KINDS, NEWS_PATH, SITE, findPage } from "../config.js";
+import { NEWS_KINDS, NEWS_PATH, SITE, findPage, isBuiltinPost } from "../config.js";
+import { STORIES } from "../data/stories.js";
+import Stories from "./Stories.jsx";
 import { fetchLanding } from "../lib/api.js";
 import RichText from "../components/RichText.jsx";
 import ProductCard from "../components/ProductCard.jsx";
 import { useCatalog } from "../catalogContext.js";
 import ArticleView from "./ArticleView.jsx";
 import ArticlePicks from "./ArticlePicks.jsx";
+import PickLooks from "./PickLooks.jsx";
 
 /** Trang nội dung / landing tự tạo — poster / banner trỏ tới bằng /trang/<slug>. */
 export default function LandingPage({ slug, navigate }) {
@@ -57,6 +60,8 @@ export default function LandingPage({ slug, navigate }) {
   const zalo = SITE.zaloHref || "https://zalo.me/" + (SITE.phoneRaw || "");
 
   // Bài tin tức: giao diện tạp chí riêng (ArticleView.jsx).
+  if (STORIES[slug] && isBuiltinPost(meta)) return <Stories meta={meta} story={STORIES[slug]} products={allProducts} navigate={navigate} />;
+  if (meta.news && meta.picks && meta.picks.look) return <PickLooks meta={meta} products={allProducts} navigate={navigate} />;
   if (meta.news && meta.picks) return <ArticlePicks meta={meta} products={allProducts} navigate={navigate} />;
   if (meta.news) return <ArticleView meta={meta} page={page} failed={failed} mins={mins} products={allProducts} navigate={navigate} />;
 
