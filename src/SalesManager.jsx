@@ -52,14 +52,33 @@ import { StartGuide, ProductScreensNote, DueNotice, ViewModeToggle, SimpleStockL
 
 // Xuất 1 hoặc nhiều bảng dữ liệu ra 1 file Excel (.xlsx), mỗi bảng là 1 sheet riêng.
 // Thư viện Excel (xlsx) nặng ~400KB — chỉ tải khi thật sự bấm xuất/nhập file, không nằm trong lần tải đầu.
+// Một ô Excel chứa tối đa 32.767 ký tự; ô dài hơn (VD mô tả HTML có nhiều ảnh) làm thư viện dừng hẳn,
+// không ra file. Ô đó được thay bằng dòng ghi chú bắt đầu bằng EXCEL_TOO_LONG; khi nhập lại, ô có
+// ghi chú này được bỏ qua nên nội dung thật trên hệ thống giữ nguyên.
+const EXCEL_CELL_MAX = 32767;
+const EXCEL_TOO_LONG = "[Quá dài cho Excel";
 async function exportExcel(filename, sheets) {
-  const XLSX = await import("xlsx");
-  const wb = XLSX.utils.book_new();
-  sheets.forEach(({ name, rows }) => {
-    const ws = XLSX.utils.json_to_sheet(rows && rows.length ? rows : [{ "Không có dữ liệu": "" }]);
-    XLSX.utils.book_append_sheet(wb, ws, name.slice(0, 31));
-  });
-  XLSX.writeFile(wb, filename.endsWith(".xlsx") ? filename : `${filename}.xlsx`);
+  try {
+    const XLSX = await import("xlsx");
+    const wb = XLSX.utils.book_new();
+    let cut = 0;
+    sheets.forEach(({ name, rows }) => {
+      const safe = (rows && rows.length ? rows : [{ "Không có dữ liệu": "" }]).map((row) => {
+        const o = {};
+        for (const k in row) {
+          const v = row[k];
+          if (typeof v === "string" && v.length > EXCEL_CELL_MAX) { o[k] = `${EXCEL_TOO_LONG}: ${v.length.toLocaleString("vi-VN")} ký tự, xem trong quản lý. Nhập lại file vẫn giữ nguyên nội dung này.]`; cut++; }
+          else o[k] = v;
+        }
+        return o;
+      });
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(safe), name.slice(0, 31));
+    });
+    XLSX.writeFile(wb, filename.endsWith(".xlsx") ? filename : `${filename}.xlsx`);
+    if (cut) window.alert(`Đã xuất file. ${cut} ô quá dài cho Excel (thường là mô tả web nhiều ảnh) được ghi chú thay cho nội dung; nhập lại file vẫn giữ nguyên các ô đó.`);
+  } catch (e) {
+    window.alert("Chưa xuất được file Excel: " + (e && e.message ? e.message : e));
+  }
 }
 
 /* ---------------------------------------------------------------
@@ -3295,7 +3314,7 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
   // Đọc các cột "…(web)" trong 1 dòng Excel → patch cho field `web` — CHỈ lấy ô có điền
   // (ô để trống = giữ nguyên, không ghi đè) trừ khi tạo sản phẩm hoàn toàn mới.
   const parseWebColumns = (row) => {
-    const has = (k) => row[k] !== undefined && String(row[k]).trim() !== "";
+    const has = (k) => row[k] !== undefined && String(row[k]).trim() !== "" && !String(row[k]).startsWith(EXCEL_TOO_LONG);
     const patch = {};
     if (has("Đăng web")) patch.published = /^(có|co|yes|true|1|x)$/i.test(String(row["Đăng web"]).trim());
     if (has("Danh mục web")) patch.categories = String(row["Danh mục web"]).split(",").map((s) => s.trim()).filter(Boolean);
