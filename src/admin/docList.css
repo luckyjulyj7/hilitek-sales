@@ -112,3 +112,23 @@ table.hili-items td .od-row>.min-w-0,table.hili-items td .od-row>span:last-child
   table.hili-rt>tbody>tr>td{padding-top:9px;padding-bottom:9px;font-variant-numeric:tabular-nums}
 }
 .od-bar:not(:has(button)){display:none}
+
+/* Cột trạng thái thẳng hàng: nhãn cùng bề rộng, cờ phụ là chữ nhỏ bên dưới */
+.dl-c .dl-pill.fx{justify-content:center;min-width:92px;align-self:flex-start}
+.dl-c .dl-pill.soft.fx{min-width:0}
+.dl-flags{display:flex!important;flex-wrap:wrap;gap:0 8px;margin-top:3px!important;white-space:normal!important}
+.dl-flags b{font-weight:600}
+.dl .wrap{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;line-height:1.3}
+.dl-card .t:has(.wrap){white-space:normal}
+/* Mọi dòng cùng một chiều cao: tên dài tối đa 2 dòng (rê chuột xem đủ), dòng ngắn vẫn giữ đúng chiều cao đó */
+@container dl (min-width:861px){
+  .dl-row{height:72px;min-height:72px}
+  .dl-c{max-height:72px;overflow:hidden}
+}
+.dl .wrap{display:-webkit-box!important;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden!important}
+.dl-flags{flex-wrap:nowrap!important;overflow:hidden;white-space:nowrap!important}
+@container dl (max-width:860px){
+  .dl-card .t{height:2.7em;display:flex;align-items:flex-start}
+  .dl-card .t .wrap{line-height:1.35}
+  .dl-card .m{flex-wrap:nowrap;overflow:hidden;height:22px}
+}

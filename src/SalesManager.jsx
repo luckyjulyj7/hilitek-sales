@@ -4077,8 +4077,7 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
         const rows = viewingProduct.hasSeries ? seriesList(viewingProduct) : [];
         const priceHistory = viewingProduct.priceHistory || [];
         const galleryImgs = [
-          ...(viewingProduct.image ? [{ src: viewingProduct.image, alt: viewingProduct.name }] : []),
-          ...(viewingProduct.images || []).map((im, i) => ({ src: im, alt: `${viewingProduct.name} — ảnh phụ ${i + 1}` })),
+          ...[...new Set([...(viewingProduct.web?.images || []), viewingProduct.image, ...(viewingProduct.images || [])].filter(Boolean))].map((im, i) => ({ src: im, alt: `${viewingProduct.name} — ảnh ${i + 1}` })),
         ];
         const lowStock = false; // đã tắt cảnh báo "Sắp hết"
         const stockLabel = stats.closingQty <= 0 ? "Hết hàng" : lowStock ? "Sắp hết" : "Còn hàng";
@@ -4086,9 +4085,10 @@ function ProductsInventory({ products, setProducts, purchaseOrders, orders, addL
         return (
           <Modal drawer title="Chi tiết sản phẩm" onClose={() => setViewingId(null)}>
             <div className="hili-hero flex items-start gap-5 mb-3">
-              {viewingProduct.image ? (
-                <img src={viewingProduct.image} alt={viewingProduct.name} onClick={() => setZoomImage({ images: galleryImgs, index: 0 })}
-                  className="w-36 h-36 object-cover rounded-md shrink-0 cursor-zoom-in" style={{ border: `1px solid ${LINE}` }} />
+              {displayImage(viewingProduct) ? (
+                <img src={displayImage(viewingProduct)} alt="" onClick={() => setZoomImage({ images: galleryImgs, index: 0 })}
+                  onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
+                  className="w-36 h-36 object-contain bg-white rounded-md shrink-0 cursor-zoom-in" style={{ border: `1px solid ${LINE}`, background: PAPER }} />
               ) : (
                 <div className="w-36 h-36 rounded-md flex items-center justify-center shrink-0" style={{ background: PAPER, border: `1px dashed ${LINE}` }}>
                   <ImageOff size={30} className="opacity-30" />
@@ -9005,6 +9005,7 @@ function Customers({ setOrders, customers, setCustomers, orders, products, curre
             <div className="flex items-center gap-2 mb-4 flex-wrap">
               <span className="text-xs px-2 py-1 rounded-md" style={{ background: PAPER, color: TEXT }}>{g.label}</span>
               <span className="text-sm" style={{ color: TEXT, opacity: 0.6 }}>{viewingCustomer.code}</span>
+              {viewingCustomer.phone && <a href={"tel:" + viewingCustomer.phone.replace(/\s/g, "")} className="text-sm font-semibold" style={{ color: INK }}>{viewingCustomer.phone}</a>}
               <div className="flex-1" />
               <button onClick={() => exportCustomerHistory(viewingCustomer)} className="text-sm px-3 py-1.5 rounded-md border flex items-center gap-1.5" style={{ borderColor: LINE, color: TEXT }}><FileSpreadsheet size={14} /> Xuất Excel</button>
               {isAdmin && (
@@ -9012,34 +9013,7 @@ function Customers({ setOrders, customers, setCustomers, orders, products, curre
               )}
             </div>
 
-            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 text-sm mb-5" style={{ borderBottom: `1px solid ${LINE}` }}>
-              {[
-                ["Số điện thoại", viewingCustomer.phone],
-                ["Mã số thuế", viewingCustomer.taxCode],
-                ["Email", viewingCustomer.email],
-                ["Phụ trách", viewingCustomer.assignedTo || "Chưa gán"],
-                ["Công nợ", viewingCustomer.creditDays ? `${viewingCustomer.creditDays} ngày` : "Trả ngay"],
-                ["Người liên hệ", viewingCustomer.contactPerson],
-                ["Đại diện", [viewingCustomer.representativeName, viewingCustomer.representativeTitle].filter(Boolean).join(" · ")],
-              ].map(([label, val]) => (
-                <div key={label} className="flex gap-4 py-2.5 min-w-0" style={{ borderTop: `1px solid ${LINE}` }}>
-                  <dt className="shrink-0 w-28" style={{ color: TEXT, opacity: 0.6 }}>{label}</dt>
-                  <dd className="font-medium truncate min-w-0" style={{ color: TEXT }} title={val || ""}>{val || "—"}</dd>
-                </div>
-              ))}
-              <div className="sm:col-span-2 flex gap-4 py-2.5" style={{ borderTop: `1px solid ${LINE}` }}>
-                <dt className="shrink-0 w-28" style={{ color: TEXT, opacity: 0.6 }}>Địa chỉ</dt>
-                <dd className="font-medium" style={{ color: TEXT }}>{fullAddress(viewingCustomer) || "—"}</dd>
-              </div>
-              {viewingCustomer.note && (
-                <div className="sm:col-span-2 flex gap-4 py-2.5" style={{ borderTop: `1px solid ${LINE}` }}>
-                  <dt className="shrink-0 w-28" style={{ color: TEXT, opacity: 0.6 }}>Ghi chú</dt>
-                  <dd style={{ color: TEXT }}>{viewingCustomer.note}</dd>
-                </div>
-              )}
-            </dl>
-
-            <div className={"grid grid-cols-2 gap-2 mb-5 " + (loyaltyOn ? "sm:grid-cols-5" : "sm:grid-cols-4")}>
+            <div className={"grid grid-cols-2 gap-2 mb-4 " + (loyaltyOn ? "sm:grid-cols-5" : "sm:grid-cols-4")}>
               <div className="px-3 py-2.5 rounded-lg" style={{ background: PAPER }}>
                 <p className="text-xs opacity-60 mb-0.5">Tổng chi tiêu</p>
                 <p className="text-base font-bold" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{vnd(s.totalSpent)}</p>
@@ -9071,6 +9045,34 @@ function Customers({ setOrders, customers, setCustomers, orders, products, curre
                 );
               })()}
             </div>
+            <p className="od-h">Thông tin</p>
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 text-sm mb-5" style={{ borderBottom: `1px solid ${LINE}` }}>
+              {[
+                ["Số điện thoại", viewingCustomer.phone],
+                ["Mã số thuế", viewingCustomer.taxCode],
+                ["Email", viewingCustomer.email],
+                ["Phụ trách", viewingCustomer.assignedTo || "Chưa gán"],
+                ["Công nợ", viewingCustomer.creditDays ? `${viewingCustomer.creditDays} ngày` : "Trả ngay"],
+                ["Người liên hệ", viewingCustomer.contactPerson],
+                ["Đại diện", [viewingCustomer.representativeName, viewingCustomer.representativeTitle].filter(Boolean).join(" · ")],
+              ].filter(([, val]) => val).map(([label, val]) => (
+                <div key={label} className="flex gap-4 py-2 min-w-0" style={{ borderTop: `1px solid ${LINE}` }}>
+                  <dt className="shrink-0 w-28" style={{ color: TEXT, opacity: 0.6 }}>{label}</dt>
+                  <dd className="font-medium truncate min-w-0" style={{ color: TEXT }} title={val || ""}>{val || "—"}</dd>
+                </div>
+              ))}
+              <div className="sm:col-span-2 flex gap-4 py-2.5" style={{ borderTop: `1px solid ${LINE}` }}>
+                <dt className="shrink-0 w-28" style={{ color: TEXT, opacity: 0.6 }}>Địa chỉ</dt>
+                <dd className="font-medium" style={{ color: TEXT }}>{fullAddress(viewingCustomer) || "—"}</dd>
+              </div>
+              {viewingCustomer.note && (
+                <div className="sm:col-span-2 flex gap-4 py-2.5" style={{ borderTop: `1px solid ${LINE}` }}>
+                  <dt className="shrink-0 w-28" style={{ color: TEXT, opacity: 0.6 }}>Ghi chú</dt>
+                  <dd className="min-w-0 break-words" style={{ color: TEXT }}>{String(viewingCustomer.note).split(/(https?:\/\/[^\s·]+)/g).map((t, i) => /^https?:\/\//.test(t) ? <a key={i} href={t} target="_blank" rel="noopener" className="underline" style={{ color: BLUE }}>{t.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}</a> : t)}</dd>
+                </div>
+              )}
+            </dl>
+
 
             {loyaltyOn && isAdmin && adjustOpen && (() => {
               const pts = pointsOf(viewingCustomer);
@@ -11091,25 +11093,24 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
 
 // ===== Danh sách đơn hàng / phiếu nhập kiểu mới (khung dùng chung ở admin/DocList.jsx) =====
 const ORDER_TONE = { pending: "amber", shipping: "blue", delivered: "green", done: "ink", cancelled: "gray" };
-// Tóm tắt hàng trong chứng từ bằng chữ: tên món đầu + số món còn lại, tổng số lượng.
-function ItemsBrief({ items, products }) {
-  const first = products.find((x) => x.id === items[0]?.productId)?.name || "—";
-  const qty = items.reduce((n, it) => n + (Number(it.qty) || 0), 0);
-  return <><span className="nm" title={items.map((it) => `${it.qty} × ${products.find((x) => x.id === it.productId)?.name || "?"}`).join("\n")}>{first}</span><small>{items.length > 1 ? `+${items.length - 1} sản phẩm khác · ` : ""}{qty} cái</small></>;
+function orderFlagTexts(o, products) {
+  if (o.status === "cancelled") return [];
+  const owed = orderSeriesDebt(o, products).reduce((n, x) => n + x.owed, 0);
+  return [
+    o.approvalStatus === "pending" && ["Chờ duyệt", RUST],
+    o.cancelRequest && ["Yêu cầu huỷ", RUST],
+    o.returnRequest && ["Yêu cầu đổi trả", BRASS],
+    o.items.some((it) => !it.fulfilled) && ["Chờ hàng", BRASS],
+    owed > 0 && [`Nợ ${owed} series`, BRASS],
+  ].filter(Boolean);
 }
 function OrderFlags({ o, products }) {
-  const owed = o.status === "cancelled" ? 0 : orderSeriesDebt(o, products).reduce((n, x) => n + x.owed, 0);
-  return (
-    <>
-      {o.status !== "cancelled" && o.approvalStatus === "pending" && <Pill tone="red">Chờ duyệt</Pill>}
-      {o.status !== "cancelled" && o.items.some((it) => !it.fulfilled) && <span className="dl-pill soft p-amber">Chờ hàng</span>}
-      {owed > 0 && <span className="dl-pill soft p-amber">Nợ {owed} series</span>}
-      {o.status !== "cancelled" && o.cancelRequest && <span className="dl-pill soft p-red">Yêu cầu huỷ</span>}
-      {o.status !== "cancelled" && o.returnRequest && <span className="dl-pill soft p-amber">Yêu cầu đổi trả</span>}
-      {o.status !== "cancelled" && <span className={"dl-pill soft " + (o.invoiceStatus === "issued" ? "p-green" : "p-gray")}>{o.invoiceStatus === "issued" ? `HĐ ${o.invoiceNo || "đã xuất"}` : "Chưa xuất HĐ"}</span>}
-    </>
-  );
+  const f = orderFlagTexts(o, products);
+  return f.length ? <small className="dl-flags">{f.map(([t, c], i) => <b key={i} style={{ color: c }}>{t}</b>)}</small> : null;
 }
+const InvoicePill = ({ o }) => o.status === "cancelled" ? <span className="dl-pill fx p-gray">Huỷ</span>
+  : o.invoiceStatus === "issued" ? <span className="dl-pill fx p-green" title={o.invoiceNo ? "Số hoá đơn " + o.invoiceNo : "Đã xuất hoá đơn"}>{o.invoiceNo ? `HĐ ${o.invoiceNo}` : "Đã xuất"}</span>
+  : <span className="dl-pill fx p-gray">Chưa xuất</span>;
 function OrderListView({ pagedOrders, orders, customers, products, selectedIds, toggleSelect, toggleSelectAll, pageAllSelected, currentUser,
   filterStatus, setFilterStatus, filterUnpaidOnly, setFilterUnpaidOnly, filterInvoice, setFilterInvoice, onOpen, onDelete }) {
   const live = orders.filter((o) => o.status !== "cancelled");
@@ -11131,19 +11132,20 @@ function OrderListView({ pagedOrders, orders, customers, products, selectedIds, 
       <DocList rows={pagedOrders} rowKey={(o) => o.id} onOpen={onOpen} selected={selectedIds} onToggle={toggleSelect} onToggleAll={toggleSelectAll} allSelected={pageAllSelected}
         empty="Không có đơn hàng nào."
         cols={[
-          { key: "doc", label: "Đơn hàng", w: "112px", cell: (o) => <><DocLink href={"?don=" + o.id} onOpen={() => onOpen(o)}>{o.code}</DocLink><small>{shortDateTime(o.createdAt)}</small></> },
-          { key: "cust", label: "Khách hàng", w: "minmax(0,1.3fr)", cell: (o) => { const c = custOf(o); return <><span className="nm">{c?.name || "Khách lẻ"}</span><small>{[c?.phone, o.channel === "online" ? "Online" : "Tại cửa hàng"].filter(Boolean).join(" · ")}</small></>; } },
-          { key: "items", label: "Sản phẩm", w: "minmax(0,1.3fr)", cell: (o) => <ItemsBrief items={o.items} products={products} /> },
-          { key: "st", label: "Trạng thái", w: "minmax(0,1.4fr)", cell: (o) => <span className="dl-tags"><Pill tone={ORDER_TONE[o.status]}>{STATUSES.find((x) => x.id === o.status)?.label}</Pill><OrderFlags o={o} products={products} /></span> },
-          { key: "money", label: "Tổng tiền", w: "150px", align: "right", cell: (o) => { const { c, due } = money(o); return <><span className="money">{vnd(c.payable)}</span><small className={due ? "due" : "ok"}>{o.status === "cancelled" ? "Đã huỷ" : due ? `Còn nợ ${vnd(c.remaining)}` : "Đã trả đủ"}</small>{due && (() => { const d = orderDueInfo(o); return d ? <small style={{ color: d.daysLeft < 0 ? RUST : d.daysLeft === 0 ? BRASS : "#6B7280" }}>{d.daysLeft < 0 ? `Quá hạn ${-d.daysLeft} ngày` : d.daysLeft === 0 ? "Đến hạn hôm nay" : `Hạn trả còn ${d.daysLeft} ngày`}</small> : null; })()}</>; } },
-          { key: "x", label: "", w: "60px", align: "right", cell: (o) => <span className="flex items-center justify-end gap-2"><NewTabLink href={"?don=" + o.id} />{currentUser.isOwner ? <button type="button" onClick={() => onDelete(o)} title="Xoá đơn hàng" aria-label="Xoá đơn hàng" className="opacity-40 hover:opacity-100" style={{ color: RUST }}><Trash2 size={15} /></button> : null}</span> },
+          { key: "doc", label: "Đơn hàng", w: "96px", cell: (o) => <><DocLink href={"?don=" + o.id} onOpen={() => onOpen(o)}>{o.code}</DocLink><small>{shortDateTime(o.createdAt)}</small></> },
+          { key: "cust", label: "Khách hàng", w: "minmax(0,1fr)", cell: (o) => { const c = custOf(o); return <><span className="nm wrap" title={c?.name || ""}>{c?.name || "Khách lẻ"}</span><small>{[c?.phone, o.channel === "online" ? "Online" : "Tại cửa hàng"].filter(Boolean).join(" · ")}</small></>; } },
+          { key: "st", label: "Giao hàng", w: "118px", cell: (o) => <><Pill tone={ORDER_TONE[o.status]} fx>{STATUSES.find((x) => x.id === o.status)?.label}</Pill><OrderFlags o={o} products={products} /></> },
+          { key: "inv", label: "Hoá đơn", w: "96px", cell: (o) => <InvoicePill o={o} /> },
+          { key: "money", label: "Tổng tiền", w: "118px", align: "right", cell: (o) => <span className="money">{vnd(orderCalc(o).payable)}</span> },
+          { key: "debt", label: "Còn nợ", w: "118px", align: "right", cell: (o) => { const { c, due } = money(o); if (o.status === "cancelled") return <small>—</small>; if (!due) return <small className="ok">Đã trả đủ</small>; const d = orderDueInfo(o); return <><span className="money due">{vnd(c.remaining)}</span>{d && <small style={{ color: d.daysLeft < 0 ? RUST : d.daysLeft === 0 ? BRASS : "#6B7280" }}>{d.daysLeft < 0 ? `Quá hạn ${-d.daysLeft} ngày` : d.daysLeft === 0 ? "Đến hạn hôm nay" : `Còn ${d.daysLeft} ngày`}</small>}</>; } },
+          { key: "x", label: "", w: "52px", align: "right", cell: (o) => <span className="flex items-center justify-end gap-2"><NewTabLink href={"?don=" + o.id} />{currentUser.isOwner ? <button type="button" onClick={() => onDelete(o)} title="Xoá đơn hàng" aria-label="Xoá đơn hàng" className="opacity-40 hover:opacity-100" style={{ color: RUST }}><Trash2 size={15} /></button> : null}</span> },
         ]}
         card={(o) => { const c = custOf(o), { c: m, due } = money(o); return {
           muted: o.status === "cancelled",
-          title: <>{c?.name || "Khách lẻ"}</>,
+          title: <span className="wrap">{c?.name || "Khách lẻ"}</span>,
           side: <>{vnd(m.payable)}</>,
-          sub: <><DocLink href={"?don=" + o.id} onOpen={() => onOpen(o)}>{o.code}</DocLink> · {shortDateTime(o.createdAt)} · {o.items.length} sp{due ? <b style={{ color: RUST }}> · Nợ {vnd(m.remaining)}</b> : ""}</>,
-          meta: <><Pill tone={ORDER_TONE[o.status]}>{STATUSES.find((x) => x.id === o.status)?.label}</Pill><OrderFlags o={o} products={products} /></>,
+          sub: <><DocLink href={"?don=" + o.id} onOpen={() => onOpen(o)}>{o.code}</DocLink> · {shortDateTime(o.createdAt)}{due ? <b style={{ color: RUST }}> · Nợ {vnd(m.remaining)}</b> : ""}</>,
+          meta: <><Pill tone={ORDER_TONE[o.status]}>{STATUSES.find((x) => x.id === o.status)?.label}</Pill><InvoicePill o={o} /><OrderFlags o={o} products={products} /></>,
         }; }} />
     </>
   );
@@ -11165,14 +11167,14 @@ function POListView({ pagedPOs, purchaseOrders, products, onOpen, onReceive }) {
       <DocList rows={pagedPOs} rowKey={(p) => p.id} onOpen={onOpen} empty="Chưa có phiếu nhập nào."
         cols={[
           { key: "doc", label: "Phiếu nhập", w: "112px", cell: (po) => <><DocLink href={"?po=" + po.id} onOpen={() => onOpen(po)}>{po.code}</DocLink><small>{shortDateTime(po.createdAt)}</small></> },
-          { key: "sup", label: "Nhà cung cấp", w: "minmax(0,1.4fr)", cell: (po) => <><span className="nm">{(po.supplier || "—").replace(/^NCC\d+ - /, "")}</span><small>{po.invoiceNo ? `HĐ ${po.invoiceNo}` : "Chưa có số hoá đơn"}{po.createdBy ? ` · ${po.createdBy}` : ""}</small></> },
-          { key: "items", label: "Sản phẩm", w: "minmax(0,1.3fr)", cell: (po) => <ItemsBrief items={po.items} products={products} /> },
-          { key: "st", label: "Trạng thái", w: "minmax(0,1.2fr)", cell: (po) => { const n = owedSeries(po); return <span className="dl-tags"><Pill tone={po.status === "received" ? "green" : "amber"}>{po.status === "received" ? "Đã nhập kho" : "Chờ hàng về"}</Pill>{n > 0 && <span className="dl-pill soft p-amber">Thiếu {n} series</span>}{(po.returns || []).length > 0 && <span className="dl-pill soft p-red">Có trả hàng</span>}</span>; } },
-          { key: "money", label: "Giá trị", w: "150px", align: "right", cell: (po) => <><span className="money">{vnd(poNetTotal(po))}</span><small className={po.paid ? "ok" : "due"}>{po.paid ? "Đã thanh toán" : "Chưa thanh toán"}</small></> },
+          { key: "sup", label: "Nhà cung cấp", w: "minmax(0,1fr)", cell: (po) => <><span className="nm wrap">{(po.supplier || "—").replace(/^NCC\d+ - /, "")}</span><small>{po.invoiceNo ? `HĐ ${po.invoiceNo}` : "Chưa có số hoá đơn"}{po.createdBy ? ` · ${po.createdBy}` : ""}</small></> },
+          { key: "st", label: "Nhập kho", w: "132px", cell: (po) => { const n = owedSeries(po); return <><Pill tone={po.status === "received" ? "green" : "amber"} fx>{po.status === "received" ? "Đã nhập kho" : "Chờ hàng về"}</Pill>{(n > 0 || (po.returns || []).length > 0) && <small className="dl-flags">{n > 0 && <b style={{ color: BRASS }}>Thiếu {n} series</b>}{(po.returns || []).length > 0 && <b style={{ color: RUST }}>Có trả hàng</b>}</small>}</>; } },
+          { key: "pay", label: "Thanh toán", w: "136px", cell: (po) => <span className={"dl-pill fx " + (po.paid || poNetTotal(po) <= 0 ? "p-green" : "p-red")}>{po.paid || poNetTotal(po) <= 0 ? "Đã thanh toán" : "Chưa thanh toán"}</span> },
+          { key: "money", label: "Giá trị", w: "132px", align: "right", cell: (po) => <span className="money">{vnd(poNetTotal(po))}</span> },
           { key: "act", label: "", w: "128px", align: "right", cell: (po) => <span className="flex items-center justify-end gap-2">{po.status === "pending" && <button type="button" onClick={() => onReceive(po)} className="text-xs font-semibold px-3 py-2 rounded-md text-white whitespace-nowrap" style={{ background: INK }}>Nhận hàng</button>}<NewTabLink href={"?po=" + po.id} /></span> },
         ]}
         card={(po) => ({
-          title: <>{(po.supplier || "—").replace(/^NCC\d+ - /, "")}</>,
+          title: <span className="wrap">{(po.supplier || "—").replace(/^NCC\d+ - /, "")}</span>,
           side: <>{vnd(poNetTotal(po))}</>,
           sub: <><DocLink href={"?po=" + po.id} onOpen={() => onOpen(po)}>{po.code}</DocLink> · {shortDateTime(po.createdAt)} · <b style={{ color: po.paid ? FOREST : RUST }}>{po.paid ? "Đã thanh toán" : "Chưa thanh toán"}</b></>,
           meta: <><Pill tone={po.status === "received" ? "green" : "amber"}>{po.status === "received" ? "Đã nhập kho" : "Chờ hàng về"}</Pill>{owedSeries(po) > 0 && <span className="dl-pill soft p-amber">Thiếu {owedSeries(po)} series</span>}{po.status === "pending" && <button type="button" onClick={() => onReceive(po)} className="ml-auto text-xs font-semibold px-3 py-2 rounded-md text-white" style={{ background: INK }}>Nhận hàng</button>}</>,

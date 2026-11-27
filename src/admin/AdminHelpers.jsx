@@ -193,11 +193,10 @@ export function SimpleStockList({ groups, productStats, displayImage, isAdmin, i
   // Mỗi phiên bản là 1 dòng riêng cho dễ đọc (tên phiên bản đã có trong tên sản phẩm).
   const rows = groups.flatMap((g) => (g.type === "single" ? [g.p] : g.members));
   const stockOf = (p) => {
-    const qty = productStats(p).closingQty, low = p.minStockLevel || 0;
+    const qty = productStats(p).closingQty; // không hiện "Sắp hết": K đã tắt cảnh báo dưới định mức tồn
     if (p.isService) return { t: "Dịch vụ", tone: "blue", n: "—" };
     if (qty < 0) return { t: "Âm kho", tone: "red", n: qty };
     if (qty === 0) return { t: "Hết hàng", tone: "gray", n: 0 };
-    if (low && qty <= low) return { t: "Sắp hết", tone: "amber", n: qty };
     return { t: "Còn hàng", tone: "green", n: qty };
   };
   const Pic = ({ p }) => { const img = displayImage(p); return img ? <img src={img} alt="" loading="lazy" className="sk-img" /> : <span className="sk-img grid place-items-center"><ImageOff size={16} style={{ color: MUTE }} /></span>; };

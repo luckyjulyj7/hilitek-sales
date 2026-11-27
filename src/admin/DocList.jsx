@@ -67,6 +67,6 @@ export function SumStrip({ items }) {
 }
 
 /** Nhãn trạng thái. tone: ink | blue | green | amber | red | gray */
-export function Pill({ tone = "gray", children, title }) {
-  return <span className={"dl-pill p-" + tone} title={title}>{children}</span>;
+export function Pill({ tone = "gray", children, title, fx }) {
+  return <span className={"dl-pill p-" + tone + (fx ? " fx" : "")} title={title}>{children}</span>;
 }
