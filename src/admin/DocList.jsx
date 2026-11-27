@@ -33,14 +33,22 @@ export function DocList({ rows, cols, rowKey, onOpen, selected, onToggle, onTogg
   );
 }
 
-/** Ảnh nhỏ các sản phẩm trong chứng từ: tối đa 3 ảnh, kèm "+n". */
-export function Thumbs({ items, max = 3 }) {
-  const shown = items.slice(0, max);
+/**
+ * Mã chứng từ là link thật: bấm thường mở ngăn chi tiết ngay tại trang; Ctrl/⌘ + bấm, bấm chuột giữa
+ * hoặc chuột phải "Mở trong tab mới" thì mở tab mới (link "?don=<id>" / "?po=<id>").
+ */
+export function DocLink({ href, onOpen, children }) {
   return (
-    <span className="dl-thumbs">
-      {shown.map((x, i) => x.src ? <img key={i} src={x.src} alt="" loading="lazy" title={x.name} /> : <i key={i} title={x.name}>{(x.name || "?").slice(0, 1)}</i>)}
-      {items.length > max && <b>+{items.length - max}</b>}
-    </span>
+    <a href={href} className="code" onClick={(e) => { if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return; e.preventDefault(); onOpen(); }}>{children}</a>
+  );
+}
+
+/** Nút nhỏ mở chứng từ ở tab mới (cho người không quen Ctrl + bấm). */
+export function NewTabLink({ href }) {
+  return (
+    <a href={href} target="_blank" rel="noopener" className="dl-nt" title="Mở ở tab mới" aria-label="Mở ở tab mới">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /></svg>
+    </a>
   );
 }
 

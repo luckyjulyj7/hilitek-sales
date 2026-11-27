@@ -1,69 +1,68 @@
-/* Danh sách chứng từ (đơn hàng, phiếu nhập) */
-.dl{--ink:#1E2A8A;--text:#111827;--mute:#6B7280;--line:#E5E7EB;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;font-variant-numeric:tabular-nums}
-.dl-head,.dl-row{display:grid;align-items:center;column-gap:14px;padding:0 16px}
-.dl-head{position:sticky;top:0;z-index:2;min-height:40px;background:#F8F9FC;border-bottom:1px solid var(--line);font-size:12px;font-weight:600;color:var(--mute);text-transform:uppercase;letter-spacing:.03em}
+/* Danh sách chứng từ (đơn hàng, phiếu nhập, sản phẩm): bảng gọn trên máy tính, thẻ gọn trên điện thoại */
+.dl{--ink:#1E2A8A;--text:#111827;--mute:#6B7280;--line:#E5E7EB;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;font-variant-numeric:tabular-nums;container-type:inline-size;container-name:dl}
+.dl-head,.dl-row{display:grid;align-items:center;column-gap:16px;padding:0 14px}
+.dl-head{position:sticky;top:0;z-index:2;min-height:36px;background:#F8F9FC;border-bottom:1px solid var(--line);font-size:12px;font-weight:600;color:var(--mute)}
 .dl-head .r,.dl-row .r{text-align:right;justify-content:flex-end}
-.dl-row{min-height:64px;border-bottom:1px solid #F0F1F4;cursor:pointer;transition:background .12s}
+.dl-row{min-height:52px;border-bottom:1px solid #F0F1F4;cursor:pointer;transition:background .12s}
 .dl-row:last-of-type{border-bottom:0}
 .dl-row:hover{background:#F6F8FF}
 .dl-row.on{background:#EEF2FF}
-.dl-row.muted .dl-c{opacity:.55}
-.dl-c{display:flex;flex-direction:column;justify-content:center;min-width:0;padding:10px 0;font-size:14px;color:var(--text)}
-.dl-c small{display:block;margin-top:2px;font-size:12.5px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dl-c .nm{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dl-c .code{font-weight:700;color:var(--ink);white-space:nowrap}
-.dl-c .money{font-weight:700;font-size:15px;white-space:nowrap}
-.dl-c .due{color:#C62828;font-weight:600}
-.dl-c .ok{color:#15803D}
+.dl-row.muted .dl-c{opacity:.5}
+.dl-c{display:flex;flex-direction:column;justify-content:center;min-width:0;padding:7px 0;font-size:14px;line-height:1.3;color:var(--text)}
+.dl-c small{display:block;margin-top:1px;font-size:12.5px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dl-c .nm{display:block;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dl-cust .nm{font-weight:600}
+.dl .code{font-weight:700;color:var(--ink);white-space:nowrap;text-decoration:none}
+.dl a.code:hover{text-decoration:underline}
+.dl-c .money{font-weight:700;font-size:14.5px;white-space:nowrap}
+.dl .due{color:#C62828;font-weight:600}
+.dl .ok{color:#15803D}
 .dl-ck input,.dl-head input{width:16px;height:16px;accent-color:var(--ink)}
 .dl-tags{display:flex;flex-wrap:wrap;gap:4px}
 .dl-card{display:none}
-.dl-empty{padding:48px 16px;text-align:center;color:var(--mute)}
-.dl-thumbs{display:flex;align-items:center}
-.dl-thumbs img,.dl-thumbs i{width:38px;height:38px;flex:none;margin-left:-8px;border:2px solid #fff;border-radius:8px;background:#F3F4F6;object-fit:contain;box-shadow:0 0 0 1px var(--line)}
-.dl-thumbs img:first-child,.dl-thumbs i:first-child{margin-left:0}
-.dl-thumbs i{display:grid;place-items:center;font-style:normal;font-weight:700;color:var(--mute)}
-.dl-thumbs b{margin-left:6px;font-size:12.5px;color:var(--mute)}
-.dl-pill{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 9px;border-radius:999px;font-size:12.5px;font-weight:600;white-space:nowrap;line-height:1}
+.dl-empty{padding:40px 16px;text-align:center;color:var(--mute)}
+.dl-nt{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:6px;color:#6B7280}
+.dl-nt:hover{background:#EEF0FB;color:var(--ink)}
+.dl-pill{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:999px;font-size:12.5px;font-weight:600;white-space:nowrap;line-height:1}
 .dl-pill:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
 .p-ink{background:#EEF0FB;color:#1E2A8A}.p-blue{background:#E8F0FE;color:#1D4ED8}.p-green{background:#E7F6EC;color:#15803D}
 .p-amber{background:#FEF3E2;color:#B45309}.p-red{background:#FDECEC;color:#C62828}.p-gray{background:#F1F2F4;color:#4B5563}
 .dl-pill.soft:before{display:none}
-.dl-pill.soft{height:22px;padding:0 7px;font-size:12px;font-weight:500}
+.dl-pill.soft{height:20px;padding:0 6px;font-size:12px;font-weight:500}
 /* Dải số liệu */
-.dl-sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
-.dl-sum>*{position:relative;display:flex;flex-direction:column;align-items:flex-start;min-height:88px;padding:14px 16px;border:1px solid #E5E7EB;border-radius:10px;background:#fff;text-align:left;font:inherit;transition:border-color .15s,box-shadow .15s}
+.dl-sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.dl-sum>*{position:relative;display:flex;flex-direction:column;align-items:flex-start;padding:10px 14px 10px 16px;border:1px solid #E5E7EB;border-radius:10px;background:#fff;text-align:left;font:inherit;transition:border-color .15s,box-shadow .15s}
 .dl-sum button{cursor:pointer}
 .dl-sum button:hover{border-color:#C7CCE8}
-.dl-sum button[aria-pressed=true]{border-color:#1E2A8A;box-shadow:0 0 0 1px #1E2A8A}
-.dl-sum>*:before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:0 3px 3px 0;background:var(--c)}
-.dl-sum .l{font-size:13px;font-weight:600;color:#4B5563}
-.dl-sum .v{margin-top:6px;font-size:24px;font-weight:700;letter-spacing:-.02em;color:#111827;font-variant-numeric:tabular-nums}
-.dl-sum .u{margin-top:2px;font-size:12.5px;color:#6B7280}
+.dl-sum button[aria-pressed=true]{border-color:#1E2A8A;box-shadow:0 0 0 1px #1E2A8A;background:#F7F8FE}
+.dl-sum>*:before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:0 3px 3px 0;background:var(--c)}
+.dl-sum .l{font-size:12.5px;font-weight:600;color:#4B5563}
+.dl-sum .v{margin-top:2px;font-size:21px;font-weight:700;letter-spacing:-.02em;color:#111827;line-height:1.2}
+.dl-sum .u{font-size:12px;color:#6B7280}
 .t-ink{--c:#1E2A8A}.t-blue{--c:#1D4ED8}.t-green{--c:#15803D}.t-amber{--c:#D97706}.t-red{--c:#C62828}
-@media (max-width:1023px){.dl-sum{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:767px){
-  .dl-sum{gap:8px;margin-bottom:12px}
-  .dl-sum>*{min-height:0;padding:10px 12px}
-  .dl-sum .v{font-size:19px;margin-top:2px}
+  .dl-sum{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-bottom:10px}
+  .dl-sum>*{padding:7px 10px 7px 12px}
+  .dl-sum>*:before{top:8px;bottom:8px}
+  .dl-sum .l{font-size:12px}
+  .dl-sum .v{font-size:16px;margin:0}
+  .dl-sum .u{font-size:11.5px}
   .dl{border:0;background:transparent;border-radius:0}
 }
-/* Khung hẹp (điện thoại, máy tính bảng): mỗi dòng thành thẻ */
-.dl{container-type:inline-size;container-name:dl}
+/* Khung hẹp (điện thoại, máy tính bảng): mỗi dòng là một thẻ gọn */
 @container dl (max-width:860px){
   .dl-head{display:none}
-  .dl-row{display:grid!important;grid-template-columns:28px minmax(0,1fr)!important;padding:12px;margin:0 0 8px;border:1px solid var(--line);border-radius:10px;background:#fff;min-height:0}
+  .dl-row{display:grid!important;grid-template-columns:24px minmax(0,1fr)!important;column-gap:8px;padding:9px 11px;margin:0 0 6px;border:1px solid var(--line);border-radius:10px;background:#fff;min-height:0}
   .dl-row:last-of-type{border-bottom:1px solid var(--line)}
   .dl-c{display:none}
-  .dl-ck{grid-row:1;align-self:start;padding-top:2px}
+  .dl-ck{grid-row:1;align-self:start;padding-top:1px}
   .dl-row:not(:has(.dl-ck)){grid-template-columns:minmax(0,1fr)!important}
-  .dl-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;min-width:0;font-size:14px}
+  .dl-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;min-width:0;font-size:14px;line-height:1.35}
   .dl-card .t{min-width:0;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .dl-card .s{text-align:right;font-weight:700;white-space:nowrap}
-  .dl-card .u{grid-column:1/-1;font-size:12.5px;color:var(--mute);min-width:0}
-  .dl-card .m{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
+  .dl-card .u{grid-column:1/-1;font-size:12.5px;color:var(--mute);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dl-card .m{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:4px;min-width:0;margin-top:3px}
 }
-
 /* Ngăn chi tiết đơn hàng */
 .od-money{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:4px 0 14px}
 .od-money>div{padding:10px 12px;border:1px solid #E5E7EB;border-radius:10px;background:#fff}
@@ -72,14 +71,14 @@
 .od-money .due{border-color:#F5C2C2;background:#FFF6F6}.od-money .due b{color:#C62828}
 .od-money .ok{border-color:#BFE3CB;background:#F3FBF6}.od-money .ok b{color:#15803D}
 .od-steps{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
-.od-step{min-height:40px;padding:0 16px;border:1.5px solid var(--c);border-radius:8px;background:#fff;color:var(--c);font-size:14px;font-weight:600;cursor:pointer}
+.od-step{min-height:36px;padding:0 14px;border:1.5px solid var(--c);border-radius:8px;background:#fff;color:var(--c);font-size:13.5px;font-weight:600;cursor:pointer}
 .od-step[data-next]{background:var(--c);color:#fff}
 .od-step:disabled{opacity:.35;cursor:not-allowed}
 .od-img{width:40px;height:40px;flex:none;border-radius:8px;background:#F3F4F6;object-fit:contain;border:1px solid #E5E7EB}
-@media (max-width:767px){.od-money b{font-size:15px}.od-step{flex:1 1 140px}}
+@media (max-width:767px){.od-money{gap:6px}.od-money>div{padding:8px 9px}.od-money span{font-size:11.5px}.od-money b{font-size:14px!important;white-space:normal;line-height:1.25}.od-step{flex:1 1 140px}}
 
 /* Danh sách sản phẩm */
-.sk-img{width:48px;height:48px;flex:none;border-radius:8px;border:1px solid #E5E7EB;background:#fff;object-fit:contain}
+.sk-img{width:40px;height:40px;flex:none;border-radius:8px;border:1px solid #E5E7EB;background:#fff;object-fit:contain}
 .sk-n{font-size:20px;font-weight:700;line-height:1.1;color:#111827}
 .sk-acts{display:flex;justify-content:flex-end;gap:4px;flex-wrap:nowrap}
 .dl-c.r .dl-pill{margin-left:auto}
@@ -87,3 +86,29 @@
 .dl-prod .nm{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.35}
 table.hili-items td .od-row{width:auto!important;height:auto!important}
 table.hili-items td .od-row>.min-w-0,table.hili-items td .od-row>span:last-child{display:block!important;-webkit-line-clamp:unset!important}
+
+/* Ngăn chi tiết: thanh thao tác và khối thông tin */
+.od-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 0 12px;margin-bottom:12px;border-bottom:1px solid #EEF0F3}
+.od-bar .od-steps{margin:0}
+.od-tools{display:flex;flex-wrap:wrap;gap:6px}
+.od-steps:not(:empty)+.od-tools{padding-left:10px;border-left:1px solid #E5E7EB}
+.od-tools button{min-height:36px!important;font-size:13.5px!important}
+.od-info{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr);gap:16px;padding:14px 16px;margin-bottom:16px;border:1px solid #E5E7EB;border-radius:10px;background:#FAFBFC}
+.od-h{margin:0 0 8px;font-size:13px;font-weight:700;color:#111827}
+@media (max-width:767px){
+  .od-info{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;padding:12px}
+  .od-info>div:first-child{grid-column:1/-1}
+  .od-tools{width:100%}
+  .od-steps:not(:empty)+.od-tools{padding-left:0;border-left:0}
+  .od-tools{display:grid;grid-template-columns:1fr 1fr}
+  .od-tools button{justify-content:center;padding:0 6px!important;font-size:13px!important;white-space:nowrap}
+  .od-bar{padding-top:4px}
+}
+/* Đồng bộ mọi bảng cũ (khách hàng, nhà cung cấp, website, báo giá...) theo cùng kiểu với danh sách mới */
+@media (min-width:768px){
+  table.hili-rt>thead th{background:#F8F9FC!important;color:#6B7280!important;opacity:1!important;font-size:12px!important;font-weight:600!important;padding-top:9px!important;padding-bottom:9px!important;border-bottom:1px solid #E5E7EB}
+  table.hili-rt>tbody>tr{transition:background .12s}
+  table.hili-rt>tbody>tr:hover{background:#F6F8FF}
+  table.hili-rt>tbody>tr>td{padding-top:9px;padding-bottom:9px;font-variant-numeric:tabular-nums}
+}
+.od-bar:not(:has(button)){display:none}

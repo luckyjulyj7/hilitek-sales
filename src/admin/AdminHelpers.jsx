@@ -43,7 +43,7 @@ export function RowAction({ icon: Icon, label, title, onClick, color = TEXT, sol
 
 /* ---------- Hướng dẫn "Bắt đầu từ đâu" (đóng được, nhớ theo máy) ---------- */
 export function StartGuide({ id, title, steps, actions }) {
-  const [hidden, setHidden] = usePref("guide_" + id, false);
+  const [hidden, setHidden] = usePref("guide2_" + id, true); // mặc định thu gọn thành 1 nút nhỏ cho đỡ rối
   if (hidden) {
     return (
       <button type="button" onClick={() => setHidden(false)} className="mb-3 inline-flex items-center gap-1.5 min-h-[32px] px-2.5 rounded-md text-xs font-medium" style={{ color: INK, background: `${INK}0D` }}>
@@ -75,7 +75,7 @@ export function StartGuide({ id, title, steps, actions }) {
 
 /* ---------- Ghi chú quan hệ 2 màn hình sản phẩm ---------- */
 export function ProductScreensNote({ where }) {
-  const [hidden, setHidden] = usePref("note_products_" + where, false);
+  const [hidden, setHidden] = usePref("note2_products_" + where, true); // mặc định ẩn
   if (hidden) return null;
   const inv = where === "inventory";
   return (

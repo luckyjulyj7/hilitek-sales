@@ -48,7 +48,7 @@ import WebStats from "./WebStats.jsx";
 import StaffChat from "./StaffChat.jsx";
 import GameProductEditor from "./GameProductEditor.jsx";
 import PasteDescPanel from "./admin/PasteDescPanel.jsx";
-import { DocList, Thumbs, SumStrip, Pill } from "./admin/DocList.jsx";
+import { DocList, SumStrip, Pill, DocLink, NewTabLink } from "./admin/DocList.jsx";
 import { StartGuide, ProductScreensNote, DueNotice, ViewModeToggle, SimpleStockList, RowAction, usePref, MoreFields, ReadyChecklist } from "./admin/AdminHelpers.jsx";
 
 // Xuất 1 hoặc nhiều bảng dữ liệu ra 1 file Excel (.xlsx), mỗi bảng là 1 sheet riêng.
@@ -5395,7 +5395,7 @@ function ItemsTable({ items, products, onUpdate, onRemove, lockQtyPrice, onOpenP
               <React.Fragment key={it.productId}>
                 <tr style={{ borderBottom: p?.hasSeries ? "none" : `1px dashed ${LINE}` }}>
                   <td className="px-2 py-3 text-xs opacity-60 align-top">{idx + 1}</td>
-                  <td className="px-2 py-3 align-top"><div className="od-row flex items-start gap-2.5">{p && displayImage(p) ? <img src={displayImage(p)} alt="" loading="lazy" className="od-img" /> : <span className="od-img" />}<div className="min-w-0">
+                  <td className="px-2 py-3 align-top"><div className="od-row flex items-start gap-2.5"><div className="min-w-0">
                     {p && onOpenProduct ? <button type="button" onClick={() => onOpenProduct(p.id)} className="block text-left font-medium text-sm leading-snug hover:underline" style={{ color: BLUE }}>{p.name}</button> : <div className="font-medium text-sm leading-snug" style={{ color: TEXT }}>{p?.name}</div>}
                     <div className="text-xs mt-0.5" style={{ color: TEXT, opacity: 0.55 }}>{p?.sku || p?.code}</div>
                   </div></div></td>
@@ -5514,6 +5514,7 @@ function PurchaseOrders({ goToProduct, goToSupplier, purchaseOrders, setPurchase
   const [form, setForm] = useState({});
   const [expanded, setExpanded] = useState(null);
   const [viewingId, setViewingId] = useState(null); // id của đơn đang xem/sửa
+  useDocUrl("po", viewingId);
   const [showPOInfo, setShowPOInfo] = useState(false);
   const [showPONotes, setShowPONotes] = useState(false);
   const [editForm, setEditForm] = useState(null);
@@ -5869,13 +5870,18 @@ function PurchaseOrders({ goToProduct, goToSupplier, purchaseOrders, setPurchase
 
       {/* Modal xem / sửa đơn đã tạo */}
       {viewingPO && editForm && (
-        <Modal drawer title={`Đơn nhập hàng ${viewingPO.code}`} onClose={closeView}>
-          <div className="flex items-start justify-between gap-3 flex-wrap mb-1">
-            <POProgressStepper po={viewingPO} />
-            <div className="hili-actions flex gap-2 flex-wrap">
+        <Modal drawer title={`Đơn nhập hàng ${viewingPO.code}`} onClose={closeView} headerAction={<NewTabLink href={"?po=" + viewingPO.id} />}>
+          <POProgressStepper po={viewingPO} />
+          <div className="od-money">
+            <div><span>Giá trị phiếu</span><b>{vnd(poNetTotal(viewingPO))}</b></div>
+            <div><span>Trạng thái</span><b style={{ fontSize: 15 }}>{viewingPO.status === "received" ? "Đã nhập kho" : "Chờ hàng về"}</b></div>
+            <div className={viewingPO.paid || poNetTotal(viewingPO) <= 0 ? "ok" : "due"}><span>Thanh toán</span><b style={{ fontSize: 15 }}>{viewingPO.paid || poNetTotal(viewingPO) <= 0 ? "✓ Đã thanh toán" : "Chưa thanh toán"}</b></div>
+          </div>
+          <div className="od-bar">
+            <div className="hili-actions od-tools">
             {!viewingPO.paid && poNetTotal(viewingPO) > 0 && (
               <button onClick={() => markPaid(viewingPO)} className="px-3.5 py-1.5 rounded-md text-sm font-medium text-white" style={{ background: INK }}>
-                Đã thanh toán
+                Ghi nhận đã thanh toán
               </button>
             )}
             {viewingPO.status === "received" && (
@@ -5891,7 +5897,6 @@ function PurchaseOrders({ goToProduct, goToSupplier, purchaseOrders, setPurchase
             </div>
           </div>
 
-          {currentUser?.role === "admin" && <DocDateEditor iso={viewingPO.createdAt} onSave={(iso) => changePODate(viewingPO, iso)} />}
 
           {(() => {
             const due = poDueInfo(viewingPO);
@@ -5910,10 +5915,10 @@ function PurchaseOrders({ goToProduct, goToSupplier, purchaseOrders, setPurchase
                   <p className="text-sm font-semibold" style={{ color: due?.nearDue ? RUST : INK }}>{dueText}</p>
                   {due && <p className="text-xs opacity-60 mt-0.5">{due.dueDate.toLocaleDateString("vi-VN")}</p>}
                 </div>
-                <div className="md:text-right">
-                  <p className="text-xs opacity-60 mb-0.5">Tổng giá trị</p>
+                {editTotal !== poNetTotal(viewingPO) && <div className="md:text-right">
+                  <p className="text-xs opacity-60 mb-0.5">Tổng sau khi sửa</p>
                   <p className="text-xl font-bold" style={{ color: TEXT }}>{vnd(editTotal)}</p>
-                </div>
+                </div>}
               </div>
             );
           })()}
@@ -6016,6 +6021,7 @@ function PurchaseOrders({ goToProduct, goToSupplier, purchaseOrders, setPurchase
               </div>
             </>
           )}
+          {currentUser?.role === "admin" && <div className="mt-5"><DocDateEditor iso={viewingPO.createdAt} onSave={(iso) => changePODate(viewingPO, iso)} /></div>}
         </Modal>
       )}
 
@@ -11085,7 +11091,12 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
 
 // ===== Danh sách đơn hàng / phiếu nhập kiểu mới (khung dùng chung ở admin/DocList.jsx) =====
 const ORDER_TONE = { pending: "amber", shipping: "blue", delivered: "green", done: "ink", cancelled: "gray" };
-const itemThumbs = (items, products) => items.map((it) => { const p = products.find((x) => x.id === it.productId); return { src: p ? displayImage(p) : null, name: p?.name || "?" }; });
+// Tóm tắt hàng trong chứng từ bằng chữ: tên món đầu + số món còn lại, tổng số lượng.
+function ItemsBrief({ items, products }) {
+  const first = products.find((x) => x.id === items[0]?.productId)?.name || "—";
+  const qty = items.reduce((n, it) => n + (Number(it.qty) || 0), 0);
+  return <><span className="nm" title={items.map((it) => `${it.qty} × ${products.find((x) => x.id === it.productId)?.name || "?"}`).join("\n")}>{first}</span><small>{items.length > 1 ? `+${items.length - 1} sản phẩm khác · ` : ""}{qty} cái</small></>;
+}
 function OrderFlags({ o, products }) {
   const owed = o.status === "cancelled" ? 0 : orderSeriesDebt(o, products).reduce((n, x) => n + x.owed, 0);
   return (
@@ -11120,19 +11131,19 @@ function OrderListView({ pagedOrders, orders, customers, products, selectedIds, 
       <DocList rows={pagedOrders} rowKey={(o) => o.id} onOpen={onOpen} selected={selectedIds} onToggle={toggleSelect} onToggleAll={toggleSelectAll} allSelected={pageAllSelected}
         empty="Không có đơn hàng nào."
         cols={[
-          { key: "doc", label: "Đơn hàng", w: "128px", cell: (o) => <><span className="code">{o.code}</span><small>{shortDateTime(o.createdAt)}</small></> },
+          { key: "doc", label: "Đơn hàng", w: "112px", cell: (o) => <><DocLink href={"?don=" + o.id} onOpen={() => onOpen(o)}>{o.code}</DocLink><small>{shortDateTime(o.createdAt)}</small></> },
           { key: "cust", label: "Khách hàng", w: "minmax(0,1.3fr)", cell: (o) => { const c = custOf(o); return <><span className="nm">{c?.name || "Khách lẻ"}</span><small>{[c?.phone, o.channel === "online" ? "Online" : "Tại cửa hàng"].filter(Boolean).join(" · ")}</small></>; } },
-          { key: "items", label: "Sản phẩm", w: "150px", cell: (o) => <Thumbs items={itemThumbs(o.items, products)} /> },
+          { key: "items", label: "Sản phẩm", w: "minmax(0,1.3fr)", cell: (o) => <ItemsBrief items={o.items} products={products} /> },
           { key: "st", label: "Trạng thái", w: "minmax(0,1.4fr)", cell: (o) => <span className="dl-tags"><Pill tone={ORDER_TONE[o.status]}>{STATUSES.find((x) => x.id === o.status)?.label}</Pill><OrderFlags o={o} products={products} /></span> },
           { key: "money", label: "Tổng tiền", w: "150px", align: "right", cell: (o) => { const { c, due } = money(o); return <><span className="money">{vnd(c.payable)}</span><small className={due ? "due" : "ok"}>{o.status === "cancelled" ? "Đã huỷ" : due ? `Còn nợ ${vnd(c.remaining)}` : "Đã trả đủ"}</small>{due && (() => { const d = orderDueInfo(o); return d ? <small style={{ color: d.daysLeft < 0 ? RUST : d.daysLeft === 0 ? BRASS : "#6B7280" }}>{d.daysLeft < 0 ? `Quá hạn ${-d.daysLeft} ngày` : d.daysLeft === 0 ? "Đến hạn hôm nay" : `Hạn trả còn ${d.daysLeft} ngày`}</small> : null; })()}</>; } },
-          { key: "x", label: "", w: "28px", cell: (o) => currentUser.isOwner ? <button type="button" onClick={() => onDelete(o)} title="Xoá đơn hàng" aria-label="Xoá đơn hàng" className="opacity-40 hover:opacity-100" style={{ color: RUST }}><Trash2 size={15} /></button> : null },
+          { key: "x", label: "", w: "60px", align: "right", cell: (o) => <span className="flex items-center justify-end gap-2"><NewTabLink href={"?don=" + o.id} />{currentUser.isOwner ? <button type="button" onClick={() => onDelete(o)} title="Xoá đơn hàng" aria-label="Xoá đơn hàng" className="opacity-40 hover:opacity-100" style={{ color: RUST }}><Trash2 size={15} /></button> : null}</span> },
         ]}
         card={(o) => { const c = custOf(o), { c: m, due } = money(o); return {
           muted: o.status === "cancelled",
           title: <>{c?.name || "Khách lẻ"}</>,
           side: <>{vnd(m.payable)}</>,
-          sub: <>{o.code} · {shortDateTime(o.createdAt)}{due ? <b style={{ color: RUST }}> · Còn nợ {vnd(m.remaining)}</b> : ""}</>,
-          meta: <><Thumbs items={itemThumbs(o.items, products)} max={4} /><Pill tone={ORDER_TONE[o.status]}>{STATUSES.find((x) => x.id === o.status)?.label}</Pill><OrderFlags o={o} products={products} /></>,
+          sub: <><DocLink href={"?don=" + o.id} onOpen={() => onOpen(o)}>{o.code}</DocLink> · {shortDateTime(o.createdAt)} · {o.items.length} sp{due ? <b style={{ color: RUST }}> · Nợ {vnd(m.remaining)}</b> : ""}</>,
+          meta: <><Pill tone={ORDER_TONE[o.status]}>{STATUSES.find((x) => x.id === o.status)?.label}</Pill><OrderFlags o={o} products={products} /></>,
         }; }} />
     </>
   );
@@ -11153,23 +11164,33 @@ function POListView({ pagedPOs, purchaseOrders, products, onOpen, onReceive }) {
       ]} />
       <DocList rows={pagedPOs} rowKey={(p) => p.id} onOpen={onOpen} empty="Chưa có phiếu nhập nào."
         cols={[
-          { key: "doc", label: "Phiếu nhập", w: "128px", cell: (po) => <><span className="code">{po.code}</span><small>{shortDateTime(po.createdAt)}</small></> },
+          { key: "doc", label: "Phiếu nhập", w: "112px", cell: (po) => <><DocLink href={"?po=" + po.id} onOpen={() => onOpen(po)}>{po.code}</DocLink><small>{shortDateTime(po.createdAt)}</small></> },
           { key: "sup", label: "Nhà cung cấp", w: "minmax(0,1.4fr)", cell: (po) => <><span className="nm">{(po.supplier || "—").replace(/^NCC\d+ - /, "")}</span><small>{po.invoiceNo ? `HĐ ${po.invoiceNo}` : "Chưa có số hoá đơn"}{po.createdBy ? ` · ${po.createdBy}` : ""}</small></> },
-          { key: "items", label: "Sản phẩm", w: "150px", cell: (po) => <Thumbs items={itemThumbs(po.items, products)} /> },
+          { key: "items", label: "Sản phẩm", w: "minmax(0,1.3fr)", cell: (po) => <ItemsBrief items={po.items} products={products} /> },
           { key: "st", label: "Trạng thái", w: "minmax(0,1.2fr)", cell: (po) => { const n = owedSeries(po); return <span className="dl-tags"><Pill tone={po.status === "received" ? "green" : "amber"}>{po.status === "received" ? "Đã nhập kho" : "Chờ hàng về"}</Pill>{n > 0 && <span className="dl-pill soft p-amber">Thiếu {n} series</span>}{(po.returns || []).length > 0 && <span className="dl-pill soft p-red">Có trả hàng</span>}</span>; } },
           { key: "money", label: "Giá trị", w: "150px", align: "right", cell: (po) => <><span className="money">{vnd(poNetTotal(po))}</span><small className={po.paid ? "ok" : "due"}>{po.paid ? "Đã thanh toán" : "Chưa thanh toán"}</small></> },
-          { key: "act", label: "", w: "128px", align: "right", cell: (po) => po.status === "pending" ? <button type="button" onClick={() => onReceive(po)} className="text-xs font-semibold px-3 py-2 rounded-md text-white whitespace-nowrap" style={{ background: INK }}>Nhận hàng</button> : null },
+          { key: "act", label: "", w: "128px", align: "right", cell: (po) => <span className="flex items-center justify-end gap-2">{po.status === "pending" && <button type="button" onClick={() => onReceive(po)} className="text-xs font-semibold px-3 py-2 rounded-md text-white whitespace-nowrap" style={{ background: INK }}>Nhận hàng</button>}<NewTabLink href={"?po=" + po.id} /></span> },
         ]}
         card={(po) => ({
           title: <>{(po.supplier || "—").replace(/^NCC\d+ - /, "")}</>,
           side: <>{vnd(poNetTotal(po))}</>,
-          sub: <>{po.code} · {shortDateTime(po.createdAt)} · <b style={{ color: po.paid ? FOREST : RUST }}>{po.paid ? "Đã thanh toán" : "Chưa thanh toán"}</b></>,
-          meta: <><Thumbs items={itemThumbs(po.items, products)} max={4} /><Pill tone={po.status === "received" ? "green" : "amber"}>{po.status === "received" ? "Đã nhập kho" : "Chờ hàng về"}</Pill>{owedSeries(po) > 0 && <span className="dl-pill soft p-amber">Thiếu {owedSeries(po)} series</span>}{po.status === "pending" && <button type="button" onClick={() => onReceive(po)} className="ml-auto text-xs font-semibold px-3 py-2 rounded-md text-white" style={{ background: INK }}>Nhận hàng</button>}</>,
+          sub: <><DocLink href={"?po=" + po.id} onOpen={() => onOpen(po)}>{po.code}</DocLink> · {shortDateTime(po.createdAt)} · <b style={{ color: po.paid ? FOREST : RUST }}>{po.paid ? "Đã thanh toán" : "Chưa thanh toán"}</b></>,
+          meta: <><Pill tone={po.status === "received" ? "green" : "amber"}>{po.status === "received" ? "Đã nhập kho" : "Chờ hàng về"}</Pill>{owedSeries(po) > 0 && <span className="dl-pill soft p-amber">Thiếu {owedSeries(po)} series</span>}{po.status === "pending" && <button type="button" onClick={() => onReceive(po)} className="ml-auto text-xs font-semibold px-3 py-2 rounded-md text-white" style={{ background: INK }}>Nhận hàng</button>}</>,
         })} />
     </>
   );
 }
 
+// Giữ "?don=<id>" / "?po=<id>" trên thanh địa chỉ khi đang mở chứng từ: tải lại trang hoặc gửi link vẫn
+// mở đúng đơn; đóng ngăn chi tiết thì bỏ đi.
+function useDocUrl(key, id) {
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if ((url.searchParams.get(key) || null) === (id || null)) return;
+    if (id) url.searchParams.set(key, id); else url.searchParams.delete(key);
+    window.history.replaceState(window.history.state, "", url);
+  }, [key, id]);
+}
 function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setProducts, customers, setCustomers, employeeNames, currentUser, addLog, focusOrderId, initialFilterStatus, initialDeliveredFrom, initialDeliveredTo, onFocusHandled, printSettings, setPrintSettings }) {
   const isCtv = currentUser.role === "ctv";
   const isAdmin = currentUser.role === "admin";
@@ -11196,6 +11217,7 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
   const [filterUnpaidOnly, setFilterUnpaidOnly] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [viewingId, setViewingId] = useState(null);
+  useDocUrl("don", viewingId);
   const [payInput, setPayInput] = useState("");
   const [refundInput, setRefundInput] = useState("");
   const [pendingFulfillDraft, setPendingFulfillDraft] = useState({});
@@ -12063,7 +12085,7 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
         const c = orderCalc(viewingOrder);
         const ch = CHANNELS.find((x) => x.id === viewingOrder.channel);
         return (
-          <Modal drawer title={`Đơn hàng ${viewingOrder.code}`} onClose={() => setViewingId(null)}>
+          <Modal drawer title={`Đơn hàng ${viewingOrder.code}`} onClose={() => setViewingId(null)} headerAction={<NewTabLink href={"?don=" + viewingOrder.id} />}>
             <OrderProgressStepper order={viewingOrder} />
             <div className="od-money">
               <div><span>Khách phải trả</span><b>{vnd(c.payable)}</b></div>
@@ -12071,12 +12093,9 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
               <div className={viewingOrder.status === "cancelled" ? "" : c.remaining > 0 ? "due" : "ok"}><span>{viewingOrder.status === "cancelled" ? "Đơn đã huỷ" : c.remaining > 0 ? "Còn nợ" : c.remaining < 0 ? "Cần hoàn khách" : "Đã trả đủ"}</span><b>{viewingOrder.status !== "cancelled" && c.remaining === 0 ? "✓ Không còn nợ" : vnd(Math.abs(c.remaining))}</b></div>
             </div>
 
-            <p className="text-xs mb-3 flex items-center gap-1.5 flex-wrap" style={{ color: TEXT, opacity: 0.65 }}>
-              <ch.icon size={13} /> {ch.label} · {formatDateTime(viewingOrder.createdAt)} · {viewingOrder.branch} · {viewingOrder.seller}{viewingOrder.deliveryDate ? ` · Hẹn giao ${viewingOrder.deliveryDate}` : ""}
-              {orderDueInfo(viewingOrder) && <span style={{ opacity: 1 }}> · <CreditDueBadge order={viewingOrder} /></span>}
-            </p>
 
 
+            <div className="od-bar">
             <div className="od-steps">
               {viewingOrder.status === "cancelled" ? (
                 <span className="text-xs px-2.5 py-1.5 rounded-md opacity-60" style={{ background: PAPER, color: RUST }}>Đơn đã huỷ — không thể đổi trạng thái giao hàng</span>
@@ -12102,11 +12121,34 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
                 );
               })}
             </div>
+            <div className="hili-actions od-tools">
+              {!isCtv && (
+                <button onClick={() => { setPrintDocType("invoice"); setPrintPaperSize(printSettings?.defaultPaperSize || "A4"); setPrintBlockedUrl(null); setPrintModalOpen(true); }} className="flex items-center gap-1.5 text-sm font-medium px-3.5 min-h-[38px] rounded-md border bg-white" style={{ borderColor: LINE, color: TEXT }}>
+                  <Printer size={15} /> In đơn hàng
+                </button>
+              )}
+              {viewingOrder.status === "pending" && (
+                <button onClick={() => openEditOrder(viewingOrder)} className="flex items-center gap-1.5 text-sm font-medium px-3.5 min-h-[38px] rounded-md border bg-white" style={{ borderColor: BLUE, color: BLUE }}>
+                  <Pencil size={15} /> Sửa đơn hàng
+                </button>
+              )}
+              {!viewingOrder.returnRequest && viewingOrder.status !== "cancelled" && viewingOrder.approvalStatus !== "pending" && (
+                <button onClick={() => openReturn(viewingOrder)} className="flex items-center gap-1.5 text-sm font-medium px-3.5 min-h-[38px] rounded-md border bg-white" style={{ borderColor: BRASS, color: BRASS }}>
+                  <RotateCcw size={15} /> {isAdmin ? "Đổi trả hàng" : "Yêu cầu đổi trả hàng"}
+                </button>
+              )}
+              {viewingOrder.status === "pending" && viewingOrder.paidAmount === 0 && (
+                <button onClick={() => setCancelling(true)} className="flex items-center gap-1.5 text-sm font-medium px-3.5 min-h-[38px] rounded-md border bg-white" style={{ borderColor: RUST, color: RUST }}>
+                  <XCircle size={15} /> Huỷ đơn
+                </button>
+              )}
+            </div>
+            </div>
             {viewingOrder.items.some((it) => !it.fulfilled) && (
               <p className="text-xs mb-1" style={{ color: BRASS }}>⚠ Còn sản phẩm chờ hàng — bổ sung series bên dưới trước khi chuyển "Đang giao"/"Đã giao".</p>
             )}
             {viewingOrder.paidAmount > 0 && viewingOrder.status !== "cancelled" && viewingOrder.status !== "done" && (
-              <p className="text-xs mb-1" style={{ color: FOREST }}>✓ Đơn đã có thanh toán — Chờ xử lý/Đang giao/Đã giao đã khoá, dùng nút "Hoàn thành" khi đã thanh toán đủ.</p>
+              <p className="text-xs mb-2" style={{ color: "#6B7280" }}>Đơn đã có thanh toán — Chờ xử lý/Đang giao/Đã giao đã khoá, dùng nút "Hoàn thành" khi đã thanh toán đủ.</p>
             )}
             {viewingOrder.approvalStatus === "pending" && (
               <div className="flex items-center gap-2 mb-3 p-3 rounded-md flex-wrap" style={{ background: `${RUST}0D`, border: `1px solid ${RUST}44` }}>
@@ -12158,34 +12200,13 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
               </div>
             )}
 
-            <div className="hili-actions flex flex-wrap gap-2 mb-4">
-              {!isCtv && (
-                <button onClick={() => { setPrintDocType("invoice"); setPrintPaperSize(printSettings?.defaultPaperSize || "A4"); setPrintBlockedUrl(null); setPrintModalOpen(true); }} className="flex items-center gap-1.5 text-sm font-medium px-3.5 min-h-[38px] rounded-md border bg-white" style={{ borderColor: LINE, color: TEXT }}>
-                  <Printer size={15} /> In đơn hàng
-                </button>
-              )}
-              {viewingOrder.status === "pending" && (
-                <button onClick={() => openEditOrder(viewingOrder)} className="flex items-center gap-1.5 text-sm font-medium px-3.5 min-h-[38px] rounded-md border bg-white" style={{ borderColor: BLUE, color: BLUE }}>
-                  <Pencil size={15} /> Sửa đơn hàng
-                </button>
-              )}
-              {!viewingOrder.returnRequest && viewingOrder.status !== "cancelled" && viewingOrder.approvalStatus !== "pending" && (
-                <button onClick={() => openReturn(viewingOrder)} className="flex items-center gap-1.5 text-sm font-medium px-3.5 min-h-[38px] rounded-md border bg-white" style={{ borderColor: BRASS, color: BRASS }}>
-                  <RotateCcw size={15} /> {isAdmin ? "Đổi trả hàng" : "Yêu cầu đổi trả hàng"}
-                </button>
-              )}
-              {viewingOrder.status === "pending" && viewingOrder.paidAmount === 0 && (
-                <button onClick={() => setCancelling(true)} className="flex items-center gap-1.5 text-sm font-medium px-3.5 min-h-[38px] rounded-md border bg-white" style={{ borderColor: RUST, color: RUST }}>
-                  <XCircle size={15} /> Huỷ đơn
-                </button>
-              )}
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-4 p-4 rounded-lg mb-4" style={{ background: PAPER }}>
+            <div className="od-info">
               <div className="min-w-0">
                 <p className="text-xs opacity-60 mb-0.5">Khách hàng</p>
                 {cust && goToCustomer
                   ? <button type="button" onClick={() => goToCustomer(cust.id)} className="block text-left text-sm font-semibold hover:underline" style={{ color: BLUE }}>{cust.name}</button>
                   : <p className="text-sm font-semibold" style={{ color: TEXT }}>{cust?.name || "Khách lẻ"}</p>}
+                {cust?.phone && <a href={"tel:" + cust.phone.replace(/\s/g, "")} className="block text-xs mt-0.5" style={{ color: "#4B5563" }}>{cust.phone}</a>}
                 {viewingOrder.shippingAddress && (viewingOrder.shippingAddress.addressDetail || viewingOrder.shippingAddress.province || viewingOrder.shippingAddress.ward) && (
                   <p className="text-xs mt-1" style={{ color: TEXT, opacity: 0.7 }}>
                     {viewingOrder.shippingAddress.recipientName && viewingOrder.shippingAddress.recipientName !== cust?.name ? `${viewingOrder.shippingAddress.recipientName} · ` : ""}{viewingOrder.shippingAddress.recipientPhone ? `${viewingOrder.shippingAddress.recipientPhone} · ` : ""}
@@ -12193,6 +12214,12 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
                   </p>
                 )}
                 {viewingOrder.notes && <p className="text-xs mt-1" title={viewingOrder.notes} style={{ color: TEXT, opacity: 0.7, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>Ghi chú: {viewingOrder.notes}</p>}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs opacity-60 mb-0.5">Bán hàng</p>
+                <p className="text-sm" style={{ color: TEXT }}>{ch.label} · {viewingOrder.seller}</p>
+                <p className="text-xs mt-0.5" style={{ color: "#6B7280" }}>{formatDateTime(viewingOrder.createdAt)}{viewingOrder.deliveryDate ? ` · Hẹn giao ${viewingOrder.deliveryDate}` : ""}</p>
+                {orderDueInfo(viewingOrder) && <p className="text-xs mt-0.5"><CreditDueBadge order={viewingOrder} /></p>}
               </div>
               <div>
                 <p className="text-xs opacity-60 mb-1">Hoá đơn</p>
@@ -12213,7 +12240,7 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
               </div>
             </div>
 
-            <p className="text-xs mb-2 opacity-60 font-medium">Thông tin sản phẩm</p>
+            <p className="od-h">Sản phẩm ({viewingOrder.items.length})</p>
             <div className="rounded-md overflow-x-auto mb-4" style={{ border: `1px solid ${LINE}` }}>
               <table className="hili-rt hili-items w-full text-sm" style={{ minWidth: isAdmin && viewingOrder.approvalStatus === "pending" ? 720 : 520 }}>
                 <thead><tr className="opacity-60" style={{ background: PAPER }}>
@@ -12233,7 +12260,7 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
                     return (
                       <tr key={i} style={{ borderTop: `1px solid ${LINE}` }}>
                         <td className="py-2.5 px-2"><div className="od-row flex items-center gap-2.5">
-                          {p && displayImage(p) ? <img src={displayImage(p)} alt="" loading="lazy" className="od-img" /> : <span className="od-img" />}<span className="min-w-0">
+                          <span className="min-w-0">
                           {p && goToProduct
                             ? <button type="button" onClick={() => goToProduct(p.id)} className="text-left font-medium hover:underline" style={{ color: BLUE }}>{p.name}</button>
                             : <span className="font-medium" style={{ color: TEXT }}>{p?.name || "?"}</span>}
@@ -15427,8 +15454,8 @@ const webUnits = (products) => {
 const webOutOfStockShown = (p) => !!p.web?.published && !p.web?.virtualStock && productStats(p).closingQty <= 0;
 function WebHealthBadge({ p }) {
   const miss = webMissing(p);
-  if (miss.length === 0) return <span className="text-xs font-medium" style={{ color: FOREST }}>Đầy đủ</span>;
-  return <span className="text-xs font-medium" style={{ color: miss.some((m) => m.label === "Ảnh sản phẩm" || m.label === "Mô tả") ? RUST : BRASS }} title={`Thiếu: ${miss.map((m) => m.label).join(", ")}`}>Thiếu {miss[0].label.toLowerCase()}{miss.length > 1 ? ` +${miss.length - 1}` : ""}</span>;
+  if (miss.length === 0) return <span className="dl-pill soft p-green">Đầy đủ</span>;
+  return <span className={"dl-pill soft " + (miss.some((m) => m.label === "Ảnh sản phẩm" || m.label === "Mô tả") ? "p-red" : "p-amber")} title={`Thiếu: ${miss.map((m) => m.label).join(", ")}`}>Thiếu {miss[0].label.toLowerCase()}{miss.length > 1 ? ` +${miss.length - 1}` : ""}</span>;
 }
 
 // Lớp xem nhanh: mở chi tiết đơn, khách, sản phẩm, NCC đè lên màn hình đang làm, không đổi tab.
@@ -18540,12 +18567,16 @@ export default function SalesManager() {
     if (!loaded) return;
     const params = new URLSearchParams(window.location.search);
     const wpId = params.get("webproduct");
-    const poId = params.get("po"); // "?po=<id>": mở đơn nhập ở tab mới từ bảng công nợ NCC
+    const poId = params.get("po"); // "?po=<id>": mở đơn nhập ở tab mới (danh sách nhập hàng, bảng công nợ NCC)
+    const donId = params.get("don"); // "?don=<id>": mở đơn hàng ở tab mới (danh sách bán hàng)
     const webSub = params.get("web"); // "?web=home|promo|content|settings|products": nút "Sửa trang này" trên web khách
-    if (!wpId && !poId && !webSub) return;
+    if (!wpId && !poId && !webSub && !donId) return;
     const cu = accounts.find((a) => a.id === currentUserId);
-    if (!cu || cu.role !== "admin") return;
-    if (poId) {
+    if (cu && donId) {
+      setTab("orders");
+      setNavTarget({ type: "order", id: donId });
+    } else if (!cu || cu.role !== "admin") return;
+    else if (poId) {
       setTab("purchase");
       setNavTarget({ type: "po", id: poId });
     } else if (!wpId && webSub) {
@@ -18557,7 +18588,6 @@ export default function SalesManager() {
     }
     const url = new URL(window.location.href);
     url.searchParams.delete("webproduct");
-    url.searchParams.delete("po");
     url.searchParams.delete("web");
     window.history.replaceState({}, "", url);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -19201,8 +19231,8 @@ export default function SalesManager() {
             <button onClick={() => setCurrentUserId(null)} title="Đăng xuất" className="pt-4 opacity-60 hover:opacity-100 shrink-0" style={{ color: "#fff" }}><LogOut size={16} /></button>
           </div>
         </div>
-        <div className="flex-1 p-5 md:p-6 min-w-0 md:ml-56">
-          <div className="flex items-center justify-between gap-3 mb-6">
+        <div className="flex-1 px-3 py-3 sm:p-5 md:p-6 min-w-0 md:ml-56">
+          <div className="flex items-center justify-between gap-3 mb-3 md:mb-6">
             <button type="button" onClick={() => setNavOpen(true)} aria-label="Mở menu" className="md:hidden w-9 h-9 rounded-md border flex items-center justify-center shrink-0" style={{ borderColor: LINE, background: "#fff", color: TEXT }}><Menu size={18} /></button>
             <h2 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, color: TEXT }} className="text-xl md:text-2xl flex-1 min-w-0 truncate">{visibleTabs.find((t) => t.id === tab)?.label || "Bán hàng"}</h2>
             <button type="button" onClick={() => window.dispatchEvent(new Event("hili:search"))} className="hidden sm:flex items-center gap-2 text-sm px-3 rounded-md border" style={{ height: 36, width: 300, borderColor: "#D1D5DB", background: "#fff", color: "#6B7280" }}>
