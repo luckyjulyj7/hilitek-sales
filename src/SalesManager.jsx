@@ -48,6 +48,11 @@ import WebStats from "./WebStats.jsx";
 import StaffChat from "./StaffChat.jsx";
 import GameProductEditor from "./GameProductEditor.jsx";
 import PasteDescPanel from "./admin/PasteDescPanel.jsx";
+import QuickSale from "./admin/QuickSale.jsx";
+import TodayPanel from "./admin/TodayPanel.jsx";
+import { buildPOHTML, buildSupplierDebtHTML } from "./admin/poPrint.js";
+import { useShortcuts, ShortcutHelp } from "./admin/Shortcuts.jsx";
+import { normalizeChanh, ChanhFields, ChanhLine, chanhLabelRows, buildChanhSlipHTML, hasChanh } from "./admin/ChanhSlip.jsx";
 import { DocList, SumStrip, Pill, DocLink, NewTabLink } from "./admin/DocList.jsx";
 import { StartGuide, ProductScreensNote, DueNotice, ViewModeToggle, SimpleStockList, RowAction, usePref, MoreFields, ReadyChecklist } from "./admin/AdminHelpers.jsx";
 
@@ -892,6 +897,7 @@ function normalizeParcelLabel(p) {
     senderAddress: p.senderAddress || COMPANY_INFO.address,
     note: p.note == null ? PARCEL_DEFAULT_NOTE : p.note,
     internalNote: p.internalNote || "",   // ghi chú nội bộ — chỉ hiện trong app, KHÔNG in ra nhãn
+    ...normalizeChanh(p),                 // gửi qua chành xe (khách tỉnh) — admin/ChanhSlip.jsx
   };
 }
 function nextParcelCode(list) {
@@ -2755,7 +2761,7 @@ function MiniStat({ label, value, icon: Icon, accent, onClick }) {
   );
 }
 
-function Dashboard({ products, orders, goToOrdersFilter, purchaseOrders, isAdmin, onGo }) {
+function Dashboard({ products, orders, goToOrdersFilter, purchaseOrders, isAdmin, onGo, customers, onOpenOrder, onOpenPO }) {
   const today = todayISO();
   const isToday = (dateStr) => !!dateStr && localDay(dateStr) === today;
 
@@ -2834,6 +2840,8 @@ function Dashboard({ products, orders, goToOrdersFilter, purchaseOrders, isAdmin
 
   return (
     <div>
+      <TodayPanel orders={orders} customers={customers || []} purchaseOrders={isAdmin ? purchaseOrders : []} calc={{ orderCalc, orderDueInfo, poNetTotal, poDueInfo }}
+        onOpenOrder={onOpenOrder} onOpenPO={onOpenPO} goOrders={() => goToOrdersFilter && goToOrdersFilter("pending")} goPurchase={() => onGo && onGo("purchase")} />
       {/* Kết quả kinh doanh trong ngày */}
       <div className="p-5 rounded-md mb-6" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
         <h4 className="text-base mb-4 font-semibold" style={{ color: TEXT }}>Kết quả kinh doanh trong ngày</h4>
@@ -2863,7 +2871,7 @@ function Dashboard({ products, orders, goToOrdersFilter, purchaseOrders, isAdmin
           <BarChart data={dailyRevenue} barCategoryGap="30%">
             <CartesianGrid vertical={false} strokeDasharray="3 3" stroke={LINE} />
             <XAxis dataKey="label" tick={{ fontSize: 11, fill: INK }} axisLine={{ stroke: LINE }} tickLine={false} interval={chartDays > 14 ? Math.ceil(chartDays / 12) : 0} />
-            <YAxis tick={{ fontSize: 11, fill: INK }} axisLine={false} tickLine={false} width={56} tickFormatter={(v) => (v >= 1000000 ? `${(v / 1000000).toFixed(0)}tr` : `${v / 1000}k`)} />
+            <YAxis tick={{ fontSize: 11, fill: INK }} axisLine={false} tickLine={false} width={56} tickFormatter={(v) => (v >= 1000000 ? `${(v / 1000000).toFixed(0)}tr` : v >= 1000 ? `${Math.round(v / 1000)}k` : String(Math.round(v)))} />
             <Tooltip formatter={(v) => vnd(v)} contentStyle={{ fontFamily: "Inter", fontSize: 13, borderRadius: 8, border: `1px solid ${LINE}` }} cursor={{ fill: PAPER }} />
             <Bar dataKey="total" fill={BLUE} radius={[6, 6, 0, 0]} maxBarSize={40} />
           </BarChart>
@@ -5476,17 +5484,27 @@ function POProgressStepper({ po }) {
 
 // Danh sách đơn bán/đơn nhập: tối đa 30 dòng mỗi trang.
 const DOC_PAGE_SIZE = 30;
+// Thanh chuyển trang dính ở đáy màn hình: bấm "Sau" liên tục không phải dò lại vị trí nút
+// (trang cuối ít dòng hơn cũng không làm nút nhảy chỗ). Đổi trang thì cuộn về đầu danh sách.
 function DocPager({ page, total, unit, onPage }) {
+  const ref = useRef(null);
   if (total === 0) return null;
   const totalPages = Math.max(1, Math.ceil(total / DOC_PAGE_SIZE));
+  const go = (p) => {
+    onPage(p);
+    const list = ref.current && ref.current.previousElementSibling;
+    if (list) { const y = list.getBoundingClientRect().top + window.scrollY - 90; if (window.scrollY > y) window.scrollTo({ top: y }); }
+  };
   return (
-    <div className="flex items-center justify-between mt-2.5 text-xs" style={{ color: TEXT, opacity: 0.7 }}>
+    <div ref={ref} className="dl-pager">
       <span>{(page - 1) * DOC_PAGE_SIZE + 1}–{Math.min(page * DOC_PAGE_SIZE, total)} / {total} {unit}</span>
-      <div className="flex items-center gap-1">
-        <button onClick={() => onPage(page - 1)} disabled={page <= 1} className="px-2 py-1 rounded-md disabled:opacity-30" style={{ border: `1px solid ${LINE}` }}><ChevronLeft size={14} /></button>
-        <span className="px-2">Trang {page} / {totalPages}</span>
-        <button onClick={() => onPage(page + 1)} disabled={page >= totalPages} className="px-2 py-1 rounded-md disabled:opacity-30" style={{ border: `1px solid ${LINE}` }}><ChevronRight size={14} /></button>
-      </div>
+      {totalPages > 1 && (
+        <div className="dl-pager-b">
+          <button type="button" onClick={() => go(page - 1)} disabled={page <= 1} aria-label="Trang trước"><ChevronLeft size={16} /> <span className="hidden sm:inline">Trước</span></button>
+          <b>Trang {page} / {totalPages}</b>
+          <button type="button" onClick={() => go(page + 1)} disabled={page >= totalPages} aria-label="Trang sau"><span className="hidden sm:inline">Sau</span> <ChevronRight size={16} /></button>
+        </div>
+      )}
     </div>
   );
 }
@@ -5894,6 +5912,10 @@ function PurchaseOrders({ goToProduct, goToSupplier, purchaseOrders, setPurchase
                 <Pencil size={13} /> {showPOInfo ? "Ẩn thông tin" : "Sửa thông tin"}
               </button>
             )}
+            <button onClick={() => { const sup = suppliers.find((x) => x.id === viewingPO.supplierId); const r = printHTML(buildPOHTML(viewingPO, products, COMPANY_INFO, sup, (v) => VAT_OPTIONS.find((o) => o.id === v)?.label || v)); if (!r.ok) window.open(r.url, "_blank"); }}
+              className="px-3.5 py-1.5 rounded-md text-sm border inline-flex items-center gap-1.5" style={{ borderColor: LINE, color: TEXT }}>
+              <Printer size={13} /> In phiếu nhập
+            </button>
             </div>
           </div>
 
@@ -6214,6 +6236,12 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
     addLog("Xuất Excel công nợ NCC", d.supplier.name);
   };
 
+  // Số liệu từng NCC cho danh sách: tổng nhập, còn nợ (phiếu chưa thanh toán).
+  const supStats = (x) => {
+    const pos = purchaseOrders.filter((po) => poMatchesSupplier(po, x));
+    const unpaid = pos.filter((po) => !po.paid && poNetTotal(po) > 0);
+    return { count: pos.length, total: pos.reduce((n, po) => n + poNetTotal(po), 0), unpaid: unpaid.length, debt: unpaid.reduce((n, po) => n + poNetTotal(po), 0) };
+  };
   return (
     <div>
       <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
@@ -6288,43 +6316,21 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
           )}
         </div>
       ) : (
-      <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 240px)" }}>
-        <table className="hili-rt w-full text-sm" style={{ minWidth: 720 }}>
-          <thead>
-            <tr style={{ borderBottom: `1px solid ${LINE}` }}>
-              {["Mã NCC", "Tên NCC", "Mã số thuế", "Người liên hệ", "SĐT", "Địa chỉ", "Công nợ cấp", ""].map((h, hi) => (
-                <th key={hi} className={`${RIGHT_COLUMNS.has(h) ? "text-right" : "text-left"} px-3 py-2.5 text-xs whitespace-nowrap font-medium`} style={{ color: TEXT, opacity: 0.6 }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((s) => (
-              <tr key={s.id} style={{ borderBottom: `1px solid ${LINE}` }} className="hover:bg-black/[0.02]">
-                <td className="px-3 py-3 font-medium whitespace-nowrap"><button onClick={() => setViewingSupplierId(s.id)} className="hover:underline" style={{ color: BLUE }}>{s.code}</button></td>
-                <td className="px-3 py-3"><button onClick={() => setViewingSupplierId(s.id)} className="text-left hover:underline" style={{ color: TEXT }}>{s.name}</button></td>
-                <td className="px-3 py-3 opacity-70 whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>{s.taxCode || "—"}</td>
-                <td className="px-3 py-3 opacity-70 whitespace-nowrap">{s.contactPerson || "—"}</td>
-                <td className="px-3 py-3 opacity-70 whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>{s.phone || "—"}</td>
-                <td className="px-3 py-3 opacity-70 max-w-[220px] truncate">{s.address || "—"}</td>
-                <td className="px-3 py-3 whitespace-nowrap">
-                  <span className="inline-block text-xs px-2 py-0.5 rounded-full" style={{ background: s.paymentTerm === "cash" ? `${FOREST}1A` : `${BRASS}1A`, color: s.paymentTerm === "cash" ? FOREST : BRASS }}>
-                    {s.paymentTerm === "cash" ? "TM (Tiền mặt)" : `Công nợ ${s.creditDays} ngày`}
-                  </span>
-                </td>
-                <td className="px-3 py-3">
-                  <div className="flex gap-1.5 justify-end whitespace-nowrap">
-                    <button onClick={() => openEdit(s)} title="Sửa" className="p-1.5 rounded-md hover:bg-black/5 opacity-60"><Pencil size={14} /></button>
-                    {(currentUser.isOwner || currentUser.perms?.deleteSuppliers) && (
-                      <button onClick={() => remove(s.id)} title="Xoá" className="p-1.5 rounded-md hover:bg-black/5 opacity-60" style={{ color: RUST }}><Trash2 size={14} /></button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {filtered.length === 0 && <tr><td colSpan={8} className="text-center py-8 opacity-60">Chưa có nhà cung cấp nào.</td></tr>}
-          </tbody>
-        </table>
-      </div>
+      <DocList rows={filtered} rowKey={(x) => x.id} onOpen={(x) => setViewingSupplierId(x.id)} empty="Chưa có nhà cung cấp nào."
+        cols={[
+          { key: "sup", label: "Nhà cung cấp", w: "minmax(0,1fr)", cell: (x) => <><span className="nm wrap" title={x.name}>{x.name}</span><small>{x.code}{x.taxCode ? ` · MST ${x.taxCode}` : ""}</small></> },
+          { key: "ct", label: "Liên hệ", w: "170px", cell: (x) => <><span className="nm">{x.contactPerson || "—"}</span><small>{x.phone || "Chưa có số điện thoại"}</small></> },
+          { key: "term", label: "Thanh toán", w: "136px", cell: (x) => <Pill tone={x.paymentTerm === "cash" ? "green" : "amber"} fx>{x.paymentTerm === "cash" ? "Tiền mặt" : `Nợ ${x.creditDays} ngày`}</Pill> },
+          { key: "debt", label: "Còn nợ", w: "128px", align: "right", cell: (x) => { const st = supStats(x); return st.debt > 0 ? <><span className="money due">{vnd(st.debt)}</span><small>{st.unpaid} phiếu</small></> : <small className="ok">Không nợ</small>; } },
+          { key: "tot", label: "Đã nhập", w: "136px", align: "right", cell: (x) => { const st = supStats(x); return <><span className="money">{vnd(st.total)}</span><small>{st.count} phiếu</small></>; } },
+          { key: "x", label: "", w: "64px", align: "right", cell: (x) => <span className="flex gap-1 justify-end"><button type="button" onClick={() => openEdit(x)} title="Sửa" aria-label="Sửa" className="p-1.5 rounded-md hover:bg-black/5 opacity-60"><Pencil size={14} /></button>{(currentUser.isOwner || currentUser.perms?.deleteSuppliers) && <button type="button" onClick={() => remove(x.id)} title="Xoá" aria-label="Xoá" className="p-1.5 rounded-md hover:bg-black/5 opacity-50" style={{ color: RUST }}><Trash2 size={14} /></button>}</span> },
+        ]}
+        card={(x) => { const st = supStats(x); return {
+          title: <span className="wrap">{x.name}</span>,
+          side: <>{st.debt > 0 ? <span style={{ color: RUST }}>Nợ {vnd(st.debt)}</span> : vnd(st.total)}</>,
+          sub: <>{x.code}{x.contactPerson ? ` · ${x.contactPerson}` : ""}{x.phone ? ` · ${x.phone}` : ""}</>,
+          meta: <><Pill tone={x.paymentTerm === "cash" ? "green" : "amber"}>{x.paymentTerm === "cash" ? "Tiền mặt" : `Nợ ${x.creditDays} ngày`}</Pill><span className="dl-pill soft p-gray">{st.count} phiếu nhập</span></>,
+        }; }} />
       )}
 
       {viewingSupplierId && (() => {
@@ -6334,7 +6340,10 @@ function Suppliers({ suppliers, setSuppliers, purchaseOrders, addLog, goToDoc, n
         const unpaid = pos.filter((po) => !po.paid && poNetTotal(po) > 0);
         return (
           <Modal drawer title={sup.name} onClose={() => setViewingSupplierId(null)}
-            headerAction={<button onClick={() => { setViewingSupplierId(null); openEdit(sup); }} className="text-sm px-3 py-1.5 rounded-md text-white inline-flex items-center gap-1.5" style={{ background: INK }}><Pencil size={14} /> Sửa</button>}>
+            headerAction={<span className="flex gap-2">
+              <button onClick={() => { const r = printHTML(buildSupplierDebtHTML(sup, purchaseOrders.filter((po) => poMatchesSupplier(po, sup)), COMPANY_INFO, poNetTotal, poDueInfo)); if (!r.ok) window.open(r.url, "_blank"); }} className="text-sm px-3 py-1.5 rounded-md border inline-flex items-center gap-1.5" style={{ borderColor: LINE, color: TEXT }}><Printer size={14} /> In công nợ</button>
+              <button onClick={() => { setViewingSupplierId(null); openEdit(sup); }} className="text-sm px-3 py-1.5 rounded-md text-white inline-flex items-center gap-1.5" style={{ background: INK }}><Pencil size={14} /> Sửa</button>
+            </span>}>
             <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3 text-sm mb-5">
               {[
                 ["Mã NCC", sup.code],
@@ -7162,7 +7171,7 @@ function WarrantyTickets({ products, setProducts, orders, customers, warrantyTic
  * Phiếu gửi hàng — nhãn dán thùng/kiện cho khách gửi qua xe tải (dùng lại nhiều lần).
  * Lưu thông tin bên nhận theo từng khách; in ra nhiều bản / nhiều kiện trên 1 trang.
  */
-function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, addLog }) {
+function ParcelLabels({ parcelLabels, setParcelLabels, customers, orders, currentUser, addLog }) {
   const [view, setView] = useState("list");      // list | form
   const [editingId, setEditingId] = useState(null);
   const [q, setQ] = useState("");
@@ -7175,11 +7184,19 @@ function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, a
     route: "", company: "", recipientName: "", recipientPhone: "", recipientAddress: "",
     senderName: COMPANY_INFO.name, senderPhone: COMPANY_INFO.phone, senderAddress: COMPANY_INFO.address,
     note: PARCEL_DEFAULT_NOTE, internalNote: "",
+    ...normalizeChanh({}), sendDate: todayISO(),
   });
   const [form, setForm] = useState(blank());
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
   const routes = [...new Set((parcelLabels || []).map((p) => p.route).filter(Boolean))];
+  // Các chành đã dùng (mới nhất trước) để gợi ý điền nhanh tên, SĐT, địa chỉ chành.
+  const chanhs = [...new Map((parcelLabels || []).filter((p) => p.chanhName).map((p) => [p.chanhName, p])).values()];
+  const ordersForChanh = (orders || []).filter((o) => o.status !== "cancelled").sort((a, b) => (b.createdAt > a.createdAt ? 1 : -1)).map((o) => ({ ...o, __remaining: orderCalc(o).remaining }));
+  const printSlip = (p) => {
+    const r = printHTML(buildChanhSlipHTML(p, COMPANY_INFO));
+    setPrintBlockedUrl(r.ok ? null : r.url);
+  };
   const list = (parcelLabels || []).filter((p) => {
     const s = q.trim().toLowerCase();
     if (!s) return true;
@@ -7255,13 +7272,15 @@ function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, a
             <Field label="Tên công ty"><input className={inputCls} style={{ borderColor: LINE }} value={form.company} onChange={(e) => set("company", e.target.value)} placeholder="CÔNG TY TNHH …" /></Field>
             <Field label="Tên người nhận"><input className={inputCls} style={{ borderColor: LINE }} value={form.recipientName} onChange={(e) => set("recipientName", e.target.value)} placeholder="A Phương" /></Field>
             <Field label="Số điện thoại nhận"><input className={inputCls} style={{ borderColor: LINE }} value={form.recipientPhone} onChange={(e) => set("recipientPhone", e.target.value)} /></Field>
-            <Field label="Tuyến / nhà xe" hint="Hiện ở thanh xanh trên đầu nhãn">
+            <Field label="Tuyến / tiêu đề nhãn" hint="Hiện ở thanh xanh trên đầu nhãn, VD: Đi Đà Nẵng">
               <input list="parcelRoutes" className={inputCls} style={{ borderColor: LINE }} value={form.route} onChange={(e) => set("route", e.target.value)} placeholder="VD: Nhà xe Phương Trang" />
               <datalist id="parcelRoutes">{routes.map((r) => <option key={r} value={r} />)}</datalist>
             </Field>
           </div>
           <Field label="Địa chỉ nhận"><input className={inputCls} style={{ borderColor: LINE }} value={form.recipientAddress} onChange={(e) => set("recipientAddress", e.target.value)} /></Field>
         </div>
+
+        <ChanhFields form={form} set={set} orders={ordersForChanh} customers={customers} chanhs={chanhs} />
 
         <details className="p-4 rounded-md mb-4" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
           <summary className="text-sm font-medium cursor-pointer" style={{ color: TEXT }}>Bên gửi (mặc định theo công ty — bấm để sửa)</summary>
@@ -7308,6 +7327,7 @@ function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, a
                   {p.route ? ` · 🚛 ${p.route}` : ""}
                 </p>
                 <p className="text-xs opacity-60 truncate">{p.recipientAddress}</p>
+                <ChanhLine p={p} />
                 {p.internalNote && (
                   <p className="text-xs mt-1 px-2 py-1 rounded-md whitespace-pre-line" style={{ background: `${BRASS}14`, color: TEXT }} title="Ghi chú nội bộ — không in ra nhãn">
                     📝 {p.internalNote}
@@ -7315,7 +7335,8 @@ function ParcelLabels({ parcelLabels, setParcelLabels, customers, currentUser, a
                 )}
               </div>
               <div className="flex gap-1.5 shrink-0">
-                <button onClick={() => { setPrintFor(p); setPrintOpts({ copies: 2, boxes: 1, paper: "A4" }); }} className="text-xs px-2.5 py-1.5 rounded-md text-white" style={{ background: BLUE }}>🖨 In nhãn</button>
+                <button onClick={() => { setPrintFor(p); setPrintOpts({ copies: 2, boxes: p.boxes || 1, paper: "A4" }); }} className="text-xs px-2.5 py-1.5 rounded-md text-white" style={{ background: BLUE }}>🖨 In nhãn</button>
+                {hasChanh(p) && <button onClick={() => printSlip(p)} className="text-xs px-2.5 py-1.5 rounded-md border" style={{ borderColor: INK, color: INK }} title="Phiếu A5, 2 liên: shop giữ và giao nhà xe ký nhận">🖨 Phiếu chành</button>}
                 <button onClick={() => openEdit(p)} className="text-xs px-2 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>Sửa</button>
                 <button onClick={() => dup(p)} className="text-xs px-2 py-1.5 rounded-md border" style={{ borderColor: LINE, color: TEXT }}>Nhân bản</button>
                 <button onClick={() => del(p)} className="text-xs px-2 py-1.5" style={{ color: RUST }}>Xoá</button>
@@ -7450,7 +7471,7 @@ function Shipping({ shippingTickets, setShippingTickets, parcelLabels, setParcel
     return (
       <div>
         {subTabBar}
-        <ParcelLabels parcelLabels={parcelLabels} setParcelLabels={setParcelLabels} customers={customers} currentUser={currentUser} addLog={addLog} />
+        <ParcelLabels parcelLabels={parcelLabels} setParcelLabels={setParcelLabels} customers={customers} orders={orders} currentUser={currentUser} addLog={addLog} />
       </div>
     );
   }
@@ -7534,7 +7555,7 @@ function Shipping({ shippingTickets, setShippingTickets, parcelLabels, setParcel
               : `Lỗi: ${ghnPing.message || ghnPing.ghnMessage || "không kết nối được"}`}
           </span>
         )}
-        <span className="text-xs opacity-60 ml-auto">Token GHN đặt ở Environment Variables của Vercel, không nằm trong web.</span>
+        <span className="text-xs opacity-60 ml-auto">Token GHN lưu ở máy chủ, không nằm trong web.</span>
       </div>
       <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
         <div className="flex gap-2 flex-wrap items-center">
@@ -7552,29 +7573,19 @@ function Shipping({ shippingTickets, setShippingTickets, parcelLabels, setParcel
         </button>
       </div>
 
-      {filtered.length === 0 ? (
-        <p className="text-sm opacity-60 text-center py-16">Chưa có phiếu vận chuyển nào.</p>
-      ) : (
-        <div className="space-y-2.5">
-          {filtered.map((t) => {
-            const st = SHIPPING_STATUSES.find((s) => s.id === t.status);
-            return (
-              <button key={t.id} onClick={() => { setViewingTicket(t); setPrintBlockedUrl(null); }} className="w-full text-left p-4 rounded-md hover:bg-black/[0.02]" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <div>
-                    <p className="font-medium" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{t.code}{t.orderCode ? <span className="opacity-60 font-normal"> · Đơn {t.orderCode}</span> : null}</p>
-                    <p className="text-xs opacity-60">{t.recipientName} · {t.carrier}{t.trackingCode ? ` · ${t.trackingCode}` : ""} · {formatDateTime(t.createdAt)}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {t.codAmount > 0 && <span className="text-xs px-2 py-1 rounded-md" style={{ background: `${BRASS}1A`, color: BRASS }}>COD {vnd(t.codAmount)}</span>}
-                    <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: `${st.color}1A`, color: st.color }}>{st.label}</span>
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      )}
+      <DocList rows={filtered} rowKey={(t) => t.id} onOpen={(t) => { setViewingTicket(t); setPrintBlockedUrl(null); }} empty="Chưa có phiếu vận chuyển nào."
+        cols={[
+          { key: "doc", label: "Phiếu", w: "112px", cell: (t) => <><span className="code">{t.code}</span><small>{shortDateTime(t.createdAt)}</small></> },
+          { key: "cus", label: "Người nhận", w: "minmax(0,1fr)", cell: (t) => <><span className="nm wrap">{t.recipientName || "—"}</span><small>{[t.recipientPhone, t.orderCode && `Đơn ${t.orderCode}`].filter(Boolean).join(" · ")}</small></> },
+          { key: "car", label: "Đơn vị vận chuyển", w: "minmax(0,0.9fr)", cell: (t) => <><span className="nm">{t.carrier}</span><small>{t.trackingCode || "Chưa có mã vận đơn"}</small></> },
+          { key: "st", label: "Trạng thái", w: "136px", cell: (t) => { const st = SHIPPING_STATUSES.find((x) => x.id === t.status); const tone = { packing: "amber", picked: "amber", shipping: "blue", delivered: "green", failed: "red", returned: "gray" }[t.status] || "ink"; return <Pill tone={tone} fx>{st?.label}</Pill>; } },
+          { key: "cod", label: "Thu hộ", w: "120px", align: "right", cell: (t) => t.codAmount > 0 ? <span className="money">{vnd(t.codAmount)}</span> : <small>—</small> },
+        ]}
+        card={(t) => { const st = SHIPPING_STATUSES.find((x) => x.id === t.status); return {
+          title: <span className="wrap">{t.recipientName || "—"}</span>, side: <>{t.codAmount > 0 ? `COD ${vnd(t.codAmount)}` : ""}</>,
+          sub: <>{t.code}{t.orderCode ? ` · Đơn ${t.orderCode}` : ""} · {t.carrier}</>,
+          meta: <><Pill tone={{ packing: "amber", picked: "amber", shipping: "blue", delivered: "green", failed: "red", returned: "gray" }[t.status] || "ink"}>{st?.label}</Pill>{t.trackingCode && <span className="dl-pill soft p-gray">{t.trackingCode}</span>}</>,
+        }; }} />
 
       {viewingTicket && (
         <Modal title={`Phiếu vận chuyển ${viewingTicket.code}`} onClose={() => { setViewingTicket(null); setPrintBlockedUrl(null); }} size="lg">
@@ -8892,54 +8903,23 @@ function Customers({ setOrders, customers, setCustomers, orders, products, curre
       ) : (
       <>
 
-      <div key={customerSafePage} className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 270px)" }}>
-        <table className="hili-rt w-full text-sm" style={{ minWidth: 760 }}>
-          <thead>
-            <tr style={{ borderBottom: `1px solid ${LINE}` }}>
-              {isAdmin && <th className="px-3 py-2.5"><input type="checkbox" title="Chọn tất cả khách trong trang này" checked={pageAllPicked} onChange={togglePickPage} /></th>}
-              {(isAdmin ? ["Mã KH", "Tên khách hàng", "SĐT", "Nhóm khách hàng", "Phụ trách", "Công nợ", "Tổng chi tiêu", "Tổng SL đơn", ""] : ["Mã KH", "Tên khách hàng", "SĐT", "Nhóm khách hàng", "Công nợ", "Tổng chi tiêu", "Tổng SL đơn", ""]).map((h, hi) => (
-                <th key={hi} className={`${RIGHT_COLUMNS.has(h) ? "text-right" : "text-left"} px-3 py-2.5 text-xs whitespace-nowrap font-medium`} style={{ color: TEXT, opacity: 0.6 }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {pagedCustomers.map((c) => {
-              const s = customerStats(c.id);
-              const g = CUSTOMER_GROUPS.find((x) => x.id === c.group) || CUSTOMER_GROUPS[0];
-              return (
-                <tr key={c.id} style={{ borderBottom: `1px solid ${LINE}` }} className="hover:bg-black/[0.02]">
-                  {isAdmin && <td className="px-3 py-3"><input type="checkbox" checked={picked.has(c.id)} onChange={() => togglePick(c.id)} /></td>}
-                  <td className="px-3 py-3 font-medium whitespace-nowrap">
-                    <button onClick={() => setViewingId(c.id)} className="hover:underline" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{c.code}</button>
-                  </td>
-                  <td className="px-3 py-3" style={{ minWidth: 240 }}><button onClick={() => setViewingId(c.id)} className="text-left hover:underline" style={{ color: TEXT }}>{c.name}</button></td>
-                  <td className="px-3 py-3 whitespace-nowrap opacity-70" style={{ fontFamily: "'Inter', sans-serif" }}>{c.phone || "—"}</td>
-                  <td className="px-3 py-3 whitespace-nowrap">
-                    <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: `${BLUE}15`, color: BLUE }}>{g.label}</span>
-                  </td>
-                  {isAdmin && (
-                    <td className="px-3 py-3 whitespace-nowrap text-sm opacity-70">{c.assignedTo || <span className="opacity-60">—</span>}</td>
-                  )}
-                  <td className="px-3 py-3 text-right whitespace-nowrap font-medium" style={{ fontFamily: "'Inter', sans-serif", color: s.debt > 0 ? RUST : "inherit", opacity: s.debt > 0 ? 1 : 0.4 }}>{vnd(s.debt)}</td>
-                  <td className="px-3 py-3 text-right whitespace-nowrap font-medium" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{vnd(s.totalSpent)}</td>
-                  <td className="px-3 py-3 text-right whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>{s.orderCount}</td>
-                  <td className="px-3 py-3">
-                    {isAdmin && (
-                      <div className="flex gap-1.5 justify-end whitespace-nowrap">
-                        <button onClick={() => openEdit(c)} className="p-1.5 rounded-md hover:bg-black/5 opacity-60"><Pencil size={14} /></button>
-                        {(currentUser.isOwner || currentUser.perms?.deleteCustomers) && (
-                          <button onClick={() => remove(c.id)} className="p-1.5 rounded-md hover:bg-black/5 opacity-60" style={{ color: RUST }}><Trash2 size={14} /></button>
-                        )}
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-            {filtered.length === 0 && <tr><td colSpan={isAdmin ? 10 : 8} className="text-center py-10 opacity-60">Không có khách hàng nào.</td></tr>}
-          </tbody>
-        </table>
-      </div>
+      <DocList rows={pagedCustomers} rowKey={(c) => c.id} onOpen={(c) => setViewingId(c.id)}
+        selected={isAdmin ? picked : null} onToggle={isAdmin ? togglePick : undefined} onToggleAll={togglePickPage} allSelected={pageAllPicked}
+        empty="Không có khách hàng nào."
+        cols={[
+          { key: "cus", label: "Khách hàng", w: "minmax(0,1fr)", cell: (c) => <><span className="nm wrap" title={c.name}>{c.name}</span><small>{c.code}{c.taxCode ? ` · MST ${c.taxCode}` : ""}</small></> },
+          { key: "ct", label: "Liên hệ", w: "160px", cell: (c) => <><span className="nm">{c.phone || "—"}</span><small>{(isAdmin ? c.assignedTo && `Phụ trách: ${c.assignedTo}` : "") || c.contactPerson || ""}</small></> },
+          { key: "grp", label: "Nhóm", w: "112px", cell: (c) => <Pill tone={c.group === "retail" ? "gray" : "ink"} fx>{(CUSTOMER_GROUPS.find((x) => x.id === c.group) || CUSTOMER_GROUPS[0]).label}</Pill> },
+          { key: "debt", label: "Công nợ", w: "128px", align: "right", cell: (c) => { const st = customerStats(c.id); return st.debt > 0 ? <><span className="money due">{vnd(st.debt)}</span><small>{c.creditDays ? `Hạn ${c.creditDays} ngày` : "Trả ngay"}</small></> : <small className="ok">Không nợ</small>; } },
+          { key: "spent", label: "Đã mua", w: "136px", align: "right", cell: (c) => { const st = customerStats(c.id); return <><span className="money">{vnd(st.totalSpent)}</span><small>{st.orderCount} đơn</small></>; } },
+          { key: "x", label: "", w: "64px", align: "right", cell: (c) => isAdmin ? <span className="flex gap-1 justify-end"><button type="button" onClick={() => openEdit(c)} title="Sửa" aria-label="Sửa" className="p-1.5 rounded-md hover:bg-black/5 opacity-60"><Pencil size={14} /></button>{(currentUser.isOwner || currentUser.perms?.deleteCustomers) && <button type="button" onClick={() => remove(c.id)} title="Xoá" aria-label="Xoá" className="p-1.5 rounded-md hover:bg-black/5 opacity-50" style={{ color: RUST }}><Trash2 size={14} /></button>}</span> : null },
+        ]}
+        card={(c) => { const st = customerStats(c.id); return {
+          title: <span className="wrap">{c.name}</span>,
+          side: <>{st.debt > 0 ? <span style={{ color: RUST }}>Nợ {vnd(st.debt)}</span> : vnd(st.totalSpent)}</>,
+          sub: <>{c.code}{c.phone ? ` · ${c.phone}` : ""} · {st.orderCount} đơn</>,
+          meta: <><Pill tone={c.group === "retail" ? "gray" : "ink"}>{(CUSTOMER_GROUPS.find((x) => x.id === c.group) || CUSTOMER_GROUPS[0]).label}</Pill>{c.creditDays ? <span className="dl-pill soft p-gray">Công nợ {c.creditDays} ngày</span> : null}</>,
+        }; }} />
       <DocPager page={customerSafePage} total={filtered.length} unit="khách hàng" onPage={setCustomerPage} />
       {picked.size > 0 && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-white shadow-lg whitespace-nowrap" style={{ background: TEXT }}>
@@ -9659,7 +9639,10 @@ function buildInvoiceHTML(order, products, customer, paperSize, settings) {
       <div style="display:flex;justify-content:space-between;"><span>Tổng tiền</span><span>${c.subtotal.toLocaleString("vi-VN")}</span></div>
       ${order.orderDiscount > 0 ? `<div style="display:flex;justify-content:space-between;"><span>Chiết khấu</span><span>-${c.discountAmount.toLocaleString("vi-VN")}</span></div>` : ""}
       ${order.shippingFee > 0 ? `<div style="display:flex;justify-content:space-between;"><span>Phí giao</span><span>${order.shippingFee.toLocaleString("vi-VN")}</span></div>` : ""}
+      ${c.returnedValue > 0 ? `<div style="display:flex;justify-content:space-between;"><span>Hàng trả lại</span><span>-${c.returnedValue.toLocaleString("vi-VN")}</span></div>` : ""}
+      ${c.exchangeValue > 0 ? `<div style="display:flex;justify-content:space-between;"><span>Hàng đổi</span><span>${c.exchangeValue.toLocaleString("vi-VN")}</span></div>` : ""}
       <div style="display:flex;justify-content:space-between;font-weight:bold;border-top:1px dashed #000;padding-top:4px;margin-top:4px;"><span>TỔNG CỘNG</span><span>${c.payable.toLocaleString("vi-VN")}</span></div>
+      ${order.paidAmount > 0 && c.remaining > 0 ? `<div style="display:flex;justify-content:space-between;"><span>Đã trả</span><span>${Number(order.paidAmount).toLocaleString("vi-VN")}</span></div><div style="display:flex;justify-content:space-between;font-weight:bold;"><span>Còn phải trả</span><span>${c.remaining.toLocaleString("vi-VN")}</span></div>` : ""}
       <div style="border-top:1px dashed #000;margin:8px 0;"></div>
       <div style="text-align:center;">Cảm ơn quý khách!</div>
     `;
@@ -9720,6 +9703,7 @@ function buildInvoiceHTML(order, products, customer, paperSize, settings) {
         <span><b>Số:</b> ${escapeHtml(order.code)}</span>
       </div>
       <div style="margin-bottom:10px;"><b>Khách hàng: </b>${escapeHtml(customer?.name || "Khách lẻ")}</div>
+      ${customer?.taxCode ? `<div style="margin-bottom:10px;"><b>Mã số thuế: </b>${escapeHtml(customer.taxCode)}</div>` : ""}
       ${settings.showCustomerAddress && custAddr ? `<div style="margin-bottom:10px;"><b>Địa chỉ: </b>${escapeHtml(custAddr)}</div>` : ""}
       ${settings.showCustomerPhone && custPhone ? `<div style="margin-bottom:10px;"><b>Điện thoại: </b>${escapeHtml(custPhone)}</div>` : ""}
       ${isDifferentShip ? `<div style="margin-bottom:14px;"><b>Giao hàng tại: </b>${escapeHtml(shipLine)}</div>` : ""}
@@ -9733,7 +9717,10 @@ function buildInvoiceHTML(order, products, customer, paperSize, settings) {
           <tr><td colspan="6" style="border:1px solid #111;padding:5px 8px;text-align:right;">${order.vat === "KCT" ? "Thuế KCT" : `Đã bao gồm Thuế (${vp}%)`}:</td><td style="border:1px solid #111;padding:5px 8px;text-align:right;">${order.vat === "KCT" ? "—" : c.vatTotal.toLocaleString("vi-VN")}</td></tr>
           ${order.orderDiscount > 0 ? `<tr><td colspan="6" style="border:1px solid #111;padding:5px 8px;text-align:right;">Chiết khấu${order.discountType === "percent" ? ` (${order.orderDiscount}%)` : ""}:</td><td style="border:1px solid #111;padding:5px 8px;text-align:right;">${c.discountAmount.toLocaleString("vi-VN")}</td></tr>` : ""}
           ${order.shippingFee > 0 ? `<tr><td colspan="6" style="border:1px solid #111;padding:5px 8px;text-align:right;">Phí giao hàng:</td><td style="border:1px solid #111;padding:5px 8px;text-align:right;">${order.shippingFee.toLocaleString("vi-VN")}</td></tr>` : ""}
+          ${c.returnedValue > 0 ? `<tr><td colspan="6" style="border:1px solid #111;padding:5px 8px;text-align:right;">Hàng trả lại:</td><td style="border:1px solid #111;padding:5px 8px;text-align:right;">-${c.returnedValue.toLocaleString("vi-VN")}</td></tr>` : ""}
+          ${c.exchangeValue > 0 ? `<tr><td colspan="6" style="border:1px solid #111;padding:5px 8px;text-align:right;">Hàng đổi:</td><td style="border:1px solid #111;padding:5px 8px;text-align:right;">${c.exchangeValue.toLocaleString("vi-VN")}</td></tr>` : ""}
           <tr style="font-weight:bold;"><td colspan="6" style="border:1px solid #111;padding:6px 8px;text-align:right;">Tổng cộng:</td><td style="border:1px solid #111;padding:6px 8px;text-align:right;">${c.payable.toLocaleString("vi-VN")}</td></tr>
+          ${order.paidAmount > 0 && c.remaining > 0 ? `<tr><td colspan="6" style="border:1px solid #111;padding:5px 8px;text-align:right;">Khách đã trả:</td><td style="border:1px solid #111;padding:5px 8px;text-align:right;">${Number(order.paidAmount).toLocaleString("vi-VN")}</td></tr><tr><td colspan="6" style="border:1px solid #111;padding:5px 8px;text-align:right;"><b>Còn phải trả:</b></td><td style="border:1px solid #111;padding:5px 8px;text-align:right;"><b>${c.remaining.toLocaleString("vi-VN")}</b></td></tr>` : ""}
         </tbody>
       </table>
       ${settings.showAmountInWords ? `<p style="margin-bottom:18px;"><i>Tổng số tiền bằng chữ: ${escapeHtml(soTienBangChu(c.payable))}.</i></p>` : ""}
@@ -10554,6 +10541,7 @@ function buildParcelLabelHTML(label, opts = {}) {
         <tr><td class="k">Bên nhận:</td><td class="v big b">${e(label.company || label.recipientName)}</td></tr>
         <tr><td class="k">SĐT:</td><td class="v b big">${e(rcvContact || "—")}</td></tr>
         <tr><td class="k">Địa chỉ:</td><td class="v b">${e(label.recipientAddress)}</td></tr>
+        ${chanhLabelRows(label, e)}
         ${label.note ? `<tr><td class="note" colspan="2">${e(label.note)}</td></tr>` : ""}
       </table>
     </div>`;
@@ -10857,56 +10845,29 @@ function Quotations({ quotations, setQuotations, orders, setOrders, products, se
         </button>
       </div>
 
-      <div className="rounded-md overflow-auto min-w-0" style={{ border: `1px solid ${LINE}`, background: "#fff", maxHeight: "calc(100vh - 240px)" }}>
-        <table className="w-full text-sm" style={{ minWidth: 920 }}>
-          <thead>
-            <tr style={{ borderBottom: `1px solid ${LINE}` }}>
-              {["Mã BG", "Ngày tạo", "Khách hàng", "Hạn hiệu lực", "Tổng tiền", "Trạng thái", "Đơn hàng", ""].map((h, hi) => (
-                <th key={hi} className="text-left px-4 py-3 text-xs whitespace-nowrap font-medium" style={{ color: TEXT, opacity: 0.6 }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {pagedQuotes.map((q) => {
-              const c = quoteCalc(q);
-              const exp = quoteExpiryInfo(q);
-              const effectiveStatus = q.status === "active" && exp.expired ? "expired" : q.status;
-              const convertedOrder = q.convertedOrderId ? orders.find((o) => o.id === q.convertedOrderId) : null;
-              return (
-                <tr key={q.id} style={{ borderBottom: `1px solid ${LINE}` }} className="hover:bg-black/[0.02]">
-                  <td className="px-4 py-3.5 font-medium whitespace-nowrap"><button onClick={() => setViewingId(q.id)} className="hover:underline" style={{ fontFamily: "'Inter', sans-serif", color: BLUE }}>{q.code}</button></td>
-                  <td className="px-4 py-3.5 whitespace-nowrap opacity-80" style={{ fontFamily: "'Inter', sans-serif" }}>{formatDateTime(q.createdAt)}</td>
-                  <td className="px-4 py-3.5 whitespace-nowrap">{q.customerName || "—"}</td>
-                  <td className="px-4 py-3.5 whitespace-nowrap" style={{ color: exp.expired ? RUST : INK }}>{new Date(q.expiryDate).toLocaleDateString("vi-VN")}</td>
-                  <td className="px-4 py-3.5 text-right whitespace-nowrap font-medium" style={{ fontFamily: "'Inter', sans-serif", color: TEXT }}>{vnd(c.total)}</td>
-                  <td className="px-4 py-3.5 whitespace-nowrap">
-                    <span className="text-xs px-2 py-0.5 rounded-full" style={{
-                      background: effectiveStatus === "converted" ? `${FOREST}1A` : effectiveStatus === "cancelled" ? "rgba(0,0,0,0.08)" : effectiveStatus === "expired" ? `${RUST}1A` : `${BLUE}1A`,
-                      color: effectiveStatus === "converted" ? FOREST : effectiveStatus === "cancelled" ? INK : effectiveStatus === "expired" ? RUST : BLUE,
-                    }}>
-                      {QUOTE_STATUS_LABEL[effectiveStatus] || QUOTE_STATUS_LABEL[q.status]}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3.5 whitespace-nowrap">
-                    {convertedOrder ? (
-                      <button onClick={() => goToDoc && goToDoc(convertedOrder.code)} className="hover:underline font-medium" style={{ fontFamily: "'Inter', sans-serif", color: FOREST }}>{convertedOrder.code}</button>
-                    ) : <span className="opacity-30">—</span>}
-                  </td>
-                  <td className="px-4 py-3.5 text-right">
-                    {q.status === "active" && !exp.expired && (
-                      <button onClick={() => convertToOrder(q)} className="text-xs px-2.5 py-1 rounded-md text-white whitespace-nowrap" style={{ background: INK }}>Chuyển đơn hàng</button>
-                    )}
-                    {q.status === "converted" && isAdmin && (
-                      <button onClick={() => undoConvert(q)} className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-md border whitespace-nowrap" style={{ borderColor: LINE, color: TEXT }}><RotateCcw size={12} /> Hoàn tác</button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-            {filtered.length === 0 && <tr><td colSpan={8} className="text-center py-10 opacity-60">Chưa có báo giá nào.</td></tr>}
-          </tbody>
-        </table>
-      </div>
+      <DocList rows={pagedQuotes} rowKey={(q) => q.id} onOpen={(q) => setViewingId(q.id)} empty="Chưa có báo giá nào."
+        cols={(() => {
+          const st = (q) => { const exp = quoteExpiryInfo(q); return q.status === "active" && exp.expired ? "expired" : q.status; };
+          const tone = { converted: "green", cancelled: "gray", expired: "red", active: "blue" };
+          return [
+            { key: "doc", label: "Báo giá", w: "112px", cell: (q) => <><span className="code">{q.code}</span><small>{shortDateTime(q.createdAt)}</small></> },
+            { key: "cus", label: "Khách hàng", w: "minmax(0,1fr)", cell: (q) => <span className="nm wrap" title={q.customerName || ""}>{q.customerName || "—"}</span> },
+            { key: "exp", label: "Hiệu lực đến", w: "120px", cell: (q) => { const exp = quoteExpiryInfo(q); return <span style={{ color: exp.expired ? RUST : TEXT }}>{new Date(q.expiryDate).toLocaleDateString("vi-VN")}</span>; } },
+            { key: "st", label: "Trạng thái", w: "132px", cell: (q) => <Pill tone={tone[st(q)] || "gray"} fx>{QUOTE_STATUS_LABEL[st(q)] || QUOTE_STATUS_LABEL[q.status]}</Pill> },
+            { key: "money", label: "Tổng tiền", w: "128px", align: "right", cell: (q) => <span className="money">{vnd(quoteCalc(q).total)}</span> },
+            { key: "act", label: "", w: "150px", align: "right", cell: (q) => { const exp = quoteExpiryInfo(q); const co = q.convertedOrderId ? orders.find((o) => o.id === q.convertedOrderId) : null; return <span className="flex justify-end gap-2">
+              {co && <button type="button" onClick={() => goToDoc && goToDoc(co.code)} className="text-xs font-semibold hover:underline" style={{ color: FOREST }}>→ {co.code}</button>}
+              {q.status === "active" && !exp.expired && <button type="button" onClick={() => convertToOrder(q)} className="text-xs font-semibold px-3 py-2 rounded-md text-white whitespace-nowrap" style={{ background: INK }}>Chuyển đơn hàng</button>}
+              {q.status === "converted" && isAdmin && <button type="button" onClick={() => undoConvert(q)} className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md border whitespace-nowrap" style={{ borderColor: LINE, color: TEXT }}><RotateCcw size={12} /> Hoàn tác</button>}
+            </span>; } },
+          ];
+        })()}
+        card={(q) => { const exp = quoteExpiryInfo(q); const s2 = q.status === "active" && exp.expired ? "expired" : q.status; return {
+          title: <span className="wrap">{q.customerName || "—"}</span>,
+          side: <>{vnd(quoteCalc(q).total)}</>,
+          sub: <>{q.code} · {shortDateTime(q.createdAt)} · hiệu lực đến {new Date(q.expiryDate).toLocaleDateString("vi-VN")}</>,
+          meta: <><Pill tone={{ converted: "green", cancelled: "gray", expired: "red", active: "blue" }[s2] || "gray"}>{QUOTE_STATUS_LABEL[s2] || QUOTE_STATUS_LABEL[q.status]}</Pill>{q.status === "active" && !exp.expired && <button type="button" onClick={() => convertToOrder(q)} className="ml-auto text-xs font-semibold px-3 py-2 rounded-md text-white" style={{ background: INK }}>Chuyển đơn hàng</button>}</>,
+        }; }} />
       <DocPager page={quoteSafePage} total={filtered.length} unit="báo giá" onPage={setQuotePage} />
 
       {/* Modal tạo / sửa báo giá */}
@@ -11217,6 +11178,7 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
   const [filterApprovalOnly, setFilterApprovalOnly] = useState(false);
   const [filterCancelledOnly, setFilterCancelledOnly] = useState(false);
   const [filterUnpaidOnly, setFilterUnpaidOnly] = useState(false);
+  const [filterOverdue, setFilterOverdue] = useState(false); // lọc nhanh "Quá hạn nợ"
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [viewingId, setViewingId] = useState(null);
   useDocUrl("don", viewingId);
@@ -11394,6 +11356,59 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
     addLog(needsApproval ? "Tạo đơn (chờ duyệt)" : "Tạo đơn hàng", `${code} · ${vnd(payable)}${approvalReason ? " · " + approvalReason : ""}`);
     setCreating(false);
   };
+  // Bán nhanh tại quầy: tạo đơn cùng quy tắc với form tạo đơn (giá sàn, chờ hàng, trừ kho). Trả đủ + đủ hàng
+  // + không cần duyệt thì đơn hoàn thành luôn; còn lại để "Chờ xử lý" như đơn thường.
+  const [quickOpen, setQuickOpen] = useState(false);
+  useEffect(() => {
+    const q = () => setQuickOpen(true);
+    const n = () => openNew();
+    window.addEventListener("hili:quick-sale", q);
+    window.addEventListener("hili:new-order", n);
+    return () => { window.removeEventListener("hili:quick-sale", q); window.removeEventListener("hili:new-order", n); };
+  });
+  const quickCreate = (data, { print }) => {
+    const items = data.items.filter((it) => it.qty > 0);
+    if (!items.length) return { error: "Chưa có sản phẩm nào." };
+    const now = new Date().toISOString();
+    const subtotal = items.reduce((n, it) => n + it.qty * it.price, 0);
+    const rate = subtotal > 0 ? (Number(data.orderDiscount) || 0) / subtotal : 0;
+    const below = items.filter((it) => { const p = products.find((x) => x.id === it.productId); const fl = p ? minSellPrice(p, currentUser.role) : 0; return fl > 0 && it.price * (1 - rate) < fl; });
+    const withF = items.map((it) => {
+      const p = products.find((x) => x.id === it.productId);
+      const closing = p && !p.isService ? productStats(p).closingQty : Infinity;
+      return { ...it, fulfilled: p?.isService ? true : Number(it.qty) <= closing };
+    });
+    const firstVat = products.find((x) => x.id === withF[0].productId)?.vat || "VAT10";
+    const base = { items: withF, vat: firstVat, orderDiscount: Number(data.orderDiscount) || 0, discountType: "amount", shippingFee: 0 };
+    const payable = orderCalc({ ...base, paidAmount: 0 }).payable;
+    const paidAmount = Math.min(Number(data.paidAmount) || 0, payable);
+    const needsApproval = !isAdmin && !isCtv && below.length > 0;
+    const doneNow = !needsApproval && paidAmount >= payable && payable > 0 && withF.every((it) => it.fulfilled);
+    const code = nextOrderCode(orders);
+    const newOrder = normalizeOrder({
+      id: uid(), code, createdAt: now, date: todayISO(), customerId: data.customerId || "", channel: "store", branch: BRANCHES[0],
+      seller: currentUser.fullName || employeeNames[0] || EMPLOYEES[0], deliveryDate: "", shippingAddress: null, tags: ["Bán nhanh"], notes: "",
+      status: doneNow ? "done" : "pending", ...base,
+      shippingAt: doneNow ? now : null, deliveredAt: doneNow ? now : null, paidCompleteAt: paidAmount >= payable && payable > 0 ? now : null,
+      creditDays: 0, paidAmount, payments: paidAmount > 0 ? [{ id: uid(), date: now, amount: paidAmount, type: "thu" }] : [],
+      approvalStatus: needsApproval ? "pending" : "approved", approvalReason: below.length ? "Bán dưới giá niêm yết" : "", createdByRole: currentUser.role,
+    });
+    setOrders((prev) => [newOrder, ...prev]);
+    setProducts((prev) => prev.map((p) => {
+      if (p.isService) return p;
+      const it = withF.find((i) => i.productId === p.id);
+      if (!it || !it.fulfilled) return p;
+      return { ...p, movements: [...p.movements, { id: uid(), type: "out", docNo: code, date: todayISO(), qty: it.qty, price: it.price, series: [] }] };
+    }));
+    addLog("Bán nhanh", `${code} · ${vnd(payable)}${needsApproval ? " · chờ duyệt (dưới giá niêm yết)" : ""}`);
+    if (print) {
+      const cust = customers.find((c) => c.id === data.customerId);
+      const r = printHTML(buildInvoiceHTML(newOrder, products, cust, printSettings?.defaultPaperSize === "thermal58" ? "thermal58" : "thermal80", { ...DEFAULT_PRINT_SETTINGS, ...(printSettings || {}) }));
+      if (!r.ok) window.open(r.url, "_blank");
+    }
+    return { code, status: newOrder.status };
+  };
+
   // Sửa đơn hàng — mọi vai trò đều được sửa khi đơn đang "Chờ xử lý" (mở lại đúng form tạo đơn với dữ liệu hiện có).
   const openEditOrder = (order) => {
     setForm({
@@ -11684,6 +11699,7 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
     .filter((o) => !filterApprovalOnly || o.approvalStatus === "pending")
     .filter((o) => !filterCancelledOnly || o.status === "cancelled")
     .filter((o) => !filterUnpaidOnly || (o.status !== "cancelled" && orderCalc(o).remaining > 0))
+    .filter((o) => { if (!filterOverdue) return true; const d = orderDueInfo(o); return !!d && d.daysLeft < 0; })
     .filter((o) => {
       if (!filterFrom && !filterTo) return true;
       const t = new Date(o.createdAt).getTime();
@@ -11712,8 +11728,17 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
   const activeFilterCount = [filterSeller, filterFrom, filterTo, filterDeliveredFrom, filterDeliveredTo, filterInvoice, filterText, filterCustomer, filterProduct].filter(Boolean).length + (filterApprovalOnly ? 1 : 0) + (filterCancelledOnly ? 1 : 0) + (filterUnpaidOnly ? 1 : 0);
   const clearFilters = () => {
     setFilterSeller(""); setFilterFrom(""); setFilterTo(""); setFilterDeliveredFrom(""); setFilterDeliveredTo(""); setFilterInvoice(""); setFilterText("");
-    setFilterCustomer(""); setFilterProduct(""); setFilterApprovalOnly(false); setFilterCancelledOnly(false); setFilterUnpaidOnly(false);
+    setFilterCustomer(""); setFilterProduct(""); setFilterApprovalOnly(false); setFilterCancelledOnly(false); setFilterUnpaidOnly(false); setFilterOverdue(false);
   };
+  // Lọc nhanh: bấm 1 lần, bấm lại để bỏ.
+  const monthStart = todayISO().slice(0, 8) + "01";
+  const quickFilters = [
+    { id: "today", label: "Hôm nay", on: filterFrom === todayISO() && filterTo === todayISO(), set: (v) => { setFilterFrom(v ? todayISO() : ""); setFilterTo(v ? todayISO() : ""); } },
+    { id: "month", label: "Tháng này", on: filterFrom === monthStart && !filterTo, set: (v) => { setFilterFrom(v ? monthStart : ""); setFilterTo(""); } },
+    { id: "unpaid", label: "Còn nợ", on: filterUnpaidOnly, set: setFilterUnpaidOnly },
+    { id: "overdue", label: "Quá hạn nợ", on: filterOverdue, set: setFilterOverdue },
+    { id: "noinv", label: "Chưa xuất hoá đơn", on: filterInvoice === "pending", set: (v) => setFilterInvoice(v ? "pending" : "") },
+  ];
 
   const toggleSelect = (id) => setSelectedIds((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
   // Về trang 1 khi đổi bộ lọc/tìm kiếm; chọn tất cả chỉ áp dụng cho các đơn của trang đang xem.
@@ -11729,6 +11754,20 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
   });
 
   // Chuyển trạng thái hàng loạt cho các đơn đã chọn — tự động bỏ qua đơn không đủ điều kiện (còn chờ hàng/chưa duyệt/chưa thanh toán đủ/đã huỷ/đang ở bước sau).
+  // In hoá đơn nhiều đơn cùng lúc: ghép thành 1 tài liệu, mỗi đơn sang trang mới.
+  const bulkPrint = () => {
+    const list = orders.filter((o) => selectedIds.has(o.id) && o.status !== "cancelled").sort((a, b) => (a.code > b.code ? 1 : -1));
+    if (!list.length) { notify("Không có đơn nào để in."); return; }
+    const paper = printSettings?.defaultPaperSize || "A4";
+    const settings = { ...DEFAULT_PRINT_SETTINGS, ...(printSettings || {}) };
+    const docs = list.map((o) => buildInvoiceHTML(o, products, customers.find((c) => c.id === o.customerId), paper, settings));
+    const head = docs[0].slice(0, docs[0].indexOf("<body>"));
+    const bodies = docs.map((d) => d.slice(d.indexOf("<body>") + 6, d.lastIndexOf("</body>")));
+    const html = head + "<body>" + bodies.map((b, i) => `<div style="${i ? "page-break-before:always;break-before:page;" : ""}">${b}</div>`).join("") + "</body></html>";
+    const r = printHTML(html);
+    if (!r.ok) window.open(r.url, "_blank");
+    addLog("In hoá đơn hàng loạt", `${list.length} đơn`);
+  };
   const bulkSetStatus = (newStatus) => {
     const targets = orders.filter((o) => selectedIds.has(o.id));
     if (targets.length === 0) return;
@@ -11815,6 +11854,7 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
           <button onClick={exportOrders} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm border" style={{ borderColor: FOREST, color: FOREST }}>
             <FileSpreadsheet size={15} /> <span className="hidden sm:inline">Xuất Excel</span>{selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}
           </button>
+          <button onClick={() => setQuickOpen(true)} title="Bán tại quầy: quét mã, thu tiền, in hoá đơn (phím B)" className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-semibold" style={{ background: GOLD, color: INK }}><ShoppingCart size={15} /> Bán nhanh</button>
           <button onClick={openNew} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-white" style={{ background: INK }}><Plus size={15} /> Tạo đơn<span className="hidden sm:inline"> và giao hàng</span></button>
         </div>
       </div>
@@ -11828,7 +11868,10 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
         <button onClick={() => setShowFilters((s) => !s)} className="flex items-center gap-1.5 text-sm px-3.5 py-2 rounded-md border" style={{ borderColor: activeFilterCount ? INK : LINE, color: TEXT, background: showFilters ? PAPER : "#fff" }}>
           <Filter size={14} /> Bộ lọc {activeFilterCount > 0 && <span className="text-xs px-1.5 rounded-full text-white" style={{ background: INK }}>{activeFilterCount}</span>}
         </button>
-        {activeFilterCount > 0 && <button onClick={clearFilters} className="text-xs opacity-60 hover:opacity-100 underline">Xoá bộ lọc</button>}
+        <div className="dl-quick" role="group" aria-label="Lọc nhanh">
+          {quickFilters.map((f) => <button key={f.id} type="button" aria-pressed={f.on} onClick={() => f.set(!f.on)}>{f.label}</button>)}
+        </div>
+        {(activeFilterCount > 0 || filterOverdue) && <button onClick={clearFilters} className="text-xs opacity-60 hover:opacity-100 underline">Xoá bộ lọc</button>}
       </div>
 
       {showFilters && (
@@ -11895,6 +11938,19 @@ function Orders({ goToCustomer, goToProduct, orders, setOrders, products, setPro
         filterStatus, setFilterStatus, filterUnpaidOnly, setFilterUnpaidOnly, filterInvoice, setFilterInvoice }}
         onOpen={(o) => { setViewingId(o.id); setPayInput(""); }} onDelete={setDeletingOrder} />
       <DocPager page={orderSafePage} total={visible.length} unit="đơn hàng" onPage={setOrderPage} />
+      {selectedIds.size > 0 && (
+        <div className="dl-bulk" role="toolbar" aria-label="Thao tác với các đơn đã chọn">
+          <b>Đã chọn {selectedIds.size} đơn</b>
+          {!isCtv && <button type="button" onClick={bulkPrint}><Printer size={15} /> In hoá đơn</button>}
+          <button type="button" onClick={() => bulkSetStatus("shipping")}><Truck size={15} /> Đang giao</button>
+          <button type="button" onClick={() => bulkSetStatus("delivered")}><PackageCheck size={15} /> Đã giao</button>
+          <button type="button" onClick={() => bulkSetStatus("done")}><Check size={15} /> Hoàn thành</button>
+          <button type="button" onClick={exportOrders}><FileSpreadsheet size={15} /> Excel</button>
+          <button type="button" className="x" onClick={() => setSelectedIds(new Set())}>Bỏ chọn</button>
+        </div>
+      )}
+
+      {quickOpen && <QuickSale products={products} customers={customers} stockOf={(p) => (p.isService ? "∞" : productStats(p).closingQty)} onCreate={quickCreate} onClose={() => setQuickOpen(false)} />}
 
       {/* Modal tạo đơn và giao hàng */}
       {creating && (
@@ -12921,7 +12977,7 @@ function Plans({ plans, setPlans, orders, purchaseOrders, products, employeeName
           <BarChart data={trend} barCategoryGap="28%">
             <CartesianGrid vertical={false} strokeDasharray="3 3" stroke={LINE} />
             <XAxis dataKey="label" tick={axisTick} axisLine={{ stroke: LINE }} tickLine={false} />
-            <YAxis tick={axisTick} axisLine={false} tickLine={false} width={52} tickFormatter={(v) => (isDailyType ? v.toLocaleString("vi-VN") : v >= 1000000 ? `${(v / 1000000).toFixed(0)}tr` : `${v / 1000}k`)} />
+            <YAxis tick={axisTick} axisLine={false} tickLine={false} width={52} tickFormatter={(v) => (isDailyType ? v.toLocaleString("vi-VN") : v >= 1000000 ? `${(v / 1000000).toFixed(0)}tr` : v >= 1000 ? `${Math.round(v / 1000)}k` : String(Math.round(v)))} />
             <Tooltip formatter={(v) => (isDailyType ? `${v.toLocaleString("vi-VN")} mã` : vnd(v))} contentStyle={tooltipStyle} cursor={{ fill: PAPER }} />
             <Bar dataKey="target" name="Mục tiêu" fill={LINE} radius={[6, 6, 0, 0]} maxBarSize={26} />
             <Bar dataKey="actual" name="Thực tế" fill={sub === "sales" || sub === "stock" ? FOREST : BLUE} radius={[6, 6, 0, 0]} maxBarSize={26} />
@@ -13236,7 +13292,7 @@ function DebtOverviewReport({ orders, customers, onOpen }) {
   const chartColors = [INK, BRASS, FOREST, BLUE, RUST, "#F7C600"];
   const tooltipStyle = { fontFamily: "'Inter', sans-serif", fontSize: 13, border: `1px solid ${LINE}`, borderRadius: 8, boxShadow: "0 8px 24px rgba(31,42,68,0.12)", padding: "8px 12px" };
   const axisTick = { fontSize: 12, fill: INK, fontFamily: "'Inter', sans-serif" };
-  const moneyTick = (v) => (Math.abs(v) >= 1000000 ? `${(v / 1000000).toFixed(0)}tr` : `${v / 1000}k`);
+  const moneyTick = (v) => (Math.abs(v) >= 1000000 ? `${(v / 1000000).toFixed(0)}tr` : Math.abs(v) >= 1000 ? `${Math.round(v / 1000)}k` : String(Math.round(v)));
 
   const debtByCustomer = useMemo(() => {
     return customers.map((c) => {
@@ -13550,7 +13606,7 @@ function CashFlowReport({ orders, purchaseOrders, customers }) {
         >
           <CartesianGrid vertical={false} strokeDasharray="3 3" stroke={LINE} />
           <XAxis dataKey="label" tick={axisTick} axisLine={{ stroke: LINE }} tickLine={false} interval={buckets.length > 20 ? Math.ceil(buckets.length / 15) : 0} />
-          <YAxis tick={axisTick} axisLine={false} tickLine={false} width={56} tickFormatter={(v) => (Math.abs(v) >= 1000000 ? `${(v / 1000000).toFixed(0)}tr` : `${v / 1000}k`)} />
+          <YAxis tick={axisTick} axisLine={false} tickLine={false} width={56} tickFormatter={(v) => (Math.abs(v) >= 1000000 ? `${(v / 1000000).toFixed(0)}tr` : Math.abs(v) >= 1000 ? `${Math.round(v / 1000)}k` : String(Math.round(v)))} />
           <Tooltip formatter={(v) => vnd(v)} contentStyle={tooltipStyle} cursor={{ fill: PAPER }} />
           <Legend wrapperStyle={{ fontSize: 13, fontFamily: "'Inter', sans-serif" }} />
           <Bar dataKey="Thu" fill={FOREST} radius={[6, 6, 0, 0]} maxBarSize={22} />
@@ -14180,7 +14236,7 @@ function BusinessActivityChart({ orders, products, onBarClick }) {
         >
           <CartesianGrid vertical={false} strokeDasharray="3 3" stroke={LINE} />
           <XAxis dataKey="label" tick={axisTick} axisLine={{ stroke: LINE }} tickLine={false} interval={buckets.length > 20 ? Math.ceil(buckets.length / 15) : 0} />
-          <YAxis tick={axisTick} axisLine={false} tickLine={false} width={56} tickFormatter={(v) => (Math.abs(v) >= 1000000 ? `${(v / 1000000).toFixed(0)}tr` : `${v / 1000}k`)} />
+          <YAxis tick={axisTick} axisLine={false} tickLine={false} width={56} tickFormatter={(v) => (Math.abs(v) >= 1000000 ? `${(v / 1000000).toFixed(0)}tr` : Math.abs(v) >= 1000 ? `${Math.round(v / 1000)}k` : String(Math.round(v)))} />
           <Tooltip formatter={(v) => vnd(v)} contentStyle={tooltipStyle} cursor={{ fill: PAPER }} />
           <Legend wrapperStyle={{ fontSize: 13, fontFamily: "'Inter', sans-serif" }} />
           <Bar dataKey="Doanh thu" fill={BLUE} radius={[6, 6, 0, 0]} maxBarSize={48} />
@@ -15096,8 +15152,7 @@ function Accounts({ accounts, setAccounts, currentUser, addLog, onResetTestData,
           <p className="text-sm font-medium mb-1" style={{ color: TEXT }}>Sao lưu &amp; phục hồi</p>
           <p className="text-xs opacity-70 mb-3">
             Tải toàn bộ dữ liệu (sản phẩm, đơn hàng, khách hàng, kho, tài khoản, cấu hình web…) xuống máy dưới dạng 1 file <code>.json</code> —
-            bản sao ngoài hệ thống, nên tải định kỳ và cất nơi an toàn. Ngoài ra hệ thống tự sao lưu hằng ngày lên Supabase
-            (bảng <code>app_state_backups</code>) nếu đã bật Vercel Cron.
+            bản sao ngoài hệ thống, nên tải định kỳ và cất nơi an toàn. Ngoài ra máy chủ Cloudflare tự sao lưu hằng ngày lúc 0 giờ.
           </p>
           <div className="flex flex-wrap gap-2">
             <button onClick={onDownloadBackup} className="text-xs px-3.5 py-2 rounded-md text-white" style={{ background: INK }}>
@@ -15359,11 +15414,11 @@ function TabBar({ tabs, value, onChange, compact }) {
   const current = tabs.find((t) => t.id === value);
   return (
     <div className={compact ? "" : "mb-5"}>
-      <div className={`hili-tabs ${compact ? "inline-flex" : "flex"} flex-wrap gap-1 p-1 rounded-lg max-w-full`} style={{ background: "#fff", border: `1px solid ${LINE}` }}>
+      <div className={`hili-tabs ${compact ? "inline-flex" : "flex"} gap-1 p-1 rounded-lg max-w-full overflow-x-auto`} style={{ background: "#fff", border: `1px solid ${LINE}`, scrollbarWidth: "none" }}>
         {tabs.map((t) => {
           const on = value === t.id;
           return (
-            <button key={t.id} type="button" onClick={() => onChange(t.id)} className={`${compact ? "" : "flex-1 "}flex items-center justify-center gap-2 px-4 rounded-md text-sm whitespace-nowrap`}
+            <button key={t.id} type="button" onClick={() => onChange(t.id)} className={`${compact ? "" : "flex-1 "}shrink-0 flex items-center justify-center gap-2 px-4 rounded-md text-sm whitespace-nowrap`}
               style={{ height: 40, background: on ? INK : "transparent", color: on ? "#fff" : "#374151", fontWeight: on ? 600 : 500 }}>
               {t.icon && <t.icon size={16} className="shrink-0" />} {t.label}
             </button>
@@ -15938,7 +15993,7 @@ function WebProducts({ products, setProducts, suppliers, categories, brands, cur
       )}
 
       <div className="border rounded-md overflow-x-auto" style={{ borderColor: LINE }}>
-        <table className="hili-rt w-full text-sm" style={{ minWidth: 760 }}>
+        <table className="hili-rt hili-web w-full text-sm" style={{ minWidth: 760 }}>
           <thead>
             <tr style={{ background: PAPER }}>
               <th className="text-left px-3 py-2.5 font-medium">Đăng web</th>
@@ -15977,7 +16032,7 @@ function WebProducts({ products, setProducts, suppliers, categories, brands, cur
                         )}
                         <div>
                           <a href={`/quanlybanhang?webproduct=${p.id}`} onClick={(e) => { if (e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); setEditId(p.id); }}
-                            className="font-medium leading-tight hover:underline" style={{ color: TEXT }}>
+                            className="hw-name font-medium leading-tight hover:underline" style={{ color: TEXT }} title={p.name}>
                             {indent ? (vLabel || p.name) : p.name}{!indent && vLabel && <span className="opacity-60"> — {vLabel}</span>}
                           </a>
                           <div className="text-xs" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -15987,7 +16042,7 @@ function WebProducts({ products, setProducts, suppliers, categories, brands, cur
                         </div>
                       </div>
                     </td>
-                    <td className="px-3 py-2.5 opacity-70">{p.category || "—"}</td>
+                    <td className="px-3 py-2.5 opacity-70 whitespace-nowrap">{p.category || "—"}</td>
                     <td className="px-3 py-2.5 text-right" style={{ fontFamily: "'Inter', sans-serif" }} title="= Giá bán lẻ. Sửa ở tab Sản phẩm & tồn kho.">
                       {vnd(p.retailPrice)}
                     </td>
@@ -17045,41 +17100,19 @@ function WebOrders({ orders, onOpenOrder }) {
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm mã đơn, tên hoặc SĐT khách…"
           className="border rounded-md py-1.5 px-2.5 text-sm w-64" style={{ borderColor: LINE }} />
       </div>
-      <div className="border rounded-md overflow-hidden" style={{ borderColor: LINE }}>
-        <table className="w-full text-sm">
-          <thead><tr style={{ background: PAPER }}>
-            <th className="text-left px-3 py-2.5 font-medium">Mã đơn</th>
-            <th className="text-left px-3 py-2.5 font-medium">Ngày</th>
-            <th className="text-left px-3 py-2.5 font-medium">Khách</th>
-            <th className="text-left px-3 py-2.5 font-medium">Giao tới</th>
-            <th className="text-right px-3 py-2.5 font-medium">Tổng tiền</th>
-            <th className="text-left px-3 py-2.5 font-medium">Trạng thái</th>
-            <th className="px-3 py-2.5"></th>
-          </tr></thead>
-          <tbody>
-            {list.length === 0 && <tr><td colSpan={7} className="text-center py-8 opacity-60">Chưa có đơn từ website.</td></tr>}
-            {list.map((o) => {
-              const a = o.shippingAddress || {};
-              return (
-                <tr key={o.id} style={{ borderTop: `1px solid ${LINE}` }}>
-                  <td className="px-3 py-2.5 font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>
-                    {o.code}
-                    {(o.tags || []).includes("Đặt trước") && (
-                      <span className="ml-2 text-xs px-1.5 py-0.5 rounded-md" style={{ background: "#E8730C1A", color: "#E8730C", fontFamily: "inherit" }}>ĐẶT TRƯỚC</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2.5 opacity-70">{(o.createdAt || "").slice(0, 10)}</td>
-                  <td className="px-3 py-2.5">{a.recipientName || "—"}<div className="text-xs opacity-60">{a.recipientPhone}</div></td>
-                  <td className="px-3 py-2.5 opacity-70 max-w-[280px]">{[a.addressDetail, a.ward, a.province].filter(Boolean).join(", ") || "—"}</td>
-                  <td className="px-3 py-2.5 text-right" style={{ fontFamily: "'Inter', sans-serif" }}>{vnd(webOrderTotal(o))}</td>
-                  <td className="px-3 py-2.5"><span className="text-xs px-2 py-0.5 rounded-md" style={{ background: PAPER }}>{statusLabel(o.status)}{o.approvalStatus === "pending" ? " · chờ duyệt" : ""}</span></td>
-                  <td className="px-3 py-2.5 text-right"><button onClick={() => onOpenOrder(o.id)} className="text-xs underline" style={{ color: BLUE }}>Mở</button></td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <DocList rows={list} rowKey={(o) => o.id} onOpen={(o) => onOpenOrder(o.id)} empty="Chưa có đơn từ website."
+        cols={[
+          { key: "doc", label: "Đơn hàng", w: "112px", cell: (o) => <><span className="code">{o.code}</span><small>{shortDateTime(o.createdAt)}</small></> },
+          { key: "cus", label: "Khách", w: "minmax(0,1fr)", cell: (o) => { const a = o.shippingAddress || {}; return <><span className="nm wrap">{a.recipientName || "—"}</span><small>{a.recipientPhone}{(o.tags || []).includes("Đặt trước") ? " · Đặt trước" : ""}</small></>; } },
+          { key: "addr", label: "Giao tới", w: "minmax(0,1.2fr)", cell: (o) => { const a = o.shippingAddress || {}; const t = [a.addressDetail, a.ward, a.province].filter(Boolean).join(", "); return <span className="nm wrap" title={t}>{t || "—"}</span>; } },
+          { key: "st", label: "Trạng thái", w: "128px", cell: (o) => <><Pill tone={ORDER_TONE[o.status]} fx>{statusLabel(o.status)}</Pill>{o.approvalStatus === "pending" && <small style={{ color: RUST }}>Chờ duyệt</small>}</> },
+          { key: "money", label: "Tổng tiền", w: "128px", align: "right", cell: (o) => <span className="money">{vnd(webOrderTotal(o))}</span> },
+        ]}
+        card={(o) => { const a = o.shippingAddress || {}; return {
+          title: <span className="wrap">{a.recipientName || "—"}</span>, side: <>{vnd(webOrderTotal(o))}</>,
+          sub: <>{o.code} · {shortDateTime(o.createdAt)}{a.recipientPhone ? ` · ${a.recipientPhone}` : ""}</>,
+          meta: <><Pill tone={ORDER_TONE[o.status]}>{statusLabel(o.status)}</Pill>{(o.tags || []).includes("Đặt trước") && <span className="dl-pill soft p-amber">Đặt trước</span>}</>,
+        }; }} />
     </div>
   );
 }
@@ -18928,6 +18961,10 @@ export default function SalesManager() {
     });
   }, [loaded, purchaseOrders]);
 
+  // Phím tắt toàn trang (admin/Shortcuts.jsx) — gọi trước các lệnh return sớm bên dưới.
+  const shortcutUser = accounts.find((a) => a.id === currentUserId) || null;
+  const [shortcutHelp, setShortcutHelp] = useShortcuts({ setTab, allowedTabs: !shortcutUser ? [] : shortcutUser.role === "admin" ? ["dashboard", "orders", "products", "purchase", "customers", "website"] : ["dashboard", "orders", "products", "customers"] });
+
   if (loadFailed) {
     return (
       <div className="flex flex-col items-center justify-center h-96 gap-3 text-center px-4" style={{ color: TEXT }}>
@@ -19241,11 +19278,13 @@ export default function SalesManager() {
               <Search size={15} /> <span className="flex-1 text-left">Tìm đơn, khách, sản phẩm</span> <span className="text-xs px-1.5 rounded" style={{ border: `1px solid ${LINE}` }}>Ctrl K</span>
             </button>
           </div>
+          {shortcutHelp && <ShortcutHelp onClose={() => setShortcutHelp(false)} />}
           <CommandPalette orders={orders} customers={currentUser.role === "admin" ? customers : customers.filter((c) => c.assignedTo === currentUser.fullName)} products={products}
             purchaseOrders={currentUser.role === "admin" ? purchaseOrders : []} suppliers={currentUser.role === "admin" ? suppliers : []}
             onPick={(r) => peek(r.type, r.id)} />
           <AppErrorBoundary key={tab}>
-            {tab === "dashboard" && <Dashboard products={products} orders={orders} goToOrdersFilter={goToOrdersFilter} purchaseOrders={purchaseOrders} isAdmin={currentUser.role === "admin"} onGo={setTab} />}
+            {tab === "dashboard" && <Dashboard products={products} orders={orders} goToOrdersFilter={goToOrdersFilter} purchaseOrders={purchaseOrders} isAdmin={currentUser.role === "admin"} onGo={setTab} customers={customers}
+              onOpenOrder={(id) => { setTab("orders"); setNavTarget({ type: "order", id }); }} onOpenPO={(id) => { setTab("purchase"); setNavTarget({ type: "po", id }); }} />}
             {tab === "products" && roleTabIds.includes("products") && <ProductsSection products={products} setProducts={setProducts} purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} suppliers={suppliers} setSuppliers={setSuppliers} categories={categories} setCategories={setCategories} brands={brands} setBrands={setBrands} stocktakes={stocktakes} setStocktakes={setStocktakes} warrantyTickets={warrantyTickets} setWarrantyTickets={setWarrantyTickets} repairTickets={repairTickets} setRepairTickets={setRepairTickets} helpdeskTickets={helpdeskTickets} setHelpdeskTickets={setHelpdeskTickets} orders={orders} setOrders={setOrders} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} navTarget={tab === "products" ? navTarget : null} onFocusHandled={() => setNavTarget(null)} goToDoc={goToDoc} goToSupplier={goToSupplier} goToWebProduct={goToWebProduct} webConfig={webConfig} />}
             {tab === "purchase" && roleTabIds.includes("purchase") && <PurchaseOrders goToProduct={goToProduct} goToSupplier={goToSupplier} purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} products={products} setProducts={setProducts} suppliers={suppliers} setSuppliers={setSuppliers} brands={brands} employeeNames={employeeNames} addLog={addLog} focusPOId={navTarget?.type === "po" ? navTarget.id : null} onFocusHandled={() => setNavTarget(null)} currentUser={currentUser} />}
             {tab === "quotes" && <Quotations quotations={quotations} setQuotations={setQuotations} orders={orders} setOrders={setOrders} products={products} setProducts={setProducts} customers={customers} setCustomers={setCustomers} employeeNames={employeeNames} currentUser={currentUser} addLog={addLog} goToDoc={goToDoc} brands={brands} />}

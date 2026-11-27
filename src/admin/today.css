@@ -1,0 +1,23 @@
+/* Việc hôm nay */
+.td{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:20px;font-variant-numeric:tabular-nums}
+.td-card{display:flex;flex-direction:column;border:1px solid #E5E7EB;border-radius:12px;background:#fff;overflow:hidden}
+.td-card header{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid #F0F1F4}
+.td-card .ic{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:var(--bg);color:var(--c);flex:none}
+.td-card h3{margin:0;font-size:15px;font-weight:700;color:#111827}
+.td-card header p{margin:1px 0 0;font-size:12.5px;color:#6B7280}
+.td-card .ct{margin-left:auto;font-size:20px;font-weight:800;color:var(--c);white-space:nowrap}
+.t-amber{--c:#B45309;--bg:#FEF3E2}.t-red{--c:#C62828;--bg:#FDECEC}.t-blue{--c:#1D4ED8;--bg:#E8F0FE}.t-ink{--c:#1E2A8A;--bg:#EEF0FB}
+.td-list{flex:1}
+.td-row{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;padding:6px 16px;border:0;border-bottom:1px solid #F3F4F6;background:none;text-align:left;font:inherit;color:#111827;cursor:pointer}
+.td-row:nth-child(even){background:#F7F8FB}
+.td-row:hover{background:#EEF2FF}
+.td-row .m{flex:1;min-width:0;border:0;background:none;padding:0;text-align:left;font:inherit;font-size:14px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.td-row .m b{color:#1E2A8A;margin-right:4px}
+.td-row small{display:block;font-size:12.5px;color:#6B7280}
+.td-row em,.td-row small.due{color:#C62828;font-style:normal;font-weight:600}
+.td-row .v{font-weight:700;font-size:14px;white-space:nowrap}
+.td-row .v.due{color:#C62828}
+.td-row .call{display:grid;place-items:center;width:32px;height:32px;border-radius:8px;background:#E7F6EC;color:#15803D;flex:none}
+.td-ok{margin:0;padding:22px 16px;color:#15803D;font-size:14px}
+.td-all{display:flex;align-items:center;justify-content:center;gap:4px;height:40px;border:0;border-top:1px solid #F0F1F4;background:#FAFBFD;color:#1E2A8A;font-weight:600;font-size:13.5px;cursor:pointer}
+@media (max-width:900px){.td{grid-template-columns:minmax(0,1fr);gap:10px}}
