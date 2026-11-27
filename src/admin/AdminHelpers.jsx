@@ -1,6 +1,7 @@
 // Các khối giao diện nhỏ dùng chung cho trang quản lý, tách khỏi SalesManager.jsx (file quá lớn).
 // Không gọi máy chủ: chỉ hiển thị dữ liệu đã tải sẵn và lưu vài lựa chọn hiển thị vào localStorage.
 import React, { useState } from "react";
+import { DocList, Pill } from "./DocList.jsx";
 import { ArrowDownToLine, ArrowUpFromLine, Pencil, Globe, ImageOff, AlertTriangle, ChevronDown, X, Lightbulb, LayoutList, Table2, Info } from "lucide-react";
 
 // Cùng bảng màu với SalesManager.jsx
@@ -188,51 +189,41 @@ export function ViewModeToggle({ value, onChange }) {
 }
 
 /* ---------- Danh sách kho dạng đơn giản: ảnh, tên, giá, tồn ---------- */
-export function SimpleStockList({ groups, productStats, displayImage, isAdmin, isCtv, onOpen, onIO, onEdit, onWeb, selectedIds, toggleSelect }) {
+export function SimpleStockList({ groups, productStats, displayImage, isAdmin, isCtv, onOpen, onIO, onEdit, onWeb, selectedIds, toggleSelect, onToggleAll, allSelected }) {
   // Mỗi phiên bản là 1 dòng riêng cho dễ đọc (tên phiên bản đã có trong tên sản phẩm).
   const rows = groups.flatMap((g) => (g.type === "single" ? [g.p] : g.members));
-  if (!rows.length) return <div className="text-center py-10 text-sm" style={{ color: MUTE, border: `1px solid ${LINE}`, background: "#fff", borderRadius: 6 }}>Không có sản phẩm nào.</div>;
+  const stockOf = (p) => {
+    const qty = productStats(p).closingQty, low = p.minStockLevel || 0;
+    if (p.isService) return { t: "Dịch vụ", tone: "blue", n: "—" };
+    if (qty < 0) return { t: "Âm kho", tone: "red", n: qty };
+    if (qty === 0) return { t: "Hết hàng", tone: "gray", n: 0 };
+    if (low && qty <= low) return { t: "Sắp hết", tone: "amber", n: qty };
+    return { t: "Còn hàng", tone: "green", n: qty };
+  };
+  const Pic = ({ p }) => { const img = displayImage(p); return img ? <img src={img} alt="" loading="lazy" className="sk-img" /> : <span className="sk-img grid place-items-center"><ImageOff size={16} style={{ color: MUTE }} /></span>; };
+  const acts = (p) => (
+    <span className="sk-acts">
+      {isAdmin && !p.isService && <RowAction icon={ArrowDownToLine} label="Nhập" title="Nhập kho" color={FOREST} onClick={() => onIO(p, "in")} />}
+      {!isCtv && !p.isService && <RowAction icon={ArrowUpFromLine} label="Xuất" title="Xuất kho" color={RUST} onClick={() => onIO(p, "out")} />}
+      {isAdmin && <RowAction icon={Pencil} label="Sửa" title="Sửa thông tin trong kho" color={TEXT} onClick={() => onEdit(p)} />}
+      {isAdmin && onWeb && <RowAction icon={Globe} label="Web" title="Sửa ảnh, mô tả trên website" color={BLUE} onClick={() => onWeb(p.id)} />}
+    </span>
+  );
   return (
-    <ul className="grid gap-2" aria-label="Danh sách sản phẩm">
-      {rows.map((p) => {
-        const st = productStats(p);
-        const img = displayImage(p);
-        const qty = st.closingQty;
-        const stock = p.isService
-          ? { t: "Dịch vụ", bg: `${BLUE}14`, c: BLUE }
-          : qty < 0 ? { t: `Âm ${qty}`, bg: RUST, c: "#fff" }
-          : qty === 0 ? { t: "Hết hàng", bg: "#F3F4F6", c: MUTE }
-          : { t: `Còn ${qty}`, bg: `${FOREST}14`, c: FOREST };
-        return (
-          <li key={p.id} className="flex items-center gap-3 rounded-lg p-2.5 sm:p-3" style={{ background: "#fff", border: `1px solid ${LINE}` }}>
-            {toggleSelect && <input type="checkbox" aria-label={"Chọn " + p.name} checked={selectedIds?.has(p.id)} onChange={() => toggleSelect(p.id)} className="shrink-0 w-4 h-4" />}
-            <button type="button" onClick={() => onOpen(p.id)} className="shrink-0" aria-label={"Xem " + p.name}>
-              {img
-                ? <img src={img} alt="" loading="lazy" className="w-14 h-14 sm:w-16 sm:h-16 object-contain rounded-md bg-white" style={{ border: `1px solid ${LINE}` }} />
-                : <span className="w-14 h-14 sm:w-16 sm:h-16 rounded-md grid place-items-center" style={{ background: PAPER, border: `1px dashed ${LINE}` }}><ImageOff size={16} style={{ color: MUTE }} /></span>}
-            </button>
-            <div className="min-w-0 flex-1">
-              <button type="button" onClick={() => onOpen(p.id)} className="block text-left text-sm font-medium leading-snug hover:underline line-clamp-2" style={{ color: TEXT }}>{p.name}</button>
-              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs" style={{ color: MUTE }}>
-                <span className="sm:hidden text-[13px] font-semibold" style={{ color: INK }}>{p.retailPrice ? vnd(p.retailPrice) : "Chưa có giá"}</span>
-                <span style={{ fontFamily: "'Inter', sans-serif" }}>{p.code}{p.sku ? ` · ${p.sku}` : ""}</span>
-                {p.web?.published ? <span className="inline-flex items-center gap-1" style={{ color: FOREST }}><Globe size={11} /> Đang bán trên web</span> : <span>Chưa lên web</span>}
-              </div>
-            </div>
-            <div className="hidden sm:block text-right shrink-0 w-28">
-              <div className="text-sm font-semibold" style={{ color: INK, fontFamily: "'Inter', sans-serif" }}>{p.retailPrice ? vnd(p.retailPrice) : "—"}</div>
-              <div className="text-[11px]" style={{ color: MUTE }}>giá bán</div>
-            </div>
-            <span className="shrink-0 text-xs font-semibold px-2 py-1 rounded-md whitespace-nowrap" style={{ background: stock.bg, color: stock.c }}>{stock.t}</span>
-            <div className="shrink-0 hidden md:flex items-center gap-1">
-              {isAdmin && !p.isService && <RowAction icon={ArrowDownToLine} label="Nhập" title="Nhập kho" color={FOREST} onClick={() => onIO(p, "in")} />}
-              {!isCtv && !p.isService && <RowAction icon={ArrowUpFromLine} label="Xuất" title="Xuất kho" color={RUST} onClick={() => onIO(p, "out")} />}
-              {isAdmin && <RowAction icon={Pencil} label="Sửa" title="Sửa thông tin trong kho" color={TEXT} onClick={() => onEdit(p)} />}
-              {isAdmin && onWeb && <RowAction icon={Globe} label="Web" title="Sửa ảnh, mô tả trên website" color={BLUE} onClick={() => onWeb(p.id)} />}
-            </div>
-          </li>
-        );
-      })}
-    </ul>
+    <DocList rows={rows} rowKey={(p) => p.id} onOpen={(p) => onOpen(p.id)} selected={selectedIds} onToggle={toggleSelect || undefined} onToggleAll={onToggleAll} allSelected={allSelected}
+      empty="Không có sản phẩm nào."
+      cols={[
+        { key: "prod", label: "Sản phẩm", w: "minmax(0,2.4fr)", cell: (p) => <span className="flex items-center gap-3 min-w-0"><Pic p={p} /><span className="min-w-0"><span className="nm" title={p.name}>{p.name}</span><small>{p.code}{p.sku ? ` · ${p.sku}` : ""}{p.category ? ` · ${p.category}` : ""}</small></span></span> },
+        { key: "price", label: "Giá bán", w: "120px", align: "right", cell: (p) => <><span className="money">{p.retailPrice ? vnd(p.retailPrice) : "—"}</span>{isAdmin && p.costPrice ? <small>Nhập {vnd(p.costPrice)}</small> : null}</> },
+        { key: "stock", label: "Tồn kho", w: "96px", align: "right", cell: (p) => { const s = stockOf(p); return <><span className="sk-n">{s.n}</span><small><Pill tone={s.tone}>{s.t}</Pill></small></>; } },
+        { key: "web", label: "Web", w: "88px", cell: (p) => p.web?.published ? <span className="dl-pill soft p-green">Đang bán</span> : <span className="dl-pill soft p-gray">Chưa đăng</span> },
+        { key: "act", label: "", w: "auto", align: "right", cell: acts },
+      ]}
+      card={(p) => { const s = stockOf(p); return {
+        title: <span className="flex items-center gap-2.5 min-w-0"><Pic p={p} /><span className="min-w-0 whitespace-normal leading-snug" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.name}</span></span>,
+        side: <>{p.retailPrice ? vnd(p.retailPrice) : "—"}</>,
+        sub: <>{p.code}{p.sku ? ` · ${p.sku}` : ""}</>,
+        meta: <><Pill tone={s.tone}>{s.t}{p.isService ? "" : ` · ${s.n}`}</Pill>{p.web?.published ? <span className="dl-pill soft p-green">Đang bán web</span> : <span className="dl-pill soft p-gray">Chưa đăng web</span>}</>,
+      }; }} />
   );
 }
