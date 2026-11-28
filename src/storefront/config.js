@@ -746,7 +746,7 @@ export const PAGES = {
       {
         heading: "3. Ưu đãi thêm cho khách Hilitek",
         bullets: [
-          "Đổi mới ngay trong 30 ngày đầu nếu sản phẩm lỗi do nhà sản xuất và đủ điều kiện.",
+          "Đổi mới ngay trong 7 ngày đầu nếu sản phẩm lỗi do nhà sản xuất hoặc lỗi DOA (hỏng ngay khi mở hộp) và đủ điều kiện.",
           "Khách ráp bộ PC tại Hilitek: đổi mới linh kiện lỗi trong 3 tháng đầu (đủ điều kiện bảo hành).",
           "Hỗ trợ sản phẩm dùng tạm trong thời gian chờ bảo hành (khu vực TP.HCM).",
           "Khách ở tỉnh: gửi sản phẩm về cửa hàng, Hilitek hỗ trợ tiếp nhận và xử lý bảo hành.",
@@ -849,9 +849,9 @@ export const PAGES = {
       "Hilitek hỗ trợ đổi trả trong trường hợp sản phẩm lỗi do nhà sản xuất hoặc giao sai đơn. Vui lòng đọc kỹ điều kiện bên dưới trước khi yêu cầu.",
     sections: [
       {
-        heading: "1. Đổi trả trong 30 ngày đầu",
+        heading: "1. Đổi mới trong 7 ngày đầu",
         bullets: [
-          "Sản phẩm lỗi kỹ thuật do nhà sản xuất, không phải lỗi người dùng: Hilitek đổi sản phẩm mới đúng loại đã mua.",
+          "Sản phẩm lỗi kỹ thuật do nhà sản xuất hoặc lỗi DOA (không hoạt động ngay khi mở hộp), không phải lỗi người dùng: Hilitek đổi sản phẩm mới đúng loại đã mua trong 7 ngày kể từ ngày nhận hàng.",
           "Hỗ trợ đổi sang sản phẩm khác theo yêu cầu; phần chênh lệch giá trị được thương lượng và thống nhất giữa hai bên.",
           "Giao sai mẫu, sai cấu hình, thiếu phụ kiện, thiếu số lượng so với đơn: đổi / bổ sung trong 24 giờ.",
         ],

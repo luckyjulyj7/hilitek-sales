@@ -5,7 +5,7 @@ const ITEMS = [
   { icon: BadgeCheck, title: "Hàng chính hãng", desc: "Nhập trực tiếp, đủ hoá đơn VAT" },
   { icon: ShieldCheck, title: "Bảo hành theo serial", desc: "Tra cứu online, không cần hoá đơn giấy" },
   { icon: Truck, title: "Giao nhanh toàn quốc", desc: "Nội thành trong ngày" },
-  { icon: RefreshCw, title: "Đổi mới 7 ngày", desc: "Lỗi do nhà sản xuất" },
+  { icon: RefreshCw, title: "Đổi mới 7 ngày", desc: "Lỗi nhà sản xuất, lỗi DOA" },
 ];
 
 export default function TrustBar({ className = "" }) {

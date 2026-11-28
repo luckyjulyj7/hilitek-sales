@@ -73,6 +73,13 @@ export function productHead(p) {
       priceValidUntil: `${new Date().getFullYear() + 1}-12-31`,
       availability: `https://schema.org/${inStock ? "InStock" : "OutOfStock"}`,
       seller: { "@type": "Organization", name: BRAND },
+      // Khớp trang /chinh-sach-doi-tra: đổi mới 7 ngày khi lỗi nhà sản xuất hoặc lỗi DOA (K chốt 28/11/2026).
+      hasMerchantReturnPolicy: {
+        "@type": "MerchantReturnPolicy", applicableCountry: "VN",
+        returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow", merchantReturnDays: 7,
+        returnMethod: "https://schema.org/ReturnInStore", returnFees: "https://schema.org/FreeReturn",
+        merchantReturnLink: `${SITE_URL}/chinh-sach-doi-tra`,
+      },
     } } : {}),
   };
   const crumbs = [["Trang chủ", `${SITE_URL}/`]];

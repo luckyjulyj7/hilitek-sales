@@ -346,7 +346,7 @@ export default function ProductDetail({ slug, navigate, catalog }) {
             {[
               [Truck, "Giao toàn quốc", "Hoả tốc 2 giờ nội thành"],
               [PackageCheck, "Kiểm hàng khi nhận", "Mở hộp xem rồi mới trả tiền"],
-              [RefreshCw, "Đổi mới 30 ngày", "Nếu lỗi do nhà sản xuất"],
+              [RefreshCw, "Đổi mới 7 ngày", "Lỗi nhà sản xuất, lỗi DOA"],
               [CreditCard, "Thanh toán linh hoạt", "COD, chuyển khoản, thẻ, trả góp"],
             ].map(([Icon, t, s]) => (
               <li key={t} className="flex items-start gap-2.5 rounded-lg border border-line bg-white p-2.5">
@@ -649,7 +649,7 @@ function WarrantyReturn({ warranty, navigate }) {
   const go = (path) => (e) => { e.preventDefault(); navigate(path); };
   const items = [
     [ShieldCheck, "Bảo hành", `${warranty}. Bảo hành tại Hilitek hoặc trung tâm của hãng, Hili hỗ trợ gửi giúp.`],
-    [RefreshCw, "Đổi mới trong 30 ngày", "Sản phẩm lỗi do nhà sản xuất được đổi mới đúng loại. Giao sai, thiếu phụ kiện: đổi hoặc bổ sung trong 24 giờ."],
+    [RefreshCw, "Đổi mới trong 7 ngày", "Sản phẩm lỗi do nhà sản xuất hoặc lỗi DOA (hỏng ngay khi mở hộp) được đổi mới đúng loại. Giao sai, thiếu phụ kiện: đổi hoặc bổ sung trong 24 giờ."],
     [PackageCheck, "Đồng kiểm khi nhận", "Được mở hộp kiểm tra trước khi thanh toán. Hàng sai hoặc hư do vận chuyển: từ chối nhận, Hili đổi mới."],
   ];
   return (
