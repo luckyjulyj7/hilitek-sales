@@ -9,6 +9,7 @@ import {
 } from "../config.js";
 import { groupIcon } from "../components/groupIcons.js";
 import CategoryTree from "../components/CategoryTree.jsx";
+import { MODELS } from "../data/handhelds.js";
 
 const SORTS = [
   { id: "popular", label: "Phổ biến" },
@@ -18,9 +19,14 @@ const SORTS = [
   { id: "name", label: "Tên A → Z" },
 ];
 
+const foldVN = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").toLowerCase();
+
 export default function Catalog({ catalog, route, navigate }) {
   const { products } = catalog;
   const q = (route.query.q || "").trim().toLowerCase();
+  const qWords = foldVN(q).split(/\s+/).filter(Boolean);
+  // Máy chơi game cầm tay nằm ở trang riêng (không trong danh sách sản phẩm): tìm trúng thì gợi ý sang đó.
+  const gameHits = q ? MODELS.filter((m) => { const hay = foldVN(`${m.name} ${m.brand} ${m.chip || ""} ${m.tier} may choi game cam tay handheld retro`); return qWords.every((w) => hay.includes(w)); }) : [];
   const group = route.query.group || "";
   const cat = route.query.cat || ""; // tên danh mục phụ
   const brand = route.query.brand || "";
@@ -49,8 +55,9 @@ export default function Catalog({ catalog, route, navigate }) {
       if (inStock && !p.stock) return false;
       if (onSale && !(Number(p.listPrice) > Number(p.price))) return false;
       if (q) {
-        const hay = `${p.name} ${p.sku} ${p.brand} ${(p.categories || [p.category]).join(" ")}`.toLowerCase();
-        if (!hay.includes(q)) return false;
+        // Không phân biệt dấu ("ban phim" ra "Bàn phím"), đủ mọi từ, không cần đúng thứ tự.
+        const hay = foldVN(`${p.name} ${p.sku} ${p.brand} ${p.group || ""} ${(p.categories || [p.category]).join(" ")}`);
+        if (!qWords.every((w) => hay.includes(w))) return false;
       }
       return true;
     });
@@ -331,6 +338,16 @@ export default function Catalog({ catalog, route, navigate }) {
             </label>
           </div>
 
+          {gameHits.length > 0 && (
+            <a href="/may-choi-game-cam-tay" onClick={(e) => { e.preventDefault(); navigate("may-choi-game-cam-tay"); }}
+              className="mb-4 flex items-center gap-4 rounded-lg border border-line bg-white p-4 hover:border-navy">
+              <span className="min-w-0 flex-1">
+                <b className="block text-ink">Máy chơi game cầm tay: {gameHits.length} dòng máy</b>
+                <span className="block text-[13px] text-mute truncate">{gameHits.slice(0, 6).map((m) => m.name).join(" · ")}</span>
+              </span>
+              <span className="shrink-0 inline-flex items-center gap-1 text-navy font-semibold text-[14px]">Xem trang máy game <ChevronRight size={16} /></span>
+            </a>
+          )}
           {list.length === 0 ? (
             <div className="border border-dashed border-line rounded-lg p-12 text-center text-mute">
               Không tìm thấy sản phẩm phù hợp.

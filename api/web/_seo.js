@@ -69,6 +69,8 @@ export function productHead(p) {
     // Giá 0 nghĩa là chưa niêm yết, khai báo giá 0 sẽ bị Google báo lỗi.
     ...(Number(p.price) > 0 ? { offers: {
       "@type": "Offer", url, price: Number(p.price), priceCurrency: "VND", itemCondition: "https://schema.org/NewCondition",
+      // Google khuyên có hạn giá; giá trên web cập nhật liên tục nên đặt tới cuối năm sau.
+      priceValidUntil: `${new Date().getFullYear() + 1}-12-31`,
       availability: `https://schema.org/${inStock ? "InStock" : "OutOfStock"}`,
       seller: { "@type": "Organization", name: BRAND },
     } } : {}),

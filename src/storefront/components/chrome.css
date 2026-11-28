@@ -154,3 +154,5 @@ main a:focus-visible img { outline: none; }
 
 /* Nút "lên đầu trang" ẩn trên điện thoại/máy tính bảng: đỡ che chữ, đã có thanh dưới + bấm logo. */
 @media (max-width: 1023.98px) { button[data-top] { display: none !important; } }
+/* Ô tìm kiếm: viền vàng đã ở khung ngoài (.hx-search:focus-within), bỏ viền thứ hai của ô nhập bên trong */
+header .hx-search input:focus-visible, .hx-search input:focus-visible { outline: none; }

@@ -49,8 +49,9 @@ import StaffChat from "./StaffChat.jsx";
 import GameProductEditor from "./GameProductEditor.jsx";
 import PasteDescPanel from "./admin/PasteDescPanel.jsx";
 import QuickSale from "./admin/QuickSale.jsx";
-import TodayPanel from "./admin/TodayPanel.jsx";
+import TodayPanel, { ZaloLink } from "./admin/TodayPanel.jsx";
 import { buildPOHTML, buildSupplierDebtHTML } from "./admin/poPrint.js";
+import QuickFill, { suggestSeo } from "./admin/QuickFill.jsx";
 import { useShortcuts, ShortcutHelp } from "./admin/Shortcuts.jsx";
 import { normalizeChanh, ChanhFields, ChanhLine, chanhLabelRows, buildChanhSlipHTML, hasChanh } from "./admin/ChanhSlip.jsx";
 import { DocList, SumStrip, Pill, DocLink, NewTabLink } from "./admin/DocList.jsx";
@@ -8887,11 +8888,12 @@ function Customers({ setOrders, customers, setCustomers, orders, products, curre
                       <td className="px-3 py-3" style={{ fontFamily: "'Inter', sans-serif" }}>{d.orderCount}</td>
                       <td className="px-3 py-3 font-medium" style={{ fontFamily: "'Inter', sans-serif", color: RUST }}>{vnd(d.debt)}</td>
                       <td className="px-3 py-3 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-2">{d.customer.phone && <ZaloLink phone={d.customer.phone} />}
                         {d.nearestDue ? (
                           <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: d.nearestDue.overdue3 ? `${RUST}1A` : PAPER, color: d.nearestDue.overdue3 ? RUST : INK }}>
                             {d.nearestDue.overdue ? `Quá hạn ${-d.nearestDue.daysLeft} ngày` : d.nearestDue.daysLeft === 0 ? "Đến hạn hôm nay" : `Còn ${d.nearestDue.daysLeft} ngày`}
                           </span>
-                        ) : <span className="opacity-60">Không có hạn công nợ</span>}
+                        ) : <span className="opacity-60">Không có hạn công nợ</span>}</span>
                       </td>
                     </tr>
                   ))}
@@ -16853,6 +16855,12 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
             <AIWriteFromUrl onApply={setWeb} product={p} products={products} setProducts={setProducts} addLog={addLog} />
           </div>
 
+          <div hidden={editTab !== "content"}>
+            <QuickFill knownCats={(webCats || []).map((c) => c.name)}
+              toHtml={(t) => (/<(p|h[1-6]|ul|ol|li|div|strong|br|img)\b/i.test(t) ? t : /^(#{1,3}\s|-\s)/m.test(t) || /\*\*[^*\n]+\*\*/.test(t) ? simpleMarkdownToHtml(t) : beautifyDescriptionHtml(t))}
+              onApply={({ weight, ...patch }) => { if (weight) setWeightField(weight); if (Object.keys(patch).length) setWeb(patch); }} />
+          </div>
+
           <div hidden={editTab !== "content"} className="p-4 rounded-md" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
             <p className="text-base font-semibold" style={{ color: TEXT }}>Danh mục trên web</p>
             <p className="text-xs mb-2" style={{ color: "#6B7280" }}>Chọn nơi khách tìm thấy sản phẩm. Chọn được nhiều danh mục.</p>
@@ -16948,7 +16956,12 @@ function WebProductPage({ product, products, setProducts, webCats, onBack, onSwi
           </div>
 
           <div hidden={editTab !== "seo"} className="p-4 rounded-md space-y-3" style={{ border: `1px solid ${LINE}`, background: "#fff" }}>
-            <p className="text-base font-semibold" style={{ color: TEXT }}>SEO Google</p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-base font-semibold" style={{ color: TEXT }}>SEO Google</p>
+              <button type="button" title="Tạo tiêu đề 50–60 ký tự và mô tả 140–160 ký tự từ tên, mô tả ngắn, khuyến mãi. Sửa lại được."
+                onClick={() => setWeb(suggestSeo({ name: w.name || p.name, shortDesc: w.shortDesc, descText: String(w.description || "").replace(/<[^>]*>/g, " "), promo: w.promo }))}
+                className="text-xs px-2.5 py-1.5 rounded-md border inline-flex items-center gap-1 font-semibold" style={{ borderColor: INK, color: INK }}><Wand2 size={13} /> Tự tạo SEO</button>
+            </div>
             <Field label="Đường dẫn (slug)" hint="Bỏ trống = tự tạo từ tên sản phẩm">
               <input className={inputCls} style={{ borderColor: LINE, fontFamily: "'Inter', sans-serif" }} value={w.slug}
                 onChange={(e) => setWeb({ slug: webSlugifyLive(e.target.value) })}

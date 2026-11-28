@@ -1,8 +1,15 @@
 // "Việc hôm nay" ở đầu Tổng quan: mở máy là biết làm gì trước. Chỉ tính trên dữ liệu đã tải sẵn.
 // calc = { orderCalc, orderDueInfo, poNetTotal, poDueInfo } truyền từ SalesManager.
 import React from "react";
-import { Truck, Wallet, PackageOpen, Landmark, Phone, ChevronRight } from "lucide-react";
+import { Truck, Wallet, PackageOpen, Landmark, ChevronRight } from "lucide-react";
 import "./today.css";
+
+/** Nút nhắn Zalo theo số điện thoại (mở zalo.me/<số> ở tab mới, app Zalo tự mở trên điện thoại). */
+export function ZaloLink({ phone, label }) {
+  const num = String(phone || "").replace(/\D/g, "").replace(/^84/, "0");
+  if (num.length < 9) return null;
+  return <a className="zalo" href={"https://zalo.me/" + num} target="_blank" rel="noopener" title={"Nhắn Zalo " + phone} aria-label={"Nhắn Zalo " + phone} onClick={(e) => e.stopPropagation()}>{label || "Zalo"}</a>;
+}
 
 const vnd = (n) => (Math.round(Number(n)) || 0).toLocaleString("vi-VN") + "đ";
 
@@ -58,7 +65,7 @@ export default function TodayPanel({ orders, customers, purchaseOrders, calc, on
           <div key={x.id || "_le"} className="td-row">
             <button type="button" className="m" onClick={() => onOpenOrder(x.firstOrder.id)}>{c?.name || "Khách lẻ"}<small>{x.orders} đơn{x.overdue ? <em> · quá hạn {x.overdue} ngày</em> : ""}</small></button>
             <span className="v due">{vnd(x.amount)}</span>
-            {c?.phone && <a className="call" href={"tel:" + c.phone.replace(/\s/g, "")} title={"Gọi " + c.phone} aria-label={"Gọi " + c.phone}><Phone size={15} /></a>}
+            {c?.phone && <ZaloLink phone={c.phone} />}
           </div>
         ); })}
         {!debts.length && <p className="td-ok">Không khách nào còn nợ.</p>}
